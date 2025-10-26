@@ -8,7 +8,9 @@ import { KPISectionSkeleton } from './loading/kpi-skeleton'
 import { QualityTrendsChart } from './charts/quality-trends-chart'
 import { CategoryPieChart } from './charts/category-pie-chart'
 import { VersionBarChart } from './charts/version-bar-chart'
+import { DetailedStatsTable } from './tables/detailed-stats-table'
 import { ChartSkeleton } from './loading/chart-skeleton'
+import { TableSkeleton } from './loading/table-skeleton'
 
 // Note: getDefaultFilters() is a pure function, safe to call on client
 // Server Actions are used for data fetching in useDashboardData hook
@@ -72,10 +74,12 @@ export function DashboardContent() {
 				)}
 			</div>
 
-			{/* Placeholder for detailed table */}
-			<div className="text-sm text-muted-foreground">
-				Detailed data table will be added in next phase
-			</div>
+			{/* Detailed Stats Table */}
+			{isLoading || data.detailedStats.length === 0 ? (
+				<TableSkeleton />
+			) : (
+				<DetailedStatsTable data={data.detailedStats} />
+			)}
 		</div>
 	)
 }
