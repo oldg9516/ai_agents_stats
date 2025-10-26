@@ -4,24 +4,17 @@ import { useEffect, useState } from 'react'
 import { useDashboardData } from '@/lib/hooks/use-dashboard-data'
 import { useFilters } from '@/lib/hooks/use-filters'
 import { getFilterOptions } from '@/lib/supabase/queries'
-import { KPISection } from './kpi/kpi-section'
-import { KPISectionSkeleton } from './loading/kpi-skeleton'
-import { QualityTrendsChart } from './charts/quality-trends-chart'
-import { CategoryPieChart } from './charts/category-pie-chart'
-import { VersionBarChart } from './charts/version-bar-chart'
 import { DetailedStatsTable } from './tables/detailed-stats-table'
 import { FilterBar } from './filters/filter-bar'
-import { ChartSkeleton } from './loading/chart-skeleton'
 import { TableSkeleton } from './loading/table-skeleton'
 import type { FilterOptions } from '@/lib/supabase/types'
 
 /**
- * Dashboard Content - Client Component
+ * Detailed Stats Content - Client Component for detailed stats page
  *
- * Handles real-time data updates and interactivity
- * Wrapped in Suspense for progressive loading
+ * Full-page table view with filters
  */
-export function DashboardContent() {
+export function DetailedStatsContent() {
 	// Filter state with URL sync and localStorage
 	const {
 		filters,
@@ -66,7 +59,7 @@ export function DashboardContent() {
 		return (
 			<div className="flex flex-col items-center justify-center p-8 text-center">
 				<h3 className="text-lg font-semibold text-red-600 dark:text-red-400">
-					Error Loading Dashboard
+					Error Loading Data
 				</h3>
 				<p className="text-sm text-muted-foreground mt-2">{error.message}</p>
 				<button
@@ -89,35 +82,6 @@ export function DashboardContent() {
 				availableVersions={filterOptions.versions}
 				availableCategories={filterOptions.categories}
 			/>
-
-			{/* KPI Cards Section */}
-			{isLoading || !data.kpi ? (
-				<KPISectionSkeleton />
-			) : (
-				<KPISection data={data.kpi} />
-			)}
-
-			{/* Quality Trends Chart */}
-			{isLoading || data.qualityTrends.length === 0 ? (
-				<ChartSkeleton />
-			) : (
-				<QualityTrendsChart data={data.qualityTrends} />
-			)}
-
-			{/* Category & Version Charts - Side by Side */}
-			<div className="grid gap-4 md:gap-6 lg:grid-cols-2">
-				{isLoading || data.categoryDistribution.length === 0 ? (
-					<ChartSkeleton />
-				) : (
-					<CategoryPieChart data={data.categoryDistribution} />
-				)}
-
-				{isLoading || data.versionComparison.length === 0 ? (
-					<ChartSkeleton />
-				) : (
-					<VersionBarChart data={data.versionComparison} />
-				)}
-			</div>
 
 			{/* Detailed Stats Table */}
 			{isLoading || data.detailedStats.length === 0 ? (

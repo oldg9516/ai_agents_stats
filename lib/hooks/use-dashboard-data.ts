@@ -43,14 +43,17 @@ export function useDashboardData(filters: DashboardFilters): UseDashboardDataRet
   })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
-  const filtersRef = useRef(filters)
 
-  // Update filters ref when filters change
-  useEffect(() => {
-    filtersRef.current = filters
-  }, [filters])
+  // Serialize filters for stable dependency
+  const filtersKey = JSON.stringify({
+    from: filters.dateRange.from.toISOString(),
+    to: filters.dateRange.to.toISOString(),
+    versions: filters.versions.sort(),
+    categories: filters.categories.sort(),
+    agents: filters.agents.sort(),
+  })
 
-  // Initial data fetch - only run once on mount
+  // Data fetch - runs when filters change
   useEffect(() => {
     let mounted = true
 
@@ -60,7 +63,7 @@ export function useDashboardData(filters: DashboardFilters): UseDashboardDataRet
         setError(null)
 
         // Call Server Action to fetch all data
-        const result = await fetchDashboardData(filtersRef.current)
+        const result = await fetchDashboardData(filters)
 
         if (!mounted) return
 
@@ -92,7 +95,8 @@ export function useDashboardData(filters: DashboardFilters): UseDashboardDataRet
     return () => {
       mounted = false
     }
-  }, []) // Empty deps - only run once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtersKey]) // Re-fetch when filters change
 
   // Real-time subscription
   useEffect(() => {
@@ -125,7 +129,7 @@ export function useDashboardData(filters: DashboardFilters): UseDashboardDataRet
       setError(null)
 
       // Call Server Action to fetch all data
-      const result = await fetchDashboardData(filtersRef.current)
+      const result = await fetchDashboardData(filters)
 
       if (result.success && result.data) {
         setData({
