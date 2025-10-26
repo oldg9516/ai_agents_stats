@@ -1,9 +1,9 @@
-import { Suspense } from 'react'
 import { AppSidebar } from '@/components/app-sidebar'
-import { SiteHeader } from '@/components/site-header'
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { DetailedStatsContent } from '@/components/detailed-stats-content'
 import { TableSkeleton } from '@/components/loading/table-skeleton'
+import { SiteHeader } from '@/components/site-header'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { Suspense } from 'react'
 
 /**
  * Detailed Stats Page - Full page view of detailed statistics table
@@ -23,11 +23,11 @@ export default function DetailedStatsPage() {
 				} as React.CSSProperties
 			}
 		>
-			<AppSidebar />
+			<AppSidebar variant='inset' />
 			<SidebarInset>
 				<SiteHeader />
-				<div className="flex flex-1 flex-col">
-					<div className="@container/main flex flex-1 flex-col gap-2">
+				<div className='flex flex-1 flex-col'>
+					<div className='@container/main flex flex-1 flex-col gap-2'>
 						<Suspense fallback={<TableSkeleton />}>
 							<DetailedStatsContent />
 						</Suspense>
