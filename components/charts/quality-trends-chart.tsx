@@ -63,7 +63,7 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 	// Output: [{ week: "2024-01-01", "Category1": 85.2, "Category2": 70.5 }, ...]
 	const chartData = useMemo(() => {
 		// Group by week
-		const weekMap = new Map<string, Record<string, number>>()
+		const weekMap = new Map<string, Record<string, number | string>>()
 
 		data.forEach(({ category, weekStart, goodPercentage }) => {
 			if (!weekMap.has(weekStart)) {

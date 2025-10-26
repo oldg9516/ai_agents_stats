@@ -22,7 +22,7 @@ function getDefaultFilters(): DashboardFilters {
 		},
 		versions: [], // Empty = all versions
 		categories: [], // Empty = all categories
-		agents: QUALIFIED_AGENTS, // All qualified agents by default
+		agents: [...QUALIFIED_AGENTS], // All qualified agents by default (convert readonly to mutable)
 	}
 }
 
