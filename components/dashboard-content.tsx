@@ -1,19 +1,19 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { useDashboardData } from '@/lib/hooks/use-dashboard-data'
-import { getDefaultFilters } from '@/lib/supabase/queries'
+import { useFilters } from '@/lib/hooks/use-filters'
+import { getFilterOptions } from '@/lib/supabase/queries'
 import { KPISection } from './kpi/kpi-section'
 import { KPISectionSkeleton } from './loading/kpi-skeleton'
 import { QualityTrendsChart } from './charts/quality-trends-chart'
 import { CategoryPieChart } from './charts/category-pie-chart'
 import { VersionBarChart } from './charts/version-bar-chart'
 import { DetailedStatsTable } from './tables/detailed-stats-table'
+import { FilterBar } from './filters/filter-bar'
 import { ChartSkeleton } from './loading/chart-skeleton'
 import { TableSkeleton } from './loading/table-skeleton'
-
-// Note: getDefaultFilters() is a pure function, safe to call on client
-// Server Actions are used for data fetching in useDashboardData hook
+import type { FilterOptions } from '@/lib/supabase/types'
 
 /**
  * Dashboard Content - Client Component
@@ -22,9 +22,50 @@ import { TableSkeleton } from './loading/table-skeleton'
  * Wrapped in Suspense for progressive loading
  */
 export function DashboardContent() {
-	// Memoize filters to prevent recreating on every render
-	const filters = useMemo(() => getDefaultFilters(), [])
-	const { data, isLoading, error } = useDashboardData(filters)
+	// Filter state with URL sync and localStorage
+	const {
+		filters,
+		setDateRange,
+		setVersions,
+		setCategories,
+		setAgents,
+		resetFilters,
+	} = useFilters()
+
+	// Fetch dashboard data with current filters
+	const { data, isLoading, error, refetch } = useDashboardData(filters)
+
+	// Filter options (versions and categories)
+	const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+		versions: [],
+		categories: [],
+	})
+
+	// Load filter options on mount
+	useEffect(() => {
+		getFilterOptions().then(setFilterOptions).catch(console.error)
+	}, [])
+
+	// Handle filter changes
+	const handleFiltersChange = (updates: Partial<typeof filters>) => {
+		if (updates.dateRange) {
+			setDateRange(updates.dateRange.from, updates.dateRange.to)
+		}
+		if (updates.versions !== undefined) {
+			setVersions(updates.versions)
+		}
+		if (updates.categories !== undefined) {
+			setCategories(updates.categories)
+		}
+		if (updates.agents !== undefined) {
+			setAgents(updates.agents)
+		}
+	}
+
+	// Refetch data when filters change
+	useEffect(() => {
+		refetch()
+	}, [filters, refetch])
 
 	if (error) {
 		return (
@@ -45,6 +86,15 @@ export function DashboardContent() {
 
 	return (
 		<div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
+			{/* Filter Bar */}
+			<FilterBar
+				filters={filters}
+				onFiltersChange={handleFiltersChange}
+				onReset={resetFilters}
+				availableVersions={filterOptions.versions}
+				availableCategories={filterOptions.categories}
+			/>
+
 			{/* KPI Cards Section */}
 			{isLoading || !data.kpi ? (
 				<KPISectionSkeleton />
