@@ -168,37 +168,39 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 	return (
 		<Card>
 			<CardHeader>
-				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-					<div>
-						<CardTitle>Detailed Statistics</CardTitle>
-						<CardDescription>
-							Hierarchical view of quality metrics by category, version, and week
-						</CardDescription>
+				<div className="flex flex-col gap-3 sm:gap-4">
+					<div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+						<div className="flex-1 min-w-0">
+							<CardTitle className="text-lg sm:text-xl">Detailed Statistics</CardTitle>
+							<CardDescription className="text-sm mt-1">
+								Quality metrics by category, version, and week
+							</CardDescription>
+						</div>
+
+						{/* Export Button */}
+						<Button onClick={handleExport} variant="outline" size="sm" className="w-full sm:w-auto">
+							<IconDownload className="mr-2 h-4 w-4" />
+							Export CSV
+						</Button>
 					</div>
 
-					{/* Export Button */}
-					<Button onClick={handleExport} variant="outline" size="sm">
-						<IconDownload className="mr-2 h-4 w-4" />
-						Export CSV
-					</Button>
-				</div>
-
-				{/* Search Input */}
-				<div className="relative max-w-sm">
-					<IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-					<Input
-						placeholder="Search by category..."
-						value={globalFilter}
-						onChange={(e) => setGlobalFilter(e.target.value)}
-						className="pl-10"
-					/>
+					{/* Search Input */}
+					<div className="relative w-full sm:max-w-sm">
+						<IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+						<Input
+							placeholder="Search by category..."
+							value={globalFilter}
+							onChange={(e) => setGlobalFilter(e.target.value)}
+							className="pl-10 text-sm"
+						/>
+					</div>
 				</div>
 			</CardHeader>
 
 			<CardContent>
 				{/* Table */}
-				<div className="rounded-md border">
-					<Table>
+				<div className="rounded-md border overflow-x-auto">
+					<Table className="min-w-[640px]">
 						<TableHeader>
 							{table.getHeaderGroups().map((headerGroup) => (
 								<TableRow key={headerGroup.id}>
@@ -256,57 +258,61 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 				</div>
 
 				{/* Pagination */}
-				<div className="flex items-center justify-between space-x-2 py-4">
-					<div className="text-sm text-muted-foreground">
+				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-4">
+					<div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
 						Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
 						{Math.min(
 							(table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
 							table.getFilteredRowModel().rows.length
 						)}{' '}
-						of {table.getFilteredRowModel().rows.length} results
+						of {table.getFilteredRowModel().rows.length}
 					</div>
-					<div className="flex items-center space-x-2">
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={() => table.previousPage()}
-							disabled={!table.getCanPreviousPage()}
-						>
-							<IconChevronLeft className="h-4 w-4" />
-							Previous
-						</Button>
-						<div className="flex items-center gap-1">
-							{Array.from({ length: table.getPageCount() }, (_, i) => i)
-								.filter((page) => {
-									const current = table.getState().pagination.pageIndex
-									return page === 0 || page === table.getPageCount() - 1 || Math.abs(page - current) <= 1
-								})
-								.map((page, idx, arr) => {
-									const showEllipsis = idx > 0 && page - arr[idx - 1] > 1
-									return (
-										<div key={page} className="flex items-center">
-											{showEllipsis && <span className="px-2">...</span>}
-											<Button
-												variant={table.getState().pagination.pageIndex === page ? 'default' : 'outline'}
-												size="sm"
-												onClick={() => table.setPageIndex(page)}
-												className="w-9"
-											>
-												{page + 1}
-											</Button>
-										</div>
-									)
-								})}
+					<div className="flex flex-col sm:flex-row items-center gap-2">
+						<div className="flex items-center gap-2">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => table.previousPage()}
+								disabled={!table.getCanPreviousPage()}
+								className="text-xs sm:text-sm"
+							>
+								<IconChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+								<span className="hidden sm:inline">Previous</span>
+							</Button>
+							<div className="flex items-center gap-1">
+								{Array.from({ length: table.getPageCount() }, (_, i) => i)
+									.filter((page) => {
+										const current = table.getState().pagination.pageIndex
+										return page === 0 || page === table.getPageCount() - 1 || Math.abs(page - current) <= 1
+									})
+									.map((page, idx, arr) => {
+										const showEllipsis = idx > 0 && page - arr[idx - 1] > 1
+										return (
+											<div key={page} className="flex items-center">
+												{showEllipsis && <span className="px-1 text-xs">...</span>}
+												<Button
+													variant={table.getState().pagination.pageIndex === page ? 'default' : 'outline'}
+													size="sm"
+													onClick={() => table.setPageIndex(page)}
+													className="w-7 h-7 sm:w-9 sm:h-9 text-xs sm:text-sm"
+												>
+													{page + 1}
+												</Button>
+											</div>
+										)
+									})}
+							</div>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => table.nextPage()}
+								disabled={!table.getCanNextPage()}
+								className="text-xs sm:text-sm"
+							>
+								<span className="hidden sm:inline">Next</span>
+								<IconChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+							</Button>
 						</div>
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={() => table.nextPage()}
-							disabled={!table.getCanNextPage()}
-						>
-							Next
-							<IconChevronRight className="h-4 w-4" />
-						</Button>
 					</div>
 				</div>
 			</CardContent>

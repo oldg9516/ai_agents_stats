@@ -53,16 +53,47 @@ export function CategoryPieChart({ data, onCategoryClick }: CategoryPieChartProp
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Quality by Category</CardTitle>
-				<CardDescription>Distribution of records across categories with quality levels</CardDescription>
+				<CardTitle className="text-lg sm:text-xl">Quality by Category</CardTitle>
+				<CardDescription className="text-sm">
+					Distribution across categories with quality levels
+				</CardDescription>
 			</CardHeader>
 			<CardContent>
 				{data.length === 0 ? (
-					<div className="flex items-center justify-center h-[300px] text-muted-foreground">
+					<div className="flex items-center justify-center h-[250px] sm:h-[300px] text-sm text-muted-foreground">
 						No data available
 					</div>
 				) : (
-					<ResponsiveContainer width="100%" height={300}>
+					<ResponsiveContainer width="100%" height={250} className="sm:hidden">
+						<PieChart>
+							<Pie
+								data={data}
+								dataKey="totalRecords"
+								nameKey="category"
+								cx="50%"
+								cy="50%"
+								outerRadius={80}
+								label={false}
+								onClick={handleClick}
+								style={{ cursor: onCategoryClick ? 'pointer' : 'default' }}
+							>
+								{data.map((entry, index) => (
+									<Cell key={`cell-${index}`} fill={getQualityColor(entry.goodPercentage)} />
+								))}
+							</Pie>
+							<Tooltip content={<CustomTooltip />} />
+							<Legend
+								wrapperStyle={{ fontSize: '12px' }}
+								formatter={(value) => {
+									const entry = data.find((d) => d.category === value)
+									return entry ? `${value.slice(0, 15)}...` : value
+								}}
+							/>
+						</PieChart>
+					</ResponsiveContainer>
+				)}
+				{data.length > 0 && (
+					<ResponsiveContainer width="100%" height={300} className="hidden sm:block">
 						<PieChart>
 							<Pie
 								data={data}

@@ -146,53 +146,56 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 	return (
 		<Card>
 			<CardHeader>
-				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-					<div>
-						<CardTitle>Quality Trends Over Time</CardTitle>
-						<CardDescription>
-							Track quality percentage by category across different time periods
-						</CardDescription>
+				<div className="flex flex-col gap-4">
+					<div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+						<div className="flex-1 min-w-0">
+							<CardTitle className="text-lg sm:text-xl">Quality Trends Over Time</CardTitle>
+							<CardDescription className="text-sm mt-1">
+								Track quality percentage by category
+							</CardDescription>
+						</div>
+
+						{/* Time Period Selector */}
+						<div className="flex flex-wrap gap-2 sm:flex-nowrap">
+							{(['7d', '30d', '3m', 'all'] as const).map((period) => (
+								<Button
+									key={period}
+									variant={selectedPeriod === period ? 'default' : 'outline'}
+									size="sm"
+									onClick={() => setSelectedPeriod(period)}
+									className="text-xs sm:text-sm flex-1 sm:flex-none whitespace-nowrap"
+								>
+									{period === '7d' && '7d'}
+									{period === '30d' && '30d'}
+									{period === '3m' && '3m'}
+									{period === 'all' && 'All'}
+								</Button>
+							))}
+						</div>
 					</div>
 
-					{/* Time Period Selector */}
-					<div className="flex gap-2">
-						{(['7d', '30d', '3m', 'all'] as const).map((period) => (
-							<Button
-								key={period}
-								variant={selectedPeriod === period ? 'default' : 'outline'}
-								size="sm"
-								onClick={() => setSelectedPeriod(period)}
-							>
-								{period === '7d' && 'Last 7 days'}
-								{period === '30d' && 'Last 30 days'}
-								{period === '3m' && 'Last 3 months'}
-								{period === 'all' && 'All time'}
-							</Button>
+					{/* Interactive Legend with Checkboxes */}
+					<div className="flex flex-wrap gap-3 sm:gap-4">
+						{categories.map((category) => (
+							<div key={category.name} className="flex items-center gap-2 min-w-0">
+								<Checkbox
+									id={`category-${category.name}`}
+									checked={!hiddenCategories.has(category.name)}
+									onCheckedChange={() => toggleCategory(category.name)}
+								/>
+								<Label
+									htmlFor={`category-${category.name}`}
+									className="flex items-center gap-2 cursor-pointer min-w-0"
+								>
+									<div
+										className="w-3 h-3 rounded-full shrink-0"
+										style={{ backgroundColor: category.color }}
+									/>
+									<span className="text-xs sm:text-sm truncate">{category.name}</span>
+								</Label>
+							</div>
 						))}
 					</div>
-				</div>
-
-				{/* Interactive Legend with Checkboxes */}
-				<div className="flex flex-wrap gap-4 mt-4">
-					{categories.map((category) => (
-						<div key={category.name} className="flex items-center gap-2">
-							<Checkbox
-								id={`category-${category.name}`}
-								checked={!hiddenCategories.has(category.name)}
-								onCheckedChange={() => toggleCategory(category.name)}
-							/>
-							<Label
-								htmlFor={`category-${category.name}`}
-								className="flex items-center gap-2 cursor-pointer"
-							>
-								<div
-									className="w-3 h-3 rounded-full"
-									style={{ backgroundColor: category.color }}
-								/>
-								<span className="text-sm">{category.name}</span>
-							</Label>
-						</div>
-					))}
 				</div>
 			</CardHeader>
 

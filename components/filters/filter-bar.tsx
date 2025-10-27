@@ -36,8 +36,8 @@ export function FilterBar({
 }: FilterBarProps) {
 	return (
 		<Card>
-			<CardContent className="pt-6">
-				<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+			<CardContent className="pt-4 sm:pt-6">
+				<div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
 					{/* Date Range Filter */}
 					<DateRangeFilter
 						from={filters.dateRange.from}
@@ -78,8 +78,8 @@ export function FilterBar({
 				</div>
 
 				{/* Reset Button */}
-				<div className="mt-4 flex justify-end">
-					<Button onClick={onReset} variant="outline" size="sm">
+				<div className="mt-4 flex justify-center sm:justify-end">
+					<Button onClick={onReset} variant="outline" size="sm" className="w-full sm:w-auto">
 						<IconRefresh className="mr-2 h-4 w-4" />
 						Reset Filters
 					</Button>

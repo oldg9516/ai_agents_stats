@@ -67,39 +67,68 @@ export function VersionBarChart({ data }: VersionBarChartProps) {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Version Comparison</CardTitle>
-				<CardDescription>Quality percentage across different prompt versions</CardDescription>
+				<CardTitle className="text-lg sm:text-xl">Version Comparison</CardTitle>
+				<CardDescription className="text-sm">
+					Quality percentage across different versions
+				</CardDescription>
 			</CardHeader>
 			<CardContent>
 				{sortedData.length === 0 ? (
-					<div className="flex items-center justify-center h-[300px] text-muted-foreground">
+					<div className="flex items-center justify-center h-[250px] sm:h-[300px] text-sm text-muted-foreground">
 						No data available
 					</div>
 				) : (
-					<ResponsiveContainer width="100%" height={300}>
-						<BarChart data={sortedData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-							<CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-							<XAxis
-								dataKey="version"
-								className="text-xs text-muted-foreground"
-							/>
-							<YAxis
-								domain={[0, 100]}
-								tickFormatter={(value) => `${value}%`}
-								className="text-xs text-muted-foreground"
-							/>
-							<Tooltip content={<CustomTooltip />} />
-							<Bar
-								dataKey="goodPercentage"
-								radius={[8, 8, 0, 0]}
-								label={renderBarLabel}
-							>
-								{sortedData.map((entry, index) => (
-									<Cell key={`cell-${index}`} fill={getQualityColor(entry.goodPercentage)} />
-								))}
-							</Bar>
-						</BarChart>
-					</ResponsiveContainer>
+					<>
+						<ResponsiveContainer width="100%" height={250} className="sm:hidden">
+							<BarChart data={sortedData} margin={{ top: 20, right: 10, left: -10, bottom: 5 }}>
+								<CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+								<XAxis
+									dataKey="version"
+									className="text-[10px] text-muted-foreground"
+									tick={{ fontSize: 10 }}
+								/>
+								<YAxis
+									domain={[0, 100]}
+									tickFormatter={(value) => `${value}%`}
+									className="text-[10px] text-muted-foreground"
+									tick={{ fontSize: 10 }}
+								/>
+								<Tooltip content={<CustomTooltip />} />
+								<Bar
+									dataKey="goodPercentage"
+									radius={[6, 6, 0, 0]}
+								>
+									{sortedData.map((entry, index) => (
+										<Cell key={`cell-${index}`} fill={getQualityColor(entry.goodPercentage)} />
+									))}
+								</Bar>
+							</BarChart>
+						</ResponsiveContainer>
+						<ResponsiveContainer width="100%" height={300} className="hidden sm:block">
+							<BarChart data={sortedData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+								<CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+								<XAxis
+									dataKey="version"
+									className="text-xs text-muted-foreground"
+								/>
+								<YAxis
+									domain={[0, 100]}
+									tickFormatter={(value) => `${value}%`}
+									className="text-xs text-muted-foreground"
+								/>
+								<Tooltip content={<CustomTooltip />} />
+								<Bar
+									dataKey="goodPercentage"
+									radius={[8, 8, 0, 0]}
+									label={renderBarLabel}
+								>
+									{sortedData.map((entry, index) => (
+										<Cell key={`cell-${index}`} fill={getQualityColor(entry.goodPercentage)} />
+									))}
+								</Bar>
+							</BarChart>
+						</ResponsiveContainer>
+					</>
 				)}
 			</CardContent>
 		</Card>

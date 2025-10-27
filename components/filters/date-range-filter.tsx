@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,6 +20,13 @@ interface DateRangeFilterProps {
  * - Manual date inputs
  */
 export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
+	const [isClient, setIsClient] = useState(false)
+
+	// Avoid hydration mismatch by only rendering dates on client
+	useEffect(() => {
+		setIsClient(true)
+	}, [])
+
 	// Quick date range handlers
 	const setLast7Days = () => {
 		const end = new Date()
@@ -47,9 +55,17 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 		onChange(start, end)
 	}
 
-	// Format date for input
+	// Format date for input (stable on server and client)
 	const formatDateForInput = (date: Date) => {
-		return date.toISOString().split('T')[0]
+		if (!isClient) {
+			// Return a stable value during SSR to avoid hydration mismatch
+			return ''
+		}
+		try {
+			return date.toISOString().split('T')[0]
+		} catch {
+			return ''
+		}
 	}
 
 	// Handle input change
@@ -72,49 +88,67 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 			<Label className="text-sm font-medium">Date Range</Label>
 
 			{/* Quick Buttons */}
-			<div className="flex flex-wrap gap-2">
-				<Button onClick={setLast7Days} variant="outline" size="sm">
-					Last 7 days
+			<div className="grid grid-cols-2 gap-2">
+				<Button onClick={setLast7Days} variant="outline" size="sm" className="text-xs sm:text-sm">
+					7d
 				</Button>
-				<Button onClick={setLast30Days} variant="outline" size="sm">
-					Last 30 days
+				<Button onClick={setLast30Days} variant="outline" size="sm" className="text-xs sm:text-sm">
+					30d
 				</Button>
-				<Button onClick={setLast3Months} variant="outline" size="sm">
-					Last 3 months
+				<Button onClick={setLast3Months} variant="outline" size="sm" className="text-xs sm:text-sm">
+					3m
 				</Button>
-				<Button onClick={setAllTime} variant="outline" size="sm">
-					All time
+				<Button onClick={setAllTime} variant="outline" size="sm" className="text-xs sm:text-sm">
+					All
 				</Button>
 			</div>
 
 			{/* Manual Date Inputs */}
-			<div className="grid grid-cols-2 gap-3">
-				<div className="space-y-1.5">
-					<Label htmlFor="date-from" className="text-xs text-muted-foreground">
-						From
-					</Label>
-					<Input
-						id="date-from"
-						type="date"
-						value={formatDateForInput(from)}
-						onChange={handleFromChange}
-						max={formatDateForInput(to)}
-					/>
+			{isClient && (
+				<div className="grid grid-cols-2 gap-3">
+					<div className="space-y-1.5">
+						<Label htmlFor="date-from" className="text-xs text-muted-foreground">
+							From
+						</Label>
+						<Input
+							id="date-from"
+							type="date"
+							value={formatDateForInput(from)}
+							onChange={handleFromChange}
+							max={formatDateForInput(to)}
+						/>
+					</div>
+					<div className="space-y-1.5">
+						<Label htmlFor="date-to" className="text-xs text-muted-foreground">
+							To
+						</Label>
+						<Input
+							id="date-to"
+							type="date"
+							value={formatDateForInput(to)}
+							onChange={handleToChange}
+							min={formatDateForInput(from)}
+							max={formatDateForInput(new Date())}
+						/>
+					</div>
 				</div>
-				<div className="space-y-1.5">
-					<Label htmlFor="date-to" className="text-xs text-muted-foreground">
-						To
-					</Label>
-					<Input
-						id="date-to"
-						type="date"
-						value={formatDateForInput(to)}
-						onChange={handleToChange}
-						min={formatDateForInput(from)}
-						max={formatDateForInput(new Date())}
-					/>
+			)}
+			{!isClient && (
+				<div className="grid grid-cols-2 gap-3">
+					<div className="space-y-1.5">
+						<Label htmlFor="date-from" className="text-xs text-muted-foreground">
+							From
+						</Label>
+						<Input id="date-from" type="date" disabled />
+					</div>
+					<div className="space-y-1.5">
+						<Label htmlFor="date-to" className="text-xs text-muted-foreground">
+							To
+						</Label>
+						<Input id="date-to" type="date" disabled />
+					</div>
 				</div>
-			</div>
+			)}
 		</div>
 	)
 }
