@@ -1,39 +1,26 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import {
-	LineChart,
-	Line,
-	XAxis,
-	YAxis,
-	CartesianGrid,
-	Tooltip,
-	Legend,
-	ResponsiveContainer,
-} from 'recharts'
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 import { format } from 'date-fns'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import {
+	ChartContainer,
+	ChartTooltip,
+	ChartTooltipContent,
+	ChartLegend,
+	ChartLegendContent,
+	type ChartConfig,
+} from '@/components/ui/chart'
 import { getCategoryLabel } from '@/constants/category-labels'
 import type { QualityTrendData } from '@/lib/supabase/types'
 
 interface QualityTrendsChartProps {
 	data: QualityTrendData[]
 }
-
-// Color palette for categories
-const CATEGORY_COLORS = [
-	'#3b82f6', // blue
-	'#10b981', // green
-	'#f59e0b', // amber
-	'#ef4444', // red
-	'#8b5cf6', // violet
-	'#ec4899', // pink
-	'#06b6d4', // cyan
-	'#f97316', // orange
-]
 
 type TimePeriod = '7d' | '30d' | '3m' | 'all'
 
@@ -50,14 +37,29 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 	const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('30d')
 	const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(new Set())
 
-	// Extract unique categories and assign colors
-	const categories = useMemo(() => {
+	// Create chart config dynamically from categories
+	const chartConfig = useMemo(() => {
 		const uniqueCategories = Array.from(new Set(data.map((d) => d.category)))
-		return uniqueCategories.map((category, index) => ({
-			name: category,
-			color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
-		}))
+		const config: ChartConfig = {}
+
+		uniqueCategories.forEach((category, index) => {
+			config[category] = {
+				label: getCategoryLabel(category),
+				color: `hsl(var(--chart-${(index % 5) + 1}))`,
+			}
+		})
+
+		return config
 	}, [data])
+
+	// Extract categories with their info
+	const categories = useMemo(() => {
+		return Object.keys(chartConfig).map((key) => ({
+			name: key,
+			label: chartConfig[key].label,
+			color: chartConfig[key].color,
+		}))
+	}, [chartConfig])
 
 	// Transform data for Recharts format
 	// Input: [{ category, weekStart, goodPercentage }, ...]
@@ -123,27 +125,6 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 		}
 	}
 
-	// Custom tooltip
-	const CustomTooltip = ({ active, payload, label }: any) => {
-		if (!active || !payload || !payload.length) return null
-
-		return (
-			<div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-				<p className="font-medium mb-2">{format(new Date(label), 'MMM d, yyyy')}</p>
-				{payload.map((entry: any, index: number) => (
-					<div key={index} className="flex items-center gap-2 text-sm">
-						<div
-							className="w-3 h-3 rounded-full"
-							style={{ backgroundColor: entry.color }}
-						/>
-						<span className="text-muted-foreground">{getCategoryLabel(entry.name)}:</span>
-						<span className="font-medium">{entry.value.toFixed(1)}%</span>
-					</div>
-				))}
-			</div>
-		)
-	}
-
 	return (
 		<Card>
 			<CardHeader>
@@ -176,9 +157,9 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 					</div>
 
 					{/* Interactive Legend with Checkboxes */}
-					<div className="flex flex-wrap gap-3 sm:gap-4">
+					<div className='flex flex-wrap gap-3 sm:gap-4'>
 						{categories.map((category) => (
-							<div key={category.name} className="flex items-center gap-2 min-w-0">
+							<div key={category.name} className='flex items-center gap-2 min-w-0'>
 								<Checkbox
 									id={`category-${category.name}`}
 									checked={!hiddenCategories.has(category.name)}
@@ -186,15 +167,17 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 								/>
 								<Label
 									htmlFor={`category-${category.name}`}
-									className="flex items-center gap-2 cursor-pointer min-w-0"
+									className='flex items-center gap-2 cursor-pointer min-w-0'
 								>
 									<div
-										className="w-3 h-3 rounded-full shrink-0"
-										style={{ backgroundColor: category.color }}
+										className='w-3 h-3 rounded-full shrink-0'
+										style={{
+											backgroundColor: category.color?.includes('var')
+												? `hsl(${category.color.match(/\d+/)?.[0] || 0} 70% 50%)`
+												: category.color,
+										}}
 									/>
-									<span className="text-xs sm:text-sm truncate">
-										{getCategoryLabel(category.name)}
-									</span>
+									<span className='text-xs sm:text-sm truncate'>{category.label}</span>
 								</Label>
 							</div>
 						))}
@@ -204,39 +187,57 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 
 			<CardContent>
 				{chartData.length === 0 ? (
-					<div className="flex items-center justify-center h-[300px] text-muted-foreground">
+					<div className='flex items-center justify-center h-[300px] text-muted-foreground'>
 						No data available for selected period
 					</div>
 				) : (
-					<ResponsiveContainer width="100%" height={300}>
-						<LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-							<CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+					<ChartContainer config={chartConfig} className='h-[350px] w-full'>
+						<LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+							<CartesianGrid vertical={false} strokeDasharray='3 3' />
 							<XAxis
-								dataKey="week"
+								dataKey='week'
+								tickLine={false}
+								tickMargin={10}
+								axisLine={false}
 								tickFormatter={formatWeek}
-								className="text-xs text-muted-foreground"
 							/>
 							<YAxis
 								domain={[0, 100]}
+								tickLine={false}
+								tickMargin={10}
+								axisLine={false}
 								tickFormatter={(value) => `${value}%`}
-								className="text-xs text-muted-foreground"
 							/>
-							<Tooltip content={<CustomTooltip />} />
+							<ChartTooltip
+								cursor={false}
+								content={
+									<ChartTooltipContent
+										labelFormatter={(value) => {
+											try {
+												return format(new Date(value), 'MMM d, yyyy')
+											} catch {
+												return value
+											}
+										}}
+										formatter={(value, name) => [`${Number(value).toFixed(1)}%`, name]}
+									/>
+								}
+							/>
 							{categories.map((category) => (
 								<Line
 									key={category.name}
-									type="monotone"
+									type='monotone'
 									dataKey={category.name}
-									stroke={category.color}
+									stroke={`var(--color-${category.name})`}
 									strokeWidth={2}
-									dot={{ fill: category.color, r: 4 }}
-									activeDot={{ r: 6 }}
+									dot={false}
+									activeDot={{ r: 4 }}
 									hide={hiddenCategories.has(category.name)}
 									connectNulls
 								/>
 							))}
 						</LineChart>
-					</ResponsiveContainer>
+					</ChartContainer>
 				)}
 			</CardContent>
 		</Card>
