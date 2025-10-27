@@ -16,6 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import { getCategoryLabel } from '@/constants/category-labels'
 import type { QualityTrendData } from '@/lib/supabase/types'
 
 interface QualityTrendsChartProps {
@@ -135,7 +136,7 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 							className="w-3 h-3 rounded-full"
 							style={{ backgroundColor: entry.color }}
 						/>
-						<span className="text-muted-foreground">{entry.name}:</span>
+						<span className="text-muted-foreground">{getCategoryLabel(entry.name)}:</span>
 						<span className="font-medium">{entry.value.toFixed(1)}%</span>
 					</div>
 				))}
@@ -191,7 +192,9 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 										className="w-3 h-3 rounded-full shrink-0"
 										style={{ backgroundColor: category.color }}
 									/>
-									<span className="text-xs sm:text-sm truncate">{category.name}</span>
+									<span className="text-xs sm:text-sm truncate">
+										{getCategoryLabel(category.name)}
+									</span>
 								</Label>
 							</div>
 						))}

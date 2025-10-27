@@ -3,6 +3,7 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getQualityColor } from '@/lib/utils/quality-colors'
+import { getCategoryLabel } from '@/constants/category-labels'
 import type { CategoryDistributionData } from '@/lib/supabase/types'
 
 interface CategoryPieChartProps {
@@ -21,7 +22,7 @@ interface CategoryPieChartProps {
 export function CategoryPieChart({ data, onCategoryClick }: CategoryPieChartProps) {
 	// Custom label for pie chart
 	const renderLabel = (entry: any) => {
-		return `${entry.category} (${entry.totalRecords})`
+		return `${getCategoryLabel(entry.category)} (${entry.totalRecords})`
 	}
 
 	// Custom tooltip
@@ -31,7 +32,7 @@ export function CategoryPieChart({ data, onCategoryClick }: CategoryPieChartProp
 		const data = payload[0].payload
 		return (
 			<div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-				<p className="font-medium mb-1">{data.category}</p>
+				<p className="font-medium mb-1">{getCategoryLabel(data.category)}</p>
 				<p className="text-sm text-muted-foreground">
 					Records: <span className="font-medium text-foreground">{data.totalRecords}</span>
 				</p>
@@ -84,10 +85,7 @@ export function CategoryPieChart({ data, onCategoryClick }: CategoryPieChartProp
 							<Tooltip content={<CustomTooltip />} />
 							<Legend
 								wrapperStyle={{ fontSize: '12px' }}
-								formatter={(value) => {
-									const entry = data.find((d) => d.category === value)
-									return entry ? `${value.slice(0, 15)}...` : value
-								}}
+								formatter={(value) => getCategoryLabel(value)}
 							/>
 						</PieChart>
 					</ResponsiveContainer>
@@ -114,7 +112,7 @@ export function CategoryPieChart({ data, onCategoryClick }: CategoryPieChartProp
 							<Legend
 								formatter={(value, entry: any) => {
 									const percentage = entry.payload.goodPercentage
-									return `${value} (${percentage.toFixed(1)}% quality)`
+									return `${getCategoryLabel(value)} (${percentage.toFixed(1)}% quality)`
 								}}
 							/>
 						</PieChart>

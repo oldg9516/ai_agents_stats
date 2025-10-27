@@ -25,6 +25,7 @@ import {
 import { IconDownload, IconSearch, IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
 import { getQualityBgClass } from '@/lib/utils/quality-colors'
 import { exportToCSV } from '@/lib/utils/export'
+import { getCategoryLabel } from '@/constants/category-labels'
 import type { DetailedStatsRow } from '@/lib/supabase/types'
 
 interface DetailedStatsTableProps {
@@ -62,7 +63,7 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 					const isVersionLevel = row.original.sortOrder === 1
 					return (
 						<div className={isVersionLevel ? 'font-semibold' : 'pl-4 text-muted-foreground'}>
-							{row.original.category}
+							{getCategoryLabel(row.original.category)}
 						</div>
 					)
 				},

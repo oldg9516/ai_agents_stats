@@ -10,7 +10,7 @@ import { QualityTrendsChart } from './charts/quality-trends-chart'
 import { CategoryPieChart } from './charts/category-pie-chart'
 import { VersionBarChart } from './charts/version-bar-chart'
 import { DetailedStatsTable } from './tables/detailed-stats-table'
-import { FilterBar } from './filters/filter-bar'
+import { FilterSheet } from './filters/filter-sheet'
 import { ChartSkeleton } from './loading/chart-skeleton'
 import { TableSkeleton } from './loading/table-skeleton'
 import type { FilterOptions } from '@/lib/supabase/types'
@@ -33,7 +33,7 @@ export function DashboardContent() {
 	} = useFilters()
 
 	// Fetch dashboard data with current filters
-	const { data, isLoading, error, refetch } = useDashboardData(filters)
+	const { data, isLoading, error } = useDashboardData(filters)
 
 	// Filter options (versions and categories)
 	const [filterOptions, setFilterOptions] = useState<FilterOptions>({
@@ -81,14 +81,16 @@ export function DashboardContent() {
 
 	return (
 		<div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
-			{/* Filter Bar */}
-			<FilterBar
-				filters={filters}
-				onFiltersChange={handleFiltersChange}
-				onReset={resetFilters}
-				availableVersions={filterOptions.versions}
-				availableCategories={filterOptions.categories}
-			/>
+			{/* Filter Button */}
+			<div className="flex justify-start">
+				<FilterSheet
+					filters={filters}
+					onFiltersChange={handleFiltersChange}
+					onReset={resetFilters}
+					availableVersions={filterOptions.versions}
+					availableCategories={filterOptions.categories}
+				/>
+			</div>
 
 			{/* KPI Cards Section */}
 			{isLoading || !data.kpi ? (
