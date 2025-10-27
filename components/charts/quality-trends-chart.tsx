@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { format } from 'date-fns'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -11,8 +11,6 @@ import {
 	ChartContainer,
 	ChartTooltip,
 	ChartTooltipContent,
-	ChartLegend,
-	ChartLegendContent,
 	type ChartConfig,
 } from '@/components/ui/chart'
 import { getCategoryLabel } from '@/constants/category-labels'
@@ -25,41 +23,39 @@ interface QualityTrendsChartProps {
 type TimePeriod = '7d' | '30d' | '3m' | 'all'
 
 /**
- * Quality Trends Chart - Main line chart showing quality trends over time
+ * Quality Trends Chart - Area chart showing quality trends over time
  *
  * Features:
- * - Multi-line chart (one per category)
+ * - Multi-area chart (one per category)
  * - Interactive legend with checkboxes
  * - Time period selector
  * - Responsive design
+ * - Uses theme colors automatically
  */
 export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 	const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('30d')
 	const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(new Set())
 
 	// Create chart config dynamically from categories
-	const chartConfig = useMemo(() => {
+	const { chartConfig, categories } = useMemo(() => {
 		const uniqueCategories = Array.from(new Set(data.map((d) => d.category)))
 		const config: ChartConfig = {}
 
 		uniqueCategories.forEach((category, index) => {
+			const chartIndex = (index % 5) + 1
 			config[category] = {
 				label: getCategoryLabel(category),
-				color: `hsl(var(--chart-${(index % 5) + 1}))`,
+				color: `var(--chart-${chartIndex})`,
 			}
 		})
 
-		return config
-	}, [data])
-
-	// Extract categories with their info
-	const categories = useMemo(() => {
-		return Object.keys(chartConfig).map((key) => ({
+		const cats = uniqueCategories.map((key) => ({
 			name: key,
-			label: chartConfig[key].label,
-			color: chartConfig[key].color,
+			label: getCategoryLabel(key),
 		}))
-	}, [chartConfig])
+
+		return { chartConfig: config, categories: cats }
+	}, [data])
 
 	// Transform data for Recharts format
 	// Input: [{ category, weekStart, goodPercentage }, ...]
@@ -170,12 +166,8 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 									className='flex items-center gap-2 cursor-pointer min-w-0'
 								>
 									<div
-										className='w-3 h-3 rounded-full shrink-0'
-										style={{
-											backgroundColor: category.color?.includes('var')
-												? `hsl(${category.color.match(/\d+/)?.[0] || 0} 70% 50%)`
-												: category.color,
-										}}
+										className='w-3 h-3 rounded-sm shrink-0'
+										style={{ backgroundColor: `var(--color-${category.name})` }}
 									/>
 									<span className='text-xs sm:text-sm truncate'>{category.label}</span>
 								</Label>
@@ -192,8 +184,31 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 					</div>
 				) : (
 					<ChartContainer config={chartConfig} className='h-[350px] w-full'>
-						<LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-							<CartesianGrid vertical={false} strokeDasharray='3 3' />
+						<AreaChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+							<defs>
+								{categories.map((category) => (
+									<linearGradient
+										key={`gradient-${category.name}`}
+										id={`fill-${category.name}`}
+										x1='0'
+										y1='0'
+										x2='0'
+										y2='1'
+									>
+										<stop
+											offset='5%'
+											stopColor={`var(--color-${category.name})`}
+											stopOpacity={0.8}
+										/>
+										<stop
+											offset='95%'
+											stopColor={`var(--color-${category.name})`}
+											stopOpacity={0.1}
+										/>
+									</linearGradient>
+								))}
+							</defs>
+							<CartesianGrid vertical={false} />
 							<XAxis
 								dataKey='week'
 								tickLine={false}
@@ -220,23 +235,23 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 											}
 										}}
 										formatter={(value, name) => [`${Number(value).toFixed(1)}%`, name]}
+										indicator='dot'
 									/>
 								}
 							/>
 							{categories.map((category) => (
-								<Line
+								<Area
 									key={category.name}
-									type='monotone'
+									type='natural'
 									dataKey={category.name}
 									stroke={`var(--color-${category.name})`}
+									fill={`url(#fill-${category.name})`}
 									strokeWidth={2}
-									dot={false}
-									activeDot={{ r: 4 }}
 									hide={hiddenCategories.has(category.name)}
 									connectNulls
 								/>
 							))}
-						</LineChart>
+						</AreaChart>
 					</ChartContainer>
 				)}
 			</CardContent>

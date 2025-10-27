@@ -40,7 +40,7 @@ export function VersionBarChart({ data }: VersionBarChartProps) {
 			version: item.version,
 			quality: item.goodPercentage,
 			records: item.totalRecords,
-			fill: getQualityColor(item.goodPercentage),
+			fill: `var(--color-${item.version})`,
 		}))
 	}, [data])
 
@@ -51,8 +51,16 @@ export function VersionBarChart({ data }: VersionBarChartProps) {
 				label: 'Quality',
 			},
 		}
+		// Add each version to config
+		data.forEach((item, index) => {
+			const chartIndex = (index % 5) + 1
+			config[item.version] = {
+				label: item.version,
+				color: `var(--chart-${chartIndex})`,
+			}
+		})
 		return config
-	}, [])
+	}, [data])
 
 	if (chartData.length === 0) {
 		return (
@@ -73,16 +81,16 @@ export function VersionBarChart({ data }: VersionBarChartProps) {
 	}
 
 	return (
-		<Card>
+		<Card className="min-w-0">
 			<CardHeader>
 				<CardTitle className='text-lg sm:text-xl'>Version Comparison</CardTitle>
 				<CardDescription className='text-sm'>
 					Quality percentage across different versions
 				</CardDescription>
 			</CardHeader>
-			<CardContent>
+			<CardContent className="overflow-hidden">
 				<ChartContainer config={chartConfig} className='h-[300px] w-full'>
-					<BarChart data={chartData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
+					<BarChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 5 }}>
 						<CartesianGrid vertical={false} strokeDasharray='3 3' />
 						<XAxis
 							dataKey='version'
@@ -93,7 +101,7 @@ export function VersionBarChart({ data }: VersionBarChartProps) {
 						<YAxis
 							domain={[0, 100]}
 							tickLine={false}
-							tickMargin={10}
+							tickMargin={5}
 							axisLine={false}
 							tickFormatter={(value) => `${value}%`}
 						/>

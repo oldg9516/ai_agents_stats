@@ -107,7 +107,7 @@ export function DashboardContent() {
 			)}
 
 			{/* Category & Version Charts - Side by Side */}
-			<div className="grid gap-4 md:gap-6 lg:grid-cols-2">
+			<div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2 overflow-hidden">
 				{isLoading || data.categoryDistribution.length === 0 ? (
 					<ChartSkeleton />
 				) : (

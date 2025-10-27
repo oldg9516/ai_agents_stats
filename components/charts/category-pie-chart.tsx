@@ -32,10 +32,11 @@ export function CategoryPieChart({ data, onCategoryClick }: CategoryPieChartProp
 	// Create chart config dynamically from data
 	const chartConfig = useMemo(() => {
 		const config: ChartConfig = {}
-		data.forEach((item) => {
+		data.forEach((item, index) => {
+			const chartIndex = (index % 5) + 1
 			config[item.category] = {
 				label: getCategoryLabel(item.category),
-				color: getQualityColor(item.goodPercentage),
+				color: `var(--chart-${chartIndex})`,
 			}
 		})
 		return config
@@ -47,7 +48,7 @@ export function CategoryPieChart({ data, onCategoryClick }: CategoryPieChartProp
 			category: item.category,
 			records: item.totalRecords,
 			quality: item.goodPercentage,
-			fill: getQualityColor(item.goodPercentage),
+			fill: `var(--color-${item.category})`,
 		}))
 	}, [data])
 
@@ -75,15 +76,15 @@ export function CategoryPieChart({ data, onCategoryClick }: CategoryPieChartProp
 	}
 
 	return (
-		<Card>
+		<Card className="min-w-0">
 			<CardHeader>
 				<CardTitle className='text-lg sm:text-xl'>Quality by Category</CardTitle>
 				<CardDescription className='text-sm'>
 					Distribution across categories with quality levels
 				</CardDescription>
 			</CardHeader>
-			<CardContent>
-				<ChartContainer config={chartConfig} className='h-[300px] w-full'>
+			<CardContent className="overflow-hidden">
+				<ChartContainer config={chartConfig} className='mx-auto aspect-square max-h-[300px] w-full'>
 					<PieChart>
 						<ChartTooltip
 							cursor={false}
@@ -111,8 +112,8 @@ export function CategoryPieChart({ data, onCategoryClick }: CategoryPieChartProp
 							data={chartData}
 							dataKey='records'
 							nameKey='category'
-							innerRadius={60}
-							outerRadius={100}
+							innerRadius='60%'
+							outerRadius='80%'
 							strokeWidth={2}
 						>
 							<Label
