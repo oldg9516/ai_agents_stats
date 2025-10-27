@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from './types'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -10,24 +10,37 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
+// Singleton instance to prevent multiple client instances
+let supabaseInstance: SupabaseClient<Database> | null = null
+
 /**
- * Supabase client for browser-side operations
+ * Get or create Supabase client (singleton pattern)
  *
  * This client is configured with:
  * - Auto-refresh for auth tokens
  * - Real-time subscriptions enabled
  * - TypeScript types from Database schema
  */
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: false, // No auth needed for this app
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10, // Limit real-time events for performance
-    },
-  },
-})
+function getSupabaseClient(): SupabaseClient<Database> {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false, // No auth needed for this app
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10, // Limit real-time events for performance
+        },
+      },
+    })
+  }
+  return supabaseInstance
+}
+
+/**
+ * Supabase client for browser-side operations
+ */
+export const supabase = getSupabaseClient()
 
 /**
  * Helper to check Supabase connection
