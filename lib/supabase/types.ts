@@ -166,3 +166,127 @@ export interface SortState {
   column: string
   direction: 'asc' | 'desc'
 }
+
+// ============================================================================
+// Support Overview Types
+// ============================================================================
+
+/**
+ * Support Threads Data table row
+ */
+export interface SupportThreadRow {
+  thread_id: string
+  ticket_id: string
+  request_type: string | null
+  requires_reply: boolean
+  requires_identification: boolean
+  requires_editing: boolean
+  requires_subscription_info: boolean
+  requires_tracking_info: boolean
+  ai_draft_reply: string | null
+  status: string
+  prompt_version: string | null
+  created_at: string | null
+}
+
+/**
+ * Combined Support Thread (JOIN with ai_human_comparison)
+ */
+export interface SupportThread extends SupportThreadRow {
+  // Fields from ai_human_comparison (via JOIN)
+  changed: boolean | null
+  email: string | null
+  qualityPercentage: number | null // Calculated quality for this thread
+}
+
+/**
+ * Support Overview KPIs
+ */
+export interface SupportKPIs {
+  aiDraftCoverage: {
+    current: number // % of threads with AI draft
+    previous: number
+    trend: TrendData
+  }
+  replyRequired: {
+    current: number // % of threads that require reply
+    previous: number
+    trend: TrendData
+  }
+  dataCollectionRate: {
+    current: number // % of resolved threads
+    previous: number
+    trend: TrendData
+  }
+  avgRequirements: {
+    current: number // Average number of requirements per thread
+    previous: number
+    trend: TrendData
+  }
+}
+
+/**
+ * Status Distribution data (for pie chart)
+ */
+export interface StatusDistribution {
+  status: string
+  count: number
+  percentage: number
+}
+
+/**
+ * Resolution Time data (for bar chart)
+ */
+export interface ResolutionTimeData {
+  weekStart: string // ISO date
+  avgResolutionTime: number // Average hours to resolution
+  threadCount: number
+}
+
+/**
+ * Sankey diagram node
+ */
+export interface SankeyNode {
+  id: string
+  label: string
+}
+
+/**
+ * Sankey diagram link
+ */
+export interface SankeyLink {
+  source: string
+  target: string
+  value: number
+}
+
+/**
+ * Sankey diagram data structure
+ */
+export interface SankeyData {
+  nodes: SankeyNode[]
+  links: SankeyLink[]
+}
+
+/**
+ * Correlation matrix cell
+ */
+export interface CorrelationCell {
+  x: string // Requirement type
+  y: string // Requirement type
+  value: number // Correlation coefficient (0-1)
+}
+
+/**
+ * Support Overview Filters
+ */
+export interface SupportFilters {
+  dateRange: {
+    from: Date
+    to: Date
+  }
+  statuses: string[] // [] = all statuses
+  requestTypes: string[] // [] = all request types
+  requirements: string[] // [] = all, else filter by active requirements
+  versions: string[] // [] = all versions
+}

@@ -9,35 +9,40 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from '@/components/ui/sheet'
-import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
-import type { DashboardFilters } from '@/lib/supabase/types'
+import type { SupportFilters } from '@/lib/supabase/types'
 import { IconAdjustments, IconFilterCheck } from '@tabler/icons-react'
 import { useState } from 'react'
-import { FilterBar } from './filter-bar'
+import { SupportFilterBar } from './support-filter-bar'
 
-interface FilterSheetProps {
-	filters: DashboardFilters
-	onFiltersChange: (filters: Partial<DashboardFilters>) => void
+interface SupportFilterSheetProps {
+	filters: SupportFilters
+	onDateRangeChange: (from: Date, to: Date) => void
+	onStatusesChange: (statuses: string[]) => void
+	onRequestTypesChange: (types: string[]) => void
+	onRequirementsChange: (requirements: string[]) => void
+	onVersionsChange: (versions: string[]) => void
 	onReset: () => void
 	availableVersions: string[]
-	availableCategories: string[]
 }
 
 /**
- * Filter Sheet - Collapsible side panel for dashboard filters
+ * Support Filter Sheet - Collapsible side panel for support overview filters
  *
  * Features:
  * - Opens filters in a side sheet to save space
  * - Shows active filter count badge
  * - Mobile-friendly drawer behavior
  */
-export function FilterSheet({
+export function SupportFilterSheet({
 	filters,
-	onFiltersChange,
+	onDateRangeChange,
+	onStatusesChange,
+	onRequestTypesChange,
+	onRequirementsChange,
+	onVersionsChange,
 	onReset,
 	availableVersions,
-	availableCategories,
-}: FilterSheetProps) {
+}: SupportFilterSheetProps) {
 	const [open, setOpen] = useState(false)
 
 	// Count active filters
@@ -53,26 +58,19 @@ export function FilterSheet({
 
 		if (!isDefaultDateRange) count++
 
+		// Check if statuses are filtered
+		if (filters.statuses.length > 0) count++
+
+		// Check if request types are filtered
+		if (filters.requestTypes.length > 0) count++
+
+		// Check if requirements are filtered
+		if (filters.requirements.length > 0) count++
+
 		// Check if versions are filtered
 		if (
 			filters.versions.length > 0 &&
 			filters.versions.length < availableVersions.length
-		) {
-			count++
-		}
-
-		// Check if categories are filtered
-		if (
-			filters.categories.length > 0 &&
-			filters.categories.length < availableCategories.length
-		) {
-			count++
-		}
-
-		// Check if agents are filtered
-		if (
-			filters.agents.length > 0 &&
-			filters.agents.length < QUALIFIED_AGENTS.length
 		) {
 			count++
 		}
@@ -95,27 +93,33 @@ export function FilterSheet({
 					)}
 				</Button>
 			</SheetTrigger>
-			<SheetContent side='left' className='w-full sm:max-w-lg overflow-y-auto px-4'>
+			<SheetContent
+				side='left'
+				className='w-full sm:max-w-lg overflow-y-auto px-4'
+			>
 				<SheetHeader>
 					<SheetTitle className='flex items-center gap-2'>
 						<IconFilterCheck className='h-5 w-5' />
-						Dashboard Filters
+						Support Filters
 					</SheetTitle>
 					<SheetDescription>
-						Customize your dashboard view by filtering data across date ranges,
-						versions, categories, and qualified agents.
+						Filter support threads by date range, status, request type,
+						requirements, and prompt version.
 					</SheetDescription>
 				</SheetHeader>
 				<div className='mt-6'>
-					<FilterBar
+					<SupportFilterBar
 						filters={filters}
-						onFiltersChange={onFiltersChange}
+						onDateRangeChange={onDateRangeChange}
+						onStatusesChange={onStatusesChange}
+						onRequestTypesChange={onRequestTypesChange}
+						onRequirementsChange={onRequirementsChange}
+						onVersionsChange={onVersionsChange}
 						onReset={() => {
 							onReset()
 							setOpen(false)
 						}}
 						availableVersions={availableVersions}
-						availableCategories={availableCategories}
 					/>
 				</div>
 			</SheetContent>

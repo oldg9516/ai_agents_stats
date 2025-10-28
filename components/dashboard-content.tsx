@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useDashboardData } from '@/lib/hooks/use-dashboard-data'
 import { useFilters } from '@/lib/hooks/use-filters'
-import { getFilterOptions } from '@/lib/supabase/queries'
+import { getFilterOptions } from '@/lib/supabase/client-queries'
 import { KPISection } from './kpi/kpi-section'
 import { KPISectionSkeleton } from './loading/kpi-skeleton'
 import { QualityTrendsChart } from './charts/quality-trends-chart'

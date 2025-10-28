@@ -7,6 +7,7 @@ import {
 	IconFileAi,
 	IconFileDescription,
 	IconFileWord,
+	IconHeadset,
 	IconHelp,
 	IconInnerShadowTop,
 	IconListDetails,
@@ -46,6 +47,11 @@ const data = {
 			title: 'Detailed Stats',
 			url: '/detailed-stats',
 			icon: IconListDetails,
+		},
+		{
+			title: 'Support Overview',
+			url: '/support-overview',
+			icon: IconHeadset,
 		},
 		{
 			title: 'Settings',
