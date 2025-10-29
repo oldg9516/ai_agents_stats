@@ -64,8 +64,11 @@ npm run lint
 app/
 ├── layout.tsx           # Root layout with Geist fonts and providers
 ├── globals.css          # Global styles with Tailwind directives
-├── (root)/
-│   └── page.tsx        # Landing page
+├── (root)/              # Public pages route group
+│   ├── page.tsx        # Landing page with hero section, mockup, and feature cards
+│   └── docs/
+│       ├── page.tsx    # Documentation page (user guide)
+│       └── error.tsx   # Error boundary
 └── (analytics)/        # Route group for analytics pages
     ├── layout.tsx      # Analytics layout with sidebar
     ├── dashboard/
@@ -83,6 +86,9 @@ app/
 
 components/
 ├── ui/                 # shadcn/ui components
+│   ├── glow.tsx        # Background glow effect component with variants
+│   ├── mockup.tsx      # Browser chrome mockup component
+│   └── ...             # Other shadcn components
 ├── filters/            # Filter components (date, version, category, agent, status, requirements)
 ├── kpi/                # KPI card components
 ├── charts/             # Chart components (quality trends, pie, bar, sankey, heatmap)
@@ -140,8 +146,17 @@ constants/
 
 ## Architecture Notes
 
+### Landing Page
+The landing page ([app/(root)/page.tsx](app/(root)/page.tsx)) features:
+- **Hero Section**: Gradient title, description, 3 CTA buttons (Dashboard, Support Overview, Documentation)
+- **Mockup Section**: Browser chrome mockup displaying dashboard screenshot from `/public/dashboard-hero.png`
+- **Features Section**: 4 cards with hover effects describing each analytics section
+- **Key Features Highlight**: Two-column section explaining platform capabilities
+- **Design**: Background glow effects, staggered animations, fully responsive, dark mode support
+- **UI Components**: Uses custom `Glow` and `Mockup` components from `components/ui/`
+
 ### Dashboard Layout Pattern
-The main dashboard ([app/dashboard/page.tsx](app/dashboard/page.tsx#L1)) uses a `SidebarProvider` + `SidebarInset` pattern:
+The main dashboard ([app/(analytics)/dashboard/page.tsx](app/(analytics)/dashboard/page.tsx)) uses a `SidebarProvider` + `SidebarInset` pattern:
 - `AppSidebar` provides collapsible navigation
 - `SiteHeader` displays the top header
 - Main content area contains: `SectionCards`, `ChartAreaInteractive`, and `DataTable`
