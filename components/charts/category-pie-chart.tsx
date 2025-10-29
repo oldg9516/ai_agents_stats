@@ -1,19 +1,24 @@
 'use client'
 
-import { useMemo } from 'react'
-import { Label, Pie, PieChart } from 'recharts'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card'
 import {
 	ChartContainer,
-	ChartTooltip,
-	ChartTooltipContent,
 	ChartLegend,
 	ChartLegendContent,
+	ChartTooltip,
+	ChartTooltipContent,
 	type ChartConfig,
 } from '@/components/ui/chart'
-import { getQualityColor } from '@/lib/utils/quality-colors'
 import { getCategoryLabel } from '@/constants/category-labels'
 import type { CategoryDistributionData } from '@/lib/supabase/types'
+import { useMemo } from 'react'
+import { Label, Pie, PieChart } from 'recharts'
 
 interface CategoryPieChartProps {
 	data: CategoryDistributionData[]
@@ -28,7 +33,7 @@ interface CategoryPieChartProps {
  * - Shows category name, record count, and quality percentage
  * - Responsive legend
  */
-export function CategoryPieChart({ data, onCategoryClick }: CategoryPieChartProps) {
+export function CategoryPieChart({ data }: CategoryPieChartProps) {
 	// Create chart config dynamically from data
 	const chartConfig = useMemo(() => {
 		const config: ChartConfig = {}
@@ -44,7 +49,7 @@ export function CategoryPieChart({ data, onCategoryClick }: CategoryPieChartProp
 
 	// Transform data for Recharts format
 	const chartData = useMemo(() => {
-		return data.map((item) => ({
+		return data.map(item => ({
 			category: item.category,
 			records: item.totalRecords,
 			quality: item.goodPercentage,
@@ -61,7 +66,9 @@ export function CategoryPieChart({ data, onCategoryClick }: CategoryPieChartProp
 		return (
 			<Card>
 				<CardHeader>
-					<CardTitle className='text-lg sm:text-xl'>Quality by Category</CardTitle>
+					<CardTitle className='text-lg sm:text-xl'>
+						Quality by Category
+					</CardTitle>
 					<CardDescription className='text-sm'>
 						Distribution across categories with quality levels
 					</CardDescription>
@@ -76,15 +83,20 @@ export function CategoryPieChart({ data, onCategoryClick }: CategoryPieChartProp
 	}
 
 	return (
-		<Card className="min-w-0">
+		<Card className='min-w-0'>
 			<CardHeader>
-				<CardTitle className='text-lg sm:text-xl'>Quality by Category</CardTitle>
+				<CardTitle className='text-lg sm:text-xl'>
+					Quality by Category
+				</CardTitle>
 				<CardDescription className='text-sm'>
 					Distribution across categories with quality levels
 				</CardDescription>
 			</CardHeader>
-			<CardContent className="overflow-hidden">
-				<ChartContainer config={chartConfig} className='mx-auto aspect-square max-h-[300px] w-full'>
+			<CardContent className='overflow-hidden'>
+				<ChartContainer
+					config={chartConfig}
+					className='mx-auto aspect-square max-h-[300px] w-full'
+				>
 					<PieChart>
 						<ChartTooltip
 							cursor={false}
@@ -147,7 +159,9 @@ export function CategoryPieChart({ data, onCategoryClick }: CategoryPieChartProp
 							/>
 						</Pie>
 						<ChartLegend
-							content={<ChartLegendContent className='flex-wrap gap-2 text-xs' />}
+							content={
+								<ChartLegendContent className='flex-wrap gap-2 text-xs' />
+							}
 							className='-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center'
 						/>
 					</PieChart>

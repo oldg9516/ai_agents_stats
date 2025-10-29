@@ -30,7 +30,9 @@ export function convertSupportThreadsToCSV(threads: SupportThread[]): string {
 
 	// Build CSV rows
 	const rows = threads.map((thread) => {
-		const requirements = getActiveRequirements(thread).join(', ')
+		const requirements = getActiveRequirements(
+			thread as unknown as Record<string, boolean>
+		).join(', ')
 		const hasAIDraft = thread.ai_draft_reply ? 'Yes' : 'No'
 		const quality =
 			thread.qualityPercentage !== null

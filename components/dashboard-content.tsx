@@ -1,28 +1,27 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useDashboardData } from '@/lib/hooks/use-dashboard-data'
 import { useFilters } from '@/lib/hooks/use-filters'
-import { getFilterOptions } from '@/lib/supabase/client-queries'
+import { getFilterOptions } from '@/lib/supabase/queries'
 import { KPISection } from './kpi/kpi-section'
-import { KPISectionSkeleton } from './loading/kpi-skeleton'
 import { QualityTrendsChart } from './charts/quality-trends-chart'
 import { CategoryPieChart } from './charts/category-pie-chart'
 import { VersionBarChart } from './charts/version-bar-chart'
 import { DetailedStatsTable } from './tables/detailed-stats-table'
 import { FilterSheet } from './filters/filter-sheet'
-import { ChartSkeleton } from './loading/chart-skeleton'
-import { TableSkeleton } from './loading/table-skeleton'
-import type { FilterOptions } from '@/lib/supabase/types'
+import { FilterBar } from './filters/filter-bar'
+import { KPISectionSkeleton } from './loading/kpi-skeleton'
+import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 
 /**
  * Dashboard Content - Client Component
  *
- * Handles real-time data updates and interactivity
- * Wrapped in Suspense for progressive loading
+ * Handles interactivity, data fetching via React Query, and real-time updates
+ * All data fetching is client-side with React Query caching
  */
 export function DashboardContent() {
-	// Filter state with URL sync and localStorage
+	// Filter state from Zustand store
 	const {
 		filters,
 		setDateRange,
@@ -32,19 +31,15 @@ export function DashboardContent() {
 		resetFilters,
 	} = useFilters()
 
-	// Fetch dashboard data with current filters
+	// Fetch dashboard data with React Query
 	const { data, isLoading, error } = useDashboardData(filters)
 
-	// Filter options (versions and categories)
-	const [filterOptions, setFilterOptions] = useState<FilterOptions>({
-		versions: [],
-		categories: [],
+	// Fetch filter options (cached separately)
+	const { data: filterOptions } = useQuery({
+		queryKey: ['filterOptions'],
+		queryFn: getFilterOptions,
+		staleTime: 5 * 60 * 1000, // Cache for 5 minutes
 	})
-
-	// Load filter options on mount
-	useEffect(() => {
-		getFilterOptions().then(setFilterOptions).catch(console.error)
-	}, [])
 
 	// Handle filter changes
 	const handleFiltersChange = (updates: Partial<typeof filters>) => {
@@ -62,69 +57,105 @@ export function DashboardContent() {
 		}
 	}
 
+	// Count active filters
+	const getActiveFilterCount = () => {
+		let count = 0
+
+		// Check if date range is not default (last 30 days)
+		const defaultFrom = new Date()
+		defaultFrom.setDate(defaultFrom.getDate() - 30)
+		const isDefaultDateRange =
+			Math.abs(filters.dateRange.from.getTime() - defaultFrom.getTime()) <
+			86400000 // 1 day tolerance
+
+		if (!isDefaultDateRange) count++
+
+		// Check if versions are filtered
+		if (
+			filterOptions &&
+			filters.versions.length > 0 &&
+			filters.versions.length < filterOptions.versions.length
+		) {
+			count++
+		}
+
+		// Check if categories are filtered
+		if (
+			filterOptions &&
+			filters.categories.length > 0 &&
+			filters.categories.length < filterOptions.categories.length
+		) {
+			count++
+		}
+
+		// Check if agents are filtered
+		if (
+			filters.agents.length > 0 &&
+			filters.agents.length < QUALIFIED_AGENTS.length
+		) {
+			count++
+		}
+
+		return count
+	}
+
+	// Show loading state
+	if (isLoading || !filterOptions) {
+		return <KPISectionSkeleton />
+	}
+
+	// Show error state
 	if (error) {
 		return (
-			<div className="flex flex-col items-center justify-center p-8 text-center">
-				<h3 className="text-lg font-semibold text-red-600 dark:text-red-400">
-					Error Loading Dashboard
-				</h3>
-				<p className="text-sm text-muted-foreground mt-2">{error.message}</p>
-				<button
-					onClick={() => window.location.reload()}
-					className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-				>
-					Retry
-				</button>
+			<div className='flex flex-col items-center justify-center min-h-[400px] gap-4'>
+				<div className='text-destructive text-lg font-semibold'>
+					Error loading dashboard data
+				</div>
+				<div className='text-muted-foreground'>{error.message}</div>
 			</div>
 		)
 	}
 
 	return (
-		<div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6">
+		<div className='flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6'>
 			{/* Filter Button */}
-			<div className="flex justify-start">
+			<div className='flex justify-start'>
 				<FilterSheet
-					filters={filters}
-					onFiltersChange={handleFiltersChange}
-					onReset={resetFilters}
-					availableVersions={filterOptions.versions}
-					availableCategories={filterOptions.categories}
-				/>
+					title='Dashboard Filters'
+					description='Customize your dashboard view by filtering data across date ranges, versions, categories, and qualified agents.'
+					activeFilterCount={getActiveFilterCount()}
+				>
+					<FilterBar
+						filters={filters}
+						onFiltersChange={handleFiltersChange}
+						onReset={resetFilters}
+						availableVersions={filterOptions.versions}
+						availableCategories={filterOptions.categories}
+					/>
+				</FilterSheet>
 			</div>
 
 			{/* KPI Cards Section */}
-			{isLoading || !data.kpi ? (
-				<KPISectionSkeleton />
-			) : (
-				<KPISection data={data.kpi} />
-			)}
+			{data.kpi && <KPISection data={data.kpi} />}
 
 			{/* Quality Trends Chart */}
-			{isLoading || data.qualityTrends.length === 0 ? (
-				<ChartSkeleton />
-			) : (
+			{data.qualityTrends.length > 0 && (
 				<QualityTrendsChart data={data.qualityTrends} />
 			)}
 
 			{/* Category & Version Charts - Side by Side */}
-			<div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2 overflow-hidden">
-				{isLoading || data.categoryDistribution.length === 0 ? (
-					<ChartSkeleton />
-				) : (
+			<div className='grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2 overflow-hidden'>
+				{data.categoryDistribution.length > 0 && (
 					<CategoryPieChart data={data.categoryDistribution} />
 				)}
 
-				{isLoading || data.versionComparison.length === 0 ? (
-					<ChartSkeleton />
-				) : (
+				{data.versionComparison.length > 0 && (
 					<VersionBarChart data={data.versionComparison} />
 				)}
 			</div>
 
 			{/* Detailed Stats Table */}
-			{isLoading || data.detailedStats.length === 0 ? (
-				<TableSkeleton />
-			) : (
+			{data.detailedStats.length > 0 && (
 				<DetailedStatsTable data={data.detailedStats} />
 			)}
 		</div>

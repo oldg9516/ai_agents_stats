@@ -1,9 +1,10 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useSupportFilters } from '@/lib/hooks/use-support-filters'
 import { useSupportData } from '@/lib/hooks/use-support-data'
-import { SupportFilterSheet } from './filters/support-filter-sheet'
+import { useSupportFilters } from '@/lib/hooks/use-support-filters'
+import { FilterSheet } from './filters/filter-sheet'
+import { SupportFilterBar } from './filters/support-filter-bar'
 import { AIDraftCoverageCard } from './kpi/ai-draft-coverage-card'
 import { ReplyRequiredCard } from './kpi/reply-required-card'
 import { DataCollectionRateCard } from './kpi/data-collection-rate-card'
@@ -14,18 +15,16 @@ import { AIDraftFlowSankey } from './charts/ai-draft-flow-sankey'
 import { RequirementsCorrelationHeatmap } from './charts/requirements-correlation-heatmap'
 import { SupportThreadsTable } from './tables/support-threads-table'
 import { SupportOverviewSkeleton } from './loading/support-overview-skeleton'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
-import { IconAlertCircle } from '@tabler/icons-react'
 
 /**
- * Support Overview Content - Main client component
+ * Support Overview Content - Client Component
  *
  * Features:
  * - Filters (date, status, request type, requirements, version)
  * - 4 KPI cards
  * - 4 charts (status pie, resolution bar, Sankey, heatmap)
  * - Support threads table with CSV export
- * - Real-time updates
+ * - Data fetching via React Query with caching
  */
 export function SupportOverviewContent() {
 	const {
@@ -38,20 +37,51 @@ export function SupportOverviewContent() {
 		resetFilters,
 	} = useSupportFilters()
 
+	// Fetch support data with React Query
 	const { data, isLoading, error } = useSupportData(filters)
 
-	// Get available versions from threads
+	// Calculate available versions from threads
 	const availableVersions = useMemo(() => {
-		const versions = new Set<string>()
-		data.threads.forEach((thread) => {
-			if (thread.prompt_version) {
-				versions.add(thread.prompt_version)
-			}
-		})
-		return Array.from(versions).sort()
+		if (!data.threads.length) return []
+		return Array.from(
+			new Set(data.threads.map(t => t.prompt_version).filter(Boolean))
+		).sort() as string[]
 	}, [data.threads])
 
-	// Show loading skeleton
+	// Count active filters
+	const getActiveFilterCount = () => {
+		let count = 0
+
+		// Check if date range is not default (last 30 days)
+		const defaultFrom = new Date()
+		defaultFrom.setDate(defaultFrom.getDate() - 30)
+		const isDefaultDateRange =
+			Math.abs(filters.dateRange.from.getTime() - defaultFrom.getTime()) <
+			86400000 // 1 day tolerance
+
+		if (!isDefaultDateRange) count++
+
+		// Check if statuses are filtered
+		if (filters.statuses.length > 0) count++
+
+		// Check if request types are filtered
+		if (filters.requestTypes.length > 0) count++
+
+		// Check if requirements are filtered
+		if (filters.requirements.length > 0) count++
+
+		// Check if versions are filtered
+		if (
+			filters.versions.length > 0 &&
+			filters.versions.length < availableVersions.length
+		) {
+			count++
+		}
+
+		return count
+	}
+
+	// Show loading state
 	if (isLoading) {
 		return <SupportOverviewSkeleton />
 	}
@@ -59,23 +89,11 @@ export function SupportOverviewContent() {
 	// Show error state
 	if (error) {
 		return (
-			<div className='flex min-h-screen items-center justify-center p-4'>
-				<Card className='w-full max-w-md'>
-					<CardHeader>
-						<div className='flex items-center gap-2'>
-							<IconAlertCircle className='h-5 w-5 text-red-600 dark:text-red-400' />
-							<CardTitle>Error Loading Data</CardTitle>
-						</div>
-						<CardDescription>Failed to load support overview data</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<div className='rounded-md bg-red-50 dark:bg-red-900/20 p-3'>
-							<p className='text-sm text-red-800 dark:text-red-200 font-mono'>
-								{error.message}
-							</p>
-						</div>
-					</CardContent>
-				</Card>
+			<div className='flex flex-col items-center justify-center min-h-[400px] gap-4'>
+				<div className='text-destructive text-lg font-semibold'>
+					Error loading support data
+				</div>
+				<div className='text-muted-foreground'>{error.message}</div>
 			</div>
 		)
 	}
@@ -84,23 +102,31 @@ export function SupportOverviewContent() {
 		<div className='flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6'>
 			{/* Filter Button */}
 			<div className='flex justify-start'>
-				<SupportFilterSheet
-					filters={filters}
-					onDateRangeChange={setDateRange}
-					onStatusesChange={setStatuses}
-					onRequestTypesChange={setRequestTypes}
-					onRequirementsChange={setRequirements}
-					onVersionsChange={setVersions}
-					onReset={resetFilters}
-					availableVersions={availableVersions}
-				/>
+				<FilterSheet
+					title='Support Filters'
+					description='Filter support threads by date range, status, request type, requirements, and prompt version.'
+					activeFilterCount={getActiveFilterCount()}
+				>
+					<SupportFilterBar
+						filters={filters}
+						onDateRangeChange={setDateRange}
+						onStatusesChange={setStatuses}
+						onRequestTypesChange={setRequestTypes}
+						onRequirementsChange={setRequirements}
+						onVersionsChange={setVersions}
+						onReset={resetFilters}
+						availableVersions={availableVersions}
+					/>
+				</FilterSheet>
 			</div>
 
 			{/* KPI Cards */}
 			<div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
 				<AIDraftCoverageCard data={data.kpis?.aiDraftCoverage || null} />
 				<ReplyRequiredCard data={data.kpis?.replyRequired || null} />
-				<DataCollectionRateCard data={data.kpis?.dataCollectionRate || null} />
+				<DataCollectionRateCard
+					data={data.kpis?.dataCollectionRate || null}
+				/>
 				<AvgRequirementsCard data={data.kpis?.avgRequirements || null} />
 			</div>
 

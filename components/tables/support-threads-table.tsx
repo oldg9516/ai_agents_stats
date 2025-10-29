@@ -101,7 +101,9 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 				id: 'requirements',
 				header: 'Requirements',
 				cell: ({ row }) => {
-					const requirements = getActiveRequirements(row.original)
+					const requirements = getActiveRequirements(
+						row.original as unknown as Record<string, boolean>
+					)
 					return (
 						<div className='flex flex-wrap gap-1'>
 							{requirements.length > 0 ? (
