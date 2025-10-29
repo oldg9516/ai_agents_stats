@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
@@ -39,6 +40,7 @@ export function MultiSelectFilter({
 	searchable = true,
 	allowEmpty = true,
 }: MultiSelectFilterProps) {
+	const t = useTranslations()
 	const [isOpen, setIsOpen] = useState(false)
 	const [searchQuery, setSearchQuery] = useState('')
 
@@ -93,10 +95,10 @@ export function MultiSelectFilter({
 			>
 				<span className="truncate">
 					{selected.length === 0
-						? `All ${label}`
+						? `${t('common.all')} ${label}`
 						: selected.length === options.length
-							? `All ${label} (${options.length})`
-							: `${selected.length} selected`}
+							? `${t('common.all')} ${label} (${options.length})`
+							: `${selected.length} ${t('common.selected')}`}
 				</span>
 				{isOpen ? (
 					<IconChevronUp className="ml-2 h-4 w-4 shrink-0" />
@@ -133,7 +135,7 @@ export function MultiSelectFilter({
 								onCheckedChange={handleSelectAll}
 							/>
 							<Label htmlFor="select-all" className="flex-1 cursor-pointer font-medium">
-								{allSelected ? 'Deselect All' : 'Select All'}
+								{allSelected ? t('filters.deselectAll') : t('filters.selectAll')}
 							</Label>
 							{selected.length > 0 && allowEmpty && (
 								<Button
@@ -150,7 +152,7 @@ export function MultiSelectFilter({
 						{/* Individual Options */}
 						{filteredOptions.length === 0 ? (
 							<div className="p-4 text-center text-sm text-muted-foreground">
-								No options found
+								{t('common.noOptionsFound')}
 							</div>
 						) : (
 							filteredOptions.map((option) => (

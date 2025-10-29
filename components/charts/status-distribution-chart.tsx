@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { Label, Pie, PieChart } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -26,6 +27,8 @@ interface StatusDistributionChartProps {
  * - Responsive design
  */
 export function StatusDistributionChart({ data }: StatusDistributionChartProps) {
+	const t = useTranslations()
+
 	// Helper to create safe CSS variable name (replace spaces and special chars with dashes)
 	const toSafeCssName = (str: string) => str.replace(/[^a-zA-Z0-9]/g, '-')
 
@@ -62,14 +65,14 @@ export function StatusDistributionChart({ data }: StatusDistributionChartProps) 
 		return (
 			<Card>
 				<CardHeader>
-					<CardTitle className='text-lg sm:text-xl'>Status Distribution</CardTitle>
+					<CardTitle className='text-lg sm:text-xl'>{t('charts.statusDistribution.title')}</CardTitle>
 					<CardDescription className='text-sm'>
-						Breakdown of threads by status
+						{t('charts.statusDistribution.description')}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<div className='flex items-center justify-center h-[250px] text-sm text-muted-foreground'>
-						No data available
+						{t('common.noDataAvailable')}
 					</div>
 				</CardContent>
 			</Card>
@@ -79,9 +82,9 @@ export function StatusDistributionChart({ data }: StatusDistributionChartProps) 
 	return (
 		<Card className='min-w-0'>
 			<CardHeader>
-				<CardTitle className='text-lg sm:text-xl'>Status Distribution</CardTitle>
+				<CardTitle className='text-lg sm:text-xl'>{t('charts.statusDistribution.title')}</CardTitle>
 				<CardDescription className='text-sm'>
-					Breakdown of threads by status
+					{t('charts.statusDistribution.description')}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className='overflow-hidden'>

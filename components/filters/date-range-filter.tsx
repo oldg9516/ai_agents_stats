@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,6 +21,7 @@ interface DateRangeFilterProps {
  * - Manual date inputs
  */
 export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
+	const t = useTranslations()
 	const [isClient, setIsClient] = useState(false)
 
 	// Avoid hydration mismatch by only rendering dates on client
@@ -85,21 +87,21 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 
 	return (
 		<div className="space-y-3">
-			<Label className="text-sm font-medium">Date Range</Label>
+			<Label className="text-sm font-medium">{t('filters.dateRange')}</Label>
 
 			{/* Quick Buttons */}
 			<div className="grid grid-cols-2 gap-2">
 				<Button onClick={setLast7Days} variant="outline" size="sm" className="text-xs sm:text-sm">
-					7d
+					{t('filters.quickOptions.7d')}
 				</Button>
 				<Button onClick={setLast30Days} variant="outline" size="sm" className="text-xs sm:text-sm">
-					30d
+					{t('filters.quickOptions.30d')}
 				</Button>
 				<Button onClick={setLast3Months} variant="outline" size="sm" className="text-xs sm:text-sm">
-					3m
+					{t('filters.quickOptions.3m')}
 				</Button>
 				<Button onClick={setAllTime} variant="outline" size="sm" className="text-xs sm:text-sm">
-					All
+					{t('filters.quickOptions.all')}
 				</Button>
 			</div>
 
@@ -108,7 +110,7 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 				<div className="grid grid-cols-2 gap-3">
 					<div className="space-y-1.5">
 						<Label htmlFor="date-from" className="text-xs text-muted-foreground">
-							From
+							{t('filters.from')}
 						</Label>
 						<Input
 							id="date-from"
@@ -120,7 +122,7 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 					</div>
 					<div className="space-y-1.5">
 						<Label htmlFor="date-to" className="text-xs text-muted-foreground">
-							To
+							{t('filters.to')}
 						</Label>
 						<Input
 							id="date-to"
@@ -137,13 +139,13 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 				<div className="grid grid-cols-2 gap-3">
 					<div className="space-y-1.5">
 						<Label htmlFor="date-from" className="text-xs text-muted-foreground">
-							From
+							{t('filters.from')}
 						</Label>
 						<Input id="date-from" type="date" disabled />
 					</div>
 					<div className="space-y-1.5">
 						<Label htmlFor="date-to" className="text-xs text-muted-foreground">
-							To
+							{t('filters.to')}
 						</Label>
 						<Input id="date-to" type="date" disabled />
 					</div>

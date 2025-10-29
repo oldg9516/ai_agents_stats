@@ -8,6 +8,7 @@ import {
 import { getAllStatuses, getStatusLabel } from '@/constants/support-statuses'
 import type { SupportFilters } from '@/lib/supabase/types'
 import { IconRefresh } from '@tabler/icons-react'
+import { useTranslations } from 'next-intl'
 import { DateRangeFilter } from './date-range-filter'
 import { MultiSelectFilter } from './multi-select-filter'
 import { RequirementsFilter } from './requirements-filter'
@@ -44,6 +45,8 @@ export function SupportFilterBar({
 	onReset,
 	availableVersions,
 }: SupportFilterBarProps) {
+	const t = useTranslations()
+
 	// Get all available options with labels
 	const statusOptions = getAllStatuses().map(getStatusLabel)
 	const requestTypeOptions = getAllRequestTypes().map(getRequestTypeLabel)
@@ -80,20 +83,20 @@ export function SupportFilterBar({
 
 				{/* Status */}
 				<MultiSelectFilter
-					label='Status'
+					label={t('filters.status')}
 					options={statusOptions}
 					selected={selectedStatusLabels}
 					onChange={handleStatusChange}
-					placeholder='Search statuses...'
+					placeholder={t('filters.searchStatuses')}
 				/>
 
 				{/* Request Type */}
 				<MultiSelectFilter
-					label='Request Type'
+					label={t('filters.requestType')}
 					options={requestTypeOptions}
 					selected={selectedRequestTypeLabels}
 					onChange={handleRequestTypeChange}
-					placeholder='Search types...'
+					placeholder={t('filters.searchRequestTypes')}
 				/>
 
 				{/* Requirements */}
@@ -104,11 +107,11 @@ export function SupportFilterBar({
 
 				{/* Version */}
 				<MultiSelectFilter
-					label='Version'
+					label={t('filters.versions')}
 					options={availableVersions}
 					selected={filters.versions}
 					onChange={onVersionsChange}
-					placeholder='Search versions...'
+					placeholder={t('filters.searchVersions')}
 					searchable={false}
 				/>
 			</div>
@@ -122,7 +125,7 @@ export function SupportFilterBar({
 					className='w-full sm:w-auto'
 				>
 					<IconRefresh className='mr-2 h-4 w-4' />
-					Reset Filters
+					{t('filters.resetFilters')}
 				</Button>
 			</div>
 		</div>

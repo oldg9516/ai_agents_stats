@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { format } from 'date-fns'
+import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -33,6 +34,7 @@ type TimePeriod = '7d' | '30d' | '3m' | 'all'
  * - Uses theme colors automatically
  */
 export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
+	const t = useTranslations()
 	const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('30d')
 	const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(new Set())
 
@@ -127,9 +129,9 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 				<div className="flex flex-col gap-4">
 					<div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
 						<div className="flex-1 min-w-0">
-							<CardTitle className="text-lg sm:text-xl">Quality Trends Over Time</CardTitle>
+							<CardTitle className="text-lg sm:text-xl">{t('charts.qualityTrends.title')}</CardTitle>
 							<CardDescription className="text-sm mt-1">
-								Track quality percentage by category
+								{t('charts.qualityTrends.description')}
 							</CardDescription>
 						</div>
 
@@ -143,10 +145,10 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 									onClick={() => setSelectedPeriod(period)}
 									className="text-xs sm:text-sm flex-1 sm:flex-none whitespace-nowrap"
 								>
-									{period === '7d' && '7d'}
-									{period === '30d' && '30d'}
-									{period === '3m' && '3m'}
-									{period === 'all' && 'All'}
+									{period === '7d' && t('filters.quickOptions.7d')}
+									{period === '30d' && t('filters.quickOptions.30d')}
+									{period === '3m' && t('filters.quickOptions.3m')}
+									{period === 'all' && t('filters.quickOptions.all')}
 								</Button>
 							))}
 						</div>
@@ -184,7 +186,7 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 					</div>
 				) : (
 					<ChartContainer config={chartConfig} className='h-[350px] w-full'>
-						<AreaChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+						<AreaChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
 							<defs>
 								{categories.map((category) => (
 									<linearGradient
@@ -218,6 +220,7 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 							/>
 							<YAxis
 								domain={[0, 100]}
+								ticks={[0, 25, 50, 75, 100]}
 								tickLine={false}
 								tickMargin={10}
 								axisLine={false}

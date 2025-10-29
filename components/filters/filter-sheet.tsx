@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/sheet'
 import { IconAdjustments, IconFilterCheck } from '@tabler/icons-react'
 import { type ReactNode, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 interface FilterSheetProps {
 	/** Title shown in the sheet header */
@@ -52,6 +53,7 @@ export function FilterSheet({
 	children,
 	onOpenChange,
 }: FilterSheetProps) {
+	const t = useTranslations()
 	const [open, setOpen] = useState(false)
 
 	const handleOpenChange = (newOpen: boolean) => {
@@ -64,7 +66,7 @@ export function FilterSheet({
 			<SheetTrigger asChild>
 				<Button variant='outline' size='default' className='relative'>
 					<IconAdjustments className='h-4 w-4 mr-2' />
-					Filters
+					{t('filterSheet.filters')}
 					{activeFilterCount > 0 && (
 						<span className='ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground'>
 							{activeFilterCount}

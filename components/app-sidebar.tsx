@@ -17,6 +17,7 @@ import {
 	IconSettings,
 } from '@tabler/icons-react'
 import * as React from 'react'
+import { useTranslations } from 'next-intl'
 
 import { NavDocuments } from '@/components/nav-documents'
 import { NavMain } from '@/components/nav-main'
@@ -31,126 +32,124 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from '@/components/ui/sidebar'
-import Link from 'next/link'
-
-const data = {
-	user: {
-		name: 'shadcn',
-		email: 'm@example.com',
-		avatar: '/avatars/shadcn.jpg',
-	},
-	navMain: [
-		{
-			title: 'Dashboard',
-			url: '/dashboard',
-			icon: IconDashboard,
-		},
-		{
-			title: 'Detailed Stats',
-			url: '/detailed-stats',
-			icon: IconListDetails,
-		},
-		{
-			title: 'Support Overview',
-			url: '/support-overview',
-			icon: IconHeadset,
-		},
-		{
-			title: 'Documentation',
-			url: '/docs',
-			icon: IconBook,
-		},
-		{
-			title: 'Settings',
-			url: '/settings',
-			icon: IconSettings,
-		},
-	],
-	navClouds: [
-		{
-			title: 'Capture',
-			icon: IconCamera,
-			isActive: true,
-			url: '#',
-			items: [
-				{
-					title: 'Active Proposals',
-					url: '#',
-				},
-				{
-					title: 'Archived',
-					url: '#',
-				},
-			],
-		},
-		{
-			title: 'Proposal',
-			icon: IconFileDescription,
-			url: '#',
-			items: [
-				{
-					title: 'Active Proposals',
-					url: '#',
-				},
-				{
-					title: 'Archived',
-					url: '#',
-				},
-			],
-		},
-		{
-			title: 'Prompts',
-			icon: IconFileAi,
-			url: '#',
-			items: [
-				{
-					title: 'Active Proposals',
-					url: '#',
-				},
-				{
-					title: 'Archived',
-					url: '#',
-				},
-			],
-		},
-	],
-	navSecondary: [
-		// {
-		//   title: "Settings",
-		//   url: "#",
-		//   icon: IconSettings,
-		// },
-		{
-			title: 'Get Help',
-			url: '#',
-			icon: IconHelp,
-		},
-		{
-			title: 'Search',
-			url: '#',
-			icon: IconSearch,
-		},
-	],
-	documents: [
-		{
-			name: 'Data Library',
-			url: '#',
-			icon: IconDatabase,
-		},
-		{
-			name: 'Reports',
-			url: '#',
-			icon: IconReport,
-		},
-		{
-			name: 'Word Assistant',
-			url: '#',
-			icon: IconFileWord,
-		},
-	],
-}
+import { Link } from '@/i18n/routing'
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+	const t = useTranslations('common')
+	const tSidebar = useTranslations('sidebar')
+
+	const data = {
+		user: {
+			name: 'shadcn',
+			email: 'm@example.com',
+			avatar: '/avatars/shadcn.jpg',
+		},
+		navMain: [
+			{
+				title: t('dashboard'),
+				url: '/dashboard',
+				icon: IconDashboard,
+			},
+			{
+				title: t('detailedStats'),
+				url: '/detailed-stats',
+				icon: IconListDetails,
+			},
+			{
+				title: t('supportOverview'),
+				url: '/support-overview',
+				icon: IconHeadset,
+			},
+			{
+				title: t('documentation'),
+				url: '/docs',
+				icon: IconBook,
+			},
+			{
+				title: t('settings'),
+				url: '/settings',
+				icon: IconSettings,
+			},
+		],
+		navClouds: [
+			{
+				title: tSidebar('capture'),
+				icon: IconCamera,
+				isActive: true,
+				url: '#',
+				items: [
+					{
+						title: tSidebar('activeProposals'),
+						url: '#',
+					},
+					{
+						title: tSidebar('archived'),
+						url: '#',
+					},
+				],
+			},
+			{
+				title: tSidebar('proposal'),
+				icon: IconFileDescription,
+				url: '#',
+				items: [
+					{
+						title: tSidebar('activeProposals'),
+						url: '#',
+					},
+					{
+						title: tSidebar('archived'),
+						url: '#',
+					},
+				],
+			},
+			{
+				title: tSidebar('prompts'),
+				icon: IconFileAi,
+				url: '#',
+				items: [
+					{
+						title: tSidebar('activeProposals'),
+						url: '#',
+					},
+					{
+						title: tSidebar('archived'),
+						url: '#',
+					},
+				],
+			},
+		],
+		navSecondary: [
+			{
+				title: tSidebar('getHelp'),
+				url: '#',
+				icon: IconHelp,
+			},
+			{
+				title: t('search'),
+				url: '#',
+				icon: IconSearch,
+			},
+		],
+		documents: [
+			{
+				name: tSidebar('dataLibrary'),
+				url: '#',
+				icon: IconDatabase,
+			},
+			{
+				name: tSidebar('reports'),
+				url: '#',
+				icon: IconReport,
+			},
+			{
+				name: tSidebar('wordAssistant'),
+				url: '#',
+				icon: IconFileWord,
+			},
+		],
+	}
+
 	return (
 		<Sidebar collapsible='offcanvas' {...props}>
 			<SidebarHeader>
@@ -162,7 +161,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 						>
 							<Link href='/'>
 								<IconInnerShadowTop className='!size-5' />
-								<span className='text-base font-semibold'>Lev Haolam AI</span>
+								<span className='text-base font-semibold'>{tSidebar('appTitle')}</span>
 							</Link>
 						</SidebarMenuButton>
 					</SidebarMenuItem>

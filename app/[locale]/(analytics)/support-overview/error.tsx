@@ -1,9 +1,15 @@
 'use client' // Error components must be Client Components
 
-import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card'
 import { IconAlertTriangle, IconRefresh } from '@tabler/icons-react'
+import { useEffect } from 'react'
 
 /**
  * Support Overview Error Boundary
@@ -43,7 +49,9 @@ export default function SupportOverviewError({
 					</div>
 
 					<div className='space-y-2'>
-						<p className='text-sm text-muted-foreground'>This could be due to:</p>
+						<p className='text-sm text-muted-foreground'>
+							This could be due to:
+						</p>
 						<ul className='text-sm text-muted-foreground list-disc list-inside space-y-1'>
 							<li>Database connection issues</li>
 							<li>Invalid support_threads_data table</li>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { useSupportData } from '@/lib/hooks/use-support-data'
 import { useSupportFilters } from '@/lib/hooks/use-support-filters'
 import { FilterSheet } from './filters/filter-sheet'
@@ -27,6 +28,8 @@ import { SupportOverviewSkeleton } from './loading/support-overview-skeleton'
  * - Data fetching via React Query with caching
  */
 export function SupportOverviewContent() {
+	const t = useTranslations()
+
 	const {
 		filters,
 		setDateRange,
@@ -91,7 +94,7 @@ export function SupportOverviewContent() {
 		return (
 			<div className='flex flex-col items-center justify-center min-h-[400px] gap-4'>
 				<div className='text-destructive text-lg font-semibold'>
-					Error loading support data
+					{t('errors.loadingSupport')}
 				</div>
 				<div className='text-muted-foreground'>{error.message}</div>
 			</div>
@@ -103,8 +106,8 @@ export function SupportOverviewContent() {
 			{/* Filter Button */}
 			<div className='flex justify-start'>
 				<FilterSheet
-					title='Support Filters'
-					description='Filter support threads by date range, status, request type, requirements, and prompt version.'
+					title={t('filterSheet.supportTitle')}
+					description={t('filterSheet.supportDescription')}
 					activeFilterCount={getActiveFilterCount()}
 				>
 					<SupportFilterBar

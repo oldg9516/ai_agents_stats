@@ -5,16 +5,19 @@ import { IconTrophy, IconArrowUp, IconArrowDown, IconMinus } from '@tabler/icons
 import { cn } from '@/lib/utils'
 import { getCategoryLabel } from '@/constants/category-labels'
 import type { KPIData, TrendData } from '@/lib/supabase/types'
+import { useTranslations } from 'next-intl'
 
 interface BestCategoryCardProps {
 	data: KPIData['bestCategory']
 }
 
 export function BestCategoryCard({ data }: BestCategoryCardProps) {
+	const t = useTranslations()
+
 	return (
 		<Card>
 			<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-				<CardTitle className='text-sm font-medium'>Best Category</CardTitle>
+				<CardTitle className='text-sm font-medium'>{t('kpi.bestCategory.title')}</CardTitle>
 				<div className='h-4 w-4 text-muted-foreground'>
 					<IconTrophy className='h-4 w-4' />
 				</div>
@@ -33,9 +36,9 @@ export function BestCategoryCard({ data }: BestCategoryCardProps) {
 						{data.trend && <TrendIndicator trend={data.trend} />}
 					</>
 				) : (
-					<div className='text-2xl font-bold'>No data</div>
+					<div className='text-2xl font-bold'>{t('common.noData')}</div>
 				)}
-				<p className='text-xs text-muted-foreground mt-1'>Highest quality category</p>
+				<p className='text-xs text-muted-foreground mt-1'>{t('kpi.bestCategory.description')}</p>
 			</CardContent>
 		</Card>
 	)
@@ -45,6 +48,7 @@ export function BestCategoryCard({ data }: BestCategoryCardProps) {
  * Trend Indicator Component
  */
 function TrendIndicator({ trend }: { trend: TrendData }) {
+	const t = useTranslations()
 	const isPositive = trend.direction === 'up'
 	const isNegative = trend.direction === 'down'
 
@@ -60,7 +64,7 @@ function TrendIndicator({ trend }: { trend: TrendData }) {
 		<div className={cn('flex items-center text-xs mt-1', trendColor)}>
 			<TrendIcon className='h-3 w-3 mr-1' />
 			<span className='font-medium'>{trend.percentage.toFixed(1)}%</span>
-			<span className='text-muted-foreground ml-1'>vs previous period</span>
+			<span className='text-muted-foreground ml-1'>{t('kpi.vs')} {t('kpi.previous')}</span>
 		</div>
 	)
 }

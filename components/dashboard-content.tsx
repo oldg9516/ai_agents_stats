@@ -1,18 +1,19 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 import { useDashboardData } from '@/lib/hooks/use-dashboard-data'
 import { useFilters } from '@/lib/hooks/use-filters'
 import { getFilterOptions } from '@/lib/supabase/queries'
-import { KPISection } from './kpi/kpi-section'
-import { QualityTrendsChart } from './charts/quality-trends-chart'
+import { useQuery } from '@tanstack/react-query'
+import { useTranslations } from 'next-intl'
 import { CategoryPieChart } from './charts/category-pie-chart'
+import { QualityTrendsChart } from './charts/quality-trends-chart'
 import { VersionBarChart } from './charts/version-bar-chart'
-import { DetailedStatsTable } from './tables/detailed-stats-table'
-import { FilterSheet } from './filters/filter-sheet'
 import { FilterBar } from './filters/filter-bar'
-import { KPISectionSkeleton } from './loading/kpi-skeleton'
-import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
+import { FilterSheet } from './filters/filter-sheet'
+import { KPISection } from './kpi/kpi-section'
+import { SupportOverviewSkeleton } from './loading/support-overview-skeleton'
+import { DetailedStatsTable } from './tables/detailed-stats-table'
 
 /**
  * Dashboard Content - Client Component
@@ -21,6 +22,8 @@ import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
  * All data fetching is client-side with React Query caching
  */
 export function DashboardContent() {
+	const t = useTranslations()
+
 	// Filter state from Zustand store
 	const {
 		filters,
@@ -101,7 +104,7 @@ export function DashboardContent() {
 
 	// Show loading state
 	if (isLoading || !filterOptions) {
-		return <KPISectionSkeleton />
+		return <SupportOverviewSkeleton />
 	}
 
 	// Show error state
@@ -109,7 +112,7 @@ export function DashboardContent() {
 		return (
 			<div className='flex flex-col items-center justify-center min-h-[400px] gap-4'>
 				<div className='text-destructive text-lg font-semibold'>
-					Error loading dashboard data
+					{t('errors.loadingDashboard')}
 				</div>
 				<div className='text-muted-foreground'>{error.message}</div>
 			</div>
@@ -121,8 +124,8 @@ export function DashboardContent() {
 			{/* Filter Button */}
 			<div className='flex justify-start'>
 				<FilterSheet
-					title='Dashboard Filters'
-					description='Customize your dashboard view by filtering data across date ranges, versions, categories, and qualified agents.'
+					title={t('filterSheet.dashboardTitle')}
+					description={t('filterSheet.dashboardDescription')}
 					activeFilterCount={getActiveFilterCount()}
 				>
 					<FilterBar

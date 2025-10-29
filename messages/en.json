@@ -1,0 +1,172 @@
+{
+	"common": {
+		"back": "Back",
+		"home": "Home",
+		"dashboard": "Dashboard",
+		"detailedStats": "Detailed Stats",
+		"supportOverview": "Support Overview",
+		"documentation": "Documentation",
+		"settings": "Settings",
+		"search": "Search",
+		"loading": "Loading...",
+		"error": "Error",
+		"noData": "No data",
+		"all": "All",
+		"selected": "selected",
+		"noOptionsFound": "No options found"
+	},
+	"header": {
+		"title": "Lev Haolam AI"
+	},
+	"filters": {
+		"title": "Filters",
+		"dateRange": "Date Range",
+		"from": "From",
+		"to": "To",
+		"versions": "Versions",
+		"categories": "Categories",
+		"agents": "Agents",
+		"qualifiedAgents": "Qualified Agents",
+		"status": "Status",
+		"requestType": "Request Type",
+		"requirements": "Requirements",
+		"apply": "Apply",
+		"reset": "Reset",
+		"resetFilters": "Reset Filters",
+		"selectAll": "Select All",
+		"deselectAll": "Deselect All",
+		"searchVersions": "Search versions...",
+		"searchCategories": "Search categories...",
+		"searchAgents": "Search agents...",
+		"searchStatuses": "Search statuses...",
+		"searchRequestTypes": "Search request types...",
+		"quickOptions": {
+			"7d": "7 days",
+			"30d": "30 days",
+			"3m": "3 months",
+			"all": "All time"
+		}
+	},
+	"kpi": {
+		"totalRecords": "Total Records",
+		"averageQuality": "Average Quality",
+		"bestCategory": "Best Category",
+		"recordsChanged": "Records Changed",
+		"aiDraftCoverage": "AI Draft Coverage",
+		"replyRequired": "Reply Required",
+		"resolutionRate": "Resolution Rate",
+		"avgRequirements": "Avg Requirements"
+	},
+	"charts": {
+		"qualityTrends": {
+			"title": "Quality Trends Over Time",
+			"description": "Track quality percentage by category"
+		},
+		"categoryDistribution": {
+			"title": "Quality by Category",
+			"description": "Distribution of records across categories"
+		},
+		"versionComparison": {
+			"title": "Version Comparison",
+			"description": "Compare quality across prompt versions"
+		},
+		"statusDistribution": {
+			"title": "Status Distribution",
+			"description": "Breakdown of support threads by status"
+		},
+		"resolutionTime": {
+			"title": "Resolution Time",
+			"description": "Average resolution time in hours"
+		},
+		"aiDraftFlow": {
+			"title": "AI Draft Flow",
+			"description": "Journey of AI-generated drafts"
+		},
+		"requirementsCorrelation": {
+			"title": "Requirements Correlation",
+			"description": "How often requirements appear together"
+		}
+	},
+	"table": {
+		"category": "Category",
+		"version": "Version",
+		"dates": "Dates",
+		"totalRecords": "Total Records",
+		"qualifiedAgents": "Qualified Agents",
+		"recordsChanged": "Changed",
+		"quality": "Quality",
+		"goodPercentage": "Good %",
+		"threadId": "Thread ID",
+		"ticketId": "Ticket ID",
+		"type": "Type",
+		"status": "Status",
+		"requirements": "Requirements",
+		"aiDraft": "AI Draft",
+		"createdAt": "Created At",
+		"export": "Export CSV",
+		"exportData": "Export Data",
+		"rowsPerPage": "rows per page",
+		"page": "Page",
+		"of": "of",
+		"showing": "Showing",
+		"to": "to",
+		"results": "results",
+		"searchPlaceholder": "Search...",
+		"searchByCategory": "Search by category...",
+		"searchByThreadOrTicket": "Search by thread ID or ticket ID...",
+		"noResults": "No results found.",
+		"sortBy": "Sort by",
+		"filterBy": "Filter by",
+		"previous": "Previous",
+		"next": "Next",
+		"detailedStatistics": "Detailed Statistics",
+		"detailedStatisticsDesc": "Quality metrics by category, version, and week",
+		"supportThreads": "Support Threads",
+		"supportThreadsDesc": "All support threads with quality metrics"
+	},
+	"landing": {
+		"hero": {
+			"title": "AI Agent Analytics",
+			"subtitle": "Real-time monitoring and analysis of AI agent performance",
+			"ctaDashboard": "Open Dashboard",
+			"ctaSupport": "Support Overview",
+			"ctaDocs": "Documentation"
+		},
+		"features": {
+			"dashboard": {
+				"title": "Analytics Dashboard",
+				"description": "Track quality metrics, trends, and AI agent performance"
+			},
+			"support": {
+				"title": "Support Overview",
+				"description": "Monitor support operations and AI draft performance"
+			},
+			"stats": {
+				"title": "Detailed Statistics",
+				"description": "Full table view with all data in exportable format"
+			},
+			"docs": {
+				"title": "Documentation",
+				"description": "Complete guide to using the analytics platform"
+			}
+		}
+	},
+	"categories": {
+		"customization": "Customization",
+		"gratitude": "Gratitude",
+		"damagedItems": "Damaged Items",
+		"skipPause": "Skip/Pause",
+		"frequency": "Frequency"
+	},
+	"errors": {
+		"loadingDashboard": "Error loading dashboard data",
+		"loadingSupport": "Error loading support data"
+	},
+	"filterSheet": {
+		"dashboardTitle": "Dashboard Filters",
+		"dashboardDescription": "Customize your dashboard view by filtering data across date ranges, versions, categories, and qualified agents.",
+		"supportTitle": "Support Filters",
+		"supportDescription": "Filter support threads by date range, status, request type, requirements, and prompt version.",
+		"filters": "Filters"
+	}
+}

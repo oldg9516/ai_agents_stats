@@ -1,12 +1,16 @@
-import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Glow } from '@/components/ui/glow'
 import { Mockup } from '@/components/ui/mockup'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowRight, BarChart3, MessageSquare, Table2, BookOpen } from 'lucide-react'
+import { Link } from '@/i18n/routing'
 
-export default function Home() {
+export default async function Home() {
+	const t = await getTranslations('landing')
+	const tCommon = await getTranslations('common')
+
 	return (
 		<div className='relative min-h-screen overflow-hidden bg-background'>
 			{/* Background glow effects */}
@@ -19,15 +23,13 @@ export default function Home() {
 					{/* Hero heading */}
 					<div className='space-y-4'>
 						<h1 className='text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl'>
-							AI Agent Statistics
+							{t('hero.title')}
 							<span className='block bg-linear-to-r from-primary via-chart-2 to-chart-3 bg-clip-text text-transparent'>
-								Dashboard
+								{tCommon('dashboard')}
 							</span>
 						</h1>
 						<p className='mx-auto max-w-2xl text-lg text-muted-foreground sm:text-xl'>
-							Comprehensive analytics platform for monitoring AI agent performance, quality
-							metrics, and support operations. Track AI-generated content quality in
-							real-time.
+							{t('hero.subtitle')}
 						</p>
 					</div>
 
@@ -35,17 +37,17 @@ export default function Home() {
 					<div className='flex flex-wrap items-center justify-center gap-4'>
 						<Button asChild size='lg' className='gap-2'>
 							<Link href='/dashboard'>
-								View Dashboard
+								{t('hero.ctaDashboard')}
 								<ArrowRight className='h-4 w-4' />
 							</Link>
 						</Button>
 						<Button asChild variant='outline' size='lg'>
-							<Link href='/support-overview'>Support Overview</Link>
+							<Link href='/support-overview'>{t('hero.ctaSupport')}</Link>
 						</Button>
 						<Button asChild variant='outline' size='lg' className='gap-2'>
 							<Link href='/docs'>
 								<BookOpen className='h-4 w-4' />
-								Documentation
+								{t('hero.ctaDocs')}
 							</Link>
 						</Button>
 					</div>
@@ -57,7 +59,7 @@ export default function Home() {
 						<div className='relative aspect-video w-full overflow-hidden bg-muted'>
 							<Image
 								src='/dashboard-hero.png'
-								alt='AI Agent Statistics Dashboard Preview'
+								alt={t('hero.title')}
 								fill
 								className='object-cover object-top'
 								priority
@@ -71,11 +73,9 @@ export default function Home() {
 			<section className='relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8'>
 				<div className='text-center mb-12 animate-appear animation-delay-300'>
 					<h2 className='text-3xl font-bold tracking-tight sm:text-4xl'>
-						Available Analytics
+						{t('features.title')}
 					</h2>
-					<p className='mt-4 text-lg text-muted-foreground'>
-						Explore comprehensive insights across multiple dimensions
-					</p>
+					<p className='mt-4 text-lg text-muted-foreground'>{t('features.subtitle')}</p>
 				</div>
 
 				<div className='grid gap-6 md:grid-cols-2 lg:grid-cols-4 animate-appear animation-delay-400'>
@@ -87,25 +87,10 @@ export default function Home() {
 								<div className='p-2 rounded-lg bg-chart-1/10'>
 									<BarChart3 className='h-5 w-5 text-chart-1' />
 								</div>
-								<CardTitle>Dashboard</CardTitle>
+								<CardTitle>{t('features.dashboard.title')}</CardTitle>
 							</div>
-							<CardDescription>Quality metrics and performance trends</CardDescription>
+							<CardDescription>{t('features.dashboard.description')}</CardDescription>
 						</CardHeader>
-						<CardContent className='space-y-2'>
-							<ul className='space-y-1 text-sm text-muted-foreground'>
-								<li>• Real-time quality percentage tracking</li>
-								<li>• Category and version breakdowns</li>
-								<li>• Weekly trend analysis</li>
-								<li>• Interactive charts and KPIs</li>
-								<li>• Qualified agent performance</li>
-							</ul>
-							<Button asChild variant='ghost' className='w-full mt-4'>
-								<Link href='/dashboard'>
-									Explore Dashboard
-									<ArrowRight className='ml-2 h-4 w-4' />
-								</Link>
-							</Button>
-						</CardContent>
 					</Card>
 
 					{/* Support Overview Card */}
@@ -116,25 +101,10 @@ export default function Home() {
 								<div className='p-2 rounded-lg bg-chart-2/10'>
 									<MessageSquare className='h-5 w-5 text-chart-2' />
 								</div>
-								<CardTitle>Support Overview</CardTitle>
+								<CardTitle>{t('features.support.title')}</CardTitle>
 							</div>
-							<CardDescription>Thread analytics and AI draft performance</CardDescription>
+							<CardDescription>{t('features.support.description')}</CardDescription>
 						</CardHeader>
-						<CardContent className='space-y-2'>
-							<ul className='space-y-1 text-sm text-muted-foreground'>
-								<li>• AI draft coverage metrics</li>
-								<li>• Status distribution analysis</li>
-								<li>• Resolution time tracking</li>
-								<li>• Requirements correlation</li>
-								<li>• Thread-level detail views</li>
-							</ul>
-							<Button asChild variant='ghost' className='w-full mt-4'>
-								<Link href='/support-overview'>
-									View Support Analytics
-									<ArrowRight className='ml-2 h-4 w-4' />
-								</Link>
-							</Button>
-						</CardContent>
 					</Card>
 
 					{/* Detailed Stats Card */}
@@ -145,25 +115,10 @@ export default function Home() {
 								<div className='p-2 rounded-lg bg-chart-3/10'>
 									<Table2 className='h-5 w-5 text-chart-3' />
 								</div>
-								<CardTitle>Detailed Stats</CardTitle>
+								<CardTitle>{t('features.stats.title')}</CardTitle>
 							</div>
-							<CardDescription>Complete data tables with export</CardDescription>
+							<CardDescription>{t('features.stats.description')}</CardDescription>
 						</CardHeader>
-						<CardContent className='space-y-2'>
-							<ul className='space-y-1 text-sm text-muted-foreground'>
-								<li>• Full hierarchical data views</li>
-								<li>• Advanced sorting and filtering</li>
-								<li>• CSV export functionality</li>
-								<li>• Version-level breakdowns</li>
-								<li>• Week-by-week analysis</li>
-							</ul>
-							<Button asChild variant='ghost' className='w-full mt-4'>
-								<Link href='/detailed-stats'>
-									Browse Detailed Stats
-									<ArrowRight className='ml-2 h-4 w-4' />
-								</Link>
-							</Button>
-						</CardContent>
 					</Card>
 
 					{/* Documentation Card */}
@@ -174,49 +129,41 @@ export default function Home() {
 								<div className='p-2 rounded-lg bg-chart-4/10'>
 									<BookOpen className='h-5 w-5 text-chart-4' />
 								</div>
-								<CardTitle>Documentation</CardTitle>
+								<CardTitle>{t('features.docs.title')}</CardTitle>
 							</div>
-							<CardDescription>Platform structure and chart explanations</CardDescription>
+							<CardDescription>{t('features.docs.description')}</CardDescription>
 						</CardHeader>
-						<CardContent className='space-y-2'>
-							<ul className='space-y-1 text-sm text-muted-foreground'>
-								<li>• Dashboard layout and sections</li>
-								<li>• Chart types and what they show</li>
-								<li>• KPI metrics explained</li>
-								<li>• Filter and navigation guide</li>
-								<li>• Data export features</li>
-							</ul>
-							<Button asChild variant='ghost' className='w-full mt-4'>
-								<Link href='/docs'>
-									Read Documentation
-									<ArrowRight className='ml-2 h-4 w-4' />
-								</Link>
-							</Button>
-						</CardContent>
 					</Card>
 				</div>
 			</section>
 
-			{/* Key Features Highlight */}
+			{/* Key Features Section */}
 			<section className='relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8'>
-				<div className='rounded-2xl border bg-card p-8 sm:p-12 animate-appear animation-delay-500'>
-					<div className='grid gap-8 md:grid-cols-2'>
-						<div className='space-y-4'>
-							<h3 className='text-2xl font-bold'>Real-Time Insights</h3>
-							<p className='text-muted-foreground'>
-								Monitor AI agent performance with live data updates. Track quality metrics
-								across categories, versions, and time periods. Filter by qualified agents,
-								request types, and prompt versions.
-							</p>
-						</div>
-						<div className='space-y-4'>
-							<h3 className='text-2xl font-bold'>Comprehensive Analytics</h3>
-							<p className='text-muted-foreground'>
-								From high-level KPIs to detailed thread-level analysis. Export data for
-								reporting, visualize trends with interactive charts, and dive deep into
-								individual thread performance.
-							</p>
-						</div>
+				<div className='text-center mb-12'>
+					<h2 className='text-3xl font-bold tracking-tight sm:text-4xl'>
+						{t('keyFeatures.title')}
+					</h2>
+					<p className='mt-4 text-lg text-muted-foreground'>{t('keyFeatures.subtitle')}</p>
+				</div>
+
+				<div className='grid gap-8 md:grid-cols-2'>
+					<div className='space-y-4'>
+						<h3 className='text-xl font-semibold'>{t('keyFeatures.realtime.title')}</h3>
+						<p className='text-muted-foreground'>{t('keyFeatures.realtime.description')}</p>
+					</div>
+					<div className='space-y-4'>
+						<h3 className='text-xl font-semibold'>{t('keyFeatures.filtering.title')}</h3>
+						<p className='text-muted-foreground'>{t('keyFeatures.filtering.description')}</p>
+					</div>
+					<div className='space-y-4'>
+						<h3 className='text-xl font-semibold'>{t('keyFeatures.export.title')}</h3>
+						<p className='text-muted-foreground'>{t('keyFeatures.export.description')}</p>
+					</div>
+					<div className='space-y-4'>
+						<h3 className='text-xl font-semibold'>{t('keyFeatures.visualization.title')}</h3>
+						<p className='text-muted-foreground'>
+							{t('keyFeatures.visualization.description')}
+						</p>
 					</div>
 				</div>
 			</section>

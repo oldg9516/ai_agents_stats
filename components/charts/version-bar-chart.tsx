@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -25,6 +26,8 @@ interface VersionBarChartProps {
  * - Color-coded bars (red/yellow/green)
  */
 export function VersionBarChart({ data }: VersionBarChartProps) {
+	const t = useTranslations()
+
 	// Sort and transform data
 	const chartData = useMemo(() => {
 		const sorted = [...data].sort((a, b) => {
@@ -66,14 +69,14 @@ export function VersionBarChart({ data }: VersionBarChartProps) {
 		return (
 			<Card>
 				<CardHeader>
-					<CardTitle className='text-lg sm:text-xl'>Version Comparison</CardTitle>
+					<CardTitle className='text-lg sm:text-xl'>{t('charts.versionComparison.title')}</CardTitle>
 					<CardDescription className='text-sm'>
-						Quality percentage across different versions
+						{t('charts.versionComparison.description')}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<div className='flex items-center justify-center h-[250px] text-sm text-muted-foreground'>
-						No data available
+						{t('common.noDataAvailable')}
 					</div>
 				</CardContent>
 			</Card>
@@ -83,9 +86,9 @@ export function VersionBarChart({ data }: VersionBarChartProps) {
 	return (
 		<Card className="min-w-0">
 			<CardHeader>
-				<CardTitle className='text-lg sm:text-xl'>Version Comparison</CardTitle>
+				<CardTitle className='text-lg sm:text-xl'>{t('charts.versionComparison.title')}</CardTitle>
 				<CardDescription className='text-sm'>
-					Quality percentage across different versions
+					{t('charts.versionComparison.description')}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="overflow-hidden">

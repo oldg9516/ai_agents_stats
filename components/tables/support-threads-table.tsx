@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import {
 	useReactTable,
 	getCoreRowModel,
@@ -54,6 +55,7 @@ interface SupportThreadsTableProps {
  * - Quality indicators
  */
 export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
+	const t = useTranslations()
 	const router = useRouter()
 	const [sorting, setSorting] = useState<SortingState>([
 		{ id: 'created_at', desc: true },
@@ -69,7 +71,7 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 		() => [
 			{
 				accessorKey: 'thread_id',
-				header: 'Thread ID',
+				header: t('table.threadId'),
 				cell: ({ getValue }) => {
 					const value = getValue() as string
 					return <div className='font-mono text-xs truncate max-w-[120px]'>{value}</div>
@@ -77,7 +79,7 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 			},
 			{
 				accessorKey: 'ticket_id',
-				header: 'Ticket ID',
+				header: t('table.ticketId'),
 				cell: ({ getValue }) => {
 					const value = getValue() as string
 					return <div className='font-mono text-xs'>{value}</div>
@@ -85,21 +87,21 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 			},
 			{
 				accessorKey: 'request_type',
-				header: 'Type',
+				header: t('table.type'),
 				cell: ({ getValue }) => {
 					return <div className='text-sm'>{getRequestTypeLabel(getValue() as string)}</div>
 				},
 			},
 			{
 				accessorKey: 'status',
-				header: 'Status',
+				header: t('table.status'),
 				cell: ({ getValue }) => {
 					return <div className='text-sm'>{getStatusLabel(getValue() as string)}</div>
 				},
 			},
 			{
 				id: 'requirements',
-				header: 'Requirements',
+				header: t('table.requirements'),
 				cell: ({ row }) => {
 					const requirements = getActiveRequirements(
 						row.original as unknown as Record<string, boolean>
@@ -124,7 +126,7 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 			},
 			{
 				accessorKey: 'ai_draft_reply',
-				header: 'AI Draft',
+				header: t('table.aiDraft'),
 				cell: ({ getValue }) => {
 					const hasDraft = getValue() !== null
 					return (
@@ -140,7 +142,7 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 			},
 			{
 				accessorKey: 'qualityPercentage',
-				header: 'Quality',
+				header: t('table.quality'),
 				cell: ({ getValue }) => {
 					const value = getValue() as number | null
 					if (value === null) {
@@ -162,7 +164,7 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 			},
 			{
 				accessorKey: 'prompt_version',
-				header: 'Version',
+				header: t('table.version'),
 				cell: ({ getValue }) => {
 					const value = getValue() as string | null
 					return <div className='text-sm'>{value || '—'}</div>
@@ -170,7 +172,7 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 			},
 			{
 				accessorKey: 'created_at',
-				header: 'Created',
+				header: t('table.createdAt'),
 				cell: ({ getValue }) => {
 					const value = getValue() as string | null
 					if (!value) return <div className='text-sm'>—</div>
@@ -182,7 +184,7 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 				},
 			},
 		],
-		[]
+		[t]
 	)
 
 	// Create table instance
@@ -225,14 +227,14 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 			<CardHeader>
 				<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
 					<div>
-						<CardTitle className='text-lg sm:text-xl'>Support Threads</CardTitle>
+						<CardTitle className='text-lg sm:text-xl'>{t('table.supportThreads')}</CardTitle>
 						<CardDescription className='text-sm'>
-							All support threads with quality metrics
+							{t('table.supportThreadsDesc')}
 						</CardDescription>
 					</div>
 					<Button onClick={handleExport} size='sm' variant='outline'>
 						<IconDownload className='mr-2 h-4 w-4' />
-						Export CSV
+						{t('table.export')}
 					</Button>
 				</div>
 			</CardHeader>
@@ -242,7 +244,7 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 					<div className='relative'>
 						<IconSearch className='absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
 						<Input
-							placeholder='Search by thread ID or ticket ID...'
+							placeholder={t('table.searchByThreadOrTicket')}
 							value={globalFilter}
 							onChange={(e) => setGlobalFilter(e.target.value)}
 							className='pl-8'
@@ -297,7 +299,7 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 							) : (
 								<TableRow>
 									<TableCell colSpan={columns.length} className='h-24 text-center'>
-										No results.
+										{t('table.noResults')}
 									</TableCell>
 								</TableRow>
 							)}
@@ -308,12 +310,12 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 				{/* Pagination */}
 				<div className='flex items-center justify-between pt-4'>
 					<div className='text-sm text-muted-foreground'>
-						Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
+						{t('table.showing')} {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} {t('table.to')}{' '}
 						{Math.min(
 							(table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
 							table.getFilteredRowModel().rows.length
 						)}{' '}
-						of {table.getFilteredRowModel().rows.length} results
+						{t('table.of')} {table.getFilteredRowModel().rows.length} {t('table.results')}
 					</div>
 					<div className='flex items-center space-x-2'>
 						<Button
@@ -323,7 +325,7 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 							disabled={!table.getCanPreviousPage()}
 						>
 							<IconChevronLeft className='h-4 w-4' />
-							Previous
+							{t('table.previous')}
 						</Button>
 						<Button
 							variant='outline'
@@ -331,7 +333,7 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 							onClick={() => table.nextPage()}
 							disabled={!table.getCanNextPage()}
 						>
-							Next
+							{t('table.next')}
 							<IconChevronRight className='h-4 w-4' />
 						</Button>
 					</div>

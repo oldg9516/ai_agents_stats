@@ -11,6 +11,7 @@ import {
 import { getRequirement } from '@/constants/requirement-types'
 import type { CorrelationCell } from '@/lib/supabase/types'
 import { ResponsiveHeatMap } from '@nivo/heatmap'
+import { useTranslations } from 'next-intl'
 
 interface RequirementsCorrelationHeatmapProps {
 	data: CorrelationCell[]
@@ -27,6 +28,7 @@ interface RequirementsCorrelationHeatmapProps {
 export function RequirementsCorrelationHeatmap({
 	data,
 }: RequirementsCorrelationHeatmapProps) {
+	const t = useTranslations()
 
 	// Transform data for @nivo/heatmap
 	// Group by Y axis (rows)
@@ -64,15 +66,15 @@ export function RequirementsCorrelationHeatmap({
 			<Card>
 				<CardHeader>
 					<CardTitle className='text-lg sm:text-xl'>
-						Requirements Correlation
+						{t('charts.requirementsCorrelation.title')}
 					</CardTitle>
 					<CardDescription className='text-sm'>
-						How often requirements occur together
+						{t('charts.requirementsCorrelation.description')}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<div className='flex items-center justify-center h-[300px] text-sm text-muted-foreground'>
-						No correlation data available
+						{t('common.noDataAvailable')}
 					</div>
 				</CardContent>
 			</Card>
@@ -83,10 +85,10 @@ export function RequirementsCorrelationHeatmap({
 		<Card className='min-w-0'>
 			<CardHeader>
 				<CardTitle className='text-lg sm:text-xl'>
-					Requirements Correlation
+					{t('charts.requirementsCorrelation.title')}
 				</CardTitle>
 				<CardDescription className='text-sm'>
-					How often requirements occur together (%)
+					{t('charts.requirementsCorrelation.description')}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className='overflow-hidden'>

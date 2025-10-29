@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/chart'
 import type { ResolutionTimeData } from '@/lib/supabase/types'
 import { format } from 'date-fns'
+import { useTranslations } from 'next-intl'
 
 interface ResolutionTimeChartProps {
 	data: ResolutionTimeData[]
@@ -25,6 +26,8 @@ interface ResolutionTimeChartProps {
  * - Grouped by week
  */
 export function ResolutionTimeChart({ data }: ResolutionTimeChartProps) {
+	const t = useTranslations()
+
 	// Transform and sort data
 	const chartData = useMemo(() => {
 		return data
@@ -38,7 +41,7 @@ export function ResolutionTimeChart({ data }: ResolutionTimeChartProps) {
 
 	const chartConfig: ChartConfig = {
 		avgTime: {
-			label: 'Avg Resolution Time',
+			label: t('charts.resolutionTime.avgTime'),
 			color: 'var(--chart-1)',
 		},
 	}
@@ -47,14 +50,14 @@ export function ResolutionTimeChart({ data }: ResolutionTimeChartProps) {
 		return (
 			<Card>
 				<CardHeader>
-					<CardTitle className='text-lg sm:text-xl'>Resolution Time</CardTitle>
+					<CardTitle className='text-lg sm:text-xl'>{t('charts.resolutionTime.title')}</CardTitle>
 					<CardDescription className='text-sm'>
-						Average time to resolve threads by week
+						{t('charts.resolutionTime.description')}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<div className='flex items-center justify-center h-[250px] text-sm text-muted-foreground'>
-						No data available
+						{t('common.noDataAvailable')}
 					</div>
 				</CardContent>
 			</Card>
@@ -64,9 +67,9 @@ export function ResolutionTimeChart({ data }: ResolutionTimeChartProps) {
 	return (
 		<Card className='min-w-0'>
 			<CardHeader>
-				<CardTitle className='text-lg sm:text-xl'>Resolution Time</CardTitle>
+				<CardTitle className='text-lg sm:text-xl'>{t('charts.resolutionTime.title')}</CardTitle>
 				<CardDescription className='text-sm'>
-					Average time to resolve threads by week
+					{t('charts.resolutionTime.description')}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className='overflow-hidden'>
@@ -96,15 +99,15 @@ export function ResolutionTimeChart({ data }: ResolutionTimeChartProps) {
 									formatter={(value, name, item) => (
 										<div className='flex flex-col gap-1'>
 											<div className='flex items-center justify-between gap-2'>
-												<span className='text-muted-foreground'>Week:</span>
+												<span className='text-muted-foreground'>{t('charts.resolutionTime.week')}:</span>
 												<span className='font-medium'>{item.payload.week}</span>
 											</div>
 											<div className='flex items-center justify-between gap-2'>
-												<span className='text-muted-foreground'>Avg Time:</span>
+												<span className='text-muted-foreground'>{t('charts.resolutionTime.avgTime')}:</span>
 												<span className='font-medium'>{value}h</span>
 											</div>
 											<div className='flex items-center justify-between gap-2'>
-												<span className='text-muted-foreground'>Threads:</span>
+												<span className='text-muted-foreground'>{t('charts.resolutionTime.threads')}:</span>
 												<span className='font-medium'>{item.payload.count}</span>
 											</div>
 										</div>

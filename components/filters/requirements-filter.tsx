@@ -10,6 +10,7 @@ import {
 } from '@/constants/requirement-types'
 import { IconChevronDown, IconChevronUp, IconX } from '@tabler/icons-react'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 interface RequirementsFilterProps {
 	selected: string[]
@@ -28,6 +29,7 @@ export function RequirementsFilter({
 	selected,
 	onChange,
 }: RequirementsFilterProps) {
+	const t = useTranslations()
 	const [isOpen, setIsOpen] = useState(false)
 
 	const allRequirements = getAllRequirementKeys()
@@ -58,7 +60,7 @@ export function RequirementsFilter({
 
 	return (
 		<div className='space-y-2'>
-			<Label className='text-sm font-medium'>Requirements</Label>
+			<Label className='text-sm font-medium'>{t('filters.requirements')}</Label>
 
 			{/* Dropdown Trigger */}
 			<Button
@@ -69,10 +71,10 @@ export function RequirementsFilter({
 			>
 				<span className='truncate'>
 					{selected.length === 0
-						? 'All Requirements'
+						? `${t('common.all')} ${t('filters.requirements')}`
 						: selected.length === allRequirements.length
-						? `All Requirements (${allRequirements.length})`
-						: `${selected.length} selected`}
+						? `${t('common.all')} ${t('filters.requirements')} (${allRequirements.length})`
+						: `${selected.length} ${t('common.selected')}`}
 				</span>
 				{isOpen ? (
 					<IconChevronUp className='ml-2 h-4 w-4 shrink-0' />
@@ -96,7 +98,7 @@ export function RequirementsFilter({
 								htmlFor='select-all-requirements'
 								className='flex-1 cursor-pointer font-medium'
 							>
-								{allSelected ? 'Deselect All' : 'Select All'}
+								{allSelected ? t('filters.deselectAll') : t('filters.selectAll')}
 							</Label>
 							{selected.length > 0 && (
 								<Button

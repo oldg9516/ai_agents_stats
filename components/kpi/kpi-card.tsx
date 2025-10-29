@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { TrendData } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
 import { IconArrowDown, IconArrowUp, IconMinus } from '@tabler/icons-react'
+import { useTranslations } from 'next-intl'
 
 interface KPICardProps {
 	title: string
@@ -51,6 +52,7 @@ export function KPICard({
  * Trend Indicator Component
  */
 function TrendIndicator({ trend }: { trend: TrendData }) {
+	const t = useTranslations()
 	const isPositive = trend.direction === 'up'
 	const isNegative = trend.direction === 'down'
 
@@ -70,7 +72,7 @@ function TrendIndicator({ trend }: { trend: TrendData }) {
 		<div className={cn('flex items-center text-xs mt-1', trendColor)}>
 			<TrendIcon className='h-3 w-3 mr-1' />
 			<span className='font-medium'>{trend.percentage.toFixed(1)}%</span>
-			<span className='text-muted-foreground ml-1'>vs previous period</span>
+			<span className='text-muted-foreground ml-1'>{t('kpi.vs')} {t('kpi.previous')}</span>
 		</div>
 	)
 }

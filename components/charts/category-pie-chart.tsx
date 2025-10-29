@@ -18,6 +18,7 @@ import {
 import { getCategoryLabel } from '@/constants/category-labels'
 import type { CategoryDistributionData } from '@/lib/supabase/types'
 import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { Label, Pie, PieChart } from 'recharts'
 
 interface CategoryPieChartProps {
@@ -34,6 +35,8 @@ interface CategoryPieChartProps {
  * - Responsive legend
  */
 export function CategoryPieChart({ data }: CategoryPieChartProps) {
+	const t = useTranslations()
+
 	// Create chart config dynamically from data
 	const chartConfig = useMemo(() => {
 		const config: ChartConfig = {}
@@ -67,15 +70,15 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
 			<Card>
 				<CardHeader>
 					<CardTitle className='text-lg sm:text-xl'>
-						Quality by Category
+						{t('charts.categoryDistribution.title')}
 					</CardTitle>
 					<CardDescription className='text-sm'>
-						Distribution across categories with quality levels
+						{t('charts.categoryDistribution.description')}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<div className='flex items-center justify-center h-[250px] text-sm text-muted-foreground'>
-						No data available
+						{t('common.noDataAvailable')}
 					</div>
 				</CardContent>
 			</Card>
@@ -86,10 +89,10 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
 		<Card className='min-w-0'>
 			<CardHeader>
 				<CardTitle className='text-lg sm:text-xl'>
-					Quality by Category
+					{t('charts.categoryDistribution.title')}
 				</CardTitle>
 				<CardDescription className='text-sm'>
-					Distribution across categories with quality levels
+					{t('charts.categoryDistribution.description')}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className='overflow-hidden'>
@@ -150,7 +153,7 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
 													y={(viewBox.cy || 0) + 20}
 													className='fill-muted-foreground text-xs'
 												>
-													Total Records
+													{t('charts.categoryDistribution.totalRecords')}
 												</tspan>
 											</text>
 										)

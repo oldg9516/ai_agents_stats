@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 import type { DashboardFilters } from '@/lib/supabase/types'
 import { IconRefresh } from '@tabler/icons-react'
+import { useTranslations } from 'next-intl'
 import { DateRangeFilter } from './date-range-filter'
 import { MultiSelectFilter } from './multi-select-filter'
 
@@ -32,6 +33,8 @@ export function FilterBar({
 	availableVersions,
 	availableCategories,
 }: FilterBarProps) {
+	const t = useTranslations()
+
 	return (
 		<div className='space-y-4'>
 			<div className='grid gap-4 sm:gap-6 grid-cols-1'>
@@ -44,31 +47,31 @@ export function FilterBar({
 
 				{/* Version Filter */}
 				<MultiSelectFilter
-					label='Versions'
+					label={t('filters.versions')}
 					options={availableVersions}
 					selected={filters.versions}
 					onChange={versions => onFiltersChange({ versions })}
-					placeholder='Search versions...'
+					placeholder={t('filters.searchVersions')}
 					allowEmpty={true}
 				/>
 
 				{/* Category Filter */}
 				<MultiSelectFilter
-					label='Categories'
+					label={t('filters.categories')}
 					options={availableCategories}
 					selected={filters.categories}
 					onChange={categories => onFiltersChange({ categories })}
-					placeholder='Search categories...'
+					placeholder={t('filters.searchCategories')}
 					allowEmpty={true}
 				/>
 
 				{/* Agent Filter */}
 				<MultiSelectFilter
-					label='Qualified Agents'
+					label={t('filters.qualifiedAgents')}
 					options={[...QUALIFIED_AGENTS]}
 					selected={filters.agents}
 					onChange={agents => onFiltersChange({ agents })}
-					placeholder='Search agents...'
+					placeholder={t('filters.searchAgents')}
 					searchable={true}
 					allowEmpty={false} // At least one agent must be selected
 				/>
@@ -83,7 +86,7 @@ export function FilterBar({
 					className='w-full sm:w-auto'
 				>
 					<IconRefresh className='mr-2 h-4 w-4' />
-					Reset Filters
+					{t('filters.resetFilters')}
 				</Button>
 			</div>
 		</div>

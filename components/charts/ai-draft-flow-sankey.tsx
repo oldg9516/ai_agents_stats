@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { ResponsiveSankey } from '@nivo/sankey'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { SankeyData } from '@/lib/supabase/types'
+import { useTranslations } from 'next-intl'
 
 interface AIDraftFlowSankeyProps {
 	data: SankeyData | null
@@ -18,6 +19,8 @@ interface AIDraftFlowSankeyProps {
  * - Created → Used/Edited/Rejected → Resolved/Pending
  */
 export function AIDraftFlowSankey({ data }: AIDraftFlowSankeyProps) {
+	const t = useTranslations()
+
 	// Detect if mobile for responsive margins
 	const [isMobile, setIsMobile] = useState(false)
 
@@ -32,14 +35,14 @@ export function AIDraftFlowSankey({ data }: AIDraftFlowSankeyProps) {
 		return (
 			<Card>
 				<CardHeader>
-					<CardTitle className='text-lg sm:text-xl'>AI Draft Flow</CardTitle>
+					<CardTitle className='text-lg sm:text-xl'>{t('charts.aiDraftFlow.title')}</CardTitle>
 					<CardDescription className='text-sm'>
-						Journey of AI-generated drafts
+						{t('charts.aiDraftFlow.description')}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<div className='flex items-center justify-center h-[300px] text-sm text-muted-foreground'>
-						No flow data available
+						{t('common.noDataAvailable')}
 					</div>
 				</CardContent>
 			</Card>
@@ -64,9 +67,9 @@ export function AIDraftFlowSankey({ data }: AIDraftFlowSankeyProps) {
 	return (
 		<Card className='min-w-0'>
 			<CardHeader>
-				<CardTitle className='text-lg sm:text-xl'>AI Draft Flow</CardTitle>
+				<CardTitle className='text-lg sm:text-xl'>{t('charts.aiDraftFlow.title')}</CardTitle>
 				<CardDescription className='text-sm'>
-					Journey of AI-generated drafts
+					{t('charts.aiDraftFlow.description')}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className='overflow-hidden'>

@@ -1,5 +1,5 @@
 import { DashboardContent } from '@/components/dashboard-content'
-import { KPISectionSkeleton } from '@/components/loading/kpi-skeleton'
+import { SupportOverviewSkeleton } from '@/components/loading/support-overview-skeleton'
 import { Suspense } from 'react'
 
 /**
@@ -10,7 +10,7 @@ import { Suspense } from 'react'
  */
 export default function DashboardPage() {
 	return (
-		<Suspense fallback={<KPISectionSkeleton />}>
+		<Suspense fallback={<SupportOverviewSkeleton />}>
 			<DashboardContent />
 		</Suspense>
 	)

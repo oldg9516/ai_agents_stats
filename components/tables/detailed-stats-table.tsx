@@ -1,18 +1,13 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import {
-	useReactTable,
-	getCoreRowModel,
-	getSortedRowModel,
-	getPaginationRowModel,
-	getFilteredRowModel,
-	flexRender,
-	type ColumnDef,
-	type SortingState,
-} from '@tanstack/react-table'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
 	Table,
@@ -22,11 +17,28 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/components/ui/table'
-import { IconDownload, IconSearch, IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
-import { getQualityBgClass } from '@/lib/utils/quality-colors'
-import { exportToCSV } from '@/lib/utils/export'
 import { getCategoryLabel } from '@/constants/category-labels'
 import type { DetailedStatsRow } from '@/lib/supabase/types'
+import { exportToCSV } from '@/lib/utils/export'
+import { getQualityBgClass } from '@/lib/utils/quality-colors'
+import {
+	IconChevronLeft,
+	IconChevronRight,
+	IconDownload,
+	IconSearch,
+} from '@tabler/icons-react'
+import {
+	flexRender,
+	getCoreRowModel,
+	getFilteredRowModel,
+	getPaginationRowModel,
+	getSortedRowModel,
+	useReactTable,
+	type ColumnDef,
+	type SortingState,
+} from '@tanstack/react-table'
+import { useMemo, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 interface DetailedStatsTableProps {
 	data: DetailedStatsRow[]
@@ -43,6 +55,8 @@ interface DetailedStatsTableProps {
  * - Quality color coding
  */
 export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
+	const t = useTranslations()
+
 	const [sorting, setSorting] = useState<SortingState>([
 		{ id: 'category', desc: false },
 		{ id: 'sortOrder', desc: false },
@@ -58,11 +72,15 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 		() => [
 			{
 				accessorKey: 'category',
-				header: 'Category',
+				header: t('table.category'),
 				cell: ({ row }) => {
 					const isVersionLevel = row.original.sortOrder === 1
 					return (
-						<div className={isVersionLevel ? 'font-semibold' : 'pl-4 text-muted-foreground'}>
+						<div
+							className={
+								isVersionLevel ? 'font-semibold' : 'pl-4 text-muted-foreground'
+							}
+						>
 							{getCategoryLabel(row.original.category)}
 						</div>
 					)
@@ -70,11 +88,15 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 			},
 			{
 				accessorKey: 'version',
-				header: 'Version',
+				header: t('table.version'),
 				cell: ({ row }) => {
 					const isVersionLevel = row.original.sortOrder === 1
 					return (
-						<div className={isVersionLevel ? 'font-semibold' : 'text-muted-foreground'}>
+						<div
+							className={
+								isVersionLevel ? 'font-semibold' : 'text-muted-foreground'
+							}
+						>
 							{row.original.version}
 						</div>
 					)
@@ -82,41 +104,45 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 			},
 			{
 				accessorKey: 'dates',
-				header: 'Dates',
+				header: t('table.dates'),
 				cell: ({ getValue }) => {
 					const value = getValue() as string | null
-					return <div className="text-sm">{value || '-'}</div>
+					return <div className='text-sm'>{value || '-'}</div>
 				},
 			},
 			{
 				accessorKey: 'totalRecords',
-				header: 'Total Records',
+				header: () => <div className='text-center'>{t('table.totalRecords')}</div>,
 				cell: ({ getValue }) => {
-					return <div className="text-right">{getValue() as number}</div>
+					return <div className='text-left'>{getValue() as number}</div>
 				},
 			},
 			{
 				accessorKey: 'recordsQualifiedAgents',
-				header: 'Qualified Agents',
+				header: () => <div className='text-center'>{t('table.qualifiedAgents')}</div>,
 				cell: ({ getValue }) => {
-					return <div className="text-right">{getValue() as number}</div>
+					return <div className='text-left'>{getValue() as number}</div>
 				},
 			},
 			{
 				accessorKey: 'changedRecords',
-				header: 'Changed',
+				header: () => <div className='text-center'>{t('table.recordsChanged')}</div>,
 				cell: ({ getValue }) => {
-					return <div className="text-right">{getValue() as number}</div>
+					return <div className='text-left'>{getValue() as number}</div>
 				},
 			},
 			{
 				accessorKey: 'goodPercentage',
-				header: 'Good %',
+				header: () => <div className='text-center'>{t('table.goodPercentage')}</div>,
 				cell: ({ getValue }) => {
 					const value = getValue() as number
 					return (
-						<div className="flex justify-end">
-							<span className={`inline-block px-2 py-1 rounded text-sm font-medium ${getQualityBgClass(value)}`}>
+						<div className='flex justify-left'>
+							<span
+								className={`inline-block px-2 py-1 rounded text-sm font-medium ${getQualityBgClass(
+									value
+								)}`}
+							>
 								{value.toFixed(1)}%
 							</span>
 						</div>
@@ -130,7 +156,7 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 				enableHiding: true,
 			},
 		],
-		[]
+		[t]
 	)
 
 	// Initialize table
@@ -161,7 +187,9 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 
 	// Handle CSV export
 	const handleExport = () => {
-		const filteredData = table.getFilteredRowModel().rows.map((row) => row.original)
+		const filteredData = table
+			.getFilteredRowModel()
+			.rows.map(row => row.original)
 		const today = new Date().toISOString().split('T')[0]
 		exportToCSV(filteredData, `ai_stats_${today}`)
 	}
@@ -169,30 +197,37 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 	return (
 		<Card>
 			<CardHeader>
-				<div className="flex flex-col gap-3 sm:gap-4">
-					<div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-						<div className="flex-1 min-w-0">
-							<CardTitle className="text-lg sm:text-xl">Detailed Statistics</CardTitle>
-							<CardDescription className="text-sm mt-1">
-								Quality metrics by category, version, and week
+				<div className='flex flex-col gap-3 sm:gap-4'>
+					<div className='flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3'>
+						<div className='flex-1 min-w-0'>
+							<CardTitle className='text-lg sm:text-xl'>
+								{t('table.detailedStatistics')}
+							</CardTitle>
+							<CardDescription className='text-sm mt-1'>
+								{t('table.detailedStatisticsDesc')}
 							</CardDescription>
 						</div>
 
 						{/* Export Button */}
-						<Button onClick={handleExport} variant="outline" size="sm" className="w-full sm:w-auto">
-							<IconDownload className="mr-2 h-4 w-4" />
-							Export CSV
+						<Button
+							onClick={handleExport}
+							variant='outline'
+							size='sm'
+							className='w-full sm:w-auto'
+						>
+							<IconDownload className='mr-2 h-4 w-4' />
+							{t('table.export')}
 						</Button>
 					</div>
 
 					{/* Search Input */}
-					<div className="relative w-full sm:max-w-sm">
-						<IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+					<div className='relative w-full sm:max-w-sm'>
+						<IconSearch className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
 						<Input
-							placeholder="Search by category..."
+							placeholder={t('table.searchByCategory')}
 							value={globalFilter}
-							onChange={(e) => setGlobalFilter(e.target.value)}
-							className="pl-10 text-sm"
+							onChange={e => setGlobalFilter(e.target.value)}
+							className='pl-10 text-sm'
 						/>
 					</div>
 				</div>
@@ -200,12 +235,12 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 
 			<CardContent>
 				{/* Table */}
-				<div className="rounded-md border overflow-x-auto">
-					<Table className="min-w-[640px]">
+				<div className='rounded-md border overflow-x-auto'>
+					<Table className='min-w-[640px]'>
 						<TableHeader>
-							{table.getHeaderGroups().map((headerGroup) => (
+							{table.getHeaderGroups().map(headerGroup => (
 								<TableRow key={headerGroup.id}>
-									{headerGroup.headers.map((header) => {
+									{headerGroup.headers.map(header => {
 										if (header.column.id === 'sortOrder') return null
 
 										return (
@@ -219,7 +254,10 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 														}
 														onClick={header.column.getToggleSortingHandler()}
 													>
-														{flexRender(header.column.columnDef.header, header.getContext())}
+														{flexRender(
+															header.column.columnDef.header,
+															header.getContext()
+														)}
 														{{
 															asc: ' ↑',
 															desc: ' ↓',
@@ -234,23 +272,31 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 						</TableHeader>
 						<TableBody>
 							{table.getRowModel().rows?.length ? (
-								table.getRowModel().rows.map((row) => (
+								table.getRowModel().rows.map(row => (
 									<TableRow
 										key={row.id}
 										data-state={row.getIsSelected() && 'selected'}
-										className={row.original.sortOrder === 1 ? 'bg-muted/50' : ''}
+										className={
+											row.original.sortOrder === 1 ? 'bg-muted/50' : ''
+										}
 									>
-										{row.getVisibleCells().map((cell) => (
+										{row.getVisibleCells().map(cell => (
 											<TableCell key={cell.id}>
-												{flexRender(cell.column.columnDef.cell, cell.getContext())}
+												{flexRender(
+													cell.column.columnDef.cell,
+													cell.getContext()
+												)}
 											</TableCell>
 										))}
 									</TableRow>
 								))
 							) : (
 								<TableRow>
-									<TableCell colSpan={columns.length} className="h-24 text-center">
-										No results found.
+									<TableCell
+										colSpan={columns.length}
+										className='h-24 text-center'
+									>
+										{t('table.noResults')}
 									</TableCell>
 								</TableRow>
 							)}
@@ -259,43 +305,58 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 				</div>
 
 				{/* Pagination */}
-				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-4">
-					<div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
-						Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
+				<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-4'>
+					<div className='text-xs sm:text-sm text-muted-foreground text-center sm:text-left'>
+						{t('table.showing')}{' '}
+						{table.getState().pagination.pageIndex *
+							table.getState().pagination.pageSize +
+							1}{' '}
+						{t('table.to')}{' '}
 						{Math.min(
-							(table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+							(table.getState().pagination.pageIndex + 1) *
+								table.getState().pagination.pageSize,
 							table.getFilteredRowModel().rows.length
 						)}{' '}
-						of {table.getFilteredRowModel().rows.length}
+						{t('table.of')} {table.getFilteredRowModel().rows.length}
 					</div>
-					<div className="flex flex-col sm:flex-row items-center gap-2">
-						<div className="flex items-center gap-2">
+					<div className='flex flex-col sm:flex-row items-center gap-2'>
+						<div className='flex items-center gap-2'>
 							<Button
-								variant="outline"
-								size="sm"
+								variant='outline'
+								size='sm'
 								onClick={() => table.previousPage()}
 								disabled={!table.getCanPreviousPage()}
-								className="text-xs sm:text-sm"
+								className='text-xs sm:text-sm'
 							>
-								<IconChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
-								<span className="hidden sm:inline">Previous</span>
+								<IconChevronLeft className='h-3 w-3 sm:h-4 sm:w-4' />
+								<span className='hidden sm:inline'>{t('table.previous')}</span>
 							</Button>
-							<div className="flex items-center gap-1">
+							<div className='flex items-center gap-1'>
 								{Array.from({ length: table.getPageCount() }, (_, i) => i)
-									.filter((page) => {
+									.filter(page => {
 										const current = table.getState().pagination.pageIndex
-										return page === 0 || page === table.getPageCount() - 1 || Math.abs(page - current) <= 1
+										return (
+											page === 0 ||
+											page === table.getPageCount() - 1 ||
+											Math.abs(page - current) <= 1
+										)
 									})
 									.map((page, idx, arr) => {
 										const showEllipsis = idx > 0 && page - arr[idx - 1] > 1
 										return (
-											<div key={page} className="flex items-center">
-												{showEllipsis && <span className="px-1 text-xs">...</span>}
+											<div key={page} className='flex items-center'>
+												{showEllipsis && (
+													<span className='px-1 text-xs'>...</span>
+												)}
 												<Button
-													variant={table.getState().pagination.pageIndex === page ? 'default' : 'outline'}
-													size="sm"
+													variant={
+														table.getState().pagination.pageIndex === page
+															? 'default'
+															: 'outline'
+													}
+													size='sm'
 													onClick={() => table.setPageIndex(page)}
-													className="w-7 h-7 sm:w-9 sm:h-9 text-xs sm:text-sm"
+													className='w-7 h-7 sm:w-9 sm:h-9 text-xs sm:text-sm'
 												>
 													{page + 1}
 												</Button>
@@ -304,14 +365,14 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 									})}
 							</div>
 							<Button
-								variant="outline"
-								size="sm"
+								variant='outline'
+								size='sm'
 								onClick={() => table.nextPage()}
 								disabled={!table.getCanNextPage()}
-								className="text-xs sm:text-sm"
+								className='text-xs sm:text-sm'
 							>
-								<span className="hidden sm:inline">Next</span>
-								<IconChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+								<span className='hidden sm:inline'>{t('table.next')}</span>
+								<IconChevronRight className='h-3 w-3 sm:h-4 sm:w-4' />
 							</Button>
 						</div>
 					</div>
