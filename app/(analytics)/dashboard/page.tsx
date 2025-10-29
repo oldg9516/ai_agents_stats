@@ -1,6 +1,6 @@
 import { DashboardContent } from '@/components/dashboard-content'
-import { Suspense } from 'react'
 import { KPISectionSkeleton } from '@/components/loading/kpi-skeleton'
+import { Suspense } from 'react'
 
 /**
  * Dashboard Page - Server Component
