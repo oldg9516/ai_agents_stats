@@ -1,10 +1,16 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { ResponsiveHeatMap } from '@nivo/heatmap'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import type { CorrelationCell } from '@/lib/supabase/types'
-import { useTheme } from 'next-themes'
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card'
 import { getRequirement } from '@/constants/requirement-types'
+import type { CorrelationCell } from '@/lib/supabase/types'
+import { ResponsiveHeatMap } from '@nivo/heatmap'
 
 interface RequirementsCorrelationHeatmapProps {
 	data: CorrelationCell[]
@@ -21,39 +27,34 @@ interface RequirementsCorrelationHeatmapProps {
 export function RequirementsCorrelationHeatmap({
 	data,
 }: RequirementsCorrelationHeatmapProps) {
-	const { resolvedTheme } = useTheme()
-	const isDark = resolvedTheme === 'dark'
 
 	// Transform data for @nivo/heatmap
 	// Group by Y axis (rows)
-	const heatmapData = data.reduce(
-		(acc, cell) => {
-			const existingRow = acc.find((row) => row.id === cell.y)
-			const label = getRequirement(cell.x as any)?.shortLabel || cell.x
+	const heatmapData = data.reduce((acc, cell) => {
+		const existingRow = acc.find(row => row.id === cell.y)
+		const label = getRequirement(cell.x as any)?.shortLabel || cell.x
 
-			if (existingRow) {
-				existingRow.data.push({
-					x: label,
-					y: Math.round(cell.value * 100), // Convert to percentage
-				})
-			} else {
-				acc.push({
-					id: cell.y,
-					data: [
-						{
-							x: label,
-							y: Math.round(cell.value * 100),
-						},
-					],
-				})
-			}
-			return acc
-		},
-		[] as Array<{ id: string; data: Array<{ x: string; y: number }> }>
-	)
+		if (existingRow) {
+			existingRow.data.push({
+				x: label,
+				y: Math.round(cell.value * 100), // Convert to percentage
+			})
+		} else {
+			acc.push({
+				id: cell.y,
+				data: [
+					{
+						x: label,
+						y: Math.round(cell.value * 100),
+					},
+				],
+			})
+		}
+		return acc
+	}, [] as Array<{ id: string; data: Array<{ x: string; y: number }> }>)
 
 	// Transform row IDs to short labels
-	const transformedData = heatmapData.map((row) => ({
+	const transformedData = heatmapData.map(row => ({
 		id: getRequirement(row.id as any)?.shortLabel || row.id,
 		data: row.data,
 	}))
@@ -81,16 +82,18 @@ export function RequirementsCorrelationHeatmap({
 	return (
 		<Card className='min-w-0'>
 			<CardHeader>
-				<CardTitle className='text-lg sm:text-xl'>Requirements Correlation</CardTitle>
+				<CardTitle className='text-lg sm:text-xl'>
+					Requirements Correlation
+				</CardTitle>
 				<CardDescription className='text-sm'>
 					How often requirements occur together (%)
 				</CardDescription>
 			</CardHeader>
 			<CardContent className='overflow-hidden'>
-				<div className='h-[300px] w-full'>
+				<div className='h-[400px] w-full'>
 					<ResponsiveHeatMap
 						data={transformedData}
-						margin={{ top: 60, right: 60, bottom: 60, left: 80 }}
+						margin={{ top: 60, right: 60, bottom: 80, left: 80 }}
 						valueFormat='>-.0f'
 						axisTop={{
 							tickSize: 5,
@@ -110,11 +113,13 @@ export function RequirementsCorrelationHeatmap({
 						colors={{
 							type: 'sequential',
 							scheme: 'blues',
+							minValue: 0,
+							maxValue: 100,
 						}}
-						emptyColor='#555555'
+						emptyColor='hsl(var(--muted))'
 						borderColor={{
 							from: 'color',
-							modifiers: [['darker', 0.6]],
+							modifiers: [['darker', 0.4]],
 						}}
 						labelTextColor={{
 							from: 'color',
@@ -140,19 +145,17 @@ export function RequirementsCorrelationHeatmap({
 						]}
 						theme={{
 							text: {
-								fill: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 84% 4.9%)',
+								fill: 'hsl(var(--foreground))',
 								fontSize: 11,
 							},
 							tooltip: {
 								container: {
-									background: isDark ? 'hsl(222.2 84% 4.9%)' : 'hsl(0 0% 100%)',
-									color: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 84% 4.9%)',
+									background: 'hsl(var(--popover))',
+									color: 'hsl(var(--popover-foreground))',
 									fontSize: 12,
 									border: '1px solid',
-									borderColor: isDark
-										? 'hsl(217.2 32.6% 17.5%)'
-										: 'hsl(214.3 31.8% 91.4%)',
-									borderRadius: '6px',
+									borderColor: 'hsl(var(--border))',
+									borderRadius: 'var(--radius)',
 									padding: '8px 12px',
 								},
 							},

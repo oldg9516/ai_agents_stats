@@ -39,7 +39,7 @@ export function ResolutionTimeChart({ data }: ResolutionTimeChartProps) {
 	const chartConfig: ChartConfig = {
 		avgTime: {
 			label: 'Avg Resolution Time',
-			color: 'hsl(var(--chart-1))',
+			color: 'var(--chart-1)',
 		},
 	}
 

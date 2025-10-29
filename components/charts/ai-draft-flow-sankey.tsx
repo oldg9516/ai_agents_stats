@@ -1,9 +1,9 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { ResponsiveSankey } from '@nivo/sankey'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { SankeyData } from '@/lib/supabase/types'
-import { useTheme } from 'next-themes'
 
 interface AIDraftFlowSankeyProps {
 	data: SankeyData | null
@@ -18,8 +18,15 @@ interface AIDraftFlowSankeyProps {
  * - Created → Used/Edited/Rejected → Resolved/Pending
  */
 export function AIDraftFlowSankey({ data }: AIDraftFlowSankeyProps) {
-	const { resolvedTheme } = useTheme()
-	const isDark = resolvedTheme === 'dark'
+	// Detect if mobile for responsive margins
+	const [isMobile, setIsMobile] = useState(false)
+
+	useEffect(() => {
+		const checkMobile = () => setIsMobile(window.innerWidth < 768)
+		checkMobile()
+		window.addEventListener('resize', checkMobile)
+		return () => window.removeEventListener('resize', checkMobile)
+	}, [])
 
 	if (!data || data.links.length === 0) {
 		return (
@@ -39,6 +46,21 @@ export function AIDraftFlowSankey({ data }: AIDraftFlowSankeyProps) {
 		)
 	}
 
+	// Get theme colors from CSS variables
+	const getChartColors = () => {
+		if (typeof window === 'undefined') return []
+		const style = getComputedStyle(document.documentElement)
+		return [
+			style.getPropertyValue('--chart-1').trim(),
+			style.getPropertyValue('--chart-2').trim(),
+			style.getPropertyValue('--chart-3').trim(),
+			style.getPropertyValue('--chart-4').trim(),
+			style.getPropertyValue('--chart-5').trim(),
+		]
+	}
+
+	const chartColors = getChartColors()
+
 	return (
 		<Card className='min-w-0'>
 			<CardHeader>
@@ -51,37 +73,41 @@ export function AIDraftFlowSankey({ data }: AIDraftFlowSankeyProps) {
 				<div className='h-[300px] w-full'>
 					<ResponsiveSankey
 						data={data}
-						margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+						margin={
+							isMobile
+								? { top: 10, right: 10, bottom: 10, left: 10 }
+								: { top: 20, right: 100, bottom: 20, left: 100 }
+						}
 						align='justify'
-						colors={{ scheme: 'category10' }}
+						colors={chartColors}
 						nodeOpacity={1}
-						nodeThickness={18}
-						nodeSpacing={24}
+						nodeThickness={isMobile ? 12 : 18}
+						nodeSpacing={isMobile ? 16 : 24}
 						nodeBorderWidth={0}
 						linkOpacity={0.5}
 						linkHoverOthersOpacity={0.1}
 						linkContract={3}
 						enableLinkGradient={true}
-						labelPosition='outside'
+						labelPosition={isMobile ? 'inside' : 'outside'}
 						labelOrientation='horizontal'
-						labelPadding={16}
+						labelPadding={isMobile ? 4 : 8}
 						labelTextColor={{
 							from: 'color',
-							modifiers: [isDark ? ['darker', 3] : ['brighter', 3]],
+							modifiers: [['darker', 2]],
 						}}
 						theme={{
 							text: {
-								fill: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 84% 4.9%)',
-								fontSize: 11,
+								fill: 'hsl(var(--foreground))',
+								fontSize: isMobile ? 9 : 11,
 							},
 							tooltip: {
 								container: {
-									background: isDark ? 'hsl(222.2 84% 4.9%)' : 'hsl(0 0% 100%)',
-									color: isDark ? 'hsl(210 40% 98%)' : 'hsl(222.2 84% 4.9%)',
+									background: 'hsl(var(--popover))',
+									color: 'hsl(var(--popover-foreground))',
 									fontSize: 12,
 									border: '1px solid',
-									borderColor: isDark ? 'hsl(217.2 32.6% 17.5%)' : 'hsl(214.3 31.8% 91.4%)',
-									borderRadius: '6px',
+									borderColor: 'hsl(var(--border))',
+									borderRadius: 'var(--radius)',
 									padding: '8px 12px',
 								},
 							},
