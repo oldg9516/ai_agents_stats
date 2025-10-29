@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Support Overview Database Queries
  *
@@ -5,19 +6,19 @@
  * between support_threads_data and ai_human_comparison tables
  */
 
-import type { SupabaseClient } from '@supabase/supabase-js'
-import type {
-	SupportKPIs,
-	StatusDistribution,
-	ResolutionTimeData,
-	SankeyData,
-	CorrelationCell,
-	SupportThread,
-	SupportFilters,
-	TrendData,
-} from './types'
 import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 import { getAllRequirementKeys } from '@/constants/requirement-types'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type {
+	CorrelationCell,
+	ResolutionTimeData,
+	SankeyData,
+	StatusDistribution,
+	SupportFilters,
+	SupportKPIs,
+	SupportThread,
+	TrendData,
+} from './types'
 
 /**
  * Calculate trend between current and previous values
@@ -77,7 +78,7 @@ export async function fetchSupportKPIs(
 		}
 		if (requirements.length > 0) {
 			// Filter threads that have at least one of the selected requirements
-			requirements.forEach((req) => {
+			requirements.forEach(req => {
 				query = query.eq(req, true)
 			})
 		}
@@ -102,34 +103,32 @@ export async function fetchSupportKPIs(
 	// Calculate KPIs for current period
 	const currentTotal = currentData?.length || 0
 	const currentWithDraft =
-		currentData?.filter((t) => t.ai_draft_reply !== null).length || 0
+		currentData?.filter(t => t.ai_draft_reply !== null).length || 0
 	const currentRequiresReply =
-		currentData?.filter((t) => t.requires_reply === true).length || 0
+		currentData?.filter(t => t.requires_reply === true).length || 0
 	const currentResolved =
-		currentData?.filter((t) => t.status === 'resolved').length || 0
+		currentData?.filter(t => t.status === 'Reply is ready').length || 0
 
 	const currentRequirementsCount =
 		currentData?.reduce((sum, thread) => {
 			return (
-				sum +
-				getAllRequirementKeys().filter((key) => thread[key] === true).length
+				sum + getAllRequirementKeys().filter(key => thread[key] === true).length
 			)
 		}, 0) || 0
 
 	// Calculate KPIs for previous period
 	const previousTotal = previousData?.length || 0
 	const previousWithDraft =
-		previousData?.filter((t) => t.ai_draft_reply !== null).length || 0
+		previousData?.filter(t => t.ai_draft_reply !== null).length || 0
 	const previousRequiresReply =
-		previousData?.filter((t) => t.requires_reply === true).length || 0
+		previousData?.filter(t => t.requires_reply === true).length || 0
 	const previousResolved =
-		previousData?.filter((t) => t.status === 'resolved').length || 0
+		previousData?.filter(t => t.status === 'Reply is ready').length || 0
 
 	const previousRequirementsCount =
 		previousData?.reduce((sum, thread) => {
 			return (
-				sum +
-				getAllRequirementKeys().filter((key) => thread[key] === true).length
+				sum + getAllRequirementKeys().filter(key => thread[key] === true).length
 			)
 		}, 0) || 0
 
@@ -194,7 +193,7 @@ export async function fetchStatusDistribution(
 		.from('support_threads_data')
 		.select('status')
 		.gte('created_at', dateRange.from.toISOString())
-		.lte('created_at', dateRange.to.toISOString())
+		.lt('created_at', dateRange.to.toISOString())
 
 	if (statuses.length > 0) {
 		query = query.in('status', statuses)
@@ -206,7 +205,7 @@ export async function fetchStatusDistribution(
 		query = query.in('prompt_version', versions)
 	}
 	if (requirements.length > 0) {
-		requirements.forEach((req) => {
+		requirements.forEach(req => {
 			query = query.eq(req, true)
 		})
 	}
@@ -219,7 +218,7 @@ export async function fetchStatusDistribution(
 	const statusCounts = new Map<string, number>()
 	const total = data?.length || 0
 
-	data?.forEach((thread) => {
+	data?.forEach(thread => {
 		const status = thread.status || 'unknown'
 		statusCounts.set(status, (statusCounts.get(status) || 0) + 1)
 	})
@@ -241,13 +240,13 @@ export async function fetchResolutionTimeData(
 ): Promise<ResolutionTimeData[]> {
 	const { dateRange, requestTypes, requirements, versions } = filters
 
-	// Only get resolved threads
+	// Only get threads with "Reply is ready" status (resolved)
 	let query = supabase
 		.from('support_threads_data')
 		.select('created_at, status')
-		.eq('status', 'resolved')
+		.eq('status', 'Reply is ready')
 		.gte('created_at', dateRange.from.toISOString())
-		.lte('created_at', dateRange.to.toISOString())
+		.lt('created_at', dateRange.to.toISOString())
 
 	if (requestTypes.length > 0) {
 		query = query.in('request_type', requestTypes)
@@ -256,7 +255,7 @@ export async function fetchResolutionTimeData(
 		query = query.in('prompt_version', versions)
 	}
 	if (requirements.length > 0) {
-		requirements.forEach((req) => {
+		requirements.forEach(req => {
 			query = query.eq(req, true)
 		})
 	}
@@ -266,18 +265,17 @@ export async function fetchResolutionTimeData(
 	if (error) throw error
 
 	// Group by week
-	const weekData = new Map<
-		string,
-		{ totalTime: number; count: number }
-	>()
+	const weekData = new Map<string, { totalTime: number; count: number }>()
 
-	data?.forEach((thread) => {
+	data?.forEach(thread => {
 		if (!thread.created_at) return
 
 		const createdDate = new Date(thread.created_at)
 		const weekStart = new Date(createdDate)
 		weekStart.setDate(
-			weekStart.getDate() - weekStart.getDay() + (weekStart.getDay() === 0 ? -6 : 1)
+			weekStart.getDate() -
+				weekStart.getDay() +
+				(weekStart.getDay() === 0 ? -6 : 1)
 		)
 		weekStart.setHours(0, 0, 0, 0)
 		const weekKey = weekStart.toISOString().split('T')[0]
@@ -293,13 +291,15 @@ export async function fetchResolutionTimeData(
 		})
 	})
 
-	return Array.from(weekData.entries())
+	const result = Array.from(weekData.entries())
 		.map(([weekStart, { totalTime, count }]) => ({
 			weekStart,
 			avgResolutionTime: count > 0 ? totalTime / count : 0,
 			threadCount: count,
 		}))
 		.sort((a, b) => a.weekStart.localeCompare(b.weekStart))
+
+	return result
 }
 
 /**
@@ -316,7 +316,7 @@ export async function fetchSankeyData(
 		.from('support_threads_data')
 		.select('ai_draft_reply, requires_editing, status')
 		.gte('created_at', dateRange.from.toISOString())
-		.lte('created_at', dateRange.to.toISOString())
+		.lt('created_at', dateRange.to.toISOString())
 
 	if (statuses.length > 0) {
 		query = query.in('status', statuses)
@@ -328,7 +328,7 @@ export async function fetchSankeyData(
 		query = query.in('prompt_version', versions)
 	}
 	if (requirements.length > 0) {
-		requirements.forEach((req) => {
+		requirements.forEach(req => {
 			query = query.eq(req, true)
 		})
 	}
@@ -347,7 +347,7 @@ export async function fetchSankeyData(
 		pending: 0,
 	}
 
-	data?.forEach((thread) => {
+	data?.forEach(thread => {
 		if (thread.ai_draft_reply) {
 			flowCounts.created++
 
@@ -380,14 +380,30 @@ export async function fetchSankeyData(
 		{ source: 'created', target: 'used', value: flowCounts.usedAsIs },
 		{ source: 'created', target: 'edited', value: flowCounts.edited },
 		{ source: 'created', target: 'rejected', value: flowCounts.rejected },
-		{ source: 'used', target: 'resolved', value: Math.floor(flowCounts.resolved / 2) },
-		{ source: 'edited', target: 'resolved', value: Math.floor(flowCounts.resolved / 2) },
-		{ source: 'used', target: 'pending', value: Math.floor(flowCounts.pending / 2) },
-		{ source: 'edited', target: 'pending', value: Math.floor(flowCounts.pending / 2) },
+		{
+			source: 'used',
+			target: 'resolved',
+			value: Math.floor(flowCounts.resolved / 2),
+		},
+		{
+			source: 'edited',
+			target: 'resolved',
+			value: Math.floor(flowCounts.resolved / 2),
+		},
+		{
+			source: 'used',
+			target: 'pending',
+			value: Math.floor(flowCounts.pending / 2),
+		},
+		{
+			source: 'edited',
+			target: 'pending',
+			value: Math.floor(flowCounts.pending / 2),
+		},
 	]
 
 	// Filter out zero-value links
-	const filteredLinks = links.filter((link) => link.value > 0)
+	const filteredLinks = links.filter(link => link.value > 0)
 
 	return { nodes, links: filteredLinks }
 }
@@ -408,7 +424,7 @@ export async function fetchCorrelationMatrix(
 			'requires_reply, requires_identification, requires_editing, requires_subscription_info, requires_tracking_info'
 		)
 		.gte('created_at', dateRange.from.toISOString())
-		.lte('created_at', dateRange.to.toISOString())
+		.lt('created_at', dateRange.to.toISOString())
 
 	if (statuses.length > 0) {
 		query = query.in('status', statuses)
@@ -431,7 +447,7 @@ export async function fetchCorrelationMatrix(
 	for (const req1 of requirementKeys) {
 		for (const req2 of requirementKeys) {
 			const bothTrue =
-				data?.filter((t) => t[req1] === true && t[req2] === true).length || 0
+				data?.filter(t => t[req1] === true && t[req2] === true).length || 0
 			const total = data?.length || 0
 
 			const correlation = total > 0 ? bothTrue / total : 0
@@ -461,7 +477,7 @@ export async function fetchSupportThreads(
 		.from('support_threads_data')
 		.select('*')
 		.gte('created_at', dateRange.from.toISOString())
-		.lte('created_at', dateRange.to.toISOString())
+		.lt('created_at', dateRange.to.toISOString())
 
 	if (statuses.length > 0) {
 		query = query.in('status', statuses)
@@ -473,7 +489,7 @@ export async function fetchSupportThreads(
 		query = query.in('prompt_version', versions)
 	}
 	if (requirements.length > 0) {
-		requirements.forEach((req) => {
+		requirements.forEach(req => {
 			query = query.eq(req, true)
 		})
 	}
@@ -482,28 +498,52 @@ export async function fetchSupportThreads(
 
 	if (threadsError) throw threadsError
 
-	// For each thread, try to find matching record in ai_human_comparison
-	// Match by thread_id or ticket_id and prompt_version
-	const enrichedThreads: SupportThread[] = await Promise.all(
-		(threads || []).map(async (thread) => {
-			// Try to find matching comparison record
-			const { data: comparisonData } = await supabase
-				.from('ai_human_comparison')
-				.select('changed, email')
-				.eq('prompt_version', thread.prompt_version || '')
-				.in('email', QUALIFIED_AGENTS)
-				.limit(1)
-				.single()
+	// Get unique prompt versions from threads
+	const promptVersions = Array.from(
+		new Set(threads.map(t => t.prompt_version).filter(Boolean))
+	) as string[]
 
-			return {
-				...thread,
-				changed: comparisonData?.changed ?? null,
-				email: comparisonData?.email ?? null,
-				qualityPercentage:
-					comparisonData?.changed === false ? 100 : comparisonData?.changed === true ? 0 : null,
-			}
-		})
-	)
+	// Fetch all comparison data in a single query
+	const { data: comparisonData, error: comparisonError } = await supabase
+		.from('ai_human_comparison')
+		.select('prompt_version, changed, email')
+		.in('prompt_version', promptVersions)
+		.in('email', QUALIFIED_AGENTS)
+
+	if (comparisonError) {
+		console.error('Error fetching comparison data:', comparisonError)
+	}
+
+	// Create a map of prompt_version -> comparison data (first match only)
+	const comparisonMap = new Map<string, { changed: boolean; email: string }>()
+
+	comparisonData?.forEach(comp => {
+		if (!comparisonMap.has(comp.prompt_version)) {
+			comparisonMap.set(comp.prompt_version, {
+				changed: comp.changed,
+				email: comp.email,
+			})
+		}
+	})
+
+	// Enrich threads with comparison data
+	const enrichedThreads: SupportThread[] = threads.map(thread => {
+		const comparison = thread.prompt_version
+			? comparisonMap.get(thread.prompt_version)
+			: undefined
+
+		return {
+			...thread,
+			changed: comparison?.changed ?? null,
+			email: comparison?.email ?? null,
+			qualityPercentage:
+				comparison?.changed === false
+					? 100
+					: comparison?.changed === true
+					? 0
+					: null,
+		}
+	})
 
 	return enrichedThreads
 }
@@ -538,6 +578,10 @@ export async function fetchThreadDetail(
 		changed: comparisonData?.changed ?? null,
 		email: comparisonData?.email ?? null,
 		qualityPercentage:
-			comparisonData?.changed === false ? 100 : comparisonData?.changed === true ? 0 : null,
+			comparisonData?.changed === false
+				? 100
+				: comparisonData?.changed === true
+				? 0
+				: null,
 	}
 }
