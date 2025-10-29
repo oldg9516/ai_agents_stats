@@ -47,6 +47,8 @@ npm run lint
 ### Key Dependencies
 - **@supabase/supabase-js**: PostgreSQL database client for real-time data
 - **@tanstack/react-table**: Data table management with sorting, filtering, pagination
+- **@tanstack/react-query**: Data fetching and caching
+- **zustand**: State management for filters
 - **Recharts**: Interactive charts and visualizations (line, pie, bar charts)
 - **@nivo/sankey**: Sankey diagram for flow visualization
 - **@nivo/heatmap**: Heatmap for correlation matrices
@@ -60,20 +62,24 @@ npm run lint
 
 ```
 app/
-├── layout.tsx           # Root layout with Geist fonts
-├── page.tsx            # Landing page
-├── dashboard/
-│   └── page.tsx        # Main dashboard with KPIs, charts, filters, and table
-├── detailed-stats/
-│   └── page.tsx        # Full-page table view
-├── support-overview/
-│   ├── page.tsx        # Support operations overview
-│   ├── error.tsx       # Error boundary
-│   └── [threadId]/
-│       └── page.tsx    # Thread detail view
-├── settings/
-│   └── page.tsx        # Settings (placeholder)
-└── globals.css         # Global styles with Tailwind directives
+├── layout.tsx           # Root layout with Geist fonts and providers
+├── globals.css          # Global styles with Tailwind directives
+├── (root)/
+│   └── page.tsx        # Landing page
+└── (analytics)/        # Route group for analytics pages
+    ├── layout.tsx      # Analytics layout with sidebar
+    ├── dashboard/
+    │   ├── page.tsx    # Main dashboard with KPIs, charts, filters, and table
+    │   └── error.tsx   # Error boundary
+    ├── detailed-stats/
+    │   └── page.tsx    # Full-page table view
+    ├── support-overview/
+    │   ├── page.tsx        # Support operations overview
+    │   ├── error.tsx       # Error boundary
+    │   └── [threadId]/
+    │       └── page.tsx    # Thread detail view (uses server Supabase client)
+    └── settings/
+        └── page.tsx    # Settings (placeholder)
 
 components/
 ├── ui/                 # shadcn/ui components
@@ -90,27 +96,44 @@ components/
 
 lib/
 ├── supabase/
-│   ├── client.ts       # Supabase client initialization
+│   ├── client.ts       # Client-side Supabase (for Client Components)
+│   ├── server.ts       # Server-side Supabase (for Server Components, Actions, Routes)
 │   ├── types.ts        # Database types (auto-generated)
 │   ├── queries.ts      # SQL queries for dashboard data
-│   ├── queries-support.ts      # SQL queries for support overview
-│   └── realtime.ts     # Real-time subscription setup
+│   └── queries-support.ts      # SQL queries for support overview
+├── actions/
+│   └── support-actions.ts      # Server Actions for support data
+├── queries/
+│   ├── dashboard-queries.ts    # React Query functions for dashboard
+│   ├── support-queries.ts      # React Query functions for support
+│   └── index.ts                # Query exports
+├── store/
+│   ├── index.ts                # Zustand store initialization
+│   ├── slices/
+│   │   ├── dashboard-slice.ts  # Dashboard filter state
+│   │   └── support-slice.ts    # Support filter state
+│   └── hooks/
+│       ├── use-dashboard-filters.ts  # Dashboard filter hooks
+│       └── use-support-filters.ts    # Support filter hooks
+├── providers/
+│   └── query-provider.tsx      # React Query provider wrapper
 ├── hooks/
-│   ├── use-dashboard-data.ts   # Main data fetching hook
-│   ├── use-filters.ts          # Filter state management (dashboard)
+│   ├── use-dashboard-data.ts   # Dashboard data fetching hook
+│   ├── use-filters.ts          # Legacy filter hook (dashboard)
 │   ├── use-realtime.ts         # Real-time updates hook
 │   ├── use-support-data.ts     # Support data fetching hook
-│   └── use-support-filters.ts  # Support filter state management
+│   └── use-support-filters.ts  # Legacy filter hook (support)
 └── utils/
     ├── date.ts         # Date formatting utilities
     ├── calculations.ts # Trend calculations, quality scores
     ├── export.ts       # CSV export logic (dashboard)
     ├── export-support.ts       # CSV export logic (support)
-    └── support-calculations.ts # Support metrics calculations
+    ├── support-calculations.ts # Support metrics calculations
+    └── parse-filters.ts        # Filter parsing utilities
 
 constants/
 ├── qualified-agents.ts # List of qualified agent emails
-├── support-statuses.ts # Support status definitions
+├── support-statuses.ts # Support status definitions (11 real statuses from DB)
 ├── request-types.ts    # Request type definitions
 └── requirement-types.ts # Requirement flag definitions
 ```
@@ -166,15 +189,35 @@ The **Support Overview** section monitors support thread operations and AI draft
 - `thread_id` (text) - Unique thread identifier
 - `ticket_id` (text) - Associated ticket ID
 - `request_type` (text) - Type of support request
-- `status` (text) - Thread status (pending_response, waiting_on_customer, resolved, escalated, in_progress)
+- `status` (text) - Thread status (11 possible values from database):
+  - `AI Processing` - AI is processing the request
+  - `Data collected` - Required data has been collected
+  - `Getting tracking data` - Fetching tracking information
+  - `Got tracking data` - Tracking data retrieved
+  - `Identifying` - Identifying user
+  - `Identifying — Many users` - Multiple users found
+  - `Identifying — Not found` - User not found
+  - `new` - New thread
+  - `Reply is ready` - Response is ready (used for resolution calculations)
+  - `Reply not required` - No response needed
+  - `ZOHO draft created` - Draft created in ZOHO
 - `requires_reply` (boolean) - Whether customer response is needed
 - `requires_identification` (boolean) - Whether identity verification is needed
 - `requires_editing` (boolean) - Whether AI draft needs human editing
 - `requires_subscription_info` (boolean) - Whether subscription info is needed
 - `requires_tracking_info` (boolean) - Whether tracking info is needed
+- `requires_box_contents_info` (boolean) - Whether box contents info is needed
+- `user` (text) - User identifier
+- `identification` (text) - Identification data
+- `subscription_info` (text) - Subscription information
+- `tracking_info` (text) - Tracking information
+- `box_contents_info` (text) - Box contents information
 - `ai_draft_reply` (text) - AI-generated response content
+- `full_request` (text) - Complete request text
+- `request_subtype` (text) - Request subtype
 - `prompt_version` (text) - Version of prompt used
 - `created_at` (timestamp) - Thread creation time
+- `thread_date` (timestamp) - Thread date
 
 **JOIN Strategy**: Support overview combines data from `support_threads_data` and `ai_human_comparison` tables via JOIN on `prompt_version` and qualified agent emails to calculate quality metrics.
 
@@ -183,14 +226,14 @@ The **Support Overview** section monitors support thread operations and AI draft
 **4 KPI Cards**:
 - AI Draft Coverage - % of threads with AI-generated draft
 - Reply Required - % of threads requiring customer response
-- Resolution Rate - % of threads marked as resolved
+- Resolution Rate - % of threads with status 'Reply is ready'
 - Avg Requirements - Average number of requirements per thread
 
 **4 Charts**:
-- Status Distribution (Recharts Pie) - Breakdown by status
-- Resolution Time (Recharts Bar) - Average time to resolve by week
-- AI Draft Flow (Nivo Sankey) - Journey from draft creation → usage/editing → resolution
-- Requirements Correlation (Nivo Heatmap) - Which requirements co-occur
+- Status Distribution (Recharts Pie) - Breakdown by status with theme colors
+- Resolution Time (Recharts Bar) - Average time to resolve by week (filters by 'Reply is ready' status)
+- AI Draft Flow (Nivo Sankey) - Journey from draft creation → usage/editing → resolution (responsive with mobile support)
+- Requirements Correlation (Nivo Heatmap) - Which requirements co-occur (with theme colors)
 
 **Filters**:
 - Date range picker
@@ -206,12 +249,13 @@ The **Support Overview** section monitors support thread operations and AI draft
 - CSV export
 - Click row → navigate to thread detail page
 
-**Thread Detail Page** (`/support-overview/[threadId]`):
+**Thread Detail Page** (`/(analytics)/support-overview/[threadId]`):
 - Complete thread metadata
 - Quality score from JOIN with ai_human_comparison
 - Active requirements breakdown
 - Full AI draft content
 - Reviewed by (qualified agent email)
+- Uses server-side Supabase client for data fetching
 
 ### Data Flow
 
@@ -237,6 +281,61 @@ The **Support Overview** section monitors support thread operations and AI draft
 - React JSX runtime configured
 - Target: ES2017
 
+## State Management
+
+### Zustand Store
+The app uses Zustand for global filter state management:
+
+**Dashboard Slice** (`lib/store/slices/dashboard-slice.ts`):
+- Date range filter
+- Version filter
+- Category filter
+- Agent filter
+- Persisted to localStorage
+
+**Support Slice** (`lib/store/slices/support-slice.ts`):
+- Date range filter
+- Status filter
+- Request type filter
+- Requirements filter
+- Version filter
+- Persisted to localStorage
+
+**Usage**:
+```typescript
+import { useDashboardFilters } from '@/lib/store/hooks'
+
+const { filters, setDateRange, setVersions, resetFilters } = useDashboardFilters()
+```
+
+### React Query
+Data fetching is managed with TanStack Query:
+
+**Provider** (`lib/providers/query-provider.tsx`):
+- Wraps app with QueryClientProvider
+- Configured with default staleTime and cacheTime
+
+**Query Functions** (`lib/queries/`):
+- `dashboard-queries.ts` - Dashboard data queries
+- `support-queries.ts` - Support data queries
+- Uses React Query hooks (useQuery, useMutation)
+
+**Server Actions** (`lib/actions/`):
+- `support-actions.ts` - Server-side support data fetching
+- Uses server Supabase client
+
+## Chart Color Scheme
+
+All charts use a consistent color palette from CSS variables:
+- `--chart-1` through `--chart-5` (5-color rotation)
+- Defined in [globals.css](app/globals.css#L66-L70)
+- Automatically work in light and dark modes
+
+**Important**:
+- Status names with spaces/special chars must be converted to safe CSS variable names
+- Use `toSafeCssName()` helper to replace non-alphanumeric chars with dashes
+- Example: `"Reply is ready"` → `Reply-is-ready` for CSS variable compatibility
+
 ## MCP Servers
 
 Two MCP servers are configured in [.mcp.json](.mcp.json):
@@ -261,6 +360,17 @@ Two MCP servers are configured in [.mcp.json](.mcp.json):
 
 2. **Adding New Features**: Refer to [PRD.md](PRD.md) for complete feature specifications and implementation phases
 
-3. **Database Queries**: All SQL queries should be centralized in `lib/supabase/queries.ts`
+3. **Database Queries**: All SQL queries should be centralized in:
+   - `lib/supabase/queries.ts` - Dashboard queries
+   - `lib/supabase/queries-support.ts` - Support queries
 
-4. **Filters**: All dashboard filters sync to URL params (shareable links) and localStorage (persistence)
+4. **State Management**:
+   - Use Zustand store for filter state
+   - Use React Query for data fetching
+   - Server Components use `supabaseServer` from `lib/supabase/server.ts`
+   - Client Components use `supabase` from `lib/supabase/client.ts`
+
+5. **Charts**:
+   - Always use CSS variables from `--chart-1` to `--chart-5`
+   - Convert status/category names with spaces to safe CSS names
+   - Test in both light and dark modes
