@@ -1,6 +1,7 @@
 'use client'
 
 import {
+	IconBook,
 	IconCamera,
 	IconDashboard,
 	IconDatabase,
@@ -53,6 +54,11 @@ const data = {
 			title: 'Support Overview',
 			url: '/support-overview',
 			icon: IconHeadset,
+		},
+		{
+			title: 'Documentation',
+			url: '/docs',
+			icon: IconBook,
 		},
 		{
 			title: 'Settings',
