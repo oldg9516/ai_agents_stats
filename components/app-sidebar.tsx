@@ -9,15 +9,15 @@ import {
 	IconFileDescription,
 	IconFileWord,
 	IconHeadset,
+	IconHeartBroken,
 	IconHelp,
-	IconInnerShadowTop,
 	IconListDetails,
 	IconReport,
 	IconSearch,
 	IconSettings,
 } from '@tabler/icons-react'
-import * as React from 'react'
 import { useTranslations } from 'next-intl'
+import * as React from 'react'
 
 import { NavDocuments } from '@/components/nav-documents'
 import { NavMain } from '@/components/nav-main'
@@ -160,8 +160,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 							className='data-[slot=sidebar-menu-button]:!p-1.5'
 						>
 							<Link href='/'>
-								<IconInnerShadowTop className='!size-5' />
-								<span className='text-base font-semibold'>{tSidebar('appTitle')}</span>
+								<IconHeartBroken className='!size-5' />
+								<span className='text-base font-semibold'>
+									{tSidebar('appTitle')}
+								</span>
 							</Link>
 						</SidebarMenuButton>
 					</SidebarMenuItem>
