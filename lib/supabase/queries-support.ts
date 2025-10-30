@@ -117,33 +117,42 @@ export async function fetchSupportKPIs(
 
 	if (previousError) throw previousError
 
+	// Type assertion for data - we know the structure from our select
+	type KPIRecord = {
+		ai_draft_reply: string | null
+		requires_reply: boolean
+		status: string
+		[key: string]: any // For requirement fields
+	}
+
+	const currentRecords = (currentData || []) as unknown as KPIRecord[]
+	const previousRecords = (previousData || []) as unknown as KPIRecord[]
+
 	// Calculate KPIs for current period
 	const currentTotal = currentCount || 0
 	const currentWithDraft =
-		currentData?.filter(t => t.ai_draft_reply !== null).length || 0
+		currentRecords.filter(t => t.ai_draft_reply !== null).length
 	const currentRequiresReply =
-		currentData?.filter(t => t.requires_reply === true).length || 0
+		currentRecords.filter(t => t.requires_reply === true).length
 	const currentResolved =
-		currentData?.filter(t => t.status === 'Reply is ready').length || 0
+		currentRecords.filter(t => t.status === 'Reply is ready').length
 
-	const currentRequirementsCount =
-		currentData?.reduce((sum, thread) => {
-			return sum + reqKeys.filter(key => thread[key] === true).length
-		}, 0) || 0
+	const currentRequirementsCount = currentRecords.reduce((sum, thread) => {
+		return sum + reqKeys.filter(key => thread[key] === true).length
+	}, 0)
 
 	// Calculate KPIs for previous period
 	const previousTotal = previousCount || 0
 	const previousWithDraft =
-		previousData?.filter(t => t.ai_draft_reply !== null).length || 0
+		previousRecords.filter(t => t.ai_draft_reply !== null).length
 	const previousRequiresReply =
-		previousData?.filter(t => t.requires_reply === true).length || 0
+		previousRecords.filter(t => t.requires_reply === true).length
 	const previousResolved =
-		previousData?.filter(t => t.status === 'Reply is ready').length || 0
+		previousRecords.filter(t => t.status === 'Reply is ready').length
 
-	const previousRequirementsCount =
-		previousData?.reduce((sum, thread) => {
-			return sum + reqKeys.filter(key => thread[key] === true).length
-		}, 0) || 0
+	const previousRequirementsCount = previousRecords.reduce((sum, thread) => {
+		return sum + reqKeys.filter(key => thread[key] === true).length
+	}, 0)
 
 	// Calculate percentages
 	const currentDraftCoverage =
