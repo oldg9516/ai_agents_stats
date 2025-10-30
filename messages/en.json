@@ -264,6 +264,456 @@
 		"loadingDashboard": "Error loading dashboard data",
 		"loadingSupport": "Error loading support data"
 	},
+	"docs": {
+		"title": "Documentation",
+		"subtitle": "Complete guide to using the AI Agent Statistics Dashboard. Learn how to navigate the platform, understand the metrics, and analyze AI performance data.",
+		"quickNav": {
+			"title": "Quick Navigation",
+			"dashboard": "Dashboard",
+			"supportOverview": "Support Overview",
+			"detailedStats": "Detailed Stats",
+			"filtersExport": "Filters & Export"
+		},
+		"dashboard": {
+			"title": "Dashboard",
+			"description": "Main analytics page showing AI agent quality metrics, trends, and performance breakdowns.",
+			"kpis": {
+				"title": "KPI Cards (4 Metrics)",
+				"totalRecords": {
+					"title": "Total Records",
+					"whatItShows": "Total number of records reviewed by qualified agents during the selected period.",
+					"trend": "Compares with the previous period of the same length.",
+					"badge": "Count metric"
+				},
+				"averageQuality": {
+					"title": "Average Quality",
+					"whatItShows": "Average quality percentage across all categories (weighted by volume).",
+					"formula": "Records NOT changed by qualified agents / Total records × 100",
+					"badge": "Percentage metric"
+				},
+				"bestCategory": {
+					"title": "Best Category",
+					"whatItShows": "The category with the highest quality percentage.",
+					"display": "Category name + quality percentage",
+					"badge": "Text + percentage"
+				},
+				"recordsChanged": {
+					"title": "Records Changed",
+					"whatItShows": "Number of records edited or modified by qualified agents.",
+					"meaning": "Lower is better (indicates AI output quality)",
+					"badge": "Count metric"
+				},
+				"understandingQuality": {
+					"title": "💡 Understanding Quality Calculation",
+					"description": "Quality percentage measures how often qualified agents accept AI output without changes. A higher percentage means the AI is generating better content that requires less human editing."
+				}
+			},
+			"qualityTrends": {
+				"title": "Quality Trends Over Time",
+				"description": "Multi-line area chart showing quality percentage trends for each category over time.",
+				"features": {
+					"title": "Features:",
+					"timePeriod": "Time Period Selector: Quick buttons for 7 days, 30 days, 3 months, or All time",
+					"interactiveLegend": "Interactive Legend: Click checkboxes to show/hide specific categories",
+					"gradientAreas": "Gradient Areas: Each category is color-coded with filled area under the line",
+					"hoverTooltips": "Hover Tooltips: See exact percentage and date when hovering over data points",
+					"dataGrouping": "Data Grouping: Records are grouped by week starting date"
+				},
+				"howToUse": {
+					"title": "📊 How to Use",
+					"description": "Use this chart to identify trends over time. Look for improving categories (upward trend) or categories that need attention (downward trend). Compare multiple categories to see which performs best consistently."
+				}
+			},
+			"categoryPieChart": {
+				"title": "Quality by Category (Pie Chart)",
+				"description": "Donut chart showing the distribution of records across different request categories with their quality metrics.",
+				"whatItDisplays": {
+					"title": "What it displays:",
+					"centerLabel": "Center Label: Total record count across all categories",
+					"segments": "Segments: Each slice represents a category, sized by record volume",
+					"legend": "Legend: Below chart, shows category names with color coding",
+					"hoverTooltip": "Hover Tooltip: Shows number of records and quality percentage for that category"
+				},
+				"insights": {
+					"title": "💡 Insights",
+					"description": "Use this to understand which categories have the most volume and how quality varies across categories. Larger slices indicate more records, while tooltip quality % shows performance."
+				}
+			},
+			"versionBarChart": {
+				"title": "Version Comparison (Bar Chart)",
+				"description": "Vertical bar chart comparing quality percentages across different prompt versions (v1, v2, v3, etc.).",
+				"features": {
+					"title": "Features:",
+					"bars": "Bars: Sorted by version number (v1, v2, v3)",
+					"qualityLabels": "Quality Labels: Percentage shown on top of each bar",
+					"colorCoding": "Color Coding: Green (≥61%), Yellow (31-60%), Red (≤30%)",
+					"hoverTooltip": "Hover Tooltip: Shows version, quality %, and record count"
+				},
+				"useCase": {
+					"title": "🎯 Use Case",
+					"description": "Compare prompt versions to see which generates the best quality output. Track improvements as you iterate on prompts. Higher bars indicate better performance."
+				}
+			},
+			"detailedStatsTable": {
+				"title": "Detailed Stats Table",
+				"description": "Hierarchical table showing detailed breakdowns by version and week.",
+				"tableStructure": {
+					"title": "Table Structure:",
+					"level1": "Level 1 (Bold): Version-level rows showing category + version aggregates",
+					"level2": "Level 2 (Indented): Week-level rows showing weekly data within each version"
+				},
+				"columns": {
+					"title": "Columns:",
+					"category": "Category: Request type",
+					"version": "Version: Prompt version",
+					"dates": "Dates: Week range (for week rows)",
+					"totalRecords": "Total Records: Count",
+					"qualifiedAgents": "Qualified Agents: Records by qualified agents",
+					"recordsChanged": "Records Changed: Edited count",
+					"quality": "Quality %: With color coding"
+				},
+				"features": {
+					"title": "Features:",
+					"sortable": "Sortable: Click column headers to sort",
+					"searchable": "Searchable: Search by category name",
+					"pagination": "Pagination: 20 rows per page",
+					"csvExport": "CSV Export: Download all visible data"
+				}
+			}
+		},
+		"supportOverview": {
+			"title": "Support Overview",
+			"description": "Analytics for support thread operations, AI draft performance, and resolution tracking.",
+			"kpis": {
+				"title": "KPI Cards (4 Metrics)",
+				"aiDraftCoverage": {
+					"title": "AI Draft Coverage",
+					"whatItShows": "Percentage of threads with AI-generated draft replies.",
+					"formula": "Threads with ai_draft_reply / Total threads × 100",
+					"badge": "Percentage metric"
+				},
+				"replyRequired": {
+					"title": "Reply Required",
+					"whatItShows": "Percentage of threads requiring customer response.",
+					"formula": "Threads with requires_reply=true / Total threads × 100",
+					"badge": "Percentage metric"
+				},
+				"resolutionRate": {
+					"title": "Resolution Rate",
+					"whatItShows": "Percentage of threads marked as resolved.",
+					"formula": "Threads with status='Reply is ready' / Total threads × 100",
+					"badge": "Percentage metric"
+				},
+				"avgRequirements": {
+					"title": "Avg Requirements",
+					"whatItShows": "Average number of requirements per thread.",
+					"calculation": "Sum of all active requirement flags / Total threads",
+					"badge": "Decimal metric"
+				}
+			},
+			"statusDistribution": {
+				"title": "Status Distribution (Pie Chart)",
+				"description": "Donut chart showing breakdown of support threads by current status.",
+				"possibleStatuses": {
+					"title": "Possible Statuses:",
+					"aiProcessing": "AI Processing - AI is processing the request",
+					"dataCollected": "Data collected - Required data has been collected",
+					"replyIsReady": "Reply is ready - Response is ready (counts as resolved)",
+					"zohoDraftCreated": "ZOHO draft created - Draft created in ZOHO system",
+					"other": "...and 7 other statuses"
+				},
+				"usage": {
+					"title": "📊 Usage",
+					"description": "Monitor thread distribution across workflow stages. Large segments indicate bottlenecks or stages where threads accumulate."
+				}
+			},
+			"resolutionTime": {
+				"title": "Resolution Time (Bar Chart)",
+				"description": "Horizontal bar chart showing average hours to resolution grouped by week.",
+				"features": {
+					"title": "Features:",
+					"yAxis": "Y-axis: Week (formatted as \"MMM dd\")",
+					"xAxis": "X-axis: Average hours to resolution",
+					"bars": "Bars: Show time values with \"XXh\" format",
+					"tooltip": "Tooltip: Week, Avg Time (hours), Thread count",
+					"filters": "Filters: Only shows threads with status \"Reply is ready\""
+				},
+				"insights": {
+					"title": "⏱️ Insights",
+					"description": "Track how quickly support threads are being resolved over time. Look for trends - decreasing bars indicate improving efficiency."
+				}
+			},
+			"aiDraftFlow": {
+				"title": "AI Draft Flow (Sankey Diagram)",
+				"description": "Flow diagram showing the journey of AI-generated drafts through the workflow.",
+				"flowStructure": {
+					"title": "Flow Structure:",
+					"leftColumn": "1. Left Column: Creation (threads with AI draft)",
+					"middleColumn": "2. Middle Column: Usage outcomes (Used without changes, Modified by agent, Rejected)",
+					"rightColumn": "3. Right Column: Final resolution states"
+				},
+				"whatToLookFor": {
+					"title": "What to Look For:",
+					"widerLines": "• Wider lines = more threads following that path",
+					"hoverFlows": "• Hover over flows to see exact numbers",
+					"compareUsage": "• Compare \"Used without changes\" vs \"Modified\" to gauge AI quality"
+				},
+				"analysis": {
+					"title": "🔍 Analysis",
+					"description": "Ideal scenario: Most threads flow through \"Used without changes\" to resolution. Large flows to \"Modified\" or \"Rejected\" indicate areas for AI improvement."
+				}
+			},
+			"requirementsHeatmap": {
+				"title": "Requirements Correlation (Heatmap)",
+				"description": "Heatmap showing how often requirements appear together in threads.",
+				"requirements": {
+					"title": "Requirements:",
+					"reply": "Reply - Customer response needed",
+					"identification": "ID - Identity verification needed",
+					"editing": "Edit - AI draft needs editing",
+					"subscription": "Subscription - Subscription info needed",
+					"tracking": "Tracking - Tracking info needed"
+				},
+				"howToRead": {
+					"title": "How to Read:",
+					"cells": "• Each cell shows correlation percentage (0-100%)",
+					"darkerBlue": "• Darker blue = higher correlation (appear together often)",
+					"lighterBlue": "• Lighter blue = lower correlation (rarely appear together)",
+					"diagonal": "• Diagonal = 100% (requirement with itself)"
+				},
+				"useCase": {
+					"title": "💡 Use Case",
+					"description": "Identify patterns in requirement combinations. High correlations suggest these requirements commonly occur together, which can help predict workflow needs."
+				}
+			},
+			"supportThreadsTable": {
+				"title": "Support Threads Table",
+				"description": "Complete table of all support threads with searchable and sortable columns.",
+				"columns": {
+					"title": "Columns:",
+					"threadId": "Thread ID: Unique identifier (monospace)",
+					"ticketId": "Ticket ID: Associated ticket (monospace)",
+					"type": "Type: Request type with readable label",
+					"status": "Status: Current status with readable label",
+					"requirements": "Requirements: Colored badges for active requirements",
+					"aiDraft": "AI Draft: ✓ or ✗ icon",
+					"quality": "Quality: Color-coded percentage",
+					"createdAt": "Created At: Date with timestamp"
+				},
+				"features": {
+					"title": "Features:",
+					"search": "Search: By Thread ID or Ticket ID",
+					"sortable": "Sortable: Click any column header",
+					"pagination": "Pagination: 20 rows per page",
+					"csvExport": "CSV Export: Download all data",
+					"clickRow": "Click Row: Navigate to thread detail page"
+				}
+			},
+			"threadDetailPage": {
+				"title": "Thread Detail Page",
+				"description": "Detailed view of a single support thread with all metadata and AI draft content.",
+				"informationCards": {
+					"title": "Information Cards:",
+					"threadInfo": {
+						"title": "Thread Information",
+						"items": "• Thread ID, • Ticket ID, • Status (readable), • Request Type (readable), • Prompt Version, • Created At (formatted)"
+					},
+					"qualityMetrics": {
+						"title": "Quality Metrics",
+						"items": "• Has AI Draft (✓ or ✗), • Quality Score (color-coded %), • Reviewed By (agent email)"
+					},
+					"requirements": {
+						"title": "Requirements",
+						"items": "• List of active requirements, • Colored badges for each, • Green checkmark icons"
+					},
+					"aiDraftReply": {
+						"title": "AI Draft Reply",
+						"items": "• Full AI-generated content, • Scrollable area (max 400px), • Monospace formatting"
+					}
+				},
+				"navigation": {
+					"title": "🔍 Navigation",
+					"description": "Click any row in the Support Threads Table to view full details. Use browser back button to return to the table."
+				}
+			}
+		},
+		"detailedStats": {
+			"title": "Detailed Stats",
+			"description": "Full-page table view with all dashboard data in a comprehensive, exportable format.",
+			"whatsOnThisPage": {
+				"title": "What's on This Page",
+				"description": "This page provides a dedicated full-width view of the detailed stats table",
+				"content": "The Detailed Stats page shows the same hierarchical table from the dashboard, but with more screen space for easier data exploration."
+			},
+			"availableFeatures": {
+				"title": "Available Features:",
+				"filters": "All filters from dashboard (Date, Version, Category, Agents)",
+				"hierarchicalTable": "Hierarchical table with version and week-level rows",
+				"csvExport": "CSV export functionality"
+			},
+			"whenToUse": {
+				"title": "💡 When to Use",
+				"description": "Use this page when you need to focus on detailed data analysis without the charts. Perfect for exporting data, sorting through large datasets, or when you need the extra screen space for the table."
+			}
+		},
+		"filtersAndExport": {
+			"title": "Filters & Export",
+			"description": "How to use filters to refine data and export results for reporting.",
+			"dashboardFilters": {
+				"title": "Dashboard Filters",
+				"dateRange": {
+					"title": "Date Range",
+					"quickOptions": "Quick Options: 7d, 30d, 3m, All",
+					"manual": "Manual: Select From and To dates",
+					"default": "Default: Last 30 days",
+					"description": "Filters all data to only show records created within the selected date range. Trends compare with previous period of same length."
+				},
+				"versions": {
+					"title": "Versions",
+					"type": "Type: Multi-select dropdown",
+					"options": "Options: v1, v2, v3, etc.",
+					"default": "Default: All selected",
+					"description": "Filter by prompt version to compare performance across iterations. Select multiple to compare."
+				},
+				"categories": {
+					"title": "Categories",
+					"type": "Type: Multi-select dropdown",
+					"options": "Options: Request subtypes from database",
+					"features": "Features: Searchable, Select All/Deselect All",
+					"description": "Filter by request category to focus on specific types of content. Useful for analyzing performance by content type."
+				},
+				"qualifiedAgents": {
+					"title": "Qualified Agents",
+					"type": "Type: Multi-select dropdown",
+					"options": "Options: Fixed list of qualified agent emails",
+					"required": "Required: At least 1 agent must be selected",
+					"description": "Filter by specific qualified agents. Only records reviewed by these agents count toward quality metrics."
+				},
+				"filterTips": {
+					"title": "🎯 Filter Tips",
+					"realTime": "• All filters update data in real-time across all charts and tables",
+					"shareable": "• Filters are saved to URL (shareable links)",
+					"persistent": "• Filters persist in browser (localStorage)",
+					"reset": "• Use \"Reset Filters\" button to return to defaults",
+					"activeCount": "• Active filter count shown on filter button (e.g., \"Filters (3)\")"
+				}
+			},
+			"supportFilters": {
+				"title": "Support Overview Filters",
+				"dateRange": "Date Range: Same as dashboard date filter",
+				"status": {
+					"type": "Type: Multi-select",
+					"options": "Options: All 11 support statuses",
+					"labels": "Labels: Human-readable status names"
+				},
+				"requestType": {
+					"options": "Options: General Inquiry, Subscription Support, Tracking, etc.",
+					"features": "Features: Multi-select, searchable"
+				},
+				"requirements": {
+					"description": "Multi-select with colored badges"
+				},
+				"version": "Version: Same as dashboard version filter"
+			},
+			"csvExport": {
+				"title": "CSV Export",
+				"description": "Export filtered data to CSV format for reporting, analysis in Excel, or archival.",
+				"howToExport": {
+					"title": "How to Export:",
+					"step1": "1. Apply desired filters (date range, categories, versions, etc.)",
+					"step2": "2. Click the \"Download CSV\" button above the table (top right)",
+					"step3": "3. File downloads automatically with timestamp in filename",
+					"step4": "4. Open in Excel, Google Sheets, or any CSV reader"
+				},
+				"exportLocations": {
+					"title": "Export Locations:",
+					"dashboardTable": "Dashboard Table: Exports detailed stats with all columns",
+					"detailedStatsPage": "Detailed Stats Page: Same export as dashboard",
+					"supportThreadsTable": "Support Threads Table: Exports all thread data with requirements"
+				},
+				"exportTips": {
+					"title": "📊 Export Tips",
+					"respectsFilters": "• Exports respect all active filters",
+					"includesColumns": "• Includes all columns visible in the table",
+					"qualityAsNumbers": "• Quality percentages exported as numbers (61.5, not \"61.5%\")",
+					"dateFormatting": "• Dates formatted as ISO 8601 for easy parsing",
+					"filenameTimestamp": "• Filename includes timestamp for version tracking"
+				}
+			}
+		},
+		"understandingQuality": {
+			"title": "Understanding Quality Metrics",
+			"description": "Deep dive into how quality is calculated and what the metrics mean.",
+			"qualityFormula": {
+				"title": "Quality Percentage Formula",
+				"subtitle": "The core metric measuring AI agent performance",
+				"formula": "Quality % = (Records NOT changed by qualified agents / Total records by qualified agents) × 100",
+				"stepByStep": {
+					"title": "Step-by-Step Calculation:",
+					"step1": "1. Filter records to only those reviewed by qualified agents (defined in constants/qualified-agents.ts)",
+					"step2": "2. Count records where changed = false (AI output used without modifications)",
+					"step3": "3. Count total records reviewed by qualified agents in the period",
+					"step4": "4. Divide unchanged by total and multiply by 100"
+				},
+				"example": {
+					"title": "Example:",
+					"totalRecords": "Total records by qualified agents: 100",
+					"recordsNotChanged": "Records NOT changed: 75",
+					"recordsChanged": "Records changed: 25",
+					"result": "Quality = (75 / 100) × 100 = 75%"
+				}
+			},
+			"qualityColorCoding": {
+				"title": "Quality Color Coding",
+				"subtitle": "Visual indicators used throughout the dashboard",
+				"good": {
+					"range": "61-100%",
+					"label": "Good Quality",
+					"description": "Most AI outputs used without changes. Excellent performance."
+				},
+				"medium": {
+					"range": "31-60%",
+					"label": "Medium Quality",
+					"description": "Some outputs need editing. Room for improvement."
+				},
+				"poor": {
+					"range": "0-30%",
+					"label": "Poor Quality",
+					"description": "Most outputs require editing. Needs attention."
+				},
+				"whereColorsAppear": {
+					"title": "🎨 Where Colors Appear",
+					"tableCells": "• Table cells (Quality % column)",
+					"barChartBars": "• Bar chart bars (Version Comparison)",
+					"badgeBackgrounds": "• Badge backgrounds (various locations)",
+					"threadDetailQuality": "• Thread detail quality scores"
+				}
+			},
+			"qualifiedAgents": {
+				"title": "Qualified Agents",
+				"subtitle": "Why only certain agents count toward metrics",
+				"description": "Only records reviewed by \"qualified agents\" are included in quality calculations. This ensures consistency and reliability of metrics.",
+				"whyThisMatters": {
+					"title": "Why This Matters:",
+					"consistency": "Consistency: Qualified agents have established review standards",
+					"reliability": "Reliability: Metrics are comparable over time",
+					"training": "Training: Qualified agents understand the evaluation criteria"
+				},
+				"configuration": {
+					"title": "ℹ️ Configuration",
+					"description": "The list of qualified agent emails is configured in constants/qualified-agents.ts. This filter is always applied and cannot be disabled."
+				}
+			}
+		},
+		"readyToExplore": {
+			"title": "Ready to Explore?",
+			"subtitle": "Jump directly to any section of the dashboard",
+			"goToDashboard": "Go to Dashboard",
+			"supportOverview": "Support Overview",
+			"detailedStats": "Detailed Stats",
+			"backToHome": "Back to Home"
+		}
+	},
 	"filterSheet": {
 		"dashboardTitle": "Dashboard Filters",
 		"dashboardDescription": "Customize your dashboard view by filtering data across date ranges, versions, categories, and qualified agents.",

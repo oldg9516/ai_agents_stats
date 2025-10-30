@@ -1,0 +1,13 @@
+{
+  "docs": {
+    "title": "Documentation",
+    "subtitle": "Complete guide to using the AI Agent Statistics Dashboard. Learn how to navigate the platform, understand the metrics, and analyze AI performance data.",
+    "quickNav": {
+      "title": "Quick Navigation",
+      "dashboard": "Dashboard",
+      "supportOverview": "Support Overview",
+      "detailedStats": "Detailed Stats",
+      "filtersExport": "Filters & Export"
+    }
+  }
+}
