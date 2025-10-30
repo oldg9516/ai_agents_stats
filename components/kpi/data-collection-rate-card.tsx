@@ -22,6 +22,7 @@ export function DataCollectionRateCard({ data }: DataCollectionRateCardProps) {
 				value='—'
 				icon={<IconCheck />}
 				description={t('kpi.resolutionRate.description')}
+				tooltipContent={t('kpi.resolutionRate.tooltip')}
 			/>
 		)
 	}
@@ -33,6 +34,7 @@ export function DataCollectionRateCard({ data }: DataCollectionRateCardProps) {
 			trend={data.trend}
 			icon={<IconCheck />}
 			description={t('kpi.resolutionRate.description')}
+			tooltipContent={t('kpi.resolutionRate.tooltip')}
 		/>
 	)
 }

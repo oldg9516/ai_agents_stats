@@ -19,6 +19,7 @@ export function TotalRecordsCard({ data }: TotalRecordsCardProps) {
       trend={data.trend}
       icon={<IconDatabase className="h-4 w-4" />}
       description={t('kpi.totalRecords.description')}
+      tooltipContent={t('kpi.totalRecords.tooltip')}
     />
   )
 }

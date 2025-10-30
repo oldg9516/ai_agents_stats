@@ -19,6 +19,7 @@ export function RecordsChangedCard({ data }: RecordsChangedCardProps) {
       trend={data.trend}
       icon={<IconEdit className="h-4 w-4" />}
       description={t('kpi.recordsChanged.description')}
+      tooltipContent={t('kpi.recordsChanged.tooltip')}
     />
   )
 }

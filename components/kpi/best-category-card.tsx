@@ -1,6 +1,7 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { IconTrophy, IconArrowUp, IconArrowDown, IconMinus } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 import { getCategoryLabel } from '@/constants/category-labels'
@@ -17,7 +18,10 @@ export function BestCategoryCard({ data }: BestCategoryCardProps) {
 	return (
 		<Card>
 			<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-				<CardTitle className='text-sm font-medium'>{t('kpi.bestCategory.title')}</CardTitle>
+				<div className='flex items-center gap-1.5'>
+					<CardTitle className='text-sm font-medium'>{t('kpi.bestCategory.title')}</CardTitle>
+					<InfoTooltip content={t('kpi.bestCategory.tooltip')} />
+				</div>
 				<div className='h-4 w-4 text-muted-foreground'>
 					<IconTrophy className='h-4 w-4' />
 				</div>

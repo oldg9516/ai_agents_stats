@@ -22,6 +22,7 @@ export function AIDraftCoverageCard({ data }: AIDraftCoverageCardProps) {
 				value='—'
 				icon={<IconRobot />}
 				description={t('kpi.aiDraftCoverage.description')}
+				tooltipContent={t('kpi.aiDraftCoverage.tooltip')}
 			/>
 		)
 	}
@@ -33,6 +34,7 @@ export function AIDraftCoverageCard({ data }: AIDraftCoverageCardProps) {
 			trend={data.trend}
 			icon={<IconRobot />}
 			description={t('kpi.aiDraftCoverage.description')}
+			tooltipContent={t('kpi.aiDraftCoverage.tooltip')}
 		/>
 	)
 }

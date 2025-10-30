@@ -1,6 +1,7 @@
 'use client'
 
 import { type Icon } from '@tabler/icons-react'
+import { useRouter } from 'next/navigation'
 
 import {
 	SidebarGroup,
@@ -21,6 +22,16 @@ export function NavMain({
 		icon?: Icon
 	}[]
 }) {
+	const router = useRouter()
+
+	/**
+	 * Prefetch page on hover for instant navigation
+	 * Next.js will preload the page in the background
+	 */
+	const handleMouseEnter = (url: string) => {
+		router.prefetch(url)
+	}
+
 	return (
 		<SidebarGroup>
 			<SidebarGroupContent className='flex flex-col gap-2'>
@@ -32,7 +43,11 @@ export function NavMain({
 				<SidebarMenu>
 					{items.map(item => (
 						<SidebarMenuItem key={item.title}>
-							<SidebarMenuButton tooltip={item.title} asChild>
+							<SidebarMenuButton
+								tooltip={item.title}
+								asChild
+								onMouseEnter={() => handleMouseEnter(item.url)}
+							>
 								<Link href={item.url}>
 									{item.icon && <item.icon />}
 									<span>{item.title}</span>

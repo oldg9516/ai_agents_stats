@@ -7,6 +7,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ArrowRight, BarChart3, MessageSquare, Table2, BookOpen } from 'lucide-react'
 import { Link } from '@/i18n/routing'
 
+/**
+ * Enable Incremental Static Regeneration (ISR)
+ * - Page is generated at build time
+ * - Revalidates every 3600 seconds (1 hour)
+ * - Serves cached version instantly
+ * - Regenerates in background after revalidation time
+ */
+export const revalidate = 3600 // 1 hour in seconds
+
 export default async function Home() {
 	const t = await getTranslations('landing')
 	const tCommon = await getTranslations('common')

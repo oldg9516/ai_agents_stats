@@ -65,35 +65,43 @@
 	"kpi": {
 		"totalRecords": {
 			"title": "Total Records",
-			"description": "Total number of records processed by qualified agents"
+			"description": "Total number of records processed by qualified agents",
+			"tooltip": "Shows the total count of AI-generated outputs that were reviewed by qualified agents. Only records processed by qualified team members are included in quality calculations."
 		},
 		"averageQuality": {
 			"title": "Average Quality",
-			"description": "Average quality percentage across all categories"
+			"description": "Average quality percentage across all categories",
+			"tooltip": "Percentage of AI outputs used without modifications by qualified agents. Higher percentage indicates better AI performance. Quality is calculated as: (Unchanged records / Total records by qualified agents) × 100"
 		},
 		"bestCategory": {
 			"title": "Best Category",
-			"description": "Category with the highest quality percentage"
+			"description": "Category with the highest quality percentage",
+			"tooltip": "The request category where AI performs best, measured by the highest percentage of outputs used without human edits. Helps identify AI strengths and areas for improvement."
 		},
 		"recordsChanged": {
 			"title": "Records Changed",
-			"description": "Number of records edited by agents"
+			"description": "Number of records edited by agents",
+			"tooltip": "Count of AI-generated outputs that required human modifications. Lower numbers indicate better AI quality. Includes any edits made by qualified agents before use."
 		},
 		"aiDraftCoverage": {
 			"title": "AI Draft Coverage",
-			"description": "Percentage of threads with AI-generated drafts"
+			"description": "Percentage of threads with AI-generated drafts",
+			"tooltip": "Percentage of support threads where AI successfully generated a draft response. Higher coverage indicates better AI availability and capability across different request types."
 		},
 		"replyRequired": {
 			"title": "Reply Required",
-			"description": "Percentage of threads requiring customer response"
+			"description": "Percentage of threads requiring customer response",
+			"tooltip": "Percentage of support threads that need a response back to the customer. This metric helps track workload and response requirements."
 		},
 		"resolutionRate": {
 			"title": "Resolution Rate",
-			"description": "Percentage of threads marked as resolved"
+			"description": "Percentage of threads marked as resolved",
+			"tooltip": "Percentage of support threads that reached 'Reply is ready' status, indicating successful resolution. Higher rates show efficient problem-solving and AI effectiveness."
 		},
 		"avgRequirements": {
 			"title": "Avg Requirements",
-			"description": "Average number of requirements per thread"
+			"description": "Average number of requirements per thread",
+			"tooltip": "Average count of data requirements needed to resolve each support thread (e.g., user identification, tracking info, subscription details). Lower numbers indicate simpler cases."
 		},
 		"vs": "vs",
 		"previous": "previous period"

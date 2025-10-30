@@ -217,9 +217,9 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 		downloadSupportThreadsCSV(data, filename)
 	}
 
-	// Handle row click
+	// Handle row click - navigates to thread detail (intercepted by parallel route modal)
 	const handleRowClick = (thread: SupportThread) => {
-		router.push(`/support-overview/${thread.thread_id}`)
+		router.push(`/support-overview/thread/${thread.thread_id}`)
 	}
 
 	return (

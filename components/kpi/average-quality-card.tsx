@@ -19,6 +19,7 @@ export function AverageQualityCard({ data }: AverageQualityCardProps) {
       trend={data.trend}
       icon={<IconChartBar className="h-4 w-4" />}
       description={t('kpi.averageQuality.description')}
+      tooltipContent={t('kpi.averageQuality.tooltip')}
     />
   )
 }

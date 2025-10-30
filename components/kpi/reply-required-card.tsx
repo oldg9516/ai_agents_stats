@@ -22,6 +22,7 @@ export function ReplyRequiredCard({ data }: ReplyRequiredCardProps) {
 				value='—'
 				icon={<IconMessageCircle />}
 				description={t('kpi.replyRequired.description')}
+				tooltipContent={t('kpi.replyRequired.tooltip')}
 			/>
 		)
 	}
@@ -33,6 +34,7 @@ export function ReplyRequiredCard({ data }: ReplyRequiredCardProps) {
 			trend={data.trend}
 			icon={<IconMessageCircle />}
 			description={t('kpi.replyRequired.description')}
+			tooltipContent={t('kpi.replyRequired.tooltip')}
 		/>
 	)
 }

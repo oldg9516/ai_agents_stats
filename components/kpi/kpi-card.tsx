@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 import type { TrendData } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
 import { IconArrowDown, IconArrowUp, IconMinus } from '@tabler/icons-react'
@@ -10,6 +11,7 @@ interface KPICardProps {
 	trend?: TrendData
 	icon?: React.ReactNode
 	description?: string
+	tooltipContent?: string
 	className?: string
 }
 
@@ -24,12 +26,16 @@ export function KPICard({
 	trend,
 	icon,
 	description,
+	tooltipContent,
 	className,
 }: KPICardProps) {
 	return (
 		<Card className={cn('', className)}>
 			<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-				<CardTitle className='text-sm font-medium'>{title}</CardTitle>
+				<div className='flex items-center gap-1.5'>
+					<CardTitle className='text-sm font-medium'>{title}</CardTitle>
+					{tooltipContent && <InfoTooltip content={tooltipContent} />}
+				</div>
 				{icon && <div className='h-4 w-4 text-muted-foreground'>{icon}</div>}
 			</CardHeader>
 			<CardContent>

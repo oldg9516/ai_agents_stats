@@ -22,6 +22,7 @@ export function AvgRequirementsCard({ data }: AvgRequirementsCardProps) {
 				value='—'
 				icon={<IconListCheck />}
 				description={t('kpi.avgRequirements.description')}
+				tooltipContent={t('kpi.avgRequirements.tooltip')}
 			/>
 		)
 	}
@@ -33,6 +34,7 @@ export function AvgRequirementsCard({ data }: AvgRequirementsCardProps) {
 			trend={data.trend}
 			icon={<IconListCheck />}
 			description={t('kpi.avgRequirements.description')}
+			tooltipContent={t('kpi.avgRequirements.tooltip')}
 		/>
 	)
 }
