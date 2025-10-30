@@ -44,6 +44,7 @@ function calculateTrend(current: number, previous: number): TrendData {
 
 /**
  * Fetch Support KPIs with trend data
+ * OPTIMIZED: Uses minimal field selection instead of SELECT *
  */
 export async function fetchSupportKPIs(
 	supabase: SupabaseClient,
@@ -86,22 +87,38 @@ export async function fetchSupportKPIs(
 		return query
 	}
 
+	// OPTIMIZATION: Select only fields needed for KPI calculation (not SELECT *)
+	// This dramatically reduces data transfer, especially avoiding large text fields
+	const reqKeys = getAllRequirementKeys()
+	const selectFields = [
+		'ai_draft_reply',
+		'requires_reply',
+		'status',
+		...reqKeys,
+	].join(',')
+
 	// Fetch current period data
-	let currentQuery = supabase.from('support_threads_data').select('*')
+	let currentQuery = supabase
+		.from('support_threads_data')
+		.select(selectFields, { count: 'exact' })
 	currentQuery = buildQuery(currentQuery, false)
-	const { data: currentData, error: currentError } = await currentQuery
+	const { data: currentData, count: currentCount, error: currentError } =
+		await currentQuery
 
 	if (currentError) throw currentError
 
 	// Fetch previous period data
-	let previousQuery = supabase.from('support_threads_data').select('*')
+	let previousQuery = supabase
+		.from('support_threads_data')
+		.select(selectFields, { count: 'exact' })
 	previousQuery = buildQuery(previousQuery, true)
-	const { data: previousData, error: previousError } = await previousQuery
+	const { data: previousData, count: previousCount, error: previousError } =
+		await previousQuery
 
 	if (previousError) throw previousError
 
 	// Calculate KPIs for current period
-	const currentTotal = currentData?.length || 0
+	const currentTotal = currentCount || 0
 	const currentWithDraft =
 		currentData?.filter(t => t.ai_draft_reply !== null).length || 0
 	const currentRequiresReply =
@@ -111,13 +128,11 @@ export async function fetchSupportKPIs(
 
 	const currentRequirementsCount =
 		currentData?.reduce((sum, thread) => {
-			return (
-				sum + getAllRequirementKeys().filter(key => thread[key] === true).length
-			)
+			return sum + reqKeys.filter(key => thread[key] === true).length
 		}, 0) || 0
 
 	// Calculate KPIs for previous period
-	const previousTotal = previousData?.length || 0
+	const previousTotal = previousCount || 0
 	const previousWithDraft =
 		previousData?.filter(t => t.ai_draft_reply !== null).length || 0
 	const previousRequiresReply =
@@ -127,9 +142,7 @@ export async function fetchSupportKPIs(
 
 	const previousRequirementsCount =
 		previousData?.reduce((sum, thread) => {
-			return (
-				sum + getAllRequirementKeys().filter(key => thread[key] === true).length
-			)
+			return sum + reqKeys.filter(key => thread[key] === true).length
 		}, 0) || 0
 
 	// Calculate percentages
@@ -468,16 +481,20 @@ export async function fetchCorrelationMatrix(
  */
 export async function fetchSupportThreads(
 	supabase: SupabaseClient,
-	filters: SupportFilters
+	filters: SupportFilters,
+	options?: { limit?: number; offset?: number }
 ): Promise<SupportThread[]> {
 	const { dateRange, statuses, requestTypes, requirements, versions } = filters
+	const { limit = 100, offset = 0 } = options || {}
 
-	// First fetch support threads with filters
+	// First fetch support threads with filters + pagination
 	let query = supabase
 		.from('support_threads_data')
 		.select('*')
 		.gte('created_at', dateRange.from.toISOString())
 		.lt('created_at', dateRange.to.toISOString())
+		.order('created_at', { ascending: false }) // Most recent first
+		.range(offset, offset + limit - 1) // Pagination
 
 	if (statuses.length > 0) {
 		query = query.in('status', statuses)
@@ -497,11 +514,22 @@ export async function fetchSupportThreads(
 	const { data: threads, error: threadsError } = await query
 
 	if (threadsError) throw threadsError
+	if (!threads || threads.length === 0) return []
 
 	// Get unique prompt versions from threads
 	const promptVersions = Array.from(
 		new Set(threads.map(t => t.prompt_version).filter(Boolean))
 	) as string[]
+
+	if (promptVersions.length === 0) {
+		// No versions to lookup, return threads without quality data
+		return threads.map(thread => ({
+			...thread,
+			changed: null,
+			email: null,
+			qualityPercentage: null,
+		}))
+	}
 
 	// Fetch all comparison data in a single query
 	const { data: comparisonData, error: comparisonError } = await supabase

@@ -24,24 +24,46 @@ import type { SupportFilters } from '@/lib/supabase/types'
  */
 export async function fetchSupportData(filters: SupportFilters) {
 	try {
+		const startTime = Date.now()
+		console.log('🚀 [Support] Starting data fetch...')
+
 		// Fetch all data in parallel for best performance
 		// Using supabaseServer with SERVICE ROLE key to bypass RLS
 		const serverClient = supabaseServer
-		const [
-			kpis,
-			statusDist,
-			resolutionTime,
-			sankeyData,
-			correlationMatrix,
-			threads,
-		] = await Promise.all([
+
+		// KPIs and charts can process smaller datasets for better performance
+		// Threads table has pagination (limit 50 by default for faster initial load)
+		const promises = [
 			fetchSupportKPIs(serverClient, filters),
 			fetchStatusDistribution(serverClient, filters),
 			fetchResolutionTimeData(serverClient, filters),
 			fetchSankeyData(serverClient, filters),
 			fetchCorrelationMatrix(serverClient, filters),
-			fetchSupportThreads(serverClient, filters),
-		])
+			fetchSupportThreads(serverClient, filters, { limit: 50, offset: 0 }),
+		]
+
+		// Track individual query times
+		const results = await Promise.all(
+			promises.map(async (promise, index) => {
+				const queryStart = Date.now()
+				const names = ['KPIs', 'StatusDist', 'ResolutionTime', 'Sankey', 'Correlation', 'Threads']
+				try {
+					const result = await promise
+					const queryTime = Date.now() - queryStart
+					console.log(`✅ [Support] ${names[index]} took ${queryTime}ms`)
+					return result
+				} catch (error) {
+					const queryTime = Date.now() - queryStart
+					console.error(`❌ [Support] ${names[index]} failed after ${queryTime}ms:`, error)
+					throw error
+				}
+			})
+		)
+
+		const [kpis, statusDist, resolutionTime, sankeyData, correlationMatrix, threads] = results
+
+		const totalTime = Date.now() - startTime
+		console.log(`🏁 [Support] Total fetch time: ${totalTime}ms`)
 
 		return {
 			success: true,
