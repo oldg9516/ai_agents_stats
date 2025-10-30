@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import { Label, Pie, PieChart } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 import {
 	ChartContainer,
 	ChartTooltip,
@@ -82,7 +83,10 @@ export function StatusDistributionChart({ data }: StatusDistributionChartProps) 
 	return (
 		<Card className='min-w-0'>
 			<CardHeader>
-				<CardTitle className='text-lg sm:text-xl'>{t('charts.statusDistribution.title')}</CardTitle>
+				<div className='flex items-center gap-1.5'>
+					<CardTitle className='text-lg sm:text-xl'>{t('charts.statusDistribution.title')}</CardTitle>
+					<InfoTooltip content={t('charts.statusDistribution.tooltip')} />
+				</div>
 				<CardDescription className='text-sm'>
 					{t('charts.statusDistribution.description')}
 				</CardDescription>

@@ -46,7 +46,7 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 
 	return (
 		<Dialog open onOpenChange={handleClose}>
-			<DialogContent className='max-w-[95vw] w-full sm:max-w-[90vw] lg:max-w-6xl max-h-[95vh] sm:max-h-[90vh] p-0 gap-0'>
+			<DialogContent className='max-w-[95vw] w-full sm:max-w-[90vw] lg:max-w-6xl max-h-[95vh] sm:max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden'>
 				<DialogHeader className='px-4 py-4 sm:px-6 sm:py-6 border-b shrink-0'>
 					<DialogTitle className='text-lg sm:text-xl'>Thread Details</DialogTitle>
 					<DialogDescription className='font-mono text-xs sm:text-sm break-all'>
@@ -54,7 +54,7 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 					</DialogDescription>
 				</DialogHeader>
 
-				<ScrollArea className='flex-1 h-full'>
+				<ScrollArea className='flex-1 min-h-0'>
 					<div className='p-4 sm:p-6 space-y-4 sm:space-y-6'>
 						<div className='grid gap-4 sm:gap-6 lg:grid-cols-2'>
 							{/* Metadata Card */}

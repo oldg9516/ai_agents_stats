@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { ResponsiveSankey } from '@nivo/sankey'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 import type { SankeyData } from '@/lib/supabase/types'
 import { useTranslations } from 'next-intl'
 
@@ -67,7 +68,10 @@ export function AIDraftFlowSankey({ data }: AIDraftFlowSankeyProps) {
 	return (
 		<Card className='min-w-0'>
 			<CardHeader>
-				<CardTitle className='text-lg sm:text-xl'>{t('charts.aiDraftFlow.title')}</CardTitle>
+				<div className='flex items-center gap-1.5'>
+					<CardTitle className='text-lg sm:text-xl'>{t('charts.aiDraftFlow.title')}</CardTitle>
+					<InfoTooltip content={t('charts.aiDraftFlow.tooltip')} />
+				</div>
 				<CardDescription className='text-sm'>
 					{t('charts.aiDraftFlow.description')}
 				</CardDescription>

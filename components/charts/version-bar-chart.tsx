@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 import {
 	ChartContainer,
 	ChartTooltip,
@@ -86,7 +87,10 @@ export function VersionBarChart({ data }: VersionBarChartProps) {
 	return (
 		<Card className="min-w-0">
 			<CardHeader>
-				<CardTitle className='text-lg sm:text-xl'>{t('charts.versionComparison.title')}</CardTitle>
+				<div className='flex items-center gap-1.5'>
+					<CardTitle className='text-lg sm:text-xl'>{t('charts.versionComparison.title')}</CardTitle>
+					<InfoTooltip content={t('charts.versionComparison.tooltip')} />
+				</div>
 				<CardDescription className='text-sm'>
 					{t('charts.versionComparison.description')}
 				</CardDescription>

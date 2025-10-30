@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 import {
 	ChartContainer,
 	ChartTooltip,
@@ -67,7 +68,10 @@ export function ResolutionTimeChart({ data }: ResolutionTimeChartProps) {
 	return (
 		<Card className='min-w-0'>
 			<CardHeader>
-				<CardTitle className='text-lg sm:text-xl'>{t('charts.resolutionTime.title')}</CardTitle>
+				<div className='flex items-center gap-1.5'>
+					<CardTitle className='text-lg sm:text-xl'>{t('charts.resolutionTime.title')}</CardTitle>
+					<InfoTooltip content={t('charts.resolutionTime.tooltip')} />
+				</div>
 				<CardDescription className='text-sm'>
 					{t('charts.resolutionTime.description')}
 				</CardDescription>

@@ -8,6 +8,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { getRequirement } from '@/constants/requirement-types'
 import type { CorrelationCell } from '@/lib/supabase/types'
 import { ResponsiveHeatMap } from '@nivo/heatmap'
@@ -84,9 +85,12 @@ export function RequirementsCorrelationHeatmap({
 	return (
 		<Card className='min-w-0'>
 			<CardHeader>
-				<CardTitle className='text-lg sm:text-xl'>
-					{t('charts.requirementsCorrelation.title')}
-				</CardTitle>
+				<div className='flex items-center gap-1.5'>
+					<CardTitle className='text-lg sm:text-xl'>
+						{t('charts.requirementsCorrelation.title')}
+					</CardTitle>
+					<InfoTooltip content={t('charts.requirementsCorrelation.tooltip')} />
+				</div>
 				<CardDescription className='text-sm'>
 					{t('charts.requirementsCorrelation.description')}
 				</CardDescription>

@@ -5,6 +5,7 @@ import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { format } from 'date-fns'
 import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
@@ -129,7 +130,10 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 				<div className="flex flex-col gap-4">
 					<div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
 						<div className="flex-1 min-w-0">
-							<CardTitle className="text-lg sm:text-xl">{t('charts.qualityTrends.title')}</CardTitle>
+							<div className="flex items-center gap-1.5">
+								<CardTitle className="text-lg sm:text-xl">{t('charts.qualityTrends.title')}</CardTitle>
+								<InfoTooltip content={t('charts.qualityTrends.tooltip')} />
+							</div>
 							<CardDescription className="text-sm mt-1">
 								{t('charts.qualityTrends.description')}
 							</CardDescription>
