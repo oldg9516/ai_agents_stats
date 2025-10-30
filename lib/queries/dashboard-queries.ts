@@ -12,7 +12,14 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { fetchDashboardData } from '@/lib/actions/dashboard-actions'
-import type { DashboardFilters } from '@/lib/supabase/types'
+import type {
+	DashboardFilters,
+	KPIData,
+	QualityTrendData,
+	CategoryDistributionData,
+	VersionComparisonData,
+	DetailedStatsRow,
+} from '@/lib/supabase/types'
 
 /**
  * Generate query key for dashboard data
@@ -32,6 +39,17 @@ function getDashboardQueryKey(filters: DashboardFilters) {
 }
 
 /**
+ * Dashboard data structure returned by useDashboardData hook
+ */
+type DashboardData = {
+	kpi: KPIData | null
+	qualityTrends: QualityTrendData[]
+	categoryDistribution: CategoryDistributionData[]
+	versionComparison: VersionComparisonData[]
+	detailedStats: DetailedStatsRow[]
+}
+
+/**
  * Main hook for fetching all dashboard data
  *
  * Features:
@@ -40,14 +58,21 @@ function getDashboardQueryKey(filters: DashboardFilters) {
  * - Real-time updates via Supabase subscriptions
  * - Smart request deduplication
  */
-export function useDashboardData(filters: DashboardFilters) {
+export function useDashboardData(filters: DashboardFilters): {
+	data: DashboardData
+	isLoading: boolean
+	error: Error | null
+	refetch: () => void
+	isFetching: boolean
+	isRefetching: boolean
+} {
 	const queryClient = useQueryClient()
 	const router = useRouter()
 
-	// Main query
-	const query = useQuery({
+	// Main query with explicit return type
+	const query = useQuery<DashboardData>({
 		queryKey: getDashboardQueryKey(filters),
-		queryFn: async () => {
+		queryFn: async (): Promise<DashboardData> => {
 			// Add timeout to prevent hanging requests
 			const controller = new AbortController()
 			const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
@@ -60,7 +85,7 @@ export function useDashboardData(filters: DashboardFilters) {
 					throw new Error(result.error || 'Failed to fetch dashboard data')
 				}
 
-				return result.data
+				return result.data as DashboardData
 			} catch (error) {
 				clearTimeout(timeoutId)
 				if (error instanceof Error && error.name === 'AbortError') {
@@ -102,21 +127,13 @@ export function useDashboardData(filters: DashboardFilters) {
 	}, [queryClient, router])
 
 	return {
-		data: query.data
-			? {
-					kpi: query.data.kpi,
-					qualityTrends: query.data.qualityTrends,
-					categoryDistribution: query.data.categoryDistribution,
-					versionComparison: query.data.versionComparison,
-					detailedStats: query.data.detailedStats,
-			  }
-			: {
-					kpi: null,
-					qualityTrends: [],
-					categoryDistribution: [],
-					versionComparison: [],
-					detailedStats: [],
-			  },
+		data: query.data || {
+			kpi: null,
+			qualityTrends: [],
+			categoryDistribution: [],
+			versionComparison: [],
+			detailedStats: [],
+		},
 		isLoading: query.isLoading,
 		error: query.error as Error | null,
 		refetch: query.refetch,
