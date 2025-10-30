@@ -1,9 +1,9 @@
 'use client'
 
 import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
+import { fetchFilterOptions } from '@/lib/actions/dashboard-actions'
 import { useDashboardData } from '@/lib/hooks/use-dashboard-data'
 import { useFilters } from '@/lib/hooks/use-filters'
-import { getFilterOptions } from '@/lib/supabase/client-queries'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { CategoryPieChart } from './charts/category-pie-chart'
@@ -40,7 +40,7 @@ export function DashboardContent() {
 	// Fetch filter options (cached separately)
 	const { data: filterOptions } = useQuery({
 		queryKey: ['filterOptions'],
-		queryFn: getFilterOptions,
+		queryFn: fetchFilterOptions,
 		staleTime: 5 * 60 * 1000, // Cache for 5 minutes
 	})
 

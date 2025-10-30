@@ -6,13 +6,18 @@
  */
 
 import { supabase } from './client'
-import type { FilterOptions, AIHumanComparisonRow } from './types'
+import type { AIHumanComparisonRow, FilterOptions } from './types'
 
 /**
  * Get filter options (versions and categories) - Client version
  *
  * This version uses the client-side Supabase instance
  * Safe to call from browser/client components
+ */
+/**
+ * @deprecated Use fetchFilterOptions from dashboard-actions instead
+ * This client-side version may fail due to RLS policies
+ * Server Actions use service_role key to bypass RLS
  */
 export async function getFilterOptions(): Promise<FilterOptions> {
 	const { data, error } = await supabase
@@ -30,13 +35,13 @@ export async function getFilterOptions(): Promise<FilterOptions> {
 
 	const versions = [
 		...new Set(
-			records.map((r) => r.prompt_version).filter((v): v is string => v !== null)
+			records.map(r => r.prompt_version).filter((v): v is string => v !== null)
 		),
 	].sort()
 
 	const categories = [
 		...new Set(
-			records.map((r) => r.request_subtype).filter((c): c is string => c !== null)
+			records.map(r => r.request_subtype).filter((c): c is string => c !== null)
 		),
 	].sort()
 

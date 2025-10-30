@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useDashboardData } from '@/lib/hooks/use-dashboard-data'
 import { useFilters } from '@/lib/hooks/use-filters'
-import { getFilterOptions } from '@/lib/supabase/client-queries'
+import { fetchFilterOptions } from '@/lib/actions/dashboard-actions'
 import { DetailedStatsTable } from './tables/detailed-stats-table'
 import { FilterSheet } from './filters/filter-sheet'
 import { FilterBar } from './filters/filter-bar'
@@ -33,7 +33,7 @@ export function DetailedStatsContent() {
 	// Fetch filter options (cached separately)
 	const { data: filterOptions } = useQuery({
 		queryKey: ['filterOptions'],
-		queryFn: getFilterOptions,
+		queryFn: fetchFilterOptions,
 		staleTime: 5 * 60 * 1000, // Cache for 5 minutes
 	})
 
