@@ -355,9 +355,13 @@ export async function getDetailedStats(
   const { dateRange, versions, categories, agents } = filters
   const agentList = agents.length > 0 ? agents : [...QUALIFIED_AGENTS]
 
+  // OPTIMIZATION: Select only fields needed for detailed stats calculation
+  // This reduces data transfer significantly (5 fields instead of all)
+  const selectFields = 'created_at, email, changed, request_subtype, prompt_version'
+
   let query = supabase
     .from('ai_human_comparison')
-    .select('*')
+    .select(selectFields)
     .gte('created_at', dateRange.from.toISOString())
     .lte('created_at', dateRange.to.toISOString())
     .in('email', agentList)
@@ -374,7 +378,15 @@ export async function getDetailedStats(
   if (error) throw error
   if (!data) return []
 
-  const records = data as unknown as AIHumanComparisonRow[]
+  // Type assertion - only the fields we selected
+  type DetailedStatsRecord = {
+    created_at: string | null
+    email: string | null
+    changed: boolean
+    request_subtype: string | null
+    prompt_version: string | null
+  }
+  const records = data as unknown as DetailedStatsRecord[]
   const rows: DetailedStatsRow[] = []
 
   // Group by category and version first (Level 1)
@@ -393,7 +405,7 @@ export async function getDetailedStats(
       acc[key].records.push(record)
       return acc
     },
-    {} as Record<string, { category: string; version: string; records: AIHumanComparisonRow[] }>
+    {} as Record<string, { category: string; version: string; records: DetailedStatsRecord[] }>
   )
 
   // Process each version group
@@ -427,7 +439,7 @@ export async function getDetailedStats(
         acc[weekStart].push(record)
         return acc
       },
-      {} as Record<string, AIHumanComparisonRow[]>
+      {} as Record<string, DetailedStatsRecord[]>
     )
 
     Object.entries(weekGroups).forEach(([weekStart, weekRecords]) => {

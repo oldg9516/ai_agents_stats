@@ -144,3 +144,31 @@ export async function fetchFilterOptions(): Promise<FilterOptions> {
 export async function fetchDefaultFilters(): Promise<DashboardFilters> {
   return getDefaultFilters()
 }
+
+/**
+ * Fetch ONLY detailed stats (for /detailed-stats page)
+ * This is more efficient than fetching all dashboard data
+ */
+export async function fetchDetailedStatsOnly(filters: DashboardFilters) {
+  try {
+    const startTime = Date.now()
+    console.log('🚀 [DetailedStats] Starting data fetch...')
+
+    const detailedStats = await getDetailedStats(filters)
+
+    const totalTime = Date.now() - startTime
+    console.log(`🏁 [DetailedStats] Fetch time: ${totalTime}ms (${detailedStats.length} rows)`)
+
+    return {
+      success: true,
+      data: detailedStats,
+    }
+  } catch (error) {
+    console.error('❌ [DetailedStats Server Action] Error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch detailed stats',
+      data: [],
+    }
+  }
+}

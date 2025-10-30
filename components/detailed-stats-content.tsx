@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { useDashboardData } from '@/lib/hooks/use-dashboard-data'
+import { useDetailedStats } from '@/lib/hooks/use-detailed-stats'
 import { useFilters } from '@/lib/hooks/use-filters'
 import { fetchFilterOptions } from '@/lib/actions/dashboard-actions'
 import { DetailedStatsTable } from './tables/detailed-stats-table'
@@ -13,8 +13,9 @@ import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 /**
  * Detailed Stats Content - Client Component for detailed stats page
  *
- * Full-page table view with filters
- * Data fetching via React Query with caching
+ * OPTIMIZED: Uses useDetailedStats instead of useDashboardData
+ * This only fetches table data, not all dashboard data (KPIs + charts + table)
+ * Much more efficient for this page!
  */
 export function DetailedStatsContent() {
 	// Filter state from Zustand store
@@ -27,8 +28,8 @@ export function DetailedStatsContent() {
 		resetFilters,
 	} = useFilters()
 
-	// Fetch dashboard data (we only need detailedStats)
-	const { data, isLoading, error } = useDashboardData(filters)
+	// Fetch ONLY detailed stats (not all dashboard data)
+	const { data: detailedStats, isLoading, error } = useDetailedStats(filters)
 
 	// Fetch filter options (cached separately)
 	const { data: filterOptions } = useQuery({
@@ -132,8 +133,8 @@ export function DetailedStatsContent() {
 			</div>
 
 			{/* Detailed Stats Table */}
-			{data.detailedStats.length > 0 && (
-				<DetailedStatsTable data={data.detailedStats} />
+			{detailedStats.length > 0 && (
+				<DetailedStatsTable data={detailedStats} />
 			)}
 		</div>
 	)
