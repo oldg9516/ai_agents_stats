@@ -9,7 +9,15 @@
 
 import { fetchSupportData } from '@/lib/actions/support-actions'
 import { supabase } from '@/lib/supabase/client'
-import type { SupportFilters } from '@/lib/supabase/types'
+import type {
+	SupportFilters,
+	SupportKPIs,
+	StatusDistribution,
+	ResolutionTimeData,
+	SankeyData,
+	CorrelationCell,
+	SupportThread,
+} from '@/lib/supabase/types'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
@@ -32,6 +40,18 @@ function getSupportQueryKey(filters: SupportFilters) {
 }
 
 /**
+ * Support data structure returned by useSupportData hook
+ */
+type SupportData = {
+	kpis: SupportKPIs | null
+	statusDistribution: StatusDistribution[]
+	resolutionTime: ResolutionTimeData[]
+	sankeyData: SankeyData | null
+	correlationMatrix: CorrelationCell[]
+	threads: SupportThread[]
+}
+
+/**
  * Main hook for fetching all support overview data
  *
  * Features:
@@ -40,14 +60,21 @@ function getSupportQueryKey(filters: SupportFilters) {
  * - Real-time updates via Supabase subscriptions
  * - Uses Server Actions with SERVICE ROLE key
  */
-export function useSupportData(filters: SupportFilters) {
+export function useSupportData(filters: SupportFilters): {
+	data: SupportData
+	isLoading: boolean
+	error: Error | null
+	refetch: () => void
+	isFetching: boolean
+	isRefetching: boolean
+} {
 	const queryClient = useQueryClient()
 	const router = useRouter()
 
-	// Main query - calls Server Action to fetch all support data
-	const query = useQuery({
+	// Main query with explicit return type - calls Server Action to fetch all support data
+	const query = useQuery<SupportData>({
 		queryKey: getSupportQueryKey(filters),
-		queryFn: async () => {
+		queryFn: async (): Promise<SupportData> => {
 			// Add timeout to prevent hanging requests
 			const controller = new AbortController()
 			const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
@@ -60,7 +87,7 @@ export function useSupportData(filters: SupportFilters) {
 					throw new Error(result.error || 'Failed to fetch support data')
 				}
 
-				return result.data
+				return result.data as SupportData
 			} catch (error) {
 				clearTimeout(timeoutId)
 				if (error instanceof Error && error.name === 'AbortError') {
