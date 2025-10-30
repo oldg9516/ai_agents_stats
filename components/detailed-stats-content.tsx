@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useDashboardData } from '@/lib/hooks/use-dashboard-data'
 import { useFilters } from '@/lib/hooks/use-filters'
-import { getFilterOptions } from '@/lib/supabase/queries'
+import { getFilterOptions } from '@/lib/supabase/client-queries'
 import { DetailedStatsTable } from './tables/detailed-stats-table'
 import { FilterSheet } from './filters/filter-sheet'
 import { FilterBar } from './filters/filter-bar'

@@ -3,7 +3,7 @@
 import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 import { useDashboardData } from '@/lib/hooks/use-dashboard-data'
 import { useFilters } from '@/lib/hooks/use-filters'
-import { getFilterOptions } from '@/lib/supabase/queries'
+import { getFilterOptions } from '@/lib/supabase/client-queries'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { CategoryPieChart } from './charts/category-pie-chart'
