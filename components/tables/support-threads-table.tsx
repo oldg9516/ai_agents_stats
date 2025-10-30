@@ -93,6 +93,14 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 				},
 			},
 			{
+				accessorKey: 'request_subtype',
+				header: t('table.category'),
+				cell: ({ getValue }) => {
+					const value = getValue() as string | null
+					return <div className='text-sm'>{value || '—'}</div>
+				},
+			},
+			{
 				accessorKey: 'status',
 				header: t('table.status'),
 				cell: ({ getValue }) => {

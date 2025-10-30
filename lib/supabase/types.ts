@@ -178,6 +178,7 @@ export interface SupportThreadRow {
   thread_id: string
   ticket_id: string
   request_type: string | null
+  request_subtype: string | null
   requires_reply: boolean
   requires_identification: boolean
   requires_editing: boolean
