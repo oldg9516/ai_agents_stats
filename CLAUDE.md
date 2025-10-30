@@ -105,13 +105,14 @@ lib/
 │   ├── client.ts       # Client-side Supabase (for Client Components)
 │   ├── server.ts       # Server-side Supabase (for Server Components, Actions, Routes)
 │   ├── types.ts        # Database types (auto-generated)
-│   ├── queries.ts      # SQL queries for dashboard data
-│   └── queries-support.ts      # SQL queries for support overview
+│   ├── queries.ts      # SQL queries for dashboard data (OPTIMIZED: SELECT specific fields)
+│   └── queries-support.ts      # SQL queries for support overview (OPTIMIZED: SELECT specific fields)
 ├── actions/
-│   └── support-actions.ts      # Server Actions for support data
+│   ├── dashboard-actions.ts    # Server Actions for dashboard data (with performance logging)
+│   └── support-actions.ts      # Server Actions for support data (with performance logging)
 ├── queries/
-│   ├── dashboard-queries.ts    # React Query functions for dashboard
-│   ├── support-queries.ts      # React Query functions for support
+│   ├── dashboard-queries.ts    # React Query functions for dashboard (with timeout & retry)
+│   ├── support-queries.ts      # React Query functions for support (with timeout & retry)
 │   └── index.ts                # Query exports
 ├── store/
 │   ├── index.ts                # Zustand store initialization
@@ -124,7 +125,8 @@ lib/
 ├── providers/
 │   └── query-provider.tsx      # React Query provider wrapper
 ├── hooks/
-│   ├── use-dashboard-data.ts   # Dashboard data fetching hook
+│   ├── use-dashboard-data.ts   # Dashboard data fetching hook (re-export from queries)
+│   ├── use-detailed-stats.ts   # Optimized hook for /detailed-stats page (ONLY table data)
 │   ├── use-filters.ts          # Legacy filter hook (dashboard)
 │   ├── use-realtime.ts         # Real-time updates hook
 │   ├── use-support-data.ts     # Support data fetching hook
@@ -174,10 +176,21 @@ The main dashboard ([app/(analytics)/dashboard/page.tsx](app/(analytics)/dashboa
   - `changed` (boolean) - Whether human edited AI output
 
 **Data Fetching Pattern**:
-1. Client-side data fetching with React Query patterns (via custom hooks)
-2. Real-time subscriptions via Supabase Realtime
-3. Filter state synchronized with URL query params and localStorage
-4. All SQL queries centralized in `lib/supabase/queries.ts`
+1. **Server Actions** (`lib/actions/`) for data fetching (bypasses RLS with service_role key)
+2. **React Query** (`lib/queries/`) for caching, timeout, retry logic
+3. **Real-time subscriptions** via Supabase Realtime
+4. **Filter state** synchronized with URL query params and localStorage (Zustand)
+5. All SQL queries centralized in `lib/supabase/queries.ts` and `lib/supabase/queries-support.ts`
+
+**Performance Optimizations** (see [PERFORMANCE.md](PERFORMANCE.md) for details):
+- SELECT only needed fields (not SELECT *)
+- Database indexes on frequently queried columns
+- Pagination (limit 50-100 records)
+- Timeout protection (30 seconds)
+- Retry logic (2 attempts with 1s delay)
+- Increased cache times (2 min staleTime, 10 min gcTime)
+- Separate hooks for different pages (e.g., `useDetailedStats` for /detailed-stats)
+- Performance logging with detailed timing metrics
 
 **Quality Calculation Logic**:
 ```typescript
@@ -360,6 +373,8 @@ Two MCP servers are configured in [.mcp.json](.mcp.json):
 ## Important Files
 
 - **[PRD.md](PRD.md)**: Complete Product Requirements Document with detailed feature specs, SQL queries, component architecture, and implementation roadmap
+- **[PERFORMANCE.md](PERFORMANCE.md)**: Performance optimization guide with indexing strategies, query optimizations, and troubleshooting
+- **[database-indexes.sql](database-indexes.sql)**: SQL script with 22 database indexes for optimal performance (deploy to Supabase)
 - **[.env.local.example](.env.local.example)**: Template for Supabase credentials (copy to `.env.local` and fill in)
 - **[constants/qualified-agents.ts](constants/qualified-agents.ts)**: List of qualified agent emails used in quality calculations
 
@@ -375,17 +390,38 @@ Two MCP servers are configured in [.mcp.json](.mcp.json):
 
 2. **Adding New Features**: Refer to [PRD.md](PRD.md) for complete feature specifications and implementation phases
 
-3. **Database Queries**: All SQL queries should be centralized in:
-   - `lib/supabase/queries.ts` - Dashboard queries
-   - `lib/supabase/queries-support.ts` - Support queries
+3. **Database Setup**:
+   - Deploy indexes from `database-indexes.sql` to Supabase (one-time setup)
+   - Verify indexes with: `SELECT * FROM pg_indexes WHERE tablename IN ('ai_human_comparison', 'support_threads_data')`
 
-4. **State Management**:
+4. **Database Queries**: All SQL queries should be centralized in:
+   - `lib/supabase/queries.ts` - Dashboard queries (OPTIMIZED: SELECT specific fields only)
+   - `lib/supabase/queries-support.ts` - Support queries (OPTIMIZED: SELECT specific fields only)
+   - **Important**: Always SELECT only needed fields, never use SELECT *
+
+5. **Data Fetching Pattern**:
+   - **Server Actions** (`lib/actions/`) for database queries (bypasses RLS)
+   - **React Query hooks** (`lib/queries/`) for caching and timeout handling
+   - **Custom hooks** (`lib/hooks/`) for component-specific logic
+   - **Important**: Use `fetchFilterOptions` from `dashboard-actions.ts` (not client-side queries)
+
+6. **State Management**:
    - Use Zustand store for filter state
-   - Use React Query for data fetching
+   - Use React Query for data fetching and caching
    - Server Components use `supabaseServer` from `lib/supabase/server.ts`
-   - Client Components use `supabase` from `lib/supabase/client.ts`
+   - Client Components should call Server Actions, not direct Supabase client queries
 
-5. **Charts**:
+7. **Charts**:
    - Always use CSS variables from `--chart-1` to `--chart-5`
    - Convert status/category names with spaces to safe CSS names
    - Test in both light and dark modes
+
+8. **Performance Best Practices**:
+   - SELECT only needed fields in queries (see `lib/supabase/queries.ts` for examples)
+   - Add timeout protection (30s) and retry logic (2 attempts) to React Query hooks
+   - Use appropriate cache times: `staleTime: 2 * 60 * 1000` (2 min), `gcTime: 10 * 60 * 1000` (10 min)
+   - Add performance logging to Server Actions for monitoring
+   - Consider pagination for large datasets (limit 50-100 records)
+   - Create page-specific hooks (like `useDetailedStats`) instead of fetching all data
+   - Monitor performance in browser console (logs show timing metrics)
+   - Refer to [PERFORMANCE.md](PERFORMANCE.md) for detailed optimization guide
