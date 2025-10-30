@@ -48,16 +48,31 @@ export function useDashboardData(filters: DashboardFilters) {
 	const query = useQuery({
 		queryKey: getDashboardQueryKey(filters),
 		queryFn: async () => {
-			const result = await fetchDashboardData(filters)
+			// Add timeout to prevent hanging requests
+			const controller = new AbortController()
+			const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
 
-			if (!result.success || !result.data) {
-				throw new Error(result.error || 'Failed to fetch dashboard data')
+			try {
+				const result = await fetchDashboardData(filters)
+				clearTimeout(timeoutId)
+
+				if (!result.success || !result.data) {
+					throw new Error(result.error || 'Failed to fetch dashboard data')
+				}
+
+				return result.data
+			} catch (error) {
+				clearTimeout(timeoutId)
+				if (error instanceof Error && error.name === 'AbortError') {
+					throw new Error('Request timed out. Please try with more specific filters.')
+				}
+				throw error
 			}
-
-			return result.data
 		},
-		staleTime: 60 * 1000, // 1 minute
-		gcTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 2 * 60 * 1000, // 2 minutes (increased cache time)
+		gcTime: 10 * 60 * 1000, // 10 minutes (keep data longer)
+		retry: 2, // Retry failed requests twice
+		retryDelay: 1000, // Wait 1 second between retries
 	})
 
 	// Real-time subscription

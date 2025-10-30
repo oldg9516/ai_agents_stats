@@ -58,16 +58,20 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
   // Build base query
   const emailFilter = agents.length > 0 ? agents : [...QUALIFIED_AGENTS]
 
+  // OPTIMIZATION: Select only fields needed for KPI calculation (not SELECT *)
+  // This reduces data transfer significantly (only 2 fields instead of all)
+  const selectFields = 'changed, request_subtype'
+
   let currentQuery = supabase
     .from('ai_human_comparison')
-    .select('*')
+    .select(selectFields, { count: 'exact' })
     .gte('created_at', dateRange.from.toISOString())
     .lte('created_at', dateRange.to.toISOString())
     .in('email', emailFilter)
 
   let previousQuery = supabase
     .from('ai_human_comparison')
-    .select('*')
+    .select(selectFields, { count: 'exact' })
     .gte('created_at', previousPeriod.from.toISOString())
     .lte('created_at', previousPeriod.to.toISOString())
     .in('email', emailFilter)
@@ -82,22 +86,26 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
     previousQuery = previousQuery.in('request_subtype', categories)
   }
 
-  const [{ data: currentData }, { data: previousData }] = await Promise.all([
-    currentQuery,
-    previousQuery,
-  ])
+  const [
+    { data: currentData, count: currentCount },
+    { data: previousData, count: previousCount },
+  ] = await Promise.all([currentQuery, previousQuery])
 
   if (!currentData || !previousData) {
     throw new Error('Failed to fetch KPI data')
   }
 
-  // Type assertion after null check
-  const currentRecords = currentData as unknown as AIHumanComparisonRow[]
-  const previousRecords = previousData as unknown as AIHumanComparisonRow[]
+  // Type assertion after null check - only the fields we selected
+  type KPIRecord = {
+    changed: boolean
+    request_subtype: string | null
+  }
+  const currentRecords = currentData as unknown as KPIRecord[]
+  const previousRecords = previousData as unknown as KPIRecord[]
 
-  // Calculate metrics
-  const currentTotal = currentRecords.length
-  const previousTotal = previousRecords.length
+  // Calculate metrics - use count from query for accuracy
+  const currentTotal = currentCount || 0
+  const previousTotal = previousCount || 0
 
   const currentChanged = currentRecords.filter((r) => r.changed).length
   const previousChanged = previousRecords.filter((r) => r.changed).length

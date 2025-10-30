@@ -32,15 +32,40 @@ import type {
  */
 export async function fetchDashboardData(filters: DashboardFilters) {
   try {
+    const startTime = Date.now()
+    console.log('🚀 [Dashboard] Starting data fetch...')
+
     // Fetch all data in parallel for best performance
-    const [kpi, qualityTrends, categoryDistribution, versionComparison, detailedStats] =
-      await Promise.all([
-        getKPIData(filters),
-        getQualityTrends(filters),
-        getCategoryDistribution(filters),
-        getVersionComparison(filters),
-        getDetailedStats(filters),
-      ])
+    const promises = [
+      getKPIData(filters),
+      getQualityTrends(filters),
+      getCategoryDistribution(filters),
+      getVersionComparison(filters),
+      getDetailedStats(filters),
+    ]
+
+    // Track individual query times
+    const results = await Promise.all(
+      promises.map(async (promise, index) => {
+        const queryStart = Date.now()
+        const names = ['KPIs', 'QualityTrends', 'CategoryDist', 'VersionComp', 'DetailedStats']
+        try {
+          const result = await promise
+          const queryTime = Date.now() - queryStart
+          console.log(`✅ [Dashboard] ${names[index]} took ${queryTime}ms`)
+          return result
+        } catch (error) {
+          const queryTime = Date.now() - queryStart
+          console.error(`❌ [Dashboard] ${names[index]} failed after ${queryTime}ms:`, error)
+          throw error
+        }
+      })
+    )
+
+    const [kpi, qualityTrends, categoryDistribution, versionComparison, detailedStats] = results
+
+    const totalTime = Date.now() - startTime
+    console.log(`🏁 [Dashboard] Total fetch time: ${totalTime}ms`)
 
     return {
       success: true,
@@ -53,7 +78,7 @@ export async function fetchDashboardData(filters: DashboardFilters) {
       },
     }
   } catch (error) {
-    console.error('Error fetching dashboard data:', error)
+    console.error('❌ [Dashboard Server Action] Error fetching dashboard data:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch dashboard data',
