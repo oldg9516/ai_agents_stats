@@ -11,12 +11,27 @@
 		"loading": "Loading...",
 		"error": "Error",
 		"noData": "No data",
+		"noDataAvailable": "No data available for the selected period",
 		"all": "All",
 		"selected": "selected",
 		"noOptionsFound": "No options found"
 	},
 	"header": {
 		"title": "Lev Haolam AI"
+	},
+	"sidebar": {
+		"appTitle": "Lev Haolam AI",
+		"navigation": "Navigation",
+		"documents": "Documents",
+		"dataLibrary": "Data Library",
+		"reports": "Reports",
+		"wordAssistant": "Word Assistant",
+		"getHelp": "Get Help",
+		"capture": "Capture",
+		"proposal": "Proposal",
+		"prompts": "Prompts",
+		"activeProposals": "Active Proposals",
+		"archived": "Archived"
 	},
 	"filters": {
 		"title": "Filters",
@@ -48,14 +63,40 @@
 		}
 	},
 	"kpi": {
-		"totalRecords": "Total Records",
-		"averageQuality": "Average Quality",
-		"bestCategory": "Best Category",
-		"recordsChanged": "Records Changed",
-		"aiDraftCoverage": "AI Draft Coverage",
-		"replyRequired": "Reply Required",
-		"resolutionRate": "Resolution Rate",
-		"avgRequirements": "Avg Requirements"
+		"totalRecords": {
+			"title": "Total Records",
+			"description": "Total number of records processed by qualified agents"
+		},
+		"averageQuality": {
+			"title": "Average Quality",
+			"description": "Average quality percentage across all categories"
+		},
+		"bestCategory": {
+			"title": "Best Category",
+			"description": "Category with the highest quality percentage"
+		},
+		"recordsChanged": {
+			"title": "Records Changed",
+			"description": "Number of records edited by agents"
+		},
+		"aiDraftCoverage": {
+			"title": "AI Draft Coverage",
+			"description": "Percentage of threads with AI-generated drafts"
+		},
+		"replyRequired": {
+			"title": "Reply Required",
+			"description": "Percentage of threads requiring customer response"
+		},
+		"resolutionRate": {
+			"title": "Resolution Rate",
+			"description": "Percentage of threads marked as resolved"
+		},
+		"avgRequirements": {
+			"title": "Avg Requirements",
+			"description": "Average number of requirements per thread"
+		},
+		"vs": "vs",
+		"previous": "previous period"
 	},
 	"charts": {
 		"qualityTrends": {
@@ -64,23 +105,36 @@
 		},
 		"categoryDistribution": {
 			"title": "Quality by Category",
-			"description": "Distribution of records across categories"
+			"description": "Distribution of records across categories",
+			"totalRecords": "Total Records"
 		},
 		"versionComparison": {
 			"title": "Version Comparison",
-			"description": "Compare quality across prompt versions"
+			"description": "Compare quality across prompt versions",
+			"records": "records"
 		},
 		"statusDistribution": {
 			"title": "Status Distribution",
-			"description": "Breakdown of support threads by status"
+			"description": "Breakdown of support threads by status",
+			"threads": "threads"
 		},
 		"resolutionTime": {
 			"title": "Resolution Time",
-			"description": "Average resolution time in hours"
+			"description": "Average resolution time in hours",
+			"avgTime": "Avg Time",
+			"threads": "threads",
+			"week": "Week"
 		},
 		"aiDraftFlow": {
 			"title": "AI Draft Flow",
-			"description": "Journey of AI-generated drafts"
+			"description": "Journey of AI-generated drafts",
+			"aiDraftCreated": "AI Draft Created",
+			"usedWithoutChanges": "Used Without Changes",
+			"modifiedByAgent": "Modified by Agent",
+			"rejected": "Rejected",
+			"resolved": "Resolved",
+			"pending": "Pending",
+			"threads": "threads"
 		},
 		"requirementsCorrelation": {
 			"title": "Requirements Correlation",
@@ -133,6 +187,8 @@
 			"ctaDocs": "Documentation"
 		},
 		"features": {
+			"title": "Features",
+			"subtitle": "Everything you need to monitor AI agents",
 			"dashboard": {
 				"title": "Analytics Dashboard",
 				"description": "Track quality metrics, trends, and AI agent performance"
@@ -149,7 +205,48 @@
 				"title": "Documentation",
 				"description": "Complete guide to using the analytics platform"
 			}
+		},
+		"keyFeatures": {
+			"title": "Key Features",
+			"subtitle": "Powerful tools for understanding AI performance",
+			"realtime": {
+				"title": "Real-time Updates",
+				"description": "Track AI quality metrics in real-time with automatic updates and live data."
+			},
+			"filtering": {
+				"title": "Advanced Filtering",
+				"description": "Filter data by date range, versions, categories, and agents for targeted analysis."
+			},
+			"export": {
+				"title": "Data Export",
+				"description": "Export filtered data in CSV format for reporting and further analysis."
+			},
+			"visualization": {
+				"title": "Interactive Visualization",
+				"description": "Explore data with interactive charts, graphs, and heatmaps."
+			}
 		}
+	},
+	"requirements": {
+		"reply": "Reply",
+		"identification": "Identification",
+		"editing": "Editing",
+		"subscription": "Subscription",
+		"tracking": "Tracking",
+		"boxContents": "Box Contents"
+	},
+	"status": {
+		"aiProcessing": "AI Processing",
+		"dataCollected": "Data Collected",
+		"gettingTrackingData": "Getting Tracking Data",
+		"gotTrackingData": "Got Tracking Data",
+		"identifying": "Identifying",
+		"identifyingManyUsers": "Identifying — Many Users",
+		"identifyingNotFound": "Identifying — Not Found",
+		"new": "New",
+		"replyIsReady": "Reply is Ready",
+		"replyNotRequired": "Reply Not Required",
+		"zohoDraftCreated": "ZOHO Draft Created"
 	},
 	"categories": {
 		"customization": "Customization",
