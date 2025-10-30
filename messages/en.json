@@ -182,9 +182,14 @@
 		"hero": {
 			"title": "AI Agent Analytics",
 			"subtitle": "Real-time monitoring and analysis of AI agent performance",
+			"description": "Comprehensive platform for tracking quality metrics, performance trends, and AI-generated content. Get detailed insights into your AI agents' work with powerful analytics tools.",
 			"ctaDashboard": "Open Dashboard",
 			"ctaSupport": "Support Overview",
 			"ctaDocs": "Documentation"
+		},
+		"mockup": {
+			"title": "Dashboard in Action",
+			"viewDemo": "View Demo"
 		},
 		"features": {
 			"title": "Features",
