@@ -109,29 +109,34 @@
 	"charts": {
 		"qualityTrends": {
 			"title": "Quality Trends Over Time",
-			"description": "Track quality percentage by category"
+			"description": "Track quality percentage by category",
+			"tooltip": "Time-series visualization showing AI quality trends grouped by week. Each line represents a different request category. Use this to identify quality patterns, seasonal variations, and track improvement over time."
 		},
 		"categoryDistribution": {
 			"title": "Quality by Category",
 			"description": "Distribution of records across categories",
-			"totalRecords": "Total Records"
+			"totalRecords": "Total Records",
+			"tooltip": "Pie chart showing the distribution of quality percentages across different request categories. Helps identify which types of requests AI handles best and which need improvement."
 		},
 		"versionComparison": {
 			"title": "Version Comparison",
 			"description": "Compare quality across prompt versions",
-			"records": "records"
+			"records": "records",
+			"tooltip": "Bar chart comparing AI quality across different prompt versions (v1, v2, v3, etc.). Use this to evaluate the effectiveness of prompt improvements and track version performance."
 		},
 		"statusDistribution": {
 			"title": "Status Distribution",
 			"description": "Breakdown of support threads by status",
-			"threads": "threads"
+			"threads": "threads",
+			"tooltip": "Pie chart showing the distribution of support threads across different statuses. Helps understand the current state of support operations and identify bottlenecks in the workflow."
 		},
 		"resolutionTime": {
 			"title": "Resolution Time",
 			"description": "Average resolution time in hours",
 			"avgTime": "Avg Time",
 			"threads": "threads",
-			"week": "Week"
+			"week": "Week",
+			"tooltip": "Bar chart showing average time (in hours) to reach 'Reply is ready' status, grouped by week. Lower times indicate more efficient support operations and better AI assistance."
 		},
 		"aiDraftFlow": {
 			"title": "AI Draft Flow",
@@ -142,11 +147,13 @@
 			"rejected": "Rejected",
 			"resolved": "Resolved",
 			"pending": "Pending",
-			"threads": "threads"
+			"threads": "threads",
+			"tooltip": "Sankey diagram visualizing the journey of support threads from AI draft generation through usage/editing to final resolution. Flow thickness represents volume. Helps understand how AI drafts are utilized."
 		},
 		"requirementsCorrelation": {
 			"title": "Requirements Correlation",
-			"description": "How often requirements appear together"
+			"description": "How often requirements appear together",
+			"tooltip": "Heatmap showing how often different data requirements appear together in support threads. Darker colors indicate stronger correlations. Useful for understanding request complexity patterns."
 		}
 	},
 	"table": {
