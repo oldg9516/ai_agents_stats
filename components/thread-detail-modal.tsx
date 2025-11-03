@@ -15,9 +15,10 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { IconCheck, IconX } from '@tabler/icons-react'
+import { IconCheck, IconX, IconExternalLink } from '@tabler/icons-react'
 import { getStatusLabel } from '@/constants/support-statuses'
 import { getRequestTypeLabel } from '@/constants/request-types'
 import { REQUIREMENT_TYPES, getAllRequirementKeys } from '@/constants/requirement-types'
@@ -47,10 +48,25 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 		<Dialog open onOpenChange={handleClose}>
 			<DialogContent className='max-w-[95vw] w-full sm:max-w-[90vw] lg:max-w-6xl h-[95vh] sm:h-[90vh] p-0 gap-0 flex flex-col overflow-hidden'>
 				<DialogHeader className='px-4 py-4 sm:px-6 sm:py-6 border-b shrink-0'>
-					<DialogTitle className='text-lg sm:text-xl'>Thread Details</DialogTitle>
-					<DialogDescription className='font-mono text-xs sm:text-sm break-all'>
-						{thread.thread_id}
-					</DialogDescription>
+					<div className='flex items-start justify-between gap-4'>
+						<div className='flex-1 min-w-0'>
+							<DialogTitle className='text-lg sm:text-xl'>Thread Details</DialogTitle>
+							<DialogDescription className='font-mono text-xs sm:text-sm break-all'>
+								{thread.thread_id}
+							</DialogDescription>
+						</div>
+						<Button variant='outline' size='sm' asChild className='shrink-0'>
+							<a
+								href={`/support-overview/thread/${thread.thread_id}`}
+								target='_blank'
+								rel='noopener noreferrer'
+							>
+								<IconExternalLink className='h-4 w-4 mr-2' />
+								<span className='hidden sm:inline'>Open in Full Page</span>
+								<span className='sm:hidden'>Open</span>
+							</a>
+						</Button>
+					</div>
 				</DialogHeader>
 
 				<div className='flex-1 overflow-y-auto overflow-x-hidden'>
