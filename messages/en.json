@@ -737,6 +737,85 @@
 		"supportDescription": "Filter support threads by date range, status, request type, requirements, and prompt version.",
 		"filters": "Filters"
 	},
+	"category": {
+		"subtitle": "Detailed statistics and quality metrics",
+		"openInFullPage": "Open in Full Page",
+		"filters": {
+			"title": "Filters",
+			"reset": "Reset Filters",
+			"versions": "Versions",
+			"searchVersions": "Search versions...",
+			"agents": "Agents",
+			"searchAgents": "Search agents...",
+			"versionsSelected": "{count} versions selected",
+			"agentsSelected": "{count} agents selected"
+		},
+		"kpis": {
+			"totalRecords": "Total Records",
+			"totalRecordsDesc": "All records in category",
+			"quality": "Quality",
+			"qualityDesc": "Good percentage (not changed)",
+			"changed": "Changed",
+			"changedDesc": "Records changed by agents",
+			"trend": "Trend",
+			"trendDesc": "vs previous period"
+		},
+		"charts": {
+			"qualityTrends": "Quality Trends Over Time",
+			"qualityTrendsDesc": "Weekly quality percentage",
+			"quality": "Quality",
+			"week": "Week",
+			"records": "Records"
+		},
+		"versionStats": {
+			"title": "Quality by Version",
+			"description": "Breakdown by prompt version",
+			"noData": "No version data available",
+			"version": "Version",
+			"records": "Records",
+			"quality": "Quality",
+			"changed": "Changed",
+			"versions": "versions"
+		},
+		"agentChart": {
+			"title": "Quality by Agent",
+			"description": "Performance by qualified agent",
+			"noData": "No agent data available",
+			"agent": "Agent",
+			"quality": "Quality",
+			"records": "Records",
+			"changed": "Changed"
+		},
+		"recordsTable": {
+			"title": "Detailed Records",
+			"description": "All records with pagination",
+			"export": "Export CSV",
+			"searchPlaceholder": "Search by ID, version, agent, week...",
+			"id": "ID",
+			"version": "Version",
+			"week": "Week",
+			"agent": "Agent",
+			"changed": "Changed",
+			"date": "Date",
+			"yes": "Yes",
+			"no": "No",
+			"noResults": "No records found",
+			"noData": "No records available",
+			"showing": "Showing {from}-{to} of {total}",
+			"page": "Page {current} of {total}",
+			"firstPage": "First page",
+			"previousPage": "Previous page",
+			"nextPage": "Next page",
+			"lastPage": "Last page"
+		},
+		"errors": {
+			"noData": "No data available for this category",
+			"loadFailed": "Failed to load category data"
+		},
+		"export": {
+			"comingSoon": "CSV export coming soon"
+		}
+	},
 	"notFound": {
 		"title": "Page Not Found",
 		"description": "The page you're looking for doesn't exist or has been moved.",
