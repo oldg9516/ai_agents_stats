@@ -39,6 +39,7 @@ import {
 } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
 
 interface DetailedStatsTableProps {
 	data: DetailedStatsRow[]
@@ -53,9 +54,11 @@ interface DetailedStatsTableProps {
  * - Pagination (20 per page)
  * - CSV export
  * - Quality color coding
+ * - Click on category (version-level rows) to view details
  */
 export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 	const t = useTranslations()
+	const router = useRouter()
 
 	const [sorting, setSorting] = useState<SortingState>([
 		{ id: 'category', desc: false },
@@ -67,6 +70,11 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 		pageSize: 20,
 	})
 
+	// Handle category click
+	const handleCategoryClick = (category: string) => {
+		router.push(`/dashboard/category/${encodeURIComponent(category)}`)
+	}
+
 	// Define columns
 	const columns = useMemo<ColumnDef<DetailedStatsRow>[]>(
 		() => [
@@ -75,13 +83,22 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 				header: t('table.category'),
 				cell: ({ row }) => {
 					const isVersionLevel = row.original.sortOrder === 1
+					const category = row.original.category
+
+					if (isVersionLevel) {
+						return (
+							<div
+								className='font-semibold cursor-pointer hover:text-primary transition-colors'
+								onClick={() => handleCategoryClick(category)}
+							>
+								{getCategoryLabel(category)}
+							</div>
+						)
+					}
+
 					return (
-						<div
-							className={
-								isVersionLevel ? 'font-semibold' : 'pl-4 text-muted-foreground'
-							}
-						>
-							{getCategoryLabel(row.original.category)}
+						<div className='pl-4 text-muted-foreground'>
+							{getCategoryLabel(category)}
 						</div>
 					)
 				},

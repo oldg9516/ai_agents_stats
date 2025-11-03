@@ -20,7 +20,8 @@ import { getCategoryLabel } from '@/constants/category-labels'
 import type { CategoryDistributionData } from '@/lib/supabase/types'
 import { useMemo } from 'react'
 import { useTranslations } from 'next-intl'
-import { Label, Pie, PieChart } from 'recharts'
+import { useRouter } from 'next/navigation'
+import { Label, Pie, PieChart, Cell } from 'recharts'
 
 interface CategoryPieChartProps {
 	data: CategoryDistributionData[]
@@ -34,9 +35,16 @@ interface CategoryPieChartProps {
  * - Donut chart with quality-based colors
  * - Shows category name, record count, and quality percentage
  * - Responsive legend
+ * - Click on segment to view category details
  */
 export function CategoryPieChart({ data }: CategoryPieChartProps) {
 	const t = useTranslations()
+	const router = useRouter()
+
+	// Handle category click
+	const handleCategoryClick = (category: string) => {
+		router.push(`/dashboard/category/${encodeURIComponent(category)}`)
+	}
 
 	// Create chart config dynamically from data
 	const chartConfig = useMemo(() => {
@@ -134,7 +142,19 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
 							innerRadius='60%'
 							outerRadius='80%'
 							strokeWidth={2}
+							onClick={(data) => {
+								if (data && data.category) {
+									handleCategoryClick(data.category)
+								}
+							}}
+							className='cursor-pointer'
 						>
+							{chartData.map((entry, index) => (
+								<Cell
+									key={`cell-${index}`}
+									className='hover:opacity-80 transition-opacity'
+								/>
+							))}
 							<Label
 								content={({ viewBox }) => {
 									if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
