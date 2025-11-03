@@ -737,6 +737,11 @@
 		"supportDescription": "Filter support threads by date range, status, request type, requirements, and prompt version.",
 		"filters": "Filters"
 	},
+	"supportThread": {
+		"title": "Thread Details",
+		"openInFullPage": "Open in Full Page",
+		"open": "Open"
+	},
 	"category": {
 		"subtitle": "Detailed statistics and quality metrics",
 		"openInFullPage": "Open in Full Page",
@@ -775,7 +780,8 @@
 			"records": "Records",
 			"quality": "Quality",
 			"changed": "Changed",
-			"versions": "versions"
+			"versions": "versions",
+			"totalVersions": "Total versions"
 		},
 		"agentChart": {
 			"title": "Quality by Agent",

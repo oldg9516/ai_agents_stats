@@ -8,6 +8,7 @@
  */
 
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import {
 	Dialog,
 	DialogContent,
@@ -35,6 +36,7 @@ interface ThreadDetailModalProps {
 
 export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 	const router = useRouter()
+	const t = useTranslations('supportThread')
 
 	// Close modal by navigating back
 	const handleClose = () => {
@@ -50,7 +52,7 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 				<DialogHeader className='px-4 py-4 sm:px-6 sm:py-6 border-b shrink-0'>
 					<div className='flex items-start justify-between gap-4'>
 						<div className='flex-1 min-w-0'>
-							<DialogTitle className='text-lg sm:text-xl'>Thread Details</DialogTitle>
+							<DialogTitle className='text-lg sm:text-xl'>{t('title')}</DialogTitle>
 							<DialogDescription className='font-mono text-xs sm:text-sm break-all'>
 								{thread.thread_id}
 							</DialogDescription>
@@ -62,8 +64,8 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 								rel='noopener noreferrer'
 							>
 								<IconExternalLink className='h-4 w-4 mr-2' />
-								<span className='hidden sm:inline'>Open in Full Page</span>
-								<span className='sm:hidden'>Open</span>
+								<span className='hidden sm:inline'>{t('openInFullPage')}</span>
+								<span className='sm:hidden'>{t('open')}</span>
 							</a>
 						</Button>
 					</div>
