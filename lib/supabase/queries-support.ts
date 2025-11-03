@@ -94,6 +94,7 @@ export async function fetchSupportKPIs(
 		'ai_draft_reply',
 		'requires_reply',
 		'status',
+		'prompt_version',
 		...reqKeys,
 	].join(',')
 
@@ -117,6 +118,36 @@ export async function fetchSupportKPIs(
 
 	if (previousError) throw previousError
 
+	// Fetch agent response data for current period
+	const currentVersions = Array.from(
+		new Set((currentData || []).map((t: any) => t.prompt_version).filter(Boolean))
+	) as string[]
+
+	let currentAgentResponseCount = 0
+	if (currentVersions.length > 0) {
+		const { count: agentCount } = await supabase
+			.from('ai_human_comparison')
+			.select('*', { count: 'exact', head: true })
+			.in('prompt_version', currentVersions)
+			.in('email', QUALIFIED_AGENTS)
+		currentAgentResponseCount = agentCount || 0
+	}
+
+	// Fetch agent response data for previous period
+	const previousVersions = Array.from(
+		new Set((previousData || []).map((t: any) => t.prompt_version).filter(Boolean))
+	) as string[]
+
+	let previousAgentResponseCount = 0
+	if (previousVersions.length > 0) {
+		const { count: agentCount } = await supabase
+			.from('ai_human_comparison')
+			.select('*', { count: 'exact', head: true })
+			.in('prompt_version', previousVersions)
+			.in('email', QUALIFIED_AGENTS)
+		previousAgentResponseCount = agentCount || 0
+	}
+
 	// Type assertion for data - we know the structure from our select
 	type KPIRecord = {
 		ai_draft_reply: string | null
@@ -130,8 +161,6 @@ export async function fetchSupportKPIs(
 
 	// Calculate KPIs for current period
 	const currentTotal = currentCount || 0
-	const currentWithDraft =
-		currentRecords.filter(t => t.ai_draft_reply !== null).length
 	const currentRequiresReply =
 		currentRecords.filter(t => t.requires_reply === true).length
 	const currentResolved =
@@ -143,8 +172,6 @@ export async function fetchSupportKPIs(
 
 	// Calculate KPIs for previous period
 	const previousTotal = previousCount || 0
-	const previousWithDraft =
-		previousRecords.filter(t => t.ai_draft_reply !== null).length
 	const previousRequiresReply =
 		previousRecords.filter(t => t.requires_reply === true).length
 	const previousResolved =
@@ -155,10 +182,10 @@ export async function fetchSupportKPIs(
 	}, 0)
 
 	// Calculate percentages
-	const currentDraftCoverage =
-		currentTotal > 0 ? (currentWithDraft / currentTotal) * 100 : 0
-	const previousDraftCoverage =
-		previousTotal > 0 ? (previousWithDraft / previousTotal) * 100 : 0
+	const currentAgentResponseRate =
+		currentTotal > 0 ? (currentAgentResponseCount / currentTotal) * 100 : 0
+	const previousAgentResponseRate =
+		previousTotal > 0 ? (previousAgentResponseCount / previousTotal) * 100 : 0
 
 	const currentReplyRequiredPct =
 		currentTotal > 0 ? (currentRequiresReply / currentTotal) * 100 : 0
@@ -176,10 +203,10 @@ export async function fetchSupportKPIs(
 		previousTotal > 0 ? previousRequirementsCount / previousTotal : 0
 
 	return {
-		aiDraftCoverage: {
-			current: currentDraftCoverage,
-			previous: previousDraftCoverage,
-			trend: calculateTrend(currentDraftCoverage, previousDraftCoverage),
+		agentResponseRate: {
+			current: currentAgentResponseRate,
+			previous: previousAgentResponseRate,
+			trend: calculateTrend(currentAgentResponseRate, previousAgentResponseRate),
 		},
 		replyRequired: {
 			current: currentReplyRequiredPct,

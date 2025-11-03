@@ -83,10 +83,10 @@
 			"description": "Number of records edited by agents",
 			"tooltip": "Count of AI-generated outputs that required human modifications. Lower numbers indicate better AI quality. Includes any edits made by qualified agents before use."
 		},
-		"aiDraftCoverage": {
-			"title": "AI Draft Coverage",
-			"description": "Percentage of threads with AI-generated drafts",
-			"tooltip": "Percentage of support threads where AI successfully generated a draft response. Higher coverage indicates better AI availability and capability across different request types."
+		"agentResponseRate": {
+			"title": "Agent Response Rate",
+			"description": "Percentage of threads reviewed by qualified agents",
+			"tooltip": "Percentage of support threads that were reviewed and evaluated by qualified agents (have a record in ai_human_comparison). Higher rates indicate better quality control and coverage. Shows how many threads received professional assessment."
 		},
 		"replyRequired": {
 			"title": "Reply Required",
@@ -401,11 +401,12 @@
 			"description": "Analytics for support thread operations, AI draft performance, and resolution tracking.",
 			"kpis": {
 				"title": "KPI Cards (4 Metrics)",
-				"aiDraftCoverage": {
-					"title": "AI Draft Coverage",
-					"whatItShows": "Percentage of threads with AI-generated draft replies.",
-					"formula": "Threads with ai_draft_reply / Total threads × 100",
-					"badge": "Percentage metric"
+				"agentResponseRate": {
+					"title": "Agent Response Rate",
+					"whatItShows": "Percentage of threads reviewed and evaluated by qualified agents.",
+					"formula": "Threads with agent review (in ai_human_comparison) / Total threads × 100",
+					"badge": "Percentage metric",
+					"purpose": "Tracks quality control coverage - shows how many threads received professional assessment from qualified agents"
 				},
 				"replyRequired": {
 					"title": "Reply Required",

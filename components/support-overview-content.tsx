@@ -6,7 +6,7 @@ import { useSupportData } from '@/lib/hooks/use-support-data'
 import { useSupportFilters } from '@/lib/hooks/use-support-filters'
 import { FilterSheet } from './filters/filter-sheet'
 import { SupportFilterBar } from './filters/support-filter-bar'
-import { AIDraftCoverageCard } from './kpi/ai-draft-coverage-card'
+import { AgentResponseRateCard } from './kpi/agent-response-rate-card'
 import { ReplyRequiredCard } from './kpi/reply-required-card'
 import { DataCollectionRateCard } from './kpi/data-collection-rate-card'
 import { AvgRequirementsCard } from './kpi/avg-requirements-card'
@@ -125,7 +125,7 @@ export function SupportOverviewContent() {
 
 			{/* KPI Cards */}
 			<div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
-				<AIDraftCoverageCard data={data.kpis?.aiDraftCoverage || null} />
+				<AgentResponseRateCard data={data.kpis?.agentResponseRate || null} />
 				<ReplyRequiredCard data={data.kpis?.replyRequired || null} />
 				<DataCollectionRateCard
 					data={data.kpis?.dataCollectionRate || null}

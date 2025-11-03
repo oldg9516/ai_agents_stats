@@ -204,8 +204,8 @@ export interface SupportThread extends SupportThreadRow {
  * Support Overview KPIs
  */
 export interface SupportKPIs {
-  aiDraftCoverage: {
-    current: number // % of threads with AI draft
+  agentResponseRate: {
+    current: number // % of threads reviewed by qualified agents
     previous: number
     trend: TrendData
   }
