@@ -291,3 +291,102 @@ export interface SupportFilters {
   requirements: string[] // [] = all, else filter by active requirements
   versions: string[] // [] = all versions
 }
+
+// ============================================================================
+// Category Detail Types
+// ============================================================================
+
+/**
+ * Category Detail Filters
+ */
+export interface CategoryFilters {
+  dateRange: {
+    from: Date
+    to: Date
+  }
+  versions: string[] // [] = all versions
+  agents: string[] // [] = all qualified agents
+}
+
+/**
+ * Category KPI Data (with trends)
+ */
+export interface CategoryKPIData {
+  totalRecords: {
+    current: number
+    previous: number
+    trend: TrendData
+  }
+  quality: {
+    current: number // Percentage
+    previous: number
+    trend: TrendData
+  }
+  changed: {
+    current: number // Count of changed records
+    previous: number
+    trend: TrendData
+  }
+}
+
+/**
+ * Category Weekly Trend (for line chart)
+ */
+export interface CategoryWeeklyTrend {
+  weekStart: string // ISO date
+  weekEnd: string // ISO date
+  totalRecords: number
+  goodRecords: number
+  goodPercentage: number
+  changedRecords: number
+}
+
+/**
+ * Category Version Stats (breakdown by prompt version)
+ */
+export interface CategoryVersionStats {
+  version: string
+  totalRecords: number
+  goodRecords: number
+  goodPercentage: number
+  changedRecords: number
+}
+
+/**
+ * Category Agent Stats (breakdown by qualified agent)
+ */
+export interface CategoryAgentStats {
+  agent: string // Email
+  totalRecords: number
+  goodRecords: number
+  goodPercentage: number
+  changedRecords: number
+}
+
+/**
+ * Category Record (individual record for table)
+ */
+export interface CategoryRecord {
+  id: number
+  version: string
+  week: string // Week label (e.g., "Week 12")
+  weekStart: string // ISO date
+  agent: string // Email
+  changed: boolean
+  createdAt: string // ISO timestamp
+}
+
+/**
+ * Category Detail Data (complete data for category detail page)
+ */
+export interface CategoryDetailData {
+  categoryName: string
+  kpis: CategoryKPIData
+  weeklyTrends: CategoryWeeklyTrend[]
+  versionStats: CategoryVersionStats[]
+  agentStats: CategoryAgentStats[]
+  records: {
+    data: CategoryRecord[]
+    total: number // Total count for pagination
+  }
+}
