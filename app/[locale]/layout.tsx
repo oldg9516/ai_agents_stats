@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { routing } from '@/i18n/routing'
-import { QueryProvider } from '@/lib/providers/query-provider'
+import { Analytics } from '@vercel/analytics/react'
 import type { Metadata } from 'next'
-import { NextIntlClientProvider } from 'next-intl'
 import { getMessages } from 'next-intl/server'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { notFound } from 'next/navigation'
 import '../globals.css'
+import Provider from './provider'
 
 const geistSans = Geist({
 	variable: '--font-geist-sans',
@@ -37,7 +37,6 @@ export default async function LocaleLayout({
 		notFound()
 	}
 
-	// Providing all messages to the client side is the easiest way to get started
 	const messages = await getMessages()
 
 	return (
@@ -45,9 +44,9 @@ export default async function LocaleLayout({
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 			>
-				<NextIntlClientProvider messages={messages}>
-					<QueryProvider>{children}</QueryProvider>
-				</NextIntlClientProvider>
+				<Provider messages={messages}>{children}</Provider>
+
+				<Analytics />
 			</body>
 		</html>
 	)

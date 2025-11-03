@@ -735,5 +735,15 @@
 		"supportTitle": "Support Filters",
 		"supportDescription": "Filter support threads by date range, status, request type, requirements, and prompt version.",
 		"filters": "Filters"
+	},
+	"notFound": {
+		"title": "Page Not Found",
+		"description": "The page you're looking for doesn't exist or has been moved.",
+		"hint": "The URL might be incorrect or the page may have been removed.",
+		"goBack": "Go Back",
+		"goHome": "Go to Home",
+		"goDashboard": "Go to Dashboard",
+		"needHelp": "Need help?",
+		"checkDocs": "Check our documentation"
 	}
 }
