@@ -34,6 +34,10 @@ import type { RequestCategoryStats } from '@/lib/supabase/types'
 import { format } from 'date-fns'
 import { useRequestCategoryStats } from '@/lib/queries/support-queries'
 
+interface RequestCategoriesTableProps {
+	dateRange: { from: Date; to: Date }
+}
+
 /**
  * Request Categories Table - Shows request types and subtypes breakdown
  *
@@ -43,12 +47,13 @@ import { useRequestCategoryStats } from '@/lib/queries/support-queries'
  * - Search by request_type or request_subtype
  * - CSV export
  * - Shows count and percentage for each category
+ * - Date range filtering
  */
-export function RequestCategoriesTable() {
+export function RequestCategoriesTable({ dateRange }: RequestCategoriesTableProps) {
 	const t = useTranslations()
 
-	// Fetch data
-	const { data, isLoading, error } = useRequestCategoryStats()
+	// Fetch data with date filter
+	const { data, isLoading, error } = useRequestCategoryStats(dateRange)
 
 	// Client-side sorting and filtering
 	const [sorting, setSorting] = useState<SortingState>([

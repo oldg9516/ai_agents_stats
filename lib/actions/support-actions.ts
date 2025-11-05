@@ -91,12 +91,12 @@ export async function fetchSupportData(filters: SupportFilters) {
  * Fetch Request Category Statistics
  * Returns breakdown of request types and subtypes with counts and percentages
  */
-export async function fetchRequestCategoryStatsAction() {
+export async function fetchRequestCategoryStatsAction(dateRange: { from: Date; to: Date }) {
 	try {
 		const startTime = Date.now()
 		console.log('🚀 [Request Categories] Starting data fetch...')
 
-		const stats = await fetchRequestCategoryStats(supabaseServer)
+		const stats = await fetchRequestCategoryStats(supabaseServer, dateRange)
 
 		const totalTime = Date.now() - startTime
 		console.log(`🏁 [Request Categories] Fetch time: ${totalTime}ms (${stats.length} categories)`)
@@ -112,5 +112,34 @@ export async function fetchRequestCategoryStatsAction() {
 			error:
 				error instanceof Error ? error.message : 'Failed to fetch request category stats',
 		}
+	}
+}
+
+/**
+ * Fetch minimum created_at date from support_threads_data
+ * Used for "All Time" filter
+ */
+export async function fetchSupportMinCreatedDate(): Promise<Date> {
+	try {
+		console.log('🚀 [Support MinDate] Fetching minimum created_at date...')
+		const startTime = Date.now()
+
+		const { data, error } = await supabaseServer
+			.from('support_threads_data')
+			.select('created_at')
+			.order('created_at', { ascending: true })
+			.limit(1)
+			.single()
+
+		if (error) throw error
+
+		const totalTime = Date.now() - startTime
+		console.log(`🏁 [Support MinDate] Fetch time: ${totalTime}ms (date: ${data.created_at})`)
+
+		return new Date(data.created_at)
+	} catch (error) {
+		console.error('❌ [Support MinDate] Error:', error)
+		// Fallback to a safe default date
+		return new Date('2024-01-01')
 	}
 }

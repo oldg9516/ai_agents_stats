@@ -174,11 +174,14 @@ export function usePrefetchSupportData() {
  * Hook for fetching Request Category Statistics
  * Returns all request types and subtypes with counts and percentages
  */
-export function useRequestCategoryStats() {
+export function useRequestCategoryStats(dateRange: { from: Date; to: Date }) {
 	const query = useQuery({
-		queryKey: ['request-category-stats'],
+		queryKey: ['request-category-stats', {
+			from: dateRange.from.toISOString(),
+			to: dateRange.to.toISOString(),
+		}],
 		queryFn: async () => {
-			const result = await fetchRequestCategoryStatsAction()
+			const result = await fetchRequestCategoryStatsAction(dateRange)
 			if (!result.success || !result.data) {
 				throw new Error(result.error || 'Failed to fetch request category stats')
 			}

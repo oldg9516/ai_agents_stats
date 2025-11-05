@@ -674,15 +674,21 @@ export async function fetchThreadDetail(
  * Groups multiple subtypes (containing comma) as "multiply"
  */
 export async function fetchRequestCategoryStats(
-	supabase: SupabaseClient
+	supabase: SupabaseClient,
+	dateRange: { from: Date; to: Date }
 ): Promise<RequestCategoryStats[]> {
-	// Use SQL RPC function for accurate calculations
-	const { data, error } = await supabase.rpc('get_request_category_stats')
+	// Use SQL RPC function for accurate calculations with date filter
+	const { data, error } = await supabase.rpc('get_request_category_stats', {
+		date_from: dateRange.from.toISOString(),
+		date_to: dateRange.to.toISOString(),
+	})
 
 	if (error) {
 		console.error('❌ [Request Categories] RPC error:', error)
 		throw error
 	}
+
+	console.log(`📊 [Request Categories] Fetched ${data?.length || 0} categories for date range ${dateRange.from.toISOString()} to ${dateRange.to.toISOString()}`)
 
 	return (data || []) as RequestCategoryStats[]
 }
