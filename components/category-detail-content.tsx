@@ -220,16 +220,17 @@ export function CategoryDetailContent({
 				/>
 				<KPICard
 					title={t('kpis.trend')}
-					value={
+					value={`${data.kpis.quality.trend.direction === 'up' ? '+' : data.kpis.quality.trend.direction === 'down' ? '-' : ''}${data.kpis.quality.trend.percentage.toFixed(1)}%`}
+					icon={
 						data.kpis.quality.trend.direction === 'up' ? (
-							<IconTrendingUp className='h-6 w-6 text-green-600' />
+							<IconTrendingUp className='h-4 w-4' />
 						) : data.kpis.quality.trend.direction === 'down' ? (
-							<IconTrendingDown className='h-6 w-6 text-red-600' />
+							<IconTrendingDown className='h-4 w-4' />
 						) : (
-							<IconMinus className='h-6 w-6 text-muted-foreground' />
+							<IconMinus className='h-4 w-4' />
 						)
 					}
-					description={`${data.kpis.quality.trend.direction === 'up' ? '+' : data.kpis.quality.trend.direction === 'down' ? '-' : ''}${data.kpis.quality.trend.percentage.toFixed(1)}% ${t('kpis.trendDesc')}`}
+					description={t('kpis.trendDesc')}
 				/>
 			</div>
 
