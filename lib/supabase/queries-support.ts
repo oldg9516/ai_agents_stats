@@ -11,6 +11,7 @@ import { getAllRequirementKeys } from '@/constants/requirement-types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type {
 	CorrelationCell,
+	RequestCategoryStats,
 	ResolutionTimeData,
 	SankeyData,
 	StatusDistribution,
@@ -103,8 +104,11 @@ export async function fetchSupportKPIs(
 		.from('support_threads_data')
 		.select(selectFields, { count: 'exact' })
 	currentQuery = buildQuery(currentQuery, false)
-	const { data: currentData, count: currentCount, error: currentError } =
-		await currentQuery
+	const {
+		data: currentData,
+		count: currentCount,
+		error: currentError,
+	} = await currentQuery
 
 	if (currentError) throw currentError
 
@@ -113,14 +117,19 @@ export async function fetchSupportKPIs(
 		.from('support_threads_data')
 		.select(selectFields, { count: 'exact' })
 	previousQuery = buildQuery(previousQuery, true)
-	const { data: previousData, count: previousCount, error: previousError } =
-		await previousQuery
+	const {
+		data: previousData,
+		count: previousCount,
+		error: previousError,
+	} = await previousQuery
 
 	if (previousError) throw previousError
 
 	// Fetch agent response data for current period
 	const currentVersions = Array.from(
-		new Set((currentData || []).map((t: any) => t.prompt_version).filter(Boolean))
+		new Set(
+			(currentData || []).map((t: any) => t.prompt_version).filter(Boolean)
+		)
 	) as string[]
 
 	let currentAgentResponseCount = 0
@@ -135,7 +144,9 @@ export async function fetchSupportKPIs(
 
 	// Fetch agent response data for previous period
 	const previousVersions = Array.from(
-		new Set((previousData || []).map((t: any) => t.prompt_version).filter(Boolean))
+		new Set(
+			(previousData || []).map((t: any) => t.prompt_version).filter(Boolean)
+		)
 	) as string[]
 
 	let previousAgentResponseCount = 0
@@ -161,10 +172,12 @@ export async function fetchSupportKPIs(
 
 	// Calculate KPIs for current period
 	const currentTotal = currentCount || 0
-	const currentRequiresReply =
-		currentRecords.filter(t => t.requires_reply === true).length
-	const currentResolved =
-		currentRecords.filter(t => t.status === 'Reply is ready').length
+	const currentRequiresReply = currentRecords.filter(
+		t => t.requires_reply === true
+	).length
+	const currentResolved = currentRecords.filter(
+		t => t.status === 'Reply is ready'
+	).length
 
 	const currentRequirementsCount = currentRecords.reduce((sum, thread) => {
 		return sum + reqKeys.filter(key => thread[key] === true).length
@@ -172,10 +185,12 @@ export async function fetchSupportKPIs(
 
 	// Calculate KPIs for previous period
 	const previousTotal = previousCount || 0
-	const previousRequiresReply =
-		previousRecords.filter(t => t.requires_reply === true).length
-	const previousResolved =
-		previousRecords.filter(t => t.status === 'Reply is ready').length
+	const previousRequiresReply = previousRecords.filter(
+		t => t.requires_reply === true
+	).length
+	const previousResolved = previousRecords.filter(
+		t => t.status === 'Reply is ready'
+	).length
 
 	const previousRequirementsCount = previousRecords.reduce((sum, thread) => {
 		return sum + reqKeys.filter(key => thread[key] === true).length
@@ -206,7 +221,10 @@ export async function fetchSupportKPIs(
 		agentResponseRate: {
 			current: currentAgentResponseRate,
 			previous: previousAgentResponseRate,
-			trend: calculateTrend(currentAgentResponseRate, previousAgentResponseRate),
+			trend: calculateTrend(
+				currentAgentResponseRate,
+				previousAgentResponseRate
+			),
 		},
 		replyRequired: {
 			current: currentReplyRequiredPct,
@@ -648,4 +666,23 @@ export async function fetchThreadDetail(
 				? 0
 				: null,
 	}
+}
+
+/**
+ * Fetch Request Category Statistics
+ * Shows breakdown of request_type and request_subtype with counts and percentages
+ * Groups multiple subtypes (containing comma) as "multiply"
+ */
+export async function fetchRequestCategoryStats(
+	supabase: SupabaseClient
+): Promise<RequestCategoryStats[]> {
+	// Use SQL RPC function for accurate calculations
+	const { data, error } = await supabase.rpc('get_request_category_stats')
+
+	if (error) {
+		console.error('❌ [Request Categories] RPC error:', error)
+		throw error
+	}
+
+	return (data || []) as RequestCategoryStats[]
 }

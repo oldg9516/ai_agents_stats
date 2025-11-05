@@ -14,6 +14,44 @@ export interface Database {
         Update: AIHumanComparisonUpdate
       }
     }
+    Functions: {
+      get_min_created_date: {
+        Args: Record<string, never>
+        Returns: string
+      }
+      get_filter_options: {
+        Args: {
+          p_from_date: string | null
+          p_to_date: string | null
+        }
+        Returns: Array<{
+          versions: string[] | null
+          categories: string[] | null
+        }>
+      }
+      get_detailed_stats_paginated: {
+        Args: {
+          p_from_date: string
+          p_to_date: string
+          p_versions: string[] | null
+          p_categories: string[] | null
+          p_agents: string[] | null
+          p_page: number
+          p_page_size: number
+        }
+        Returns: Array<{
+          category: string
+          version: string
+          dates: string | null
+          sort_order: number
+          total_records: number
+          records_qualified_agents: number
+          changed_records: number
+          good_percentage: number
+          total_count: number
+        }>
+      }
+    }
   }
 }
 
@@ -290,6 +328,16 @@ export interface SupportFilters {
   requestTypes: string[] // [] = all request types
   requirements: string[] // [] = all, else filter by active requirements
   versions: string[] // [] = all versions
+}
+
+/**
+ * Request Category Statistics (for request categories page)
+ */
+export interface RequestCategoryStats {
+  request_type: string
+  request_subtype: string | null
+  count: number
+  percent: number
 }
 
 // ============================================================================

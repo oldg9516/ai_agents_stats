@@ -11,6 +11,7 @@ const PAGE_TITLE_KEYS: Record<string, string> = {
 	'/dashboard': 'common.dashboard',
 	'/detailed-stats': 'common.detailedStats',
 	'/support-overview': 'common.supportOverview',
+	'/request-categories': 'common.requestCategories',
 	'/docs': 'common.documentation',
 	'/settings': 'common.settings',
 }

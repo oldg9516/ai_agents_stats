@@ -3,6 +3,7 @@
 import {
 	IconBook,
 	IconCamera,
+	IconCategory,
 	IconDashboard,
 	IconDatabase,
 	IconFileAi,
@@ -59,6 +60,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				title: t('supportOverview'),
 				url: '/support-overview',
 				icon: IconHeadset,
+			},
+			{
+				title: t('requestCategories'),
+				url: '/request-categories',
+				icon: IconCategory,
 			},
 			{
 				title: t('documentation'),

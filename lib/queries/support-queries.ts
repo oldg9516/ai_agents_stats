@@ -7,15 +7,16 @@
  * This bypasses RLS restrictions on support_threads_data table
  */
 
-import { fetchSupportData } from '@/lib/actions/support-actions'
+import { fetchRequestCategoryStatsAction, fetchSupportData } from '@/lib/actions/support-actions'
 import { supabase } from '@/lib/supabase/client'
 import type {
-	SupportFilters,
-	SupportKPIs,
-	StatusDistribution,
+	CorrelationCell,
+	RequestCategoryStats,
 	ResolutionTimeData,
 	SankeyData,
-	CorrelationCell,
+	StatusDistribution,
+	SupportFilters,
+	SupportKPIs,
 	SupportThread,
 } from '@/lib/supabase/types'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -166,5 +167,32 @@ export function usePrefetchSupportData() {
 				return result.data
 			},
 		})
+	}
+}
+
+/**
+ * Hook for fetching Request Category Statistics
+ * Returns all request types and subtypes with counts and percentages
+ */
+export function useRequestCategoryStats() {
+	const query = useQuery({
+		queryKey: ['request-category-stats'],
+		queryFn: async () => {
+			const result = await fetchRequestCategoryStatsAction()
+			if (!result.success || !result.data) {
+				throw new Error(result.error || 'Failed to fetch request category stats')
+			}
+			return result.data
+		},
+		staleTime: 5 * 60 * 1000, // 5 minutes (data changes rarely)
+		gcTime: 30 * 60 * 1000, // 30 minutes
+	})
+
+	return {
+		data: query.data || [],
+		isLoading: query.isLoading,
+		error: query.error as Error | null,
+		refetch: query.refetch,
+		isFetching: query.isFetching,
 	}
 }

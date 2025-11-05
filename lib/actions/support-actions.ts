@@ -9,6 +9,7 @@
 
 import {
 	fetchCorrelationMatrix,
+	fetchRequestCategoryStats,
 	fetchResolutionTimeData,
 	fetchSankeyData,
 	fetchStatusDistribution,
@@ -82,6 +83,34 @@ export async function fetchSupportData(filters: SupportFilters) {
 			success: false,
 			error:
 				error instanceof Error ? error.message : 'Failed to fetch support data',
+		}
+	}
+}
+
+/**
+ * Fetch Request Category Statistics
+ * Returns breakdown of request types and subtypes with counts and percentages
+ */
+export async function fetchRequestCategoryStatsAction() {
+	try {
+		const startTime = Date.now()
+		console.log('🚀 [Request Categories] Starting data fetch...')
+
+		const stats = await fetchRequestCategoryStats(supabaseServer)
+
+		const totalTime = Date.now() - startTime
+		console.log(`🏁 [Request Categories] Fetch time: ${totalTime}ms (${stats.length} categories)`)
+
+		return {
+			success: true,
+			data: stats,
+		}
+	} catch (error) {
+		console.error('❌ [Server Action] Error fetching request category stats:', error)
+		return {
+			success: false,
+			error:
+				error instanceof Error ? error.message : 'Failed to fetch request category stats',
 		}
 	}
 }

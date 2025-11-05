@@ -1,0 +1,330 @@
+'use client'
+
+import { useState, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
+import {
+	useReactTable,
+	getCoreRowModel,
+	getSortedRowModel,
+	getFilteredRowModel,
+	getPaginationRowModel,
+	flexRender,
+	type ColumnDef,
+	type SortingState,
+} from '@tanstack/react-table'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from '@/components/ui/table'
+import {
+	IconDownload,
+	IconSearch,
+	IconChevronLeft,
+	IconChevronRight,
+	IconLoader2,
+} from '@tabler/icons-react'
+import type { RequestCategoryStats } from '@/lib/supabase/types'
+import { format } from 'date-fns'
+import { useRequestCategoryStats } from '@/lib/queries/support-queries'
+
+/**
+ * Request Categories Table - Shows request types and subtypes breakdown
+ *
+ * Features:
+ * - Client-side pagination (50 rows per page)
+ * - Sorting by all columns
+ * - Search by request_type or request_subtype
+ * - CSV export
+ * - Shows count and percentage for each category
+ */
+export function RequestCategoriesTable() {
+	const t = useTranslations()
+
+	// Fetch data
+	const { data, isLoading, error } = useRequestCategoryStats()
+
+	// Client-side sorting and filtering
+	const [sorting, setSorting] = useState<SortingState>([
+		{ id: 'count', desc: true },
+	])
+	const [globalFilter, setGlobalFilter] = useState('')
+
+	// Define columns
+	const columns = useMemo<ColumnDef<RequestCategoryStats>[]>(
+		() => [
+			{
+				accessorKey: 'request_type',
+				header: t('requestCategories.table.requestType'),
+				cell: ({ getValue }) => {
+					const value = getValue() as string
+					return <div className='font-medium'>{value}</div>
+				},
+			},
+			{
+				accessorKey: 'request_subtype',
+				header: t('requestCategories.table.requestSubtype'),
+				cell: ({ getValue }) => {
+					const value = getValue() as string | null
+					return (
+						<div className={value === null ? 'text-muted-foreground italic' : ''}>
+							{value === null ? 'NULL' : value === 'multiply' ? (
+								<span className='px-2 py-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-medium'>
+									Multiple
+								</span>
+							) : value}
+						</div>
+					)
+				},
+			},
+			{
+				accessorKey: 'count',
+				header: t('requestCategories.table.count'),
+				cell: ({ getValue }) => {
+					const value = getValue() as number
+					return <div className='text-center font-medium'>{value.toLocaleString()}</div>
+				},
+			},
+			{
+				accessorKey: 'percent',
+				header: t('requestCategories.table.percent'),
+				cell: ({ getValue }) => {
+					const value = getValue() as number
+					return (
+						<div className='text-center'>
+							<span className='font-medium'>{value}%</span>
+						</div>
+					)
+				},
+			},
+		],
+		[t]
+	)
+
+	// Create table instance
+	const table = useReactTable({
+		data,
+		columns,
+		state: {
+			sorting,
+			globalFilter,
+		},
+		onSortingChange: setSorting,
+		onGlobalFilterChange: setGlobalFilter,
+		getCoreRowModel: getCoreRowModel(),
+		getSortedRowModel: getSortedRowModel(),
+		getFilteredRowModel: getFilteredRowModel(),
+		getPaginationRowModel: getPaginationRowModel(),
+		globalFilterFn: (row, columnId, filterValue) => {
+			const requestType = String(row.original.request_type || '').toLowerCase()
+			const requestSubtype = String(row.original.request_subtype || '').toLowerCase()
+			const filter = String(filterValue).toLowerCase()
+			return requestType.includes(filter) || requestSubtype.includes(filter)
+		},
+		initialState: {
+			pagination: {
+				pageSize: 50,
+			},
+		},
+	})
+
+	// Handle CSV export
+	const handleExport = () => {
+		const headers = ['Request Type', 'Request Subtype', 'Count', 'Percent']
+		const rows = data.map(row => [
+			row.request_type,
+			row.request_subtype || 'NULL',
+			row.count,
+			`${row.percent}%`,
+		])
+
+		const csv = [
+			headers.join(','),
+			...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+		].join('\n')
+
+		const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+		const link = document.createElement('a')
+		const url = URL.createObjectURL(blob)
+		link.setAttribute('href', url)
+		link.setAttribute('download', `request-categories-${format(new Date(), 'yyyy-MM-dd')}.csv`)
+		link.style.visibility = 'hidden'
+		document.body.appendChild(link)
+		link.click()
+		document.body.removeChild(link)
+	}
+
+	// Loading state
+	if (isLoading) {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle className='text-lg sm:text-xl'>
+						{t('requestCategories.table.title')}
+					</CardTitle>
+					<CardDescription className='text-sm'>
+						{t('requestCategories.table.description')}
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<div className='flex items-center justify-center py-8'>
+						<IconLoader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+					</div>
+				</CardContent>
+			</Card>
+		)
+	}
+
+	// Error state
+	if (error) {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle className='text-lg sm:text-xl'>
+						{t('requestCategories.table.title')}
+					</CardTitle>
+					<CardDescription className='text-sm'>
+						{t('requestCategories.table.description')}
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<div className='flex flex-col items-center justify-center py-8 text-center'>
+						<p className='text-sm text-muted-foreground'>{error.message}</p>
+					</div>
+				</CardContent>
+			</Card>
+		)
+	}
+
+	return (
+		<Card>
+			<CardHeader>
+				<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
+					<div>
+						<CardTitle className='text-lg sm:text-xl'>
+							{t('requestCategories.table.title')}
+						</CardTitle>
+						<CardDescription className='text-sm'>
+							{t('requestCategories.table.description')}
+						</CardDescription>
+					</div>
+					<Button onClick={handleExport} size='sm' variant='outline'>
+						<IconDownload className='mr-2 h-4 w-4' />
+						{t('table.export')}
+					</Button>
+				</div>
+			</CardHeader>
+			<CardContent>
+				{/* Search */}
+				<div className='mb-4'>
+					<div className='relative'>
+						<IconSearch className='absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+						<Input
+							placeholder={t('requestCategories.table.search')}
+							value={globalFilter}
+							onChange={(e) => setGlobalFilter(e.target.value)}
+							className='pl-8'
+						/>
+					</div>
+				</div>
+
+				{/* Table */}
+				<div className='rounded-md border overflow-x-auto'>
+					<Table>
+						<TableHeader>
+							{table.getHeaderGroups().map((headerGroup) => (
+								<TableRow key={headerGroup.id}>
+									{headerGroup.headers.map((header) => (
+										<TableHead key={header.id} className='whitespace-nowrap'>
+											{header.isPlaceholder ? null : (
+												<Button
+													variant='ghost'
+													size='sm'
+													className='-ml-3 h-8 data-[state=open]:bg-accent'
+													onClick={header.column.getToggleSortingHandler()}
+												>
+													{flexRender(
+														header.column.columnDef.header,
+														header.getContext()
+													)}
+													{header.column.getIsSorted() === 'asc' && ' ↑'}
+													{header.column.getIsSorted() === 'desc' && ' ↓'}
+												</Button>
+											)}
+										</TableHead>
+									))}
+								</TableRow>
+							))}
+						</TableHeader>
+						<TableBody>
+							{table.getRowModel().rows?.length ? (
+								table.getRowModel().rows.map((row) => (
+									<TableRow
+										key={row.id}
+										data-state={row.getIsSelected() && 'selected'}
+									>
+										{row.getVisibleCells().map((cell) => (
+											<TableCell key={cell.id}>
+												{flexRender(cell.column.columnDef.cell, cell.getContext())}
+											</TableCell>
+										))}
+									</TableRow>
+								))
+							) : (
+								<TableRow>
+									<TableCell colSpan={columns.length} className='h-24 text-center'>
+										{t('table.noResults')}
+									</TableCell>
+								</TableRow>
+							)}
+						</TableBody>
+					</Table>
+				</div>
+
+				{/* Client-side Pagination */}
+				<div className='flex items-center justify-between pt-4'>
+					<div className='text-sm text-muted-foreground'>
+						{t('table.showing')}{' '}
+						{table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}{' '}
+						{t('table.to')}{' '}
+						{Math.min(
+							(table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+							table.getFilteredRowModel().rows.length
+						)}{' '}
+						{t('table.of')} {table.getFilteredRowModel().rows.length} {t('table.results')}
+					</div>
+					<div className='flex items-center space-x-2'>
+						<Button
+							variant='outline'
+							size='sm'
+							onClick={() => table.previousPage()}
+							disabled={!table.getCanPreviousPage()}
+						>
+							<IconChevronLeft className='h-4 w-4' />
+							{t('table.previous')}
+						</Button>
+						<div className='text-sm text-muted-foreground'>
+							{t('table.page')} {table.getState().pagination.pageIndex + 1} {t('table.of')}{' '}
+							{table.getPageCount()}
+						</div>
+						<Button
+							variant='outline'
+							size='sm'
+							onClick={() => table.nextPage()}
+							disabled={!table.getCanNextPage()}
+						>
+							{t('table.next')}
+							<IconChevronRight className='h-4 w-4' />
+						</Button>
+					</div>
+				</div>
+			</CardContent>
+		</Card>
+	)
+}
