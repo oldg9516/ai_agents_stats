@@ -5,6 +5,7 @@
 		"dashboard": "Dashboard",
 		"detailedStats": "Detailed Stats",
 		"supportOverview": "Support Overview",
+		"requestCategories": "Request Categories",
 		"documentation": "Documentation",
 		"settings": "Settings",
 		"search": "Search",
@@ -404,6 +405,12 @@
 			"description": "Analytics for support thread operations, AI draft performance, and resolution tracking.",
 			"kpis": {
 				"title": "KPI Cards (4 Metrics)",
+				"aiDraftCoverage": {
+					"title": "AI Draft Coverage",
+					"whatItShows": "Percentage of threads with AI-generated draft replies.",
+					"formula": "Threads with ai_draft_reply / Total threads × 100",
+					"badge": "Percentage metric"
+				},
 				"agentResponseRate": {
 					"title": "Agent Response Rate",
 					"whatItShows": "Percentage of threads reviewed and evaluated by qualified agents.",
@@ -834,5 +841,16 @@
 		"goDashboard": "Go to Dashboard",
 		"needHelp": "Need help?",
 		"checkDocs": "Check our documentation"
+	},
+	"requestCategories": {
+		"table": {
+			"title": "Request Categories",
+			"description": "Breakdown of support request types and subtypes",
+			"requestType": "Request Type",
+			"requestSubtype": "Request Subtype",
+			"count": "Count",
+			"percent": "Percent",
+			"search": "Search by type or subtype..."
+		}
 	}
 }
