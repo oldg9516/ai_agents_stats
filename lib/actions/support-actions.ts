@@ -25,9 +25,6 @@ import type { SupportFilters } from '@/lib/supabase/types'
  */
 export async function fetchSupportData(filters: SupportFilters) {
 	try {
-		const startTime = Date.now()
-		console.log('🚀 [Support] Starting data fetch...')
-
 		// Fetch all data in parallel for best performance
 		// Using supabaseServer with SERVICE ROLE key to bypass RLS
 		const serverClient = supabaseServer
@@ -47,7 +44,14 @@ export async function fetchSupportData(filters: SupportFilters) {
 		const results = await Promise.all(
 			promises.map(async (promise, index) => {
 				const queryStart = Date.now()
-				const names = ['KPIs', 'StatusDist', 'ResolutionTime', 'Sankey', 'Correlation', 'Threads']
+				const names = [
+					'KPIs',
+					'StatusDist',
+					'ResolutionTime',
+					'Sankey',
+					'Correlation',
+					'Threads',
+				]
 				try {
 					const result = await promise
 					const queryTime = Date.now() - queryStart
@@ -55,16 +59,23 @@ export async function fetchSupportData(filters: SupportFilters) {
 					return result
 				} catch (error) {
 					const queryTime = Date.now() - queryStart
-					console.error(`❌ [Support] ${names[index]} failed after ${queryTime}ms:`, error)
+					console.error(
+						`❌ [Support] ${names[index]} failed after ${queryTime}ms:`,
+						error
+					)
 					throw error
 				}
 			})
 		)
 
-		const [kpis, statusDist, resolutionTime, sankeyData, correlationMatrix, threads] = results
-
-		const totalTime = Date.now() - startTime
-		console.log(`🏁 [Support] Total fetch time: ${totalTime}ms`)
+		const [
+			kpis,
+			statusDist,
+			resolutionTime,
+			sankeyData,
+			correlationMatrix,
+			threads,
+		] = results
 
 		return {
 			success: true,
@@ -91,26 +102,28 @@ export async function fetchSupportData(filters: SupportFilters) {
  * Fetch Request Category Statistics
  * Returns breakdown of request types and subtypes with counts and percentages
  */
-export async function fetchRequestCategoryStatsAction(dateRange: { from: Date; to: Date }) {
+export async function fetchRequestCategoryStatsAction(dateRange: {
+	from: Date
+	to: Date
+}) {
 	try {
-		const startTime = Date.now()
-		console.log('🚀 [Request Categories] Starting data fetch...')
-
 		const stats = await fetchRequestCategoryStats(supabaseServer, dateRange)
-
-		const totalTime = Date.now() - startTime
-		console.log(`🏁 [Request Categories] Fetch time: ${totalTime}ms (${stats.length} categories)`)
 
 		return {
 			success: true,
 			data: stats,
 		}
 	} catch (error) {
-		console.error('❌ [Server Action] Error fetching request category stats:', error)
+		console.error(
+			'❌ [Server Action] Error fetching request category stats:',
+			error
+		)
 		return {
 			success: false,
 			error:
-				error instanceof Error ? error.message : 'Failed to fetch request category stats',
+				error instanceof Error
+					? error.message
+					: 'Failed to fetch request category stats',
 		}
 	}
 }
@@ -129,9 +142,10 @@ export async function fetchSupportMinCreatedDate(): Promise<Date> {
 			.select('created_at')
 			.order('created_at', { ascending: true })
 			.limit(1)
-			.single()
+			.single<{ created_at: string }>()
 
 		if (error) throw error
+		if (!data) throw new Error('No data returned')
 
 		const totalTime = Date.now() - startTime
 		console.log(`🏁 [Support MinDate] Fetch time: ${totalTime}ms (date: ${data.created_at})`)
