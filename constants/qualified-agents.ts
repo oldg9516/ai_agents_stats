@@ -9,7 +9,7 @@
  */
 
 export const QUALIFIED_AGENTS = [
-  'lucy@levhaolam.com',
+  // 'lucy@levhaolam.com',
   'marianna@levhaolam.com',
   'laure@levhaolam.com',
   'matea@levhaolam.com',
@@ -30,7 +30,7 @@ export function isQualifiedAgent(email: string): email is QualifiedAgent {
  */
 export function getAgentName(email: QualifiedAgent): string {
   const names: Record<QualifiedAgent, string> = {
-    'lucy@levhaolam.com': 'Lucy',
+    // 'lucy@levhaolam.com': 'Lucy',
     'marianna@levhaolam.com': 'Marianna',
     'laure@levhaolam.com': 'Laure',
     'matea@levhaolam.com': 'Matea',

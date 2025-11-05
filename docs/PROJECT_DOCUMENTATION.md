@@ -295,7 +295,6 @@ CREATE INDEX idx_email ON ai_human_comparison(email);
 ```typescript
 // constants/qualified-agents.ts
 export const QUALIFIED_AGENTS = [
-  'lucy@levhaolam.com',
   'marianna@levhaolam.com',
   'laure@levhaolam.com',
   'matea@levhaolam.com',
@@ -770,7 +769,6 @@ ORDER BY week_start, request_subtype;
 **`constants/qualified-agents.ts`**:
 ```typescript
 export const QUALIFIED_AGENTS = [
-  'lucy@levhaolam.com',
   'marianna@levhaolam.com',
   'laure@levhaolam.com',
   'matea@levhaolam.com',

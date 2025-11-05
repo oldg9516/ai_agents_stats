@@ -11,7 +11,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
-import { fetchDashboardData } from '@/lib/actions/dashboard-actions'
+import { fetchDashboardData, fetchDetailedStatsPaginated } from '@/lib/actions/dashboard-actions'
 import type {
 	DashboardFilters,
 	KPIData,
@@ -161,5 +161,104 @@ export function usePrefetchDashboardData() {
 				return result.data
 			},
 		})
+	}
+}
+
+/**
+ * Generate query key for paginated detailed stats
+ */
+function getPaginatedStatsQueryKey(filters: DashboardFilters, page: number, pageSize: number) {
+	return [
+		'detailed-stats-paginated',
+		{
+			from: filters.dateRange.from.toISOString(),
+			to: filters.dateRange.to.toISOString(),
+			versions: filters.versions.sort(),
+			categories: filters.categories.sort(),
+			agents: filters.agents.sort(),
+			page,
+			pageSize,
+		},
+	] as const
+}
+
+/**
+ * Paginated detailed stats data structure
+ */
+type PaginatedStatsData = {
+	data: DetailedStatsRow[]
+	totalCount: number
+	totalPages: number
+	currentPage: number
+	hasNextPage: boolean
+	hasPreviousPage: boolean
+}
+
+/**
+ * Hook for paginated detailed stats (table data)
+ *
+ * Features:
+ * - Server-side pagination via SQL RPC
+ * - Automatic caching (2 min stale time)
+ * - Timeout protection (30 seconds)
+ * - Retry logic (2 attempts)
+ */
+export function useDetailedStatsPaginated(
+	filters: DashboardFilters,
+	page: number,
+	pageSize: number = 50
+): {
+	data: DetailedStatsRow[]
+	totalCount: number
+	totalPages: number
+	currentPage: number
+	hasNextPage: boolean
+	hasPreviousPage: boolean
+	isLoading: boolean
+	error: Error | null
+	refetch: () => void
+	isFetching: boolean
+} {
+	const query = useQuery<PaginatedStatsData>({
+		queryKey: getPaginatedStatsQueryKey(filters, page, pageSize),
+		queryFn: async (): Promise<PaginatedStatsData> => {
+			// Add timeout to prevent hanging requests
+			const controller = new AbortController()
+			const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+
+			try {
+				const result = await fetchDetailedStatsPaginated(filters, page, pageSize)
+				clearTimeout(timeoutId)
+
+				if (!result.success || !result.data) {
+					throw new Error(result.error || 'Failed to fetch paginated stats')
+				}
+
+				return result.data
+			} catch (error) {
+				clearTimeout(timeoutId)
+				if (error instanceof Error && error.name === 'AbortError') {
+					throw new Error('Request timed out. Please try with more specific filters.')
+				}
+				throw error
+			}
+		},
+		staleTime: 2 * 60 * 1000, // 2 minutes (increased cache time)
+		gcTime: 10 * 60 * 1000, // 10 minutes (keep data longer)
+		retry: 2, // Retry failed requests twice
+		retryDelay: 1000, // Wait 1 second between retries
+	})
+
+	return {
+		data: query.data?.data || [],
+		totalCount: query.data?.totalCount || 0,
+		totalPages: query.data?.totalPages || 0,
+		currentPage: query.data?.currentPage || page,
+		hasNextPage: query.data?.hasNextPage || false,
+		hasPreviousPage: query.data?.hasPreviousPage || false,
+		isLoading: query.isLoading,
+		error: query.error as Error | null,
+		refetch: query.refetch,
+		isFetching: query.isFetching,
 	}
 }

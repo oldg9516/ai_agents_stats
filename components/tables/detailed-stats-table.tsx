@@ -18,7 +18,7 @@ import {
 	TableRow,
 } from '@/components/ui/table'
 import { getCategoryLabel } from '@/constants/category-labels'
-import type { DetailedStatsRow } from '@/lib/supabase/types'
+import type { DetailedStatsRow, DashboardFilters } from '@/lib/supabase/types'
 import { exportToCSV } from '@/lib/utils/export'
 import { getQualityBgClass } from '@/lib/utils/quality-colors'
 import {
@@ -26,12 +26,12 @@ import {
 	IconChevronRight,
 	IconDownload,
 	IconSearch,
+	IconLoader2,
 } from '@tabler/icons-react'
 import {
 	flexRender,
 	getCoreRowModel,
 	getFilteredRowModel,
-	getPaginationRowModel,
 	getSortedRowModel,
 	useReactTable,
 	type ColumnDef,
@@ -40,35 +40,49 @@ import {
 import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
+import { useDetailedStatsPaginated } from '@/lib/queries/dashboard-queries'
 
 interface DetailedStatsTableProps {
-	data: DetailedStatsRow[]
+	filters: DashboardFilters
 }
 
 /**
  * Detailed Stats Table - Hierarchical table with version and week-level data
  *
  * Features:
- * - Sorting (single and multi-column)
- * - Search by category
- * - Pagination (20 per page)
- * - CSV export
+ * - Server-side pagination (50 rows per page)
+ * - Sorting (client-side on current page)
+ * - Search by category (client-side on current page)
+ * - CSV export (current page)
  * - Quality color coding
  * - Click on category (version-level rows) to view details
  */
-export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
+export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 	const t = useTranslations()
 	const router = useRouter()
 
+	// Server-side pagination state
+	const [currentPage, setCurrentPage] = useState(0)
+	const pageSize = 50
+
+	// Fetch paginated data
+	const {
+		data,
+		totalCount,
+		totalPages,
+		hasNextPage,
+		hasPreviousPage,
+		isLoading,
+		error,
+		isFetching,
+	} = useDetailedStatsPaginated(filters, currentPage, pageSize)
+
+	// Client-side sorting and filtering (on current page only)
 	const [sorting, setSorting] = useState<SortingState>([
 		{ id: 'category', desc: false },
 		{ id: 'sortOrder', desc: false },
 	])
 	const [globalFilter, setGlobalFilter] = useState('')
-	const [pagination, setPagination] = useState({
-		pageIndex: 0,
-		pageSize: 20,
-	})
 
 	// Handle category click
 	const handleCategoryClick = (category: string) => {
@@ -176,39 +190,70 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 		[t]
 	)
 
-	// Initialize table
+	// Initialize table (client-side sorting/filtering only - NO client-side pagination)
 	const table = useReactTable({
 		data,
 		columns,
 		state: {
 			sorting,
 			globalFilter,
-			pagination,
 			columnVisibility: {
 				sortOrder: false, // Hide sortOrder column
 			},
 		},
 		onSortingChange: setSorting,
 		onGlobalFilterChange: setGlobalFilter,
-		onPaginationChange: setPagination,
 		getCoreRowModel: getCoreRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
-		getPaginationRowModel: getPaginationRowModel(),
+		// NO getPaginationRowModel() - we use server-side pagination
 		globalFilterFn: (row, columnId, filterValue) => {
 			// Only filter by category
 			const category = String(row.getValue('category')).toLowerCase()
 			return category.includes(String(filterValue).toLowerCase())
 		},
+		manualPagination: true, // Tell TanStack Table we handle pagination ourselves
+		pageCount: totalPages,
 	})
 
-	// Handle CSV export
+	// Handle CSV export (current page only)
 	const handleExport = () => {
 		const filteredData = table
 			.getFilteredRowModel()
 			.rows.map(row => row.original)
 		const today = new Date().toISOString().split('T')[0]
-		exportToCSV(filteredData, `ai_stats_${today}`)
+		exportToCSV(filteredData, `ai_stats_page${currentPage + 1}_${today}`)
+	}
+
+	// Handle page navigation
+	const handlePreviousPage = () => {
+		if (hasPreviousPage) {
+			setCurrentPage((prev) => prev - 1)
+		}
+	}
+
+	const handleNextPage = () => {
+		if (hasNextPage) {
+			setCurrentPage((prev) => prev + 1)
+		}
+	}
+
+	const handlePageClick = (page: number) => {
+		setCurrentPage(page)
+	}
+
+	// Show error state
+	if (error) {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle className='text-lg sm:text-xl text-destructive'>
+						{t('errors.loadingTable')}
+					</CardTitle>
+					<CardDescription>{error.message}</CardDescription>
+				</CardHeader>
+			</Card>
+		)
 	}
 
 	return (
@@ -321,41 +366,40 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 					</Table>
 				</div>
 
-				{/* Pagination */}
+				{/* Server-Side Pagination */}
 				<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-4'>
 					<div className='text-xs sm:text-sm text-muted-foreground text-center sm:text-left'>
 						{t('table.showing')}{' '}
-						{table.getState().pagination.pageIndex *
-							table.getState().pagination.pageSize +
-							1}{' '}
+						{currentPage * pageSize + 1}{' '}
 						{t('table.to')}{' '}
-						{Math.min(
-							(table.getState().pagination.pageIndex + 1) *
-								table.getState().pagination.pageSize,
-							table.getFilteredRowModel().rows.length
-						)}{' '}
-						{t('table.of')} {table.getFilteredRowModel().rows.length}
+						{Math.min((currentPage + 1) * pageSize, totalCount)}{' '}
+						{t('table.of')} {totalCount}
+						{isFetching && (
+							<span className='ml-2 inline-flex items-center gap-1'>
+								<IconLoader2 className='h-3 w-3 animate-spin' />
+								<span className='text-xs'>Loading...</span>
+							</span>
+						)}
 					</div>
 					<div className='flex flex-col sm:flex-row items-center gap-2'>
 						<div className='flex items-center gap-2'>
 							<Button
 								variant='outline'
 								size='sm'
-								onClick={() => table.previousPage()}
-								disabled={!table.getCanPreviousPage()}
+								onClick={handlePreviousPage}
+								disabled={!hasPreviousPage || isFetching}
 								className='text-xs sm:text-sm'
 							>
 								<IconChevronLeft className='h-3 w-3 sm:h-4 sm:w-4' />
 								<span className='hidden sm:inline'>{t('table.previous')}</span>
 							</Button>
 							<div className='flex items-center gap-1'>
-								{Array.from({ length: table.getPageCount() }, (_, i) => i)
+								{Array.from({ length: totalPages }, (_, i) => i)
 									.filter(page => {
-										const current = table.getState().pagination.pageIndex
 										return (
 											page === 0 ||
-											page === table.getPageCount() - 1 ||
-											Math.abs(page - current) <= 1
+											page === totalPages - 1 ||
+											Math.abs(page - currentPage) <= 1
 										)
 									})
 									.map((page, idx, arr) => {
@@ -367,12 +411,13 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 												)}
 												<Button
 													variant={
-														table.getState().pagination.pageIndex === page
+														currentPage === page
 															? 'default'
 															: 'outline'
 													}
 													size='sm'
-													onClick={() => table.setPageIndex(page)}
+													onClick={() => handlePageClick(page)}
+													disabled={isFetching}
 													className='w-7 h-7 sm:w-9 sm:h-9 text-xs sm:text-sm'
 												>
 													{page + 1}
@@ -384,8 +429,8 @@ export function DetailedStatsTable({ data }: DetailedStatsTableProps) {
 							<Button
 								variant='outline'
 								size='sm'
-								onClick={() => table.nextPage()}
-								disabled={!table.getCanNextPage()}
+								onClick={handleNextPage}
+								disabled={!hasNextPage || isFetching}
 								className='text-xs sm:text-sm'
 							>
 								<span className='hidden sm:inline'>{t('table.next')}</span>

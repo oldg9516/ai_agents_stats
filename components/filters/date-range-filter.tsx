@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
+import { fetchMinCreatedDate } from '@/lib/actions/dashboard-actions'
+import { IconLoader2 } from '@tabler/icons-react'
 
 interface DateRangeFilterProps {
 	from: Date
@@ -23,38 +25,74 @@ interface DateRangeFilterProps {
 export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 	const t = useTranslations()
 	const [isClient, setIsClient] = useState(false)
+	const [isLoadingAllTime, setIsLoadingAllTime] = useState(false)
 
 	// Avoid hydration mismatch by only rendering dates on client
 	useEffect(() => {
 		setIsClient(true)
 	}, [])
 
+	// Helper to check if current range matches a preset
+	const isActiveRange = (days: number | 'all') => {
+		if (!isClient) return false
+
+		const now = new Date()
+		const diffMs = to.getTime() - from.getTime()
+		const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
+
+		if (days === 'all') {
+			// Check if from date is very old (before 2023)
+			return from.getFullYear() < 2023
+		}
+
+		// Allow 1 day tolerance for date comparison
+		return Math.abs(diffDays - days) <= 1
+	}
+
 	// Quick date range handlers
 	const setLast7Days = () => {
 		const end = new Date()
+		end.setHours(23, 59, 59, 999) // End of today
 		const start = new Date()
-		start.setDate(end.getDate() - 7)
+		start.setDate(end.getDate() - 6) // Today + 6 days back = 7 days total
+		start.setHours(0, 0, 0, 0) // Start of day
 		onChange(start, end)
 	}
 
 	const setLast30Days = () => {
 		const end = new Date()
+		end.setHours(23, 59, 59, 999) // End of today
 		const start = new Date()
-		start.setDate(end.getDate() - 30)
+		start.setDate(end.getDate() - 29) // Today + 29 days back = 30 days total
+		start.setHours(0, 0, 0, 0) // Start of day
 		onChange(start, end)
 	}
 
 	const setLast3Months = () => {
 		const end = new Date()
+		end.setHours(23, 59, 59, 999) // End of today
 		const start = new Date()
 		start.setMonth(end.getMonth() - 3)
+		start.setDate(end.getDate() + 1) // Adjust to include today
+		start.setHours(0, 0, 0, 0) // Start of day
 		onChange(start, end)
 	}
 
-	const setAllTime = () => {
-		const end = new Date()
-		const start = new Date('2020-01-01') // Far past date
-		onChange(start, end)
+	const setAllTime = async () => {
+		setIsLoadingAllTime(true)
+		try {
+			const end = new Date()
+			const start = await fetchMinCreatedDate()
+			onChange(start, end)
+		} catch (error) {
+			console.error('Error fetching min date:', error)
+			// Fallback to hardcoded date
+			const end = new Date()
+			const start = new Date('2020-01-01')
+			onChange(start, end)
+		} finally {
+			setIsLoadingAllTime(false)
+		}
 	}
 
 	// Format date for input (stable on server and client)
@@ -91,17 +129,61 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 
 			{/* Quick Buttons */}
 			<div className="grid grid-cols-2 gap-2">
-				<Button onClick={setLast7Days} variant="outline" size="sm" className="text-xs sm:text-sm">
+				<Button
+					onClick={setLast7Days}
+					variant="outline"
+					size="sm"
+					className={`text-xs sm:text-sm ${
+						isActiveRange(7)
+							? 'bg-orange-500 text-white hover:bg-orange-600 border-orange-500'
+							: ''
+					}`}
+				>
 					{t('filters.quickOptions.7d')}
 				</Button>
-				<Button onClick={setLast30Days} variant="outline" size="sm" className="text-xs sm:text-sm">
+				<Button
+					onClick={setLast30Days}
+					variant="outline"
+					size="sm"
+					className={`text-xs sm:text-sm ${
+						isActiveRange(30)
+							? 'bg-orange-500 text-white hover:bg-orange-600 border-orange-500'
+							: ''
+					}`}
+				>
 					{t('filters.quickOptions.30d')}
 				</Button>
-				<Button onClick={setLast3Months} variant="outline" size="sm" className="text-xs sm:text-sm">
+				<Button
+					onClick={setLast3Months}
+					variant="outline"
+					size="sm"
+					className={`text-xs sm:text-sm ${
+						isActiveRange(90)
+							? 'bg-orange-500 text-white hover:bg-orange-600 border-orange-500'
+							: ''
+					}`}
+				>
 					{t('filters.quickOptions.3m')}
 				</Button>
-				<Button onClick={setAllTime} variant="outline" size="sm" className="text-xs sm:text-sm">
-					{t('filters.quickOptions.all')}
+				<Button
+					onClick={setAllTime}
+					variant="outline"
+					size="sm"
+					disabled={isLoadingAllTime}
+					className={`text-xs sm:text-sm ${
+						isActiveRange('all')
+							? 'bg-orange-500 text-white hover:bg-orange-600 border-orange-500'
+							: ''
+					}`}
+				>
+					{isLoadingAllTime ? (
+						<>
+							<IconLoader2 className="mr-2 h-3 w-3 animate-spin" />
+							Loading...
+						</>
+					) : (
+						t('filters.quickOptions.all')
+					)}
 				</Button>
 			</div>
 

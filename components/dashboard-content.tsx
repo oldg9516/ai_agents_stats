@@ -4,7 +4,7 @@ import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 import { fetchFilterOptions } from '@/lib/actions/dashboard-actions'
 import { useDashboardData } from '@/lib/hooks/use-dashboard-data'
 import { useFilters } from '@/lib/hooks/use-filters'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { CategoryPieChart } from './charts/category-pie-chart'
 import { QualityTrendsChart } from './charts/quality-trends-chart'
@@ -23,6 +23,7 @@ import { DetailedStatsTable } from './tables/detailed-stats-table'
  */
 export function DashboardContent() {
 	const t = useTranslations()
+	const queryClient = useQueryClient()
 
 	// Filter state from Zustand store
 	const {
@@ -37,14 +38,14 @@ export function DashboardContent() {
 	// Fetch dashboard data with React Query
 	const { data, isLoading, error } = useDashboardData(filters)
 
-	// Fetch filter options (cached separately)
+	// Fetch filter options based on current date range
 	const { data: filterOptions } = useQuery({
-		queryKey: ['filterOptions'],
-		queryFn: fetchFilterOptions,
+		queryKey: ['filterOptions', filters.dateRange.from.toISOString(), filters.dateRange.to.toISOString()],
+		queryFn: () => fetchFilterOptions(filters.dateRange),
 		staleTime: 5 * 60 * 1000, // Cache for 5 minutes
 	})
 
-	// Handle filter changes
+	// Handle filter changes with cache invalidation
 	const handleFiltersChange = (updates: Partial<typeof filters>) => {
 		if (updates.dateRange) {
 			setDateRange(updates.dateRange.from, updates.dateRange.to)
@@ -58,6 +59,10 @@ export function DashboardContent() {
 		if (updates.agents !== undefined) {
 			setAgents(updates.agents)
 		}
+
+		// Invalidate all dashboard queries to force refetch with new filters
+		queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+		queryClient.invalidateQueries({ queryKey: ['detailed-stats-paginated'] })
 	}
 
 	// Count active filters
@@ -158,9 +163,7 @@ export function DashboardContent() {
 			</div>
 
 			{/* Detailed Stats Table */}
-			{data.detailedStats.length > 0 && (
-				<DetailedStatsTable data={data.detailedStats} />
-			)}
+			<DetailedStatsTable filters={filters} />
 		</div>
 	)
 }

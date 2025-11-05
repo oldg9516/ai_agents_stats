@@ -3,15 +3,18 @@
 ## Executive Summary
 
 ### Project Overview
+
 AI Agent Statistics Dashboard is a comprehensive analytics platform for monitoring and analyzing the performance of AI agents compared to human edits. The dashboard provides real-time insights into quality metrics, version comparisons, and category-specific trends.
 
 ### Business Objectives
+
 - Track AI agent quality across different request categories
 - Monitor version improvements over time
 - Identify patterns in human edits vs. AI-generated content
 - Provide actionable insights through interactive visualizations
 
 ### Target Users
+
 - Product managers monitoring AI performance
 - Data analysts reviewing quality metrics
 - Development team tracking prompt version improvements
@@ -21,6 +24,7 @@ AI Agent Statistics Dashboard is a comprehensive analytics platform for monitori
 ## Technical Stack
 
 ### Core Technologies
+
 - **Frontend Framework**: Next.js 16 (App Router)
 - **UI Library**: React 19 with TypeScript
 - **Styling**: Tailwind CSS v4 + shadcn/ui components
@@ -30,11 +34,12 @@ AI Agent Statistics Dashboard is a comprehensive analytics platform for monitori
 - **Real-time**: Supabase Realtime subscriptions
 
 ### New Dependencies Required
+
 ```json
 {
-  "@supabase/supabase-js": "^2.x",
-  "date-fns": "^3.x",
-  "recharts": "^2.15.4" // already installed
+	"@supabase/supabase-js": "^2.x",
+	"date-fns": "^3.x",
+	"recharts": "^2.15.4" // already installed
 }
 ```
 
@@ -45,6 +50,7 @@ AI Agent Statistics Dashboard is a comprehensive analytics platform for monitori
 ### Primary Table: `ai_human_comparison`
 
 **Fields** (based on SQL queries):
+
 - `id` (bigint, primary key, auto-increment)
 - `request_subtype` (text) - Category of the request
 - `prompt_version` (text) - Version identifier (v1, v2, v3, etc.)
@@ -55,24 +61,26 @@ AI Agent Statistics Dashboard is a comprehensive analytics platform for monitori
 ### Qualified Agents Configuration
 
 **Hardcoded in code** (constants/qualified-agents.ts):
+
 ```typescript
 export const QUALIFIED_AGENTS = [
-  'lucy@levhaolam.com',
-  'marianna@levhaolam.com',
-  'laure@levhaolam.com',
-  'matea@levhaolam.com',
-  'yakov@levhaolam.com',
+	'marianna@levhaolam.com',
+	'laure@levhaolam.com',
+	'matea@levhaolam.com',
+	'yakov@levhaolam.com',
 ]
 ```
 
 ### Calculated Metrics
 
 **Good Percentage Formula**:
+
 ```
 Good % = (Records NOT changed by qualified agents / Total records by qualified agents) × 100
 ```
 
 **Quality Score**:
+
 - 0-30% = Poor (Red)
 - 31-60% = Medium (Yellow)
 - 61-100% = Good (Green)
@@ -84,18 +92,21 @@ Good % = (Records NOT changed by qualified agents / Total records by qualified a
 ### 1. Database Connection
 
 **Requirements**:
+
 - Install @supabase/supabase-js
 - Configure environment variables in .env.local
 - Create Supabase client utility
 - Generate TypeScript types from database schema
 
 **Environment Variables**:
+
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=xxx
 ```
 
 **Implementation Files**:
+
 - `lib/supabase/client.ts` - Supabase client initialization
 - `lib/supabase/types.ts` - Auto-generated types
 - `.env.local.example` - Template for env variables
@@ -107,10 +118,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=xxx
 **Replace existing 4 cards with**:
 
 #### 2.1 Total Records
+
 - **Metric**: Total count of records in selected period
 - **Trend**: Comparison with previous period (same duration)
 - **Icon**: Database or Counter icon
 - **SQL**:
+
 ```sql
 SELECT COUNT(*) as total
 FROM ai_human_comparison
@@ -119,11 +132,13 @@ WHERE created_at BETWEEN $startDate AND $endDate
 ```
 
 #### 2.2 Average Quality
+
 - **Metric**: Average good percentage across all categories
 - **Trend**: Comparison with previous period
 - **Icon**: Chart or Star icon
 - **Display**: "85.2%" with trend "↑ 12.3%"
 - **SQL**:
+
 ```sql
 SELECT
   ROUND(AVG(good_pct), 1) as avg_quality
@@ -140,11 +155,13 @@ FROM (
 ```
 
 #### 2.3 Best Category
+
 - **Metric**: Category name with highest good percentage
 - **Value**: "Category Name (95.5%)"
 - **Trend**: Change in percentage for this category
 - **Icon**: Trophy or Star icon
 - **SQL**:
+
 ```sql
 SELECT
   request_subtype,
@@ -159,10 +176,12 @@ LIMIT 1
 ```
 
 #### 2.4 Records Changed
+
 - **Metric**: Count of records with changed = true
 - **Trend**: Comparison with previous period
 - **Icon**: Edit or Refresh icon
 - **SQL**:
+
 ```sql
 SELECT COUNT(*) as changed_count
 FROM ai_human_comparison
@@ -172,6 +191,7 @@ WHERE created_at BETWEEN $startDate AND $endDate
 ```
 
 **Component Structure**:
+
 ```
 components/
   kpi/
@@ -190,6 +210,7 @@ components/
 **Chart Type**: Multi-line chart (Recharts LineChart)
 
 **Features**:
+
 - **X-Axis**: Weeks (formatted as "Week of Jan 1")
 - **Y-Axis**: Quality percentage (0-100%)
 - **Lines**: One per category (different colors)
@@ -198,6 +219,7 @@ components/
 - **Period Selector**: Buttons (Last 7 days, Last 30 days, Last 3 months, All time)
 
 **SQL Query**:
+
 ```sql
 SELECT
   request_subtype as category,
@@ -213,6 +235,7 @@ ORDER BY week_start ASC, request_subtype
 **Component**: `components/charts/quality-trends-chart.tsx`
 
 **State Management**:
+
 - Selected categories (array of strings)
 - Selected time period (enum: '7d' | '30d' | '3m' | 'all')
 
@@ -225,12 +248,14 @@ ORDER BY week_start ASC, request_subtype
 **Chart Type**: Recharts PieChart
 
 **Features**:
+
 - Shows distribution of records by category
 - Each slice colored by quality level (red/yellow/green)
 - Click on slice → filters entire dashboard by that category
 - Tooltip shows: Category name, record count, percentage
 
 **SQL Query**:
+
 ```sql
 SELECT
   request_subtype as category,
@@ -250,12 +275,14 @@ ORDER BY total_records DESC
 **Chart Type**: Recharts BarChart
 
 **Features**:
+
 - Grouped bars by version (v1, v2, v3, etc.)
 - Y-axis: Good percentage (0-100%)
 - Bars colored by quality level
 - Tooltip shows version and exact percentage
 
 **SQL Query**:
+
 ```sql
 SELECT
   prompt_version as version,
@@ -271,10 +298,11 @@ ORDER BY prompt_version
 **Component**: `components/charts/version-bar-chart.tsx`
 
 **Layout**:
+
 ```tsx
-<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-  <CategoryPieChart />
-  <VersionBarChart />
+<div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+	<CategoryPieChart />
+	<VersionBarChart />
 </div>
 ```
 
@@ -283,6 +311,7 @@ ORDER BY prompt_version
 ### 5. Detailed Data Table
 
 **Columns**:
+
 1. **Category** (request_subtype)
 2. **Version** (prompt_version)
 3. **Dates** (week range: "01.01.2024 — 07.01.2024")
@@ -294,37 +323,45 @@ ORDER BY prompt_version
 **Features**:
 
 #### 5.1 Sorting
+
 - Click column header to sort ascending/descending
 - Multi-column sorting (shift + click)
 - Default sort: Category ASC, then Dates DESC
 
 #### 5.2 Search
+
 - Search input above table
 - Filters by category name (case-insensitive)
 - Debounced (300ms delay)
 
 #### 5.3 Pagination
+
 - 20 records per page
 - Show page numbers (1, 2, 3... with ellipsis)
 - "Previous" and "Next" buttons
 - Display: "Showing 1-20 of 234 results"
 
 #### 5.4 Color Coding (Good Percentage column)
+
 ```typescript
 function getQualityColor(percentage: number) {
-  if (percentage >= 61) return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-  if (percentage >= 31) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-  return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+	if (percentage >= 61)
+		return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+	if (percentage >= 31)
+		return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+	return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
 }
 ```
 
 #### 5.5 Export to CSV
+
 - Button: "Export to CSV" with download icon
 - Exports current filtered/sorted data
 - Filename: `ai_stats_${startDate}_${endDate}.csv`
 - Includes all columns
 
 **SQL Query** (from original TZ):
+
 ```sql
 -- Уровень 1: Статистика по версии промпта
 SELECT
@@ -381,30 +418,35 @@ ORDER BY category, sort_order, version, dates;
 **Filters**:
 
 #### 6.1 Date Range Picker
+
 - **Type**: Two date inputs (from/to) with calendar popup
 - **Quick Buttons**: "Last 7 days", "Last 30 days", "Last 3 months", "All time"
 - **Default**: Last 30 days
 - **Component**: shadcn/ui Date Picker or custom component
 
 #### 6.2 Version Filter
+
 - **Type**: Multi-select dropdown with checkboxes
 - **Options**: Dynamically loaded from database (DISTINCT prompt_version)
 - **Behavior**: "All versions" checkbox + individual version checkboxes
 - **Component**: shadcn/ui Multi-Select
 
 #### 6.3 Category Filter
+
 - **Type**: Multi-select dropdown with checkboxes
 - **Options**: Dynamically loaded from database (DISTINCT request_subtype)
 - **Behavior**: "All categories" checkbox + individual category checkboxes
 - **Search**: Filter options by name
 
 #### 6.4 Agent Email Filter
+
 - **Type**: Multi-select dropdown with checkboxes
 - **Options**: Hardcoded QUALIFIED_AGENTS list
 - **Default**: All selected
 - **Behavior**: At least one must be selected
 
 #### 6.5 Reset Filters Button
+
 - **Action**: Reset all filters to defaults
 - **Icon**: Refresh or X icon
 - **Position**: Right side of filter bar
@@ -413,24 +455,26 @@ ORDER BY category, sort_order, version, dates;
 
 ```typescript
 interface DashboardFilters {
-  dateRange: {
-    from: Date
-    to: Date
-  }
-  versions: string[]      // ['v1', 'v2'] or [] for all
-  categories: string[]    // ['Category1'] or [] for all
-  agents: string[]        // Must have at least 1
+	dateRange: {
+		from: Date
+		to: Date
+	}
+	versions: string[] // ['v1', 'v2'] or [] for all
+	categories: string[] // ['Category1'] or [] for all
+	agents: string[] // Must have at least 1
 }
 ```
 
 **URL Sync** (example):
+
 ```
-/dashboard?from=2024-01-01&to=2024-12-31&versions=v1,v2&categories=Category1,Category2&agents=lucy@levhaolam.com,marianna@levhaolam.com
+/dashboard?from=2024-01-01&to=2024-12-31&versions=v1,v2&categories=Category1,Category2&agents=sofia@levhaolam.com,marianna@levhaolam.com
 ```
 
 **localStorage Key**: `ai_stats_filters`
 
 **Component Structure**:
+
 ```
 components/
   filters/
@@ -449,6 +493,7 @@ components/
 All queries collected in: `lib/supabase/queries.ts`
 
 **Functions to create**:
+
 1. `getKPIData(filters)` - Returns all 4 KPI metrics + trends
 2. `getQualityTrends(filters)` - Returns time series data for main chart
 3. `getCategoryDistribution(filters)` - Returns data for pie chart
@@ -457,6 +502,7 @@ All queries collected in: `lib/supabase/queries.ts`
 6. `getFilterOptions()` - Returns available versions and categories
 
 **Utility Functions**:
+
 - `calculateTrend(current, previous)` - Returns trend object {value, percentage, direction}
 - `formatDateRange(from, to)` - Returns formatted date string
 - `buildWhereClause(filters)` - Builds SQL WHERE clause from filters
@@ -466,6 +512,7 @@ All queries collected in: `lib/supabase/queries.ts`
 ### 8. Additional Features
 
 #### 8.1 Real-time Updates
+
 - **Technology**: Supabase Realtime subscriptions
 - **Subscription**: Listen to `ai_human_comparison` table changes
 - **Behavior**:
@@ -475,12 +522,14 @@ All queries collected in: `lib/supabase/queries.ts`
 - **Implementation**: `lib/supabase/realtime.ts`
 
 #### 8.2 Refresh Data Button
+
 - **Location**: Top right of dashboard (next to filters)
 - **Icon**: Refresh icon with spin animation when loading
 - **Action**: Manually refetch all data
 - **Cooldown**: 2 seconds between refreshes
 
 #### 8.3 Loading States
+
 - **Component**: Skeleton loaders for each section
 - **Libraries**: shadcn/ui Skeleton component (already installed)
 - **Behavior**: Show skeleton while data is loading
@@ -491,6 +540,7 @@ All queries collected in: `lib/supabase/queries.ts`
   - `components/loading/table-skeleton.tsx`
 
 #### 8.4 Error States
+
 - **Component**: Error boundary + error display component
 - **Scenarios**:
   - Supabase connection error
@@ -505,11 +555,13 @@ All queries collected in: `lib/supabase/queries.ts`
   - `components/error/error-boundary.tsx`
 
 #### 8.5 Dark Mode
+
 - **Status**: Already implemented with next-themes
 - **Ensure**: All new components support dark mode
 - **Colors**: Use Tailwind dark: variants
 
 #### 8.6 Responsive Design
+
 - **Breakpoints**:
   - Mobile: < 768px (single column, stacked charts)
   - Tablet: 768px - 1024px (2 columns for charts)
@@ -529,25 +581,26 @@ Replace `data.navMain` with:
 
 ```typescript
 navMain: [
-  {
-    title: "Dashboard",
-    url: "/dashboard",
-    icon: IconDashboard,
-  },
-  {
-    title: "Detailed Stats",
-    url: "/detailed-stats",
-    icon: IconListDetails,
-  },
-  {
-    title: "Settings",
-    url: "/settings",
-    icon: IconSettings,
-  },
+	{
+		title: 'Dashboard',
+		url: '/dashboard',
+		icon: IconDashboard,
+	},
+	{
+		title: 'Detailed Stats',
+		url: '/detailed-stats',
+		icon: IconListDetails,
+	},
+	{
+		title: 'Settings',
+		url: '/settings',
+		icon: IconSettings,
+	},
 ]
 ```
 
 **Routes**:
+
 1. `/dashboard` - Main dashboard (all KPIs, charts, and table)
 2. `/detailed-stats` - Full-page table view with advanced filters
 3. `/settings` - Future: Database connection settings, qualified agents management
@@ -644,6 +697,7 @@ constants/
 ### Phase 0: Setup (Day 1)
 
 **Tasks**:
+
 1. ✅ Create PRD.md
 2. ✅ Create .env.local.example
 3. ✅ Create constants/qualified-agents.ts
@@ -656,6 +710,7 @@ constants/
 7. Generate TypeScript types from Supabase schema
 
 **Deliverables**:
+
 - Environment configured
 - Supabase connected
 - Types generated
@@ -667,6 +722,7 @@ constants/
 **Priority**: HIGH (Requirement #2 from TZ)
 
 **Tasks**:
+
 1. Create `lib/supabase/queries.ts` with KPI queries
 2. Create `lib/hooks/use-dashboard-data.ts` hook
 3. Create base `kpi-card.tsx` component
@@ -677,12 +733,14 @@ constants/
 8. Test with real data
 
 **SQL Queries Needed**:
+
 - Total Records + trend
 - Average Quality + trend
 - Best Category + trend
 - Records Changed + trend
 
 **Acceptance Criteria**:
+
 - All 4 cards display correct data
 - Trends show correct direction and percentage
 - Responsive layout (1/2/4 columns)
@@ -694,6 +752,7 @@ constants/
 ### Phase 2: Main Chart - Quality Trends (Day 4-5)
 
 **Tasks**:
+
 1. Create quality trends SQL query
 2. Create `quality-trends-chart.tsx` component
 3. Implement time period selector (7d, 30d, 3m, all)
@@ -703,6 +762,7 @@ constants/
 7. Test with multiple categories
 
 **Acceptance Criteria**:
+
 - Chart displays all categories with different colors
 - Legend checkboxes show/hide lines
 - Time period buttons work correctly
@@ -714,6 +774,7 @@ constants/
 ### Phase 3: Additional Charts (Day 6)
 
 **Tasks**:
+
 1. Create pie chart SQL query
 2. Create `category-pie-chart.tsx`
 3. Implement click-to-filter functionality
@@ -723,6 +784,7 @@ constants/
 7. Add loading skeletons
 
 **Acceptance Criteria**:
+
 - Pie chart shows category distribution
 - Clicking slice filters dashboard
 - Bar chart shows version comparison
@@ -734,6 +796,7 @@ constants/
 ### Phase 4: Data Table (Day 7-8)
 
 **Tasks**:
+
 1. Implement detailed stats SQL query (with UNION)
 2. Create `detailed-stats-table.tsx` with TanStack Table
 3. Implement sorting (single and multi-column)
@@ -744,6 +807,7 @@ constants/
 8. Add loading skeleton
 
 **Acceptance Criteria**:
+
 - Table displays hierarchical data (version rows + week rows)
 - Sorting works on all columns
 - Search filters by category name
@@ -756,6 +820,7 @@ constants/
 ### Phase 5: Filters (Day 9-10)
 
 **Tasks**:
+
 1. Create filter state management (`use-filters.ts` hook)
 2. Create `filter-bar.tsx` container
 3. Create date range filter with quick buttons
@@ -768,6 +833,7 @@ constants/
 10. Connect filters to all components
 
 **Acceptance Criteria**:
+
 - All filters work and update data
 - URL updates when filters change
 - Filters persist in localStorage
@@ -779,6 +845,7 @@ constants/
 ### Phase 6: Real-time & Polish (Day 11-12)
 
 **Tasks**:
+
 1. Implement Supabase Realtime subscription
 2. Add auto-refresh on data changes
 3. Add manual "Refresh Data" button
@@ -791,6 +858,7 @@ constants/
 10. Final QA and bug fixes
 
 **Acceptance Criteria**:
+
 - Dashboard updates when database changes
 - Refresh button works with cooldown
 - Errors display clearly with retry option
@@ -804,6 +872,7 @@ constants/
 ### Phase 7: Navigation & Routes (Day 13)
 
 **Tasks**:
+
 1. Update sidebar navigation
 2. Create `/detailed-stats` page (full table view)
 3. Create `/settings` placeholder page
@@ -811,6 +880,7 @@ constants/
 5. Update breadcrumbs
 
 **Acceptance Criteria**:
+
 - Sidebar shows new menu items
 - All routes work
 - Active route highlighted in sidebar
@@ -820,6 +890,7 @@ constants/
 ## Testing Checklist
 
 ### Functional Testing
+
 - [ ] KPI cards show correct values
 - [ ] Trends calculate correctly
 - [ ] Quality trends chart displays all categories
@@ -837,6 +908,7 @@ constants/
 - [ ] Refresh button works
 
 ### UI/UX Testing
+
 - [ ] Loading states display
 - [ ] Error states display
 - [ ] No data states display
@@ -848,6 +920,7 @@ constants/
 - [ ] All icons display correctly
 
 ### Performance Testing
+
 - [ ] Initial load < 2 seconds
 - [ ] Filter changes < 500ms
 - [ ] Chart interactions smooth (60fps)
@@ -860,6 +933,7 @@ constants/
 ## Success Metrics
 
 ### Technical Metrics
+
 - Page load time: < 2 seconds
 - Time to interactive: < 3 seconds
 - Lighthouse score: > 90
@@ -867,6 +941,7 @@ constants/
 - TypeScript strict mode: no errors
 
 ### User Metrics
+
 - Dashboard provides clear insights at a glance
 - Filters are intuitive and easy to use
 - Data is actionable and accurate
@@ -877,21 +952,25 @@ constants/
 ## Future Enhancements (Post-MVP)
 
 1. **Settings Page**:
+
    - Manage qualified agents list (add/remove)
    - Configure email notifications
    - Set quality thresholds
 
 2. **Advanced Analytics**:
+
    - Agent performance leaderboard
    - Predictive quality trends
    - Anomaly detection
 
 3. **Export Options**:
+
    - PDF reports
    - Excel export with charts
    - Scheduled email reports
 
 4. **Collaboration Features**:
+
    - Share dashboard snapshots
    - Add comments to data points
    - Team annotations
@@ -908,43 +987,46 @@ constants/
 ### Color Palette
 
 **Quality Colors**:
+
 ```css
 /* Good (61-100%) */
---quality-good-light: #dcfce7;      /* bg-green-100 */
+--quality-good-light: #dcfce7; /* bg-green-100 */
 --quality-good-text-light: #166534; /* text-green-800 */
---quality-good-dark: #14532d;       /* dark:bg-green-900 */
---quality-good-text-dark: #bbf7d0;  /* dark:text-green-200 */
+--quality-good-dark: #14532d; /* dark:bg-green-900 */
+--quality-good-text-dark: #bbf7d0; /* dark:text-green-200 */
 
 /* Medium (31-60%) */
---quality-medium-light: #fef3c7;    /* bg-yellow-100 */
+--quality-medium-light: #fef3c7; /* bg-yellow-100 */
 --quality-medium-text-light: #854d0e; /* text-yellow-800 */
---quality-medium-dark: #713f12;     /* dark:bg-yellow-900 */
+--quality-medium-dark: #713f12; /* dark:bg-yellow-900 */
 --quality-medium-text-dark: #fef08a; /* dark:text-yellow-200 */
 
 /* Poor (0-30%) */
---quality-poor-light: #fee2e2;      /* bg-red-100 */
+--quality-poor-light: #fee2e2; /* bg-red-100 */
 --quality-poor-text-light: #991b1b; /* text-red-800 */
---quality-poor-dark: #7f1d1d;       /* dark:bg-red-900 */
---quality-poor-text-dark: #fecaca;  /* dark:text-red-200 */
+--quality-poor-dark: #7f1d1d; /* dark:bg-red-900 */
+--quality-poor-text-dark: #fecaca; /* dark:text-red-200 */
 ```
 
 **Chart Colors** (for categories):
+
 ```typescript
 const CATEGORY_COLORS = [
-  '#3b82f6', // blue
-  '#10b981', // green
-  '#f59e0b', // amber
-  '#ef4444', // red
-  '#8b5cf6', // violet
-  '#ec4899', // pink
-  '#06b6d4', // cyan
-  '#f97316', // orange
+	'#3b82f6', // blue
+	'#10b981', // green
+	'#f59e0b', // amber
+	'#ef4444', // red
+	'#8b5cf6', // violet
+	'#ec4899', // pink
+	'#06b6d4', // cyan
+	'#f97316', // orange
 ]
 ```
 
 ### Database Query Performance Tips
 
 1. **Index Creation**:
+
 ```sql
 CREATE INDEX idx_ai_human_created_at ON ai_human_comparison(created_at);
 CREATE INDEX idx_ai_human_email ON ai_human_comparison(email);
@@ -953,6 +1035,7 @@ CREATE INDEX idx_ai_human_version ON ai_human_comparison(prompt_version);
 ```
 
 2. **Query Optimization**:
+
 - Use `EXPLAIN ANALYZE` to check query plans
 - Avoid `SELECT *`, specify columns
 - Use appropriate date ranges to limit results

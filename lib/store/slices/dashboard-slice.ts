@@ -77,17 +77,12 @@ export const createDashboardSlice: StateCreator<
 		})),
 
 	setDashboardAgents: (agents) =>
-		set((state) => {
-			// Ensure at least one agent is selected
-			if (agents.length === 0) return state
-
-			return {
-				dashboardFilters: {
-					...state.dashboardFilters,
-					agents,
-				},
-			}
-		}),
+		set((state) => ({
+			dashboardFilters: {
+				...state.dashboardFilters,
+				agents, // Allow empty array to show ALL agents from database
+			},
+		})),
 
 	resetDashboardFilters: () =>
 		set({
