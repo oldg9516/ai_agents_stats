@@ -166,6 +166,14 @@ export interface CategoryDistributionData {
 }
 
 /**
+ * Category Distribution result with total count
+ */
+export interface CategoryDistributionResult {
+  categories: CategoryDistributionData[]
+  totalCount: number // Total records count from query (not sum of categories)
+}
+
+/**
  * Version Comparison data (for bar chart)
  */
 export interface VersionComparisonData {

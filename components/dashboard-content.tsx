@@ -70,18 +70,9 @@ export function DashboardContent() {
 		queryClient.invalidateQueries({ queryKey: ['detailed-stats-paginated'] })
 	}
 
-	// Count active filters
+	// Count active filters (excluding date range, which has its own selector)
 	const getActiveFilterCount = () => {
 		let count = 0
-
-		// Check if date range is not default (last 30 days)
-		const defaultFrom = new Date()
-		defaultFrom.setDate(defaultFrom.getDate() - 30)
-		const isDefaultDateRange =
-			Math.abs(filters.dateRange.from.getTime() - defaultFrom.getTime()) <
-			86400000 // 1 day tolerance
-
-		if (!isDefaultDateRange) count++
 
 		// Check if versions are filtered
 		if (
@@ -169,7 +160,7 @@ export function DashboardContent() {
 
 			{/* Category & Version Charts - Side by Side */}
 			<div className='grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2 overflow-hidden'>
-				{data.categoryDistribution.length > 0 && (
+				{data.categoryDistribution.categories.length > 0 && (
 					<CategoryPieChart data={data.categoryDistribution} />
 				)}
 

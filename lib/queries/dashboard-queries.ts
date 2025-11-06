@@ -7,19 +7,22 @@
  * for better caching, refetching, and state management
  */
 
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import {
+	fetchDashboardData,
+	fetchDetailedStatsPaginated,
+} from '@/lib/actions/dashboard-actions'
 import { supabase } from '@/lib/supabase/client'
-import { fetchDashboardData, fetchDetailedStatsPaginated } from '@/lib/actions/dashboard-actions'
 import type {
+	CategoryDistributionResult,
 	DashboardFilters,
+	DetailedStatsRow,
 	KPIData,
 	QualityTrendData,
-	CategoryDistributionData,
 	VersionComparisonData,
-	DetailedStatsRow,
 } from '@/lib/supabase/types'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
 /**
  * Generate query key for dashboard data
@@ -44,7 +47,7 @@ function getDashboardQueryKey(filters: DashboardFilters) {
 type DashboardData = {
 	kpi: KPIData | null
 	qualityTrends: QualityTrendData[]
-	categoryDistribution: CategoryDistributionData[]
+	categoryDistribution: CategoryDistributionResult
 	versionComparison: VersionComparisonData[]
 	detailedStats: DetailedStatsRow[]
 }
@@ -89,7 +92,9 @@ export function useDashboardData(filters: DashboardFilters): {
 			} catch (error) {
 				clearTimeout(timeoutId)
 				if (error instanceof Error && error.name === 'AbortError') {
-					throw new Error('Request timed out. Please try with more specific filters.')
+					throw new Error(
+						'Request timed out. Please try with more specific filters.'
+					)
 				}
 				throw error
 			}
@@ -112,7 +117,6 @@ export function useDashboardData(filters: DashboardFilters): {
 					table: 'ai_human_comparison',
 				},
 				() => {
-					console.log('Real-time update received - invalidating dashboard queries')
 					// Invalidate all dashboard queries to trigger refetch
 					queryClient.invalidateQueries({ queryKey: ['dashboard'] })
 					// Also refresh Server Components
@@ -130,7 +134,7 @@ export function useDashboardData(filters: DashboardFilters): {
 		data: query.data || {
 			kpi: null,
 			qualityTrends: [],
-			categoryDistribution: [],
+			categoryDistribution: { categories: [], totalCount: 0 },
 			versionComparison: [],
 			detailedStats: [],
 		},
@@ -167,7 +171,11 @@ export function usePrefetchDashboardData() {
 /**
  * Generate query key for paginated detailed stats
  */
-function getPaginatedStatsQueryKey(filters: DashboardFilters, page: number, pageSize: number) {
+function getPaginatedStatsQueryKey(
+	filters: DashboardFilters,
+	page: number,
+	pageSize: number
+) {
 	return [
 		'detailed-stats-paginated',
 		{
@@ -227,7 +235,11 @@ export function useDetailedStatsPaginated(
 			const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
 
 			try {
-				const result = await fetchDetailedStatsPaginated(filters, page, pageSize)
+				const result = await fetchDetailedStatsPaginated(
+					filters,
+					page,
+					pageSize
+				)
 				clearTimeout(timeoutId)
 
 				if (!result.success || !result.data) {
@@ -238,7 +250,9 @@ export function useDetailedStatsPaginated(
 			} catch (error) {
 				clearTimeout(timeoutId)
 				if (error instanceof Error && error.name === 'AbortError') {
-					throw new Error('Request timed out. Please try with more specific filters.')
+					throw new Error(
+						'Request timed out. Please try with more specific filters.'
+					)
 				}
 				throw error
 			}

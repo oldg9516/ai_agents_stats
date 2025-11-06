@@ -3,6 +3,7 @@ import { supabaseServer } from './server'
 import type {
 	AIHumanComparisonRow,
 	CategoryDistributionData,
+	CategoryDistributionResult,
 	DashboardFilters,
 	DetailedStatsRow,
 	FilterOptions,
@@ -277,12 +278,12 @@ function getDayStart(date: Date): string {
  */
 export async function getCategoryDistribution(
 	filters: DashboardFilters
-): Promise<CategoryDistributionData[]> {
+): Promise<CategoryDistributionResult> {
 	const { dateRange, versions, categories, agents } = filters
 
 	let query = supabase
 		.from('ai_human_comparison')
-		.select('request_subtype, changed')
+		.select('request_subtype, changed', { count: 'exact' })
 		.gte('created_at', dateRange.from.toISOString())
 		.lte('created_at', dateRange.to.toISOString())
 
@@ -298,18 +299,21 @@ export async function getCategoryDistribution(
 		query = query.in('request_subtype', categories)
 	}
 
-	// Increase limit to handle more records
-	query = query.limit(50000)
-
-	const { data, error } = await query
+	// Get all records without limit for accurate totals
+	// Supabase default limit is 1000, which may truncate results
+	const { data, error, count } = await query
 
 	if (error) throw error
-	if (!data) return []
+	if (!data) {
+		return { categories: [], totalCount: 0 }
+	}
 
 	const records = data as unknown as AIHumanComparisonRow[]
+	const totalCount = count || 0
 
 	console.log('🥧 Category Distribution Results:', {
-		recordsFound: records.length,
+		recordsReturned: records.length,
+		totalCount: totalCount,
 		dateRange: `${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`,
 	})
 
@@ -324,11 +328,16 @@ export async function getCategoryDistribution(
 		return acc
 	}, {} as Record<string, { total: number; unchanged: number }>)
 
-	return Object.entries(grouped).map(([category, stats]) => ({
+	const categoriesData = Object.entries(grouped).map(([category, stats]) => ({
 		category,
 		totalRecords: stats.total,
 		goodPercentage: (stats.unchanged / stats.total) * 100,
 	}))
+
+	return {
+		categories: categoriesData,
+		totalCount: totalCount,
+	}
 }
 
 /**
