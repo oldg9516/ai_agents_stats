@@ -94,24 +94,15 @@ export function SupportThreadsTable({
 
 		// If data decreased, filters likely changed - reset to first page
 		if (currentLength < prevLength) {
-			console.log('🔄 [Table] Data decreased (filters changed), resetting to page 1:', {
-				prevLength,
-				currentLength,
-			})
+			
 			setPagination((prev) => ({ ...prev, pageIndex: 0 }))
 			waitingForNextBatchRef.current = false
 		} else if (currentLength > prevLength) {
-			console.log('📦 [Table] Data increased (new batch loaded):', {
-				prevLength,
-				currentLength,
-				currentPage: pagination.pageIndex,
-				waitingForNextBatch: waitingForNextBatchRef.current,
-			})
+		
 
 			// If we were waiting for next batch, move to next page
 			if (waitingForNextBatchRef.current) {
 				const nextPageIndex = pagination.pageIndex + 1
-				console.log('➡️ [Table] Moving to next page after batch load:', nextPageIndex)
 				setPagination((prev) => ({ ...prev, pageIndex: nextPageIndex }))
 				waitingForNextBatchRef.current = false
 			}
@@ -412,22 +403,13 @@ export function SupportThreadsTable({
 								const canGoNext = table.getCanNextPage()
 								const currentPage = table.getState().pagination.pageIndex
 
-								console.log('➡️ [Table] Next button clicked:', {
-									currentPage,
-									canGoNext,
-									hasMore,
-									isFetchingMore,
-									totalRows: table.getFilteredRowModel().rows.length,
-								})
 
 								// If we can go to next page, do it
 								if (canGoNext) {
-									console.log('✅ [Table] Moving to next page')
 									table.nextPage()
 								}
 								// If we're on last page and there's more data on server, load next batch
 								else if (hasMore && onLoadMore && !isFetchingMore) {
-									console.log('📥 [Table] Loading next batch from server')
 									// Set flag so we know to move to next page when data arrives
 									waitingForNextBatchRef.current = true
 									onLoadMore()

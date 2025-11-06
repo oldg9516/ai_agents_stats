@@ -54,8 +54,6 @@ export async function fetchSupportData(filters: SupportFilters) {
 				]
 				try {
 					const result = await promise
-					const queryTime = Date.now() - queryStart
-					console.log(`✅ [Support] ${names[index]} took ${queryTime}ms`)
 					return result
 				} catch (error) {
 					const queryTime = Date.now() - queryStart
@@ -137,10 +135,11 @@ export async function fetchSupportThreadsAction(
 	pagination?: { limit: number; offset: number }
 ) {
 	try {
-		const startTime = Date.now()
-		const threads = await fetchSupportThreads(supabaseServer, filters, pagination)
-		const queryTime = Date.now() - startTime
-		console.log(`✅ [Support Threads Action] Fetched ${threads.length} threads in ${queryTime}ms`)
+		const threads = await fetchSupportThreads(
+			supabaseServer,
+			filters,
+			pagination
+		)
 
 		return {
 			success: true,
@@ -165,9 +164,6 @@ export async function fetchSupportThreadsAction(
  */
 export async function fetchSupportMinCreatedDate(): Promise<Date> {
 	try {
-		console.log('🚀 [Support MinDate] Fetching minimum created_at date...')
-		const startTime = Date.now()
-
 		const { data, error } = await supabaseServer
 			.from('support_threads_data')
 			.select('created_at')
@@ -177,9 +173,6 @@ export async function fetchSupportMinCreatedDate(): Promise<Date> {
 
 		if (error) throw error
 		if (!data) throw new Error('No data returned')
-
-		const totalTime = Date.now() - startTime
-		console.log(`🏁 [Support MinDate] Fetch time: ${totalTime}ms (date: ${data.created_at})`)
 
 		return new Date(data.created_at)
 	} catch (error) {

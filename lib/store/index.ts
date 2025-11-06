@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { createDashboardSlice, DashboardSlice } from './slices/dashboard-slice'
@@ -16,12 +17,10 @@ if (typeof window !== 'undefined') {
 			const parsed = JSON.parse(stored)
 			// Check if version exists, if not - clear old data
 			if (!parsed.version || parsed.version < 4) {
-				console.log('🔄 Clearing old localStorage data (version upgrade to v4 - fixing date bug)')
 				localStorage.removeItem('ai-stats-storage')
 			}
 		} catch (e) {
 			// Invalid JSON, clear it
-			console.log('❌ Invalid localStorage data, clearing')
 			localStorage.removeItem('ai-stats-storage')
 		}
 	}
@@ -37,7 +36,7 @@ export const useStore = create<StoreState>()(
 			{
 				name: 'ai-stats-storage',
 				version: 4, // Changed from 3 to 4 to fix date calculation bug
-				partialize: (state) => ({
+				partialize: state => ({
 					// Persist only filter states
 					dashboardFilters: state.dashboardFilters,
 					supportFilters: state.supportFilters,
@@ -46,16 +45,16 @@ export const useStore = create<StoreState>()(
 				migrate: (persistedState: any, version: number) => {
 					// Force reset on version change
 					if (version !== 4) {
-						console.log(`🔄 Store version mismatch (v${version} -> v4) - resetting to defaults`)
 						return null
 					}
 
 					// Validate dates even in persisted state
 					if (persistedState?.dashboardFilters?.dateRange) {
-						const from = new Date(persistedState.dashboardFilters.dateRange.from)
+						const from = new Date(
+							persistedState.dashboardFilters.dateRange.from
+						)
 						const now = new Date()
 						if (from > now) {
-							console.log('Invalid dashboard dates detected - resetting')
 							return null
 						}
 					}
@@ -64,7 +63,6 @@ export const useStore = create<StoreState>()(
 						const from = new Date(persistedState.supportFilters.dateRange.from)
 						const now = new Date()
 						if (from > now) {
-							console.log('Invalid support dates detected - resetting')
 							return null
 						}
 					}
@@ -72,13 +70,10 @@ export const useStore = create<StoreState>()(
 					return persistedState
 				},
 				// Convert date strings back to Date objects after rehydration
-				onRehydrateStorage: () => (state) => {
+				onRehydrateStorage: () => state => {
 					if (!state) {
-						console.log('⚠️ No state to rehydrate')
 						return
 					}
-
-					console.log('🔄 Rehydrating store state...')
 
 					// Validate and fix dashboard dates
 					if (state.dashboardFilters?.dateRange) {
@@ -93,7 +88,6 @@ export const useStore = create<StoreState>()(
 							from > now ||
 							to > now
 						) {
-							console.log('❌ Invalid dashboard dates detected, resetting to defaults')
 							// Reset to default (last 30 days)
 							const defaultTo = new Date()
 							defaultTo.setHours(23, 59, 59, 999)
@@ -123,7 +117,6 @@ export const useStore = create<StoreState>()(
 							from > now ||
 							to > now
 						) {
-							console.log('❌ Invalid support dates detected, resetting to defaults')
 							// Reset to default (last 30 days)
 							const defaultTo = new Date()
 							defaultTo.setHours(23, 59, 59, 999)
@@ -139,8 +132,6 @@ export const useStore = create<StoreState>()(
 							state.supportFilters.dateRange.to = to
 						}
 					}
-
-					console.log('✅ Store rehydration complete')
 				},
 			}
 		),

@@ -1,6 +1,6 @@
-import { StateCreator } from 'zustand'
-import type { DashboardFilters } from '@/lib/supabase/types'
 import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
+import type { DashboardFilters } from '@/lib/supabase/types'
+import { StateCreator } from 'zustand'
 
 /**
  * Get default dashboard filter values
@@ -12,11 +12,6 @@ function getDefaultDashboardFilters(): DashboardFilters {
 	const thirtyDaysAgo = new Date()
 	thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30) // ✅ Fixed: use thirtyDaysAgo.getDate()
 	thirtyDaysAgo.setHours(0, 0, 0, 0) // Start of day
-
-	console.log('🔧 Dashboard default filters:', {
-		from: thirtyDaysAgo.toISOString(),
-		to: now.toISOString(),
-	})
 
 	return {
 		dateRange: {
@@ -47,37 +42,37 @@ export const createDashboardSlice: StateCreator<
 	[],
 	[],
 	DashboardSlice
-> = (set) => ({
+> = set => ({
 	// Initial state
 	dashboardFilters: getDefaultDashboardFilters(),
 
 	// Actions
 	setDashboardDateRange: (from, to) =>
-		set((state) => ({
+		set(state => ({
 			dashboardFilters: {
 				...state.dashboardFilters,
 				dateRange: { from, to },
 			},
 		})),
 
-	setDashboardVersions: (versions) =>
-		set((state) => ({
+	setDashboardVersions: versions =>
+		set(state => ({
 			dashboardFilters: {
 				...state.dashboardFilters,
 				versions,
 			},
 		})),
 
-	setDashboardCategories: (categories) =>
-		set((state) => ({
+	setDashboardCategories: categories =>
+		set(state => ({
 			dashboardFilters: {
 				...state.dashboardFilters,
 				categories,
 			},
 		})),
 
-	setDashboardAgents: (agents) =>
-		set((state) => ({
+	setDashboardAgents: agents =>
+		set(state => ({
 			dashboardFilters: {
 				...state.dashboardFilters,
 				agents, // Allow empty array to show ALL agents from database
@@ -89,8 +84,8 @@ export const createDashboardSlice: StateCreator<
 			dashboardFilters: getDefaultDashboardFilters(),
 		}),
 
-	updateDashboardFilters: (filters) =>
-		set((state) => ({
+	updateDashboardFilters: filters =>
+		set(state => ({
 			dashboardFilters: {
 				...state.dashboardFilters,
 				...filters,

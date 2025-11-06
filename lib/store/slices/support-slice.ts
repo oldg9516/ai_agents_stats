@@ -1,5 +1,5 @@
-import { StateCreator } from 'zustand'
 import type { SupportFilters } from '@/lib/supabase/types'
+import { StateCreator } from 'zustand'
 
 /**
  * Get default support filter values
@@ -12,13 +12,6 @@ function getDefaultSupportFilters(): SupportFilters {
 	const from = new Date()
 	from.setDate(from.getDate() - 30)
 	from.setHours(0, 0, 0, 0) // Start of day 30 days ago
-
-	console.log('🔧 Creating default support filters:', {
-		from: from.toISOString(),
-		to: to.toISOString(),
-		fromDate: from.toLocaleDateString(),
-		toDate: to.toLocaleDateString(),
-	})
 
 	return {
 		dateRange: { from, to },
@@ -58,7 +51,7 @@ export const createSupportSlice: StateCreator<
 	[],
 	[],
 	SupportSlice
-> = (set) => ({
+> = set => ({
 	// Initial state
 	supportFilters: getDefaultSupportFilters(),
 
@@ -69,7 +62,7 @@ export const createSupportSlice: StateCreator<
 
 	// Actions
 	setSupportDateRange: (from, to) =>
-		set((state) => ({
+		set(state => ({
 			supportFilters: {
 				...state.supportFilters,
 				dateRange: { from, to },
@@ -80,8 +73,8 @@ export const createSupportSlice: StateCreator<
 			hasMoreThreads: true,
 		})),
 
-	setSupportStatuses: (statuses) =>
-		set((state) => ({
+	setSupportStatuses: statuses =>
+		set(state => ({
 			supportFilters: {
 				...state.supportFilters,
 				statuses,
@@ -92,8 +85,8 @@ export const createSupportSlice: StateCreator<
 			hasMoreThreads: true,
 		})),
 
-	setSupportRequestTypes: (requestTypes) =>
-		set((state) => ({
+	setSupportRequestTypes: requestTypes =>
+		set(state => ({
 			supportFilters: {
 				...state.supportFilters,
 				requestTypes,
@@ -104,8 +97,8 @@ export const createSupportSlice: StateCreator<
 			hasMoreThreads: true,
 		})),
 
-	setSupportRequirements: (requirements) =>
-		set((state) => ({
+	setSupportRequirements: requirements =>
+		set(state => ({
 			supportFilters: {
 				...state.supportFilters,
 				requirements,
@@ -116,8 +109,8 @@ export const createSupportSlice: StateCreator<
 			hasMoreThreads: true,
 		})),
 
-	setSupportVersions: (versions) =>
-		set((state) => ({
+	setSupportVersions: versions =>
+		set(state => ({
 			supportFilters: {
 				...state.supportFilters,
 				versions,
@@ -137,8 +130,8 @@ export const createSupportSlice: StateCreator<
 			hasMoreThreads: true,
 		}),
 
-	updateSupportFilters: (filters) =>
-		set((state) => ({
+	updateSupportFilters: filters =>
+		set(state => ({
 			supportFilters: {
 				...state.supportFilters,
 				...filters,
@@ -151,7 +144,7 @@ export const createSupportSlice: StateCreator<
 
 	// Pagination actions
 	fetchNextBatch: () =>
-		set((state) => ({
+		set(state => ({
 			currentBatch: state.currentBatch + 1,
 			maxBatchReached: Math.max(state.maxBatchReached, state.currentBatch + 1),
 		})),

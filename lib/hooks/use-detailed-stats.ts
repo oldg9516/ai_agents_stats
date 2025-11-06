@@ -9,12 +9,12 @@
  * Much more efficient than useDashboardData for the detailed stats page.
  */
 
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
 import { fetchDetailedStatsOnly } from '@/lib/actions/dashboard-actions'
-import type { DashboardFilters, DetailedStatsRow } from '@/lib/supabase/types'
+import { supabase } from '@/lib/supabase/client'
+import type { DashboardFilters } from '@/lib/supabase/types'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
 /**
  * Generate query key for detailed stats
@@ -58,7 +58,9 @@ export function useDetailedStats(filters: DashboardFilters) {
 			} catch (error) {
 				clearTimeout(timeoutId)
 				if (error instanceof Error && error.name === 'AbortError') {
-					throw new Error('Request timed out. Please try with more specific filters.')
+					throw new Error(
+						'Request timed out. Please try with more specific filters.'
+					)
 				}
 				throw error
 			}
@@ -81,7 +83,6 @@ export function useDetailedStats(filters: DashboardFilters) {
 					table: 'ai_human_comparison',
 				},
 				() => {
-					console.log('Real-time update received - invalidating detailed stats queries')
 					// Invalidate all detailed stats queries to trigger refetch
 					queryClient.invalidateQueries({ queryKey: ['detailedStats'] })
 					// Also refresh Server Components

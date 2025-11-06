@@ -594,7 +594,14 @@ export async function fetchSupportThreads(
 	}
 
 	// Create a map of thread_id -> comparison data
-	const comparisonMap = new Map<string, { changed: boolean | null; email: string | null; human_reply: string | null }>()
+	const comparisonMap = new Map<
+		string,
+		{
+			changed: boolean | null
+			email: string | null
+			human_reply: string | null
+		}
+	>()
 
 	comparisonData?.forEach(comp => {
 		if (comp.thread_id) {
@@ -607,7 +614,10 @@ export async function fetchSupportThreads(
 	})
 
 	// Create a map of thread_id -> dialog data (direction and text)
-	const dialogMap = new Map<string, { direction: string | null; text: string | null }>()
+	const dialogMap = new Map<
+		string,
+		{ direction: string | null; text: string | null }
+	>()
 
 	dialogData?.forEach(dialog => {
 		if (dialog.thread_id) {
@@ -709,8 +719,6 @@ export async function fetchRequestCategoryStats(
 		console.error('❌ [Request Categories] RPC error:', error)
 		throw error
 	}
-
-	console.log(`📊 [Request Categories] Fetched ${data?.length || 0} categories for date range ${dateRange.from.toISOString()} to ${dateRange.to.toISOString()}`)
 
 	return (data || []) as RequestCategoryStats[]
 }
