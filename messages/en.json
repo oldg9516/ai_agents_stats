@@ -67,8 +67,8 @@
 	},
 	"kpi": {
 		"totalRecords": {
-			"title": "Total Records",
-			"description": "Total number of records processed by qualified agents",
+			"title": "Qualified Agents Records",
+			"description": "Records processed by qualified agents",
 			"tooltip": "Shows the total count of AI-generated outputs that were reviewed by qualified agents. Only records processed by qualified team members are included in quality calculations."
 		},
 		"averageQuality": {
@@ -282,7 +282,8 @@
 	},
 	"errors": {
 		"loadingDashboard": "Error loading dashboard data",
-		"loadingSupport": "Error loading support data"
+		"loadingSupport": "Error loading support data",
+		"loadingTable": "Error loading table"
 	},
 	"docs": {
 		"title": "Documentation",

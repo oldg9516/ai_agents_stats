@@ -40,7 +40,11 @@ export function DashboardContent() {
 
 	// Fetch filter options based on current date range
 	const { data: filterOptions } = useQuery({
-		queryKey: ['filterOptions', filters.dateRange.from.toISOString(), filters.dateRange.to.toISOString()],
+		queryKey: [
+			'filterOptions',
+			filters.dateRange.from.toISOString(),
+			filters.dateRange.to.toISOString(),
+		],
 		queryFn: () => fetchFilterOptions(filters.dateRange),
 		staleTime: 5 * 60 * 1000, // Cache for 5 minutes
 	})

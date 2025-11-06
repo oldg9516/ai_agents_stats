@@ -259,6 +259,7 @@ export interface SupportThread extends SupportThreadRow {
   qualityPercentage: number | null // Calculated quality for this thread
   // Fields from support_dialogs (via JOIN)
   direction: string | null // Thread direction (incoming/outgoing)
+  customer_request_text: string | null // Customer's request text from support_dialogs.text
 }
 
 /**

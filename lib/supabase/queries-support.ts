@@ -583,10 +583,10 @@ export async function fetchSupportThreads(
 		console.error('Error fetching comparison data:', comparisonError)
 	}
 
-	// Fetch all dialog data (direction) in a single query by thread_id
+	// Fetch all dialog data (direction and text) in a single query by thread_id
 	const { data: dialogData, error: dialogError } = await supabase
 		.from('support_dialogs')
-		.select('thread_id, direction')
+		.select('thread_id, direction, text')
 		.in('thread_id', threadIds)
 
 	if (dialogError) {
@@ -606,26 +606,30 @@ export async function fetchSupportThreads(
 		}
 	})
 
-	// Create a map of thread_id -> direction
-	const dialogMap = new Map<string, string>()
+	// Create a map of thread_id -> dialog data (direction and text)
+	const dialogMap = new Map<string, { direction: string | null; text: string | null }>()
 
 	dialogData?.forEach(dialog => {
-		if (dialog.thread_id && dialog.direction) {
-			dialogMap.set(dialog.thread_id, dialog.direction)
+		if (dialog.thread_id) {
+			dialogMap.set(dialog.thread_id, {
+				direction: dialog.direction ?? null,
+				text: dialog.text ?? null,
+			})
 		}
 	})
 
 	// Enrich threads with comparison and dialog data
 	const enrichedThreads: SupportThread[] = threads.map(thread => {
 		const comparison = comparisonMap.get(thread.thread_id)
-		const direction = dialogMap.get(thread.thread_id)
+		const dialog = dialogMap.get(thread.thread_id)
 
 		return {
 			...thread,
 			changed: comparison?.changed ?? null,
 			email: comparison?.email ?? null,
 			human_reply: comparison?.human_reply ?? null,
-			direction: direction ?? null,
+			direction: dialog?.direction ?? null,
+			customer_request_text: dialog?.text ?? null,
 			qualityPercentage:
 				comparison?.changed === false
 					? 100
@@ -662,10 +666,10 @@ export async function fetchThreadDetail(
 		.limit(1)
 		.single()
 
-	// Try to find direction from support_dialogs
+	// Try to find direction and customer request text from support_dialogs
 	const { data: dialogData } = await supabase
 		.from('support_dialogs')
-		.select('direction')
+		.select('direction, text')
 		.eq('thread_id', threadId)
 		.limit(1)
 		.single()
@@ -676,6 +680,7 @@ export async function fetchThreadDetail(
 		email: comparisonData?.email ?? null,
 		human_reply: comparisonData?.human_reply ?? null,
 		direction: dialogData?.direction ?? null,
+		customer_request_text: dialogData?.text ?? null,
 		qualityPercentage:
 			comparisonData?.changed === false
 				? 100

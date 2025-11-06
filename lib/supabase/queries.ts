@@ -1,4 +1,3 @@
-import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 import { endOfDay, startOfDay, subDays } from 'date-fns'
 import { supabaseServer } from './server'
 import type {
@@ -227,13 +226,6 @@ export async function getQualityTrends(
 	const diffMs = dateRange.to.getTime() - dateRange.from.getTime()
 	const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
 	const groupByDay = diffDays <= 14 // Use day grouping for periods ≤ 14 days
-
-	console.log('📊 Quality Trends Results:', {
-		recordsFound: records.length,
-		dateRange: `${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`,
-		diffDays,
-		groupByDay: groupByDay ? 'DAY' : 'WEEK',
-	})
 
 	// Group by category and day/week
 	const grouped = records.reduce((acc, record) => {
@@ -465,9 +457,10 @@ export async function getDetailedStats(
 	Object.values(versionGroups).forEach(group => {
 		// If agents filter is empty, use all records (no filtering by qualified agents)
 		// Otherwise, filter by the specified agents list
-		const qualifiedRecords = agents.length > 0
-			? group.records.filter(r => r.email && agents.includes(r.email))
-			: group.records
+		const qualifiedRecords =
+			agents.length > 0
+				? group.records.filter(r => r.email && agents.includes(r.email))
+				: group.records
 		const changedRecords = qualifiedRecords.filter(r => r.changed)
 		const unchangedRecords = qualifiedRecords.filter(r => !r.changed)
 
@@ -501,9 +494,10 @@ export async function getDetailedStats(
 		Object.entries(weekGroups).forEach(([weekStart, weekRecords]) => {
 			// If agents filter is empty, use all records (no filtering by qualified agents)
 			// Otherwise, filter by the specified agents list
-			const weekQualifiedRecords = agents.length > 0
-				? weekRecords.filter(r => r.email && agents.includes(r.email))
-				: weekRecords
+			const weekQualifiedRecords =
+				agents.length > 0
+					? weekRecords.filter(r => r.email && agents.includes(r.email))
+					: weekRecords
 			const weekChangedRecords = weekQualifiedRecords.filter(r => r.changed)
 			const weekUnchangedRecords = weekQualifiedRecords.filter(r => !r.changed)
 

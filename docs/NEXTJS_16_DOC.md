@@ -66,8 +66,8 @@ export default function DashboardLayout({
 	return (
 		<section>
 			<nav>
-				<a href='/dashboard'>Overview</a>
-				<a href='/dashboard/settings'>Settings</a>
+				<Link href='/dashboard'>Overview</a>
+				<Link href='/dashboard/settings'>Settings</a>
 			</nav>
 			<main>{children}</main>
 		</section>
@@ -1448,7 +1448,7 @@ export default function BlogNotFound() {
 		<div>
 			<h2>Blog Post Not Found</h2>
 			<p>The blog post you're looking for doesn't exist.</p>
-			<a href='/blog'>← Back to Blog</a>
+			<Link href='/blog'>← Back to Blog</a>
 		</div>
 	)
 }
@@ -1459,7 +1459,7 @@ export default function NotFound() {
 		<div>
 			<h1>404 - Page Not Found</h1>
 			<p>Sorry, we couldn't find what you're looking for.</p>
-			<a href='/'>Go Home</a>
+			<Link href='/'>Go Home</a>
 		</div>
 	)
 }

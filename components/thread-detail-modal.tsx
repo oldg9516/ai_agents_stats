@@ -7,8 +7,14 @@
  * Used by Parallel Routes to display thread without leaving the list
  */
 
-import { useRouter } from 'next/navigation'
-import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/button'
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card'
 import {
 	Dialog,
 	DialogContent,
@@ -16,16 +22,20 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { IconCheck, IconX, IconExternalLink } from '@tabler/icons-react'
-import { getStatusLabel } from '@/constants/support-statuses'
-import { getRequestTypeLabel } from '@/constants/request-types'
-import { REQUIREMENT_TYPES, getAllRequirementKeys } from '@/constants/requirement-types'
 import { isQualifiedAgent } from '@/constants/qualified-agents'
-import { format } from 'date-fns'
+import { getRequestTypeLabel } from '@/constants/request-types'
+import {
+	REQUIREMENT_TYPES,
+	getAllRequirementKeys,
+} from '@/constants/requirement-types'
+import { getStatusLabel } from '@/constants/support-statuses'
 import type { SupportThread } from '@/lib/supabase/types'
+import { IconCheck, IconExternalLink, IconX } from '@tabler/icons-react'
+import { format } from 'date-fns'
+import { useTranslations } from 'next-intl'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface ThreadDetailModalProps {
 	thread: SupportThread & {
@@ -45,7 +55,9 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 	}
 
 	// Get active requirements
-	const activeRequirements = getAllRequirementKeys().filter((key) => thread[key] === true)
+	const activeRequirements = getAllRequirementKeys().filter(
+		key => thread[key] === true
+	)
 
 	return (
 		<Dialog open onOpenChange={handleClose}>
@@ -53,13 +65,20 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 				<DialogHeader className='px-4 py-4 sm:px-6 sm:py-6 border-b shrink-0'>
 					<div className='flex items-start justify-between gap-4'>
 						<div className='flex-1 min-w-0'>
-							<DialogTitle className='text-lg sm:text-xl'>{t('title')}</DialogTitle>
+							<DialogTitle className='text-lg sm:text-xl'>
+								{t('title')}
+							</DialogTitle>
 							<DialogDescription className='font-mono text-xs sm:text-sm break-all'>
 								{thread.thread_id}
 							</DialogDescription>
 						</div>
-						<Button variant='outline' size='sm' asChild className='shrink-0'>
-							<a
+						<Button
+							variant='outline'
+							size='sm'
+							asChild
+							className='shrink-0 mr-6 self-end'
+						>
+							<Link
 								href={`/support-overview/thread/${thread.thread_id}`}
 								target='_blank'
 								rel='noopener noreferrer'
@@ -67,7 +86,7 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 								<IconExternalLink className='h-4 w-4 mr-2' />
 								<span className='hidden sm:inline'>{t('openInFullPage')}</span>
 								<span className='sm:hidden'>{t('open')}</span>
-							</a>
+							</Link>
 						</Button>
 					</div>
 				</DialogHeader>
@@ -78,7 +97,9 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 							{/* Metadata Card */}
 							<Card>
 								<CardHeader>
-									<CardTitle className='text-sm sm:text-base'>Thread Information</CardTitle>
+									<CardTitle className='text-sm sm:text-base'>
+										Thread Information
+									</CardTitle>
 									<CardDescription className='text-xs sm:text-sm'>
 										Basic thread metadata
 									</CardDescription>
@@ -110,7 +131,9 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 											<p className='text-xs sm:text-sm font-medium text-muted-foreground'>
 												Status
 											</p>
-											<p className='text-xs sm:text-sm'>{getStatusLabel(thread.status)}</p>
+											<p className='text-xs sm:text-sm'>
+												{getStatusLabel(thread.status)}
+											</p>
 										</div>
 										<div>
 											<p className='text-xs sm:text-sm font-medium text-muted-foreground'>
@@ -124,18 +147,33 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 
 									<Separator />
 
+									<div>
+										<p className='text-xs sm:text-sm font-medium text-muted-foreground'>
+											Category
+										</p>
+										<p className='text-xs sm:text-sm'>
+											{thread.request_subtype || '—'}
+										</p>
+									</div>
+
+									<Separator />
+
 									<div className='grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4'>
 										<div>
 											<p className='text-xs sm:text-sm font-medium text-muted-foreground'>
 												Prompt Version
 											</p>
-											<p className='text-xs sm:text-sm'>{thread.prompt_version || '—'}</p>
+											<p className='text-xs sm:text-sm'>
+												{thread.prompt_version || '—'}
+											</p>
 										</div>
 										<div>
 											<p className='text-xs sm:text-sm font-medium text-muted-foreground'>
 												Direction
 											</p>
-											<p className='text-xs sm:text-sm'>{thread.direction || '—'}</p>
+											<p className='text-xs sm:text-sm'>
+												{thread.direction || '—'}
+											</p>
 										</div>
 									</div>
 
@@ -148,7 +186,10 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 											</p>
 											<p className='text-xs sm:text-sm'>
 												{thread.created_at
-													? format(new Date(thread.created_at), 'MMM dd, yyyy HH:mm')
+													? format(
+															new Date(thread.created_at),
+															'MMM dd, yyyy HH:mm'
+													  )
 													: '—'}
 											</p>
 										</div>
@@ -159,7 +200,9 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 							{/* Quality Metrics Card */}
 							<Card>
 								<CardHeader>
-									<CardTitle className='text-sm sm:text-base'>Quality Metrics</CardTitle>
+									<CardTitle className='text-sm sm:text-base'>
+										Quality Metrics
+									</CardTitle>
 									<CardDescription className='text-xs sm:text-sm'>
 										AI performance indicators
 									</CardDescription>
@@ -178,7 +221,9 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 											) : (
 												<>
 													<IconX className='h-4 w-4 sm:h-5 sm:w-5 text-red-600 dark:text-red-400' />
-													<span className='text-xs sm:text-sm'>No draft generated</span>
+													<span className='text-xs sm:text-sm'>
+														No draft generated
+													</span>
 												</>
 											)}
 										</div>
@@ -190,25 +235,32 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 										<p className='text-xs sm:text-sm font-medium text-muted-foreground mb-2'>
 											Quality Score
 										</p>
-										{thread.human_reply && thread.email && isQualifiedAgent(thread.email) && thread.qualityPercentage !== null ? (
+										{thread.human_reply &&
+										thread.email &&
+										isQualifiedAgent(thread.email) &&
+										thread.qualityPercentage !== null ? (
 											<div className='flex flex-col sm:flex-row sm:items-center gap-2'>
 												<div
 													className={`px-2 sm:px-3 py-1 rounded font-medium text-xs sm:text-sm w-fit ${
 														thread.qualityPercentage > 60
 															? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
 															: thread.qualityPercentage > 30
-																? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300'
-																: 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
+															? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300'
+															: 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
 													}`}
 												>
 													{thread.qualityPercentage.toFixed(0)}%
 												</div>
 												<span className='text-xs text-muted-foreground'>
-													{thread.changed ? 'Modified by agent' : 'Used without changes'}
+													{thread.changed
+														? 'Modified by agent'
+														: 'Used without changes'}
 												</span>
 											</div>
 										) : (
-											<p className='text-xs sm:text-sm text-muted-foreground'>—</p>
+											<p className='text-xs sm:text-sm text-muted-foreground'>
+												—
+											</p>
 										)}
 									</div>
 
@@ -228,7 +280,9 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 							{/* Requirements Card */}
 							<Card className='lg:col-span-2'>
 								<CardHeader>
-									<CardTitle className='text-sm sm:text-base'>Requirements</CardTitle>
+									<CardTitle className='text-sm sm:text-base'>
+										Requirements
+									</CardTitle>
 									<CardDescription className='text-xs sm:text-sm'>
 										Thread processing requirements
 									</CardDescription>
@@ -236,7 +290,7 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 								<CardContent>
 									{activeRequirements.length > 0 ? (
 										<div className='grid gap-3 sm:grid-cols-2'>
-											{activeRequirements.map((key) => {
+											{activeRequirements.map(key => {
 												const requirement = REQUIREMENT_TYPES[key]
 												return (
 													<div
@@ -267,10 +321,33 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 							</Card>
 						</div>
 
+						{/* Customer Request */}
+						{thread.customer_request_text && (
+							<Card>
+								<CardHeader>
+									<CardTitle className='text-base sm:text-lg'>
+										Customer Request
+									</CardTitle>
+									<CardDescription className='text-xs sm:text-sm'>
+										Original customer message
+									</CardDescription>
+								</CardHeader>
+								<CardContent>
+									<div className='rounded-lg bg-muted p-3 sm:p-4 max-h-[40vh] overflow-y-auto'>
+										<p className='text-xs sm:text-sm leading-relaxed whitespace-pre-wrap'>
+											{thread.customer_request_text}
+										</p>
+									</div>
+								</CardContent>
+							</Card>
+						)}
+
 						{/* AI Draft Content */}
 						<Card>
 							<CardHeader>
-								<CardTitle className='text-base sm:text-lg'>AI Draft Reply</CardTitle>
+								<CardTitle className='text-base sm:text-lg'>
+									AI Draft Reply
+								</CardTitle>
 								<CardDescription className='text-xs sm:text-sm'>
 									AI-generated response content
 								</CardDescription>
@@ -280,7 +357,9 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 									<div className='rounded-lg bg-muted p-3 sm:p-4 max-h-[50vh] overflow-y-auto'>
 										<div
 											className='prose prose-sm sm:prose dark:prose-invert max-w-none text-xs sm:text-sm leading-relaxed'
-											dangerouslySetInnerHTML={{ __html: thread.ai_draft_reply }}
+											dangerouslySetInnerHTML={{
+												__html: thread.ai_draft_reply,
+											}}
 										/>
 									</div>
 								) : (
@@ -297,7 +376,9 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 						{thread.human_reply && (
 							<Card>
 								<CardHeader>
-									<CardTitle className='text-base sm:text-lg'>Human Agent Response</CardTitle>
+									<CardTitle className='text-base sm:text-lg'>
+										Human Agent Response
+									</CardTitle>
 									<CardDescription className='text-xs sm:text-sm'>
 										{thread.email || 'Unknown agent'}
 									</CardDescription>

@@ -21,6 +21,7 @@ import { getCategoryLabel } from '@/constants/category-labels'
 import type { DetailedStatsRow, DashboardFilters } from '@/lib/supabase/types'
 import { exportToCSV } from '@/lib/utils/export'
 import { getQualityBgClass } from '@/lib/utils/quality-colors'
+import { TableSkeleton } from '@/components/loading/table-skeleton'
 import {
 	IconChevronLeft,
 	IconChevronRight,
@@ -78,10 +79,9 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 	} = useDetailedStatsPaginated(filters, currentPage, pageSize)
 
 	// Client-side sorting and filtering (on current page only)
-	const [sorting, setSorting] = useState<SortingState>([
-		{ id: 'category', desc: false },
-		{ id: 'sortOrder', desc: false },
-	])
+	// Note: Primary sorting (category → sortOrder → dates DESC) happens on server
+	// This is only for optional client-side re-sorting of current page
+	const [sorting, setSorting] = useState<SortingState>([])
 	const [globalFilter, setGlobalFilter] = useState('')
 
 	// Handle category click
@@ -139,6 +139,30 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 				cell: ({ getValue }) => {
 					const value = getValue() as string | null
 					return <div className='text-sm'>{value || '-'}</div>
+				},
+				// Custom sort function: extract first date from "DD.MM.YYYY — DD.MM.YYYY" format
+				// Version-level rows (null dates) should appear first
+				sortingFn: (rowA, rowB, columnId) => {
+					const dateA = rowA.getValue(columnId) as string | null
+					const dateB = rowB.getValue(columnId) as string | null
+
+					// Null dates (version-level rows) always come first
+					if (!dateA && !dateB) return 0
+					if (!dateA) return -1
+					if (!dateB) return 1
+
+					// Extract first date from "DD.MM.YYYY — DD.MM.YYYY" format
+					const firstDateA = dateA.split(' — ')[0]
+					const firstDateB = dateB.split(' — ')[0]
+
+					// Convert DD.MM.YYYY to YYYY-MM-DD for proper comparison
+					const [dayA, monthA, yearA] = firstDateA.split('.')
+					const [dayB, monthB, yearB] = firstDateB.split('.')
+					const dateStrA = `${yearA}-${monthA}-${dayA}`
+					const dateStrB = `${yearB}-${monthB}-${dayB}`
+
+					// Compare dates as strings (YYYY-MM-DD format sorts correctly lexically)
+					return dateStrA.localeCompare(dateStrB)
 				},
 			},
 			{
@@ -240,6 +264,11 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 
 	const handlePageClick = (page: number) => {
 		setCurrentPage(page)
+	}
+
+	// Show loading skeleton on initial load
+	if (isLoading) {
+		return <TableSkeleton />
 	}
 
 	// Show error state
@@ -374,7 +403,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 						{t('table.to')}{' '}
 						{Math.min((currentPage + 1) * pageSize, totalCount)}{' '}
 						{t('table.of')} {totalCount}
-						{isFetching && (
+						{isFetching && !isLoading && (
 							<span className='ml-2 inline-flex items-center gap-1'>
 								<IconLoader2 className='h-3 w-3 animate-spin' />
 								<span className='text-xs'>Loading...</span>

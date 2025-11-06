@@ -1,7 +1,7 @@
 'use client'
 
 import { type Icon } from '@tabler/icons-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 
 import {
 	SidebarGroup,
@@ -23,6 +23,19 @@ export function NavMain({
 	}[]
 }) {
 	const router = useRouter()
+	const pathname = usePathname()
+
+	/**
+	 * Check if the current path is active
+	 * Matches exact path or any subpath (e.g., /support-overview/thread/123)
+	 */
+	const isActive = (itemUrl: string) => {
+		// Remove locale prefix from pathname (e.g., /ru/dashboard -> /dashboard)
+		const pathWithoutLocale = pathname.replace(/^\/[a-z]{2}\//, '/')
+
+		// Exact match or starts with the item URL (for sub-routes)
+		return pathWithoutLocale === itemUrl || pathWithoutLocale.startsWith(`${itemUrl}/`)
+	}
 
 	/**
 	 * Prefetch page on hover for instant navigation
@@ -46,6 +59,7 @@ export function NavMain({
 							<SidebarMenuButton
 								tooltip={item.title}
 								asChild
+								isActive={isActive(item.url)}
 								onMouseEnter={() => handleMouseEnter(item.url)}
 							>
 								<Link href={item.url}>

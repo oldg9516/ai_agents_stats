@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/back-button'
 import {
 	Accordion,
 	AccordionContent,
@@ -32,9 +33,8 @@ import {
 	TrendingUp,
 	Users,
 } from 'lucide-react'
-import Link from 'next/link'
-import { BackButton } from '@/components/back-button'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 
 export default function DocsPage() {
 	const t = useTranslations('docs')
@@ -69,7 +69,7 @@ export default function DocsPage() {
 								size='sm'
 								className='justify-start'
 							>
-								<a href='#dashboard'>{t('quickNav.dashboard')}</a>
+								<Link href='#dashboard'>{t('quickNav.dashboard')}</Link>
 							</Button>
 							<Button
 								asChild
@@ -77,7 +77,9 @@ export default function DocsPage() {
 								size='sm'
 								className='justify-start'
 							>
-								<a href='#support-overview'>{t('quickNav.supportOverview')}</a>
+								<Link href='#support-overview'>
+									{t('quickNav.supportOverview')}
+								</Link>
 							</Button>
 							<Button
 								asChild
@@ -85,7 +87,9 @@ export default function DocsPage() {
 								size='sm'
 								className='justify-start'
 							>
-								<a href='#detailed-stats'>{t('quickNav.detailedStats')}</a>
+								<Link href='#detailed-stats'>
+									{t('quickNav.detailedStats')}
+								</Link>
 							</Button>
 							<Button
 								asChild
@@ -93,7 +97,7 @@ export default function DocsPage() {
 								size='sm'
 								className='justify-start'
 							>
-								<a href='#filters'>{t('quickNav.filtersExport')}</a>
+								<Link href='#filters'>{t('quickNav.filtersExport')}</Link>
 							</Button>
 						</div>
 					</CardContent>
@@ -276,9 +280,7 @@ export default function DocsPage() {
 												<li className='flex items-start gap-2'>
 													<CheckCircle className='h-4 w-4 text-green-600 mt-0.5 shrink-0' />
 													<span>
-														{t(
-															'dashboard.qualityTrends.features.dataGrouping'
-														)}
+														{t('dashboard.qualityTrends.features.dataGrouping')}
 													</span>
 												</li>
 											</ul>
@@ -950,7 +952,9 @@ export default function DocsPage() {
 											</div>
 
 											<h4 className='font-semibold text-sm mt-4'>
-												{t('supportOverview.requirementsHeatmap.howToRead.title')}
+												{t(
+													'supportOverview.requirementsHeatmap.howToRead.title'
+												)}
 											</h4>
 											<ul className='space-y-2 text-sm text-muted-foreground'>
 												<li>
@@ -1020,7 +1024,9 @@ export default function DocsPage() {
 													)}
 												</div>
 												<div className='text-sm'>
-													{t('supportOverview.supportThreadsTable.columns.type')}
+													{t(
+														'supportOverview.supportThreadsTable.columns.type'
+													)}
 												</div>
 												<div className='text-sm'>
 													{t(
@@ -1050,7 +1056,9 @@ export default function DocsPage() {
 											</div>
 
 											<h4 className='font-semibold text-sm mt-4'>
-												{t('supportOverview.supportThreadsTable.features.title')}
+												{t(
+													'supportOverview.supportThreadsTable.features.title'
+												)}
 											</h4>
 											<ul className='space-y-2 text-sm text-muted-foreground'>
 												<li className='flex items-start gap-2'>
@@ -1234,7 +1242,9 @@ export default function DocsPage() {
 
 						<Card>
 							<CardHeader>
-								<CardTitle>{t('detailedStats.whatsOnThisPage.title')}</CardTitle>
+								<CardTitle>
+									{t('detailedStats.whatsOnThisPage.title')}
+								</CardTitle>
 								<CardDescription>
 									{t('detailedStats.whatsOnThisPage.description')}
 								</CardDescription>
@@ -1453,7 +1463,9 @@ export default function DocsPage() {
 
 										<div className='rounded-lg border bg-muted/50 p-4'>
 											<p className='text-sm font-medium mb-2'>
-												{t('filtersAndExport.dashboardFilters.filterTips.title')}
+												{t(
+													'filtersAndExport.dashboardFilters.filterTips.title'
+												)}
 											</p>
 											<ul className='space-y-1 text-sm text-muted-foreground'>
 												<li>
@@ -1523,7 +1535,9 @@ export default function DocsPage() {
 													</p>
 													<p className='text-muted-foreground'>
 														<strong>Options:</strong>{' '}
-														{t('filtersAndExport.supportFilters.status.options')}
+														{t(
+															'filtersAndExport.supportFilters.status.options'
+														)}
 													</p>
 													<p className='text-muted-foreground'>
 														<strong>Labels:</strong>{' '}
@@ -1749,7 +1763,9 @@ export default function DocsPage() {
 
 									<div className='space-y-3'>
 										<h4 className='font-semibold text-sm'>
-											{t('understandingQuality.qualityFormula.stepByStep.title')}
+											{t(
+												'understandingQuality.qualityFormula.stepByStep.title'
+											)}
 										</h4>
 										<ol className='space-y-2 text-sm text-muted-foreground'>
 											<li className='flex items-start gap-2'>
@@ -1808,7 +1824,9 @@ export default function DocsPage() {
 												)}
 											</div>
 											<div className='font-semibold pt-2'>
-												{t('understandingQuality.qualityFormula.example.result')}
+												{t(
+													'understandingQuality.qualityFormula.example.result'
+												)}
 											</div>
 										</div>
 									</div>
@@ -1828,11 +1846,15 @@ export default function DocsPage() {
 									<div className='space-y-3'>
 										<div className='flex items-center gap-3 p-3 rounded-lg bg-green-100 dark:bg-green-900 border border-green-200 dark:border-green-800'>
 											<div className='font-bold text-2xl text-green-700 dark:text-green-300'>
-												{t('understandingQuality.qualityColorCoding.good.range')}
+												{t(
+													'understandingQuality.qualityColorCoding.good.range'
+												)}
 											</div>
 											<div className='space-y-1'>
 												<div className='font-semibold text-green-700 dark:text-green-300'>
-													{t('understandingQuality.qualityColorCoding.good.label')}
+													{t(
+														'understandingQuality.qualityColorCoding.good.label'
+													)}
 												</div>
 												<div className='text-sm text-green-600 dark:text-green-400'>
 													{t(
@@ -1864,11 +1886,15 @@ export default function DocsPage() {
 
 										<div className='flex items-center gap-3 p-3 rounded-lg bg-red-100 dark:bg-red-900 border border-red-200 dark:border-red-800'>
 											<div className='font-bold text-2xl text-red-700 dark:text-red-300'>
-												{t('understandingQuality.qualityColorCoding.poor.range')}
+												{t(
+													'understandingQuality.qualityColorCoding.poor.range'
+												)}
 											</div>
 											<div className='space-y-1'>
 												<div className='font-semibold text-red-700 dark:text-red-300'>
-													{t('understandingQuality.qualityColorCoding.poor.label')}
+													{t(
+														'understandingQuality.qualityColorCoding.poor.label'
+													)}
 												</div>
 												<div className='text-sm text-red-600 dark:text-red-400'>
 													{t(

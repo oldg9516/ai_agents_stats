@@ -113,6 +113,13 @@ export default async function ThreadDetailPage({ params }: ThreadDetailPageProps
 
 						<Separator />
 
+						<div>
+							<p className='text-sm font-medium text-muted-foreground'>Category</p>
+							<p className='text-sm'>{thread.request_subtype || '—'}</p>
+						</div>
+
+						<Separator />
+
 						<div className='grid grid-cols-2 gap-4'>
 							<div>
 								<p className='text-sm font-medium text-muted-foreground'>
@@ -246,6 +253,23 @@ export default async function ThreadDetailPage({ params }: ThreadDetailPageProps
 						)}
 					</CardContent>
 				</Card>
+
+				{/* Customer Request */}
+				{thread.customer_request_text && (
+					<Card className='lg:col-span-2'>
+						<CardHeader>
+							<CardTitle>Customer Request</CardTitle>
+							<CardDescription>Original customer message</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<div className='rounded-lg bg-muted p-4 max-h-80 overflow-y-auto'>
+								<p className='text-sm whitespace-pre-wrap leading-relaxed'>
+									{thread.customer_request_text}
+								</p>
+							</div>
+						</CardContent>
+					</Card>
+				)}
 
 				{/* AI Draft Content */}
 				<Card className='lg:col-span-2'>
