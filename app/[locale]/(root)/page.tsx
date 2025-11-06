@@ -1,11 +1,22 @@
-import { getTranslations } from 'next-intl/server'
-import Image from 'next/image'
 import { Button } from '@/components/ui/button'
+import {
+	Card,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card'
 import { Glow } from '@/components/ui/glow'
 import { Mockup } from '@/components/ui/mockup'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowRight, BarChart3, MessageSquare, Table2, BookOpen } from 'lucide-react'
 import { Link } from '@/i18n/routing'
+import {
+	ArrowRight,
+	BarChart3,
+	BookOpen,
+	MessageSquare,
+	Table2,
+} from 'lucide-react'
+import { getTranslations } from 'next-intl/server'
+import Image from 'next/image'
 
 /**
  * Enable Incremental Static Regeneration (ISR)
@@ -33,7 +44,7 @@ export default async function Home() {
 					<div className='space-y-4'>
 						<h1 className='text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl'>
 							{t('hero.title')}
-							<span className='block bg-linear-to-r from-primary via-chart-2 to-chart-3 bg-clip-text text-transparent'>
+							<span className='block bg-linear-to-r from-primary via-chart-2 to-chart-3 bg-clip-text text-transparent pb-2'>
 								{tCommon('dashboard')}
 							</span>
 						</h1>
@@ -84,7 +95,9 @@ export default async function Home() {
 					<h2 className='text-3xl font-bold tracking-tight sm:text-4xl'>
 						{t('features.title')}
 					</h2>
-					<p className='mt-4 text-lg text-muted-foreground'>{t('features.subtitle')}</p>
+					<p className='mt-4 text-lg text-muted-foreground'>
+						{t('features.subtitle')}
+					</p>
 				</div>
 
 				<div className='grid gap-6 md:grid-cols-2 lg:grid-cols-4 animate-appear animation-delay-400'>
@@ -98,7 +111,9 @@ export default async function Home() {
 								</div>
 								<CardTitle>{t('features.dashboard.title')}</CardTitle>
 							</div>
-							<CardDescription>{t('features.dashboard.description')}</CardDescription>
+							<CardDescription>
+								{t('features.dashboard.description')}
+							</CardDescription>
 						</CardHeader>
 					</Card>
 
@@ -112,7 +127,9 @@ export default async function Home() {
 								</div>
 								<CardTitle>{t('features.support.title')}</CardTitle>
 							</div>
-							<CardDescription>{t('features.support.description')}</CardDescription>
+							<CardDescription>
+								{t('features.support.description')}
+							</CardDescription>
 						</CardHeader>
 					</Card>
 
@@ -126,7 +143,9 @@ export default async function Home() {
 								</div>
 								<CardTitle>{t('features.stats.title')}</CardTitle>
 							</div>
-							<CardDescription>{t('features.stats.description')}</CardDescription>
+							<CardDescription>
+								{t('features.stats.description')}
+							</CardDescription>
 						</CardHeader>
 					</Card>
 
@@ -140,7 +159,9 @@ export default async function Home() {
 								</div>
 								<CardTitle>{t('features.docs.title')}</CardTitle>
 							</div>
-							<CardDescription>{t('features.docs.description')}</CardDescription>
+							<CardDescription>
+								{t('features.docs.description')}
+							</CardDescription>
 						</CardHeader>
 					</Card>
 				</div>
@@ -152,24 +173,40 @@ export default async function Home() {
 					<h2 className='text-3xl font-bold tracking-tight sm:text-4xl'>
 						{t('keyFeatures.title')}
 					</h2>
-					<p className='mt-4 text-lg text-muted-foreground'>{t('keyFeatures.subtitle')}</p>
+					<p className='mt-4 text-lg text-muted-foreground'>
+						{t('keyFeatures.subtitle')}
+					</p>
 				</div>
 
 				<div className='grid gap-8 md:grid-cols-2'>
 					<div className='space-y-4'>
-						<h3 className='text-xl font-semibold'>{t('keyFeatures.realtime.title')}</h3>
-						<p className='text-muted-foreground'>{t('keyFeatures.realtime.description')}</p>
+						<h3 className='text-xl font-semibold'>
+							{t('keyFeatures.realtime.title')}
+						</h3>
+						<p className='text-muted-foreground'>
+							{t('keyFeatures.realtime.description')}
+						</p>
 					</div>
 					<div className='space-y-4'>
-						<h3 className='text-xl font-semibold'>{t('keyFeatures.filtering.title')}</h3>
-						<p className='text-muted-foreground'>{t('keyFeatures.filtering.description')}</p>
+						<h3 className='text-xl font-semibold'>
+							{t('keyFeatures.filtering.title')}
+						</h3>
+						<p className='text-muted-foreground'>
+							{t('keyFeatures.filtering.description')}
+						</p>
 					</div>
 					<div className='space-y-4'>
-						<h3 className='text-xl font-semibold'>{t('keyFeatures.export.title')}</h3>
-						<p className='text-muted-foreground'>{t('keyFeatures.export.description')}</p>
+						<h3 className='text-xl font-semibold'>
+							{t('keyFeatures.export.title')}
+						</h3>
+						<p className='text-muted-foreground'>
+							{t('keyFeatures.export.description')}
+						</p>
 					</div>
 					<div className='space-y-4'>
-						<h3 className='text-xl font-semibold'>{t('keyFeatures.visualization.title')}</h3>
+						<h3 className='text-xl font-semibold'>
+							{t('keyFeatures.visualization.title')}
+						</h3>
 						<p className='text-muted-foreground'>
 							{t('keyFeatures.visualization.description')}
 						</p>
