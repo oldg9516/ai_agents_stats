@@ -81,3 +81,22 @@ export function getActiveRequirements(thread: Record<string, boolean>): string[]
 		.filter((key) => thread[key] === true)
 		.map((key) => REQUIREMENT_TYPES[key].shortLabel)
 }
+
+/**
+ * Get active requirements with full info (label + colors) for a thread
+ */
+export function getActiveRequirementsWithColors(thread: Record<string, boolean>): Array<{
+	key: string
+	label: string
+	bgColor: string
+	textColor: string
+}> {
+	return getAllRequirementKeys()
+		.filter((key) => thread[key] === true)
+		.map((key) => ({
+			key,
+			label: REQUIREMENT_TYPES[key].shortLabel,
+			bgColor: REQUIREMENT_TYPES[key].bgColor,
+			textColor: REQUIREMENT_TYPES[key].textColor,
+		}))
+}

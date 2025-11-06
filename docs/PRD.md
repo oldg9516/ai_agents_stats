@@ -66,7 +66,7 @@ AI Agent Statistics Dashboard is a comprehensive analytics platform for monitori
 export const QUALIFIED_AGENTS = [
 	'marianna@levhaolam.com',
 	'laure@levhaolam.com',
-	'matea@levhaolam.com',
+	'sofia@levhaolam.com',
 	'yakov@levhaolam.com',
 ]
 ```

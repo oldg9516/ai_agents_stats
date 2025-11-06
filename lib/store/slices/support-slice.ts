@@ -33,6 +33,11 @@ export interface SupportSlice {
 	// State
 	supportFilters: SupportFilters
 
+	// Pagination state
+	currentBatch: number
+	maxBatchReached: number
+	hasMoreThreads: boolean
+
 	// Actions
 	setSupportDateRange: (from: Date, to: Date) => void
 	setSupportStatuses: (statuses: string[]) => void
@@ -41,6 +46,11 @@ export interface SupportSlice {
 	setSupportVersions: (versions: string[]) => void
 	resetSupportFilters: () => void
 	updateSupportFilters: (filters: Partial<SupportFilters>) => void
+
+	// Pagination actions
+	fetchNextBatch: () => void
+	setBatchLoaded: (batchSize: number) => void
+	resetPagination: () => void
 }
 
 export const createSupportSlice: StateCreator<
@@ -52,6 +62,11 @@ export const createSupportSlice: StateCreator<
 	// Initial state
 	supportFilters: getDefaultSupportFilters(),
 
+	// Initial pagination state
+	currentBatch: 0,
+	maxBatchReached: 0,
+	hasMoreThreads: true,
+
 	// Actions
 	setSupportDateRange: (from, to) =>
 		set((state) => ({
@@ -59,6 +74,10 @@ export const createSupportSlice: StateCreator<
 				...state.supportFilters,
 				dateRange: { from, to },
 			},
+			// Reset pagination when filters change
+			currentBatch: 0,
+			maxBatchReached: 0,
+			hasMoreThreads: true,
 		})),
 
 	setSupportStatuses: (statuses) =>
@@ -67,6 +86,10 @@ export const createSupportSlice: StateCreator<
 				...state.supportFilters,
 				statuses,
 			},
+			// Reset pagination when filters change
+			currentBatch: 0,
+			maxBatchReached: 0,
+			hasMoreThreads: true,
 		})),
 
 	setSupportRequestTypes: (requestTypes) =>
@@ -75,6 +98,10 @@ export const createSupportSlice: StateCreator<
 				...state.supportFilters,
 				requestTypes,
 			},
+			// Reset pagination when filters change
+			currentBatch: 0,
+			maxBatchReached: 0,
+			hasMoreThreads: true,
 		})),
 
 	setSupportRequirements: (requirements) =>
@@ -83,6 +110,10 @@ export const createSupportSlice: StateCreator<
 				...state.supportFilters,
 				requirements,
 			},
+			// Reset pagination when filters change
+			currentBatch: 0,
+			maxBatchReached: 0,
+			hasMoreThreads: true,
 		})),
 
 	setSupportVersions: (versions) =>
@@ -91,11 +122,19 @@ export const createSupportSlice: StateCreator<
 				...state.supportFilters,
 				versions,
 			},
+			// Reset pagination when filters change
+			currentBatch: 0,
+			maxBatchReached: 0,
+			hasMoreThreads: true,
 		})),
 
 	resetSupportFilters: () =>
 		set({
 			supportFilters: getDefaultSupportFilters(),
+			// Reset pagination
+			currentBatch: 0,
+			maxBatchReached: 0,
+			hasMoreThreads: true,
 		}),
 
 	updateSupportFilters: (filters) =>
@@ -104,5 +143,28 @@ export const createSupportSlice: StateCreator<
 				...state.supportFilters,
 				...filters,
 			},
+			// Reset pagination when filters change
+			currentBatch: 0,
+			maxBatchReached: 0,
+			hasMoreThreads: true,
 		})),
+
+	// Pagination actions
+	fetchNextBatch: () =>
+		set((state) => ({
+			currentBatch: state.currentBatch + 1,
+			maxBatchReached: Math.max(state.maxBatchReached, state.currentBatch + 1),
+		})),
+
+	setBatchLoaded: (batchSize: number) =>
+		set({
+			hasMoreThreads: batchSize === 60, // BATCH_SIZE = 60
+		}),
+
+	resetPagination: () =>
+		set({
+			currentBatch: 0,
+			maxBatchReached: 0,
+			hasMoreThreads: true,
+		}),
 })

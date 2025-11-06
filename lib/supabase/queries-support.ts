@@ -570,54 +570,62 @@ export async function fetchSupportThreads(
 	if (threadsError) throw threadsError
 	if (!threads || threads.length === 0) return []
 
-	// Get unique prompt versions from threads
-	const promptVersions = Array.from(
-		new Set(threads.map(t => t.prompt_version).filter(Boolean))
-	) as string[]
+	// Get thread IDs
+	const threadIds = threads.map(t => t.thread_id)
 
-	if (promptVersions.length === 0) {
-		// No versions to lookup, return threads without quality data
-		return threads.map(thread => ({
-			...thread,
-			changed: null,
-			email: null,
-			qualityPercentage: null,
-		}))
-	}
-
-	// Fetch all comparison data in a single query
+	// Fetch all comparison data in a single query by thread_id
 	const { data: comparisonData, error: comparisonError } = await supabase
 		.from('ai_human_comparison')
-		.select('prompt_version, changed, email')
-		.in('prompt_version', promptVersions)
-		.in('email', QUALIFIED_AGENTS)
+		.select('thread_id, changed, email, human_reply')
+		.in('thread_id', threadIds)
 
 	if (comparisonError) {
 		console.error('Error fetching comparison data:', comparisonError)
 	}
 
-	// Create a map of prompt_version -> comparison data (first match only)
-	const comparisonMap = new Map<string, { changed: boolean; email: string }>()
+	// Fetch all dialog data (direction) in a single query by thread_id
+	const { data: dialogData, error: dialogError } = await supabase
+		.from('support_dialogs')
+		.select('thread_id, direction')
+		.in('thread_id', threadIds)
+
+	if (dialogError) {
+		console.error('Error fetching dialog data:', dialogError)
+	}
+
+	// Create a map of thread_id -> comparison data
+	const comparisonMap = new Map<string, { changed: boolean | null; email: string | null; human_reply: string | null }>()
 
 	comparisonData?.forEach(comp => {
-		if (!comparisonMap.has(comp.prompt_version)) {
-			comparisonMap.set(comp.prompt_version, {
+		if (comp.thread_id) {
+			comparisonMap.set(comp.thread_id, {
 				changed: comp.changed,
 				email: comp.email,
+				human_reply: comp.human_reply,
 			})
 		}
 	})
 
-	// Enrich threads with comparison data
+	// Create a map of thread_id -> direction
+	const dialogMap = new Map<string, string>()
+
+	dialogData?.forEach(dialog => {
+		if (dialog.thread_id && dialog.direction) {
+			dialogMap.set(dialog.thread_id, dialog.direction)
+		}
+	})
+
+	// Enrich threads with comparison and dialog data
 	const enrichedThreads: SupportThread[] = threads.map(thread => {
-		const comparison = thread.prompt_version
-			? comparisonMap.get(thread.prompt_version)
-			: undefined
+		const comparison = comparisonMap.get(thread.thread_id)
+		const direction = dialogMap.get(thread.thread_id)
 
 		return {
 			...thread,
 			changed: comparison?.changed ?? null,
 			email: comparison?.email ?? null,
+			human_reply: comparison?.human_reply ?? null,
+			direction: direction ?? null,
 			qualityPercentage:
 				comparison?.changed === false
 					? 100
@@ -646,12 +654,19 @@ export async function fetchThreadDetail(
 	if (threadError) throw threadError
 	if (!thread) return null
 
-	// Try to find matching comparison record
+	// Try to find matching comparison record by thread_id
 	const { data: comparisonData } = await supabase
 		.from('ai_human_comparison')
-		.select('changed, email')
-		.eq('prompt_version', thread.prompt_version || '')
-		.in('email', QUALIFIED_AGENTS)
+		.select('changed, email, human_reply')
+		.eq('thread_id', threadId)
+		.limit(1)
+		.single()
+
+	// Try to find direction from support_dialogs
+	const { data: dialogData } = await supabase
+		.from('support_dialogs')
+		.select('direction')
+		.eq('thread_id', threadId)
 		.limit(1)
 		.single()
 
@@ -659,6 +674,8 @@ export async function fetchThreadDetail(
 		...thread,
 		changed: comparisonData?.changed ?? null,
 		email: comparisonData?.email ?? null,
+		human_reply: comparisonData?.human_reply ?? null,
+		direction: dialogData?.direction ?? null,
 		qualityPercentage:
 			comparisonData?.changed === false
 				? 100

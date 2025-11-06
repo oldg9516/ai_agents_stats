@@ -9,32 +9,32 @@
  */
 
 export const QUALIFIED_AGENTS = [
-  // 'lucy@levhaolam.com',
-  'marianna@levhaolam.com',
-  'laure@levhaolam.com',
-  'matea@levhaolam.com',
-  'yakov@levhaolam.com',
+	// 'lucy@levhaolam.com',
+	'marianna@levhaolam.com',
+	'laure@levhaolam.com',
+	'sofia@levhaolam.com',
+	'yakov@levhaolam.com',
 ] as const
 
-export type QualifiedAgent = typeof QUALIFIED_AGENTS[number]
+export type QualifiedAgent = (typeof QUALIFIED_AGENTS)[number]
 
 /**
  * Helper function to check if an email is a qualified agent
  */
 export function isQualifiedAgent(email: string): email is QualifiedAgent {
-  return QUALIFIED_AGENTS.includes(email as QualifiedAgent)
+	return QUALIFIED_AGENTS.includes(email as QualifiedAgent)
 }
 
 /**
  * Get display name from email (optional - for future use)
  */
 export function getAgentName(email: QualifiedAgent): string {
-  const names: Record<QualifiedAgent, string> = {
-    // 'lucy@levhaolam.com': 'Lucy',
-    'marianna@levhaolam.com': 'Marianna',
-    'laure@levhaolam.com': 'Laure',
-    'matea@levhaolam.com': 'Matea',
-    'yakov@levhaolam.com': 'Yakov',
-  }
-  return names[email] || email
+	const names: Record<QualifiedAgent, string> = {
+		// 'lucy@levhaolam.com': 'Lucy',
+		'marianna@levhaolam.com': 'Marianna',
+		'laure@levhaolam.com': 'Laure',
+		'sofia@levhaolam.com': 'Sofia',
+		'yakov@levhaolam.com': 'Yakov',
+	}
+	return names[email] || email
 }

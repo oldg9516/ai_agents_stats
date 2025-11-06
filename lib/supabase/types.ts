@@ -60,11 +60,29 @@ export interface Database {
  */
 export interface AIHumanComparisonRow {
   id: number
-  request_subtype: string | null // Category
-  prompt_version: string | null // Version (v1, v2, v3, etc.)
   created_at: string | null // ISO timestamp
+  status: string | null
+  thread_id: string | null // Link to support_threads_data
+  full_request: string | null
+  subscription_info: any | null // jsonb
+  tracking_info: any | null // jsonb
+  human_reply: string | null // Human agent's final response text
+  ai_reply: string | null
+  ai_reply_date: string | null
+  human_reply_date: string | null
+  comment: string | null
+  request_subtype: string | null // Category
   email: string | null // Agent email
+  changes: any | null // jsonb
+  updated_at: string | null
+  ticket_id: string | null
+  human_reply_original: string | null
+  check_count: number | null
   changed: boolean | null // Whether human edited AI output
+  last_checked_at: string | null
+  improvement_suggestions: any | null // jsonb
+  similarity_score: number | null
+  prompt_version: string | null // Version (v1, v2, v3, etc.)
 }
 
 /**
@@ -77,6 +95,7 @@ export interface AIHumanComparisonInsert {
   created_at?: string
   email: string
   changed: boolean
+  human_reply?: string
 }
 
 /**
@@ -89,6 +108,7 @@ export interface AIHumanComparisonUpdate {
   created_at?: string
   email?: string
   changed?: boolean
+  human_reply?: string
 }
 
 /**
@@ -229,13 +249,16 @@ export interface SupportThreadRow {
 }
 
 /**
- * Combined Support Thread (JOIN with ai_human_comparison)
+ * Combined Support Thread (JOIN with ai_human_comparison and support_dialogs)
  */
 export interface SupportThread extends SupportThreadRow {
   // Fields from ai_human_comparison (via JOIN)
   changed: boolean | null
   email: string | null
+  human_reply: string | null // Human agent's final response text
   qualityPercentage: number | null // Calculated quality for this thread
+  // Fields from support_dialogs (via JOIN)
+  direction: string | null // Thread direction (incoming/outgoing)
 }
 
 /**

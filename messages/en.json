@@ -173,6 +173,7 @@
 		"type": "Type",
 		"status": "Status",
 		"requirements": "Requirements",
+		"humanReply": "Human Reply",
 		"aiDraft": "AI Draft",
 		"createdAt": "Created At",
 		"export": "Export CSV",

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import {
@@ -16,6 +16,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Spinner } from '@/components/ui/spinner'
 import {
 	Table,
 	TableBody,
@@ -36,11 +37,15 @@ import type { SupportThread } from '@/lib/supabase/types'
 import { downloadSupportThreadsCSV } from '@/lib/utils/export-support'
 import { getStatusLabel } from '@/constants/support-statuses'
 import { getRequestTypeLabel } from '@/constants/request-types'
-import { getActiveRequirements } from '@/constants/requirement-types'
+import { getActiveRequirementsWithColors } from '@/constants/requirement-types'
+import { isQualifiedAgent } from '@/constants/qualified-agents'
 import { format } from 'date-fns'
 
 interface SupportThreadsTableProps {
 	data: SupportThread[]
+	hasMore?: boolean // Whether there are more records on server
+	isFetchingMore?: boolean // Loading more records
+	onLoadMore?: () => void // Callback to load next batch
 }
 
 /**
@@ -49,12 +54,18 @@ interface SupportThreadsTableProps {
  * Features:
  * - Sorting (single and multi-column)
  * - Search by thread ID or ticket ID
- * - Pagination (20 per page)
+ * - Pagination (20 per page, client-side)
+ * - Incremental loading (60 records per batch from server)
  * - CSV export
  * - Click row to view detail
  * - Quality indicators
  */
-export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
+export function SupportThreadsTable({
+	data,
+	hasMore = false,
+	isFetchingMore = false,
+	onLoadMore,
+}: SupportThreadsTableProps) {
 	const t = useTranslations()
 	const router = useRouter()
 	const [sorting, setSorting] = useState<SortingState>([
@@ -65,6 +76,49 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 		pageIndex: 0,
 		pageSize: 20,
 	})
+
+	// Memoize data to prevent unnecessary re-renders of React Table
+	// Only recreate when data array reference changes
+	const memoizedData = useMemo(() => data, [data])
+
+	// Track previous data length to detect when filters changed
+	const prevDataLengthRef = useRef(memoizedData.length)
+	// Track if we're waiting for new batch to load (user clicked Next on last page)
+	const waitingForNextBatchRef = useRef(false)
+
+	// Reset to first page when data significantly changes (filters changed)
+	// OR move to next page when new batch arrives
+	useEffect(() => {
+		const prevLength = prevDataLengthRef.current
+		const currentLength = memoizedData.length
+
+		// If data decreased, filters likely changed - reset to first page
+		if (currentLength < prevLength) {
+			console.log('🔄 [Table] Data decreased (filters changed), resetting to page 1:', {
+				prevLength,
+				currentLength,
+			})
+			setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+			waitingForNextBatchRef.current = false
+		} else if (currentLength > prevLength) {
+			console.log('📦 [Table] Data increased (new batch loaded):', {
+				prevLength,
+				currentLength,
+				currentPage: pagination.pageIndex,
+				waitingForNextBatch: waitingForNextBatchRef.current,
+			})
+
+			// If we were waiting for next batch, move to next page
+			if (waitingForNextBatchRef.current) {
+				const nextPageIndex = pagination.pageIndex + 1
+				console.log('➡️ [Table] Moving to next page after batch load:', nextPageIndex)
+				setPagination((prev) => ({ ...prev, pageIndex: nextPageIndex }))
+				waitingForNextBatchRef.current = false
+			}
+		}
+
+		prevDataLengthRef.current = currentLength
+	}, [memoizedData.length, pagination.pageIndex])
 
 	// Define columns
 	const columns = useMemo<ColumnDef<SupportThread>[]>(
@@ -111,23 +165,30 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 				id: 'requirements',
 				header: t('table.requirements'),
 				cell: ({ row }) => {
-					const requirements = getActiveRequirements(
+					const requirements = getActiveRequirementsWithColors(
 						row.original as unknown as Record<string, boolean>
 					)
+					const hasHumanReply = row.original.human_reply !== null && row.original.human_reply !== ''
+
 					return (
 						<div className='flex flex-wrap gap-1'>
+							{hasHumanReply && (
+								<span className='px-1.5 py-0.5 rounded text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'>
+									{t('table.humanReply')}
+								</span>
+							)}
 							{requirements.length > 0 ? (
 								requirements.map((req) => (
 									<span
-										key={req}
-										className='px-1.5 py-0.5 rounded text-xs bg-muted'
+										key={req.key}
+										className={`px-1.5 py-0.5 rounded text-xs ${req.bgColor} ${req.textColor}`}
 									>
-										{req}
+										{req.label}
 									</span>
 								))
-							) : (
+							) : !hasHumanReply ? (
 								<span className='text-xs text-muted-foreground'>None</span>
-							)}
+							) : null}
 						</div>
 					)
 				},
@@ -151,9 +212,15 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 			{
 				accessorKey: 'qualityPercentage',
 				header: t('table.quality'),
-				cell: ({ getValue }) => {
-					const value = getValue() as number | null
-					if (value === null) {
+				cell: ({ row }) => {
+					const value = row.original.qualityPercentage
+					const humanReply = row.original.human_reply
+					const email = row.original.email
+
+					// Only show quality percentage if:
+					// 1. Human reply exists
+					// 2. Email belongs to a qualified agent
+					if (!humanReply || value === null || !email || !isQualifiedAgent(email)) {
 						return <div className='text-center text-muted-foreground'>—</div>
 					}
 					const bgClass =
@@ -197,7 +264,7 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 
 	// Create table instance
 	const table = useReactTable({
-		data,
+		data: memoizedData,
 		columns,
 		state: {
 			sorting,
@@ -211,6 +278,8 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 		getSortedRowModel: getSortedRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
+		// IMPORTANT: Don't reset page index when data changes (new batch loaded)
+		autoResetPageIndex: false,
 		globalFilterFn: (row, columnId, filterValue) => {
 			const threadId = String(row.original.thread_id || '').toLowerCase()
 			const ticketId = String(row.original.ticket_id || '').toLowerCase()
@@ -222,7 +291,7 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 	// Handle CSV export
 	const handleExport = () => {
 		const filename = `support-threads-${format(new Date(), 'yyyy-MM-dd')}.csv`
-		downloadSupportThreadsCSV(data, filename)
+		downloadSupportThreadsCSV(memoizedData, filename)
 	}
 
 	// Handle row click - navigates to thread detail (intercepted by parallel route modal)
@@ -338,10 +407,42 @@ export function SupportThreadsTable({ data }: SupportThreadsTableProps) {
 						<Button
 							variant='outline'
 							size='sm'
-							onClick={() => table.nextPage()}
-							disabled={!table.getCanNextPage()}
+							onClick={() => {
+								// Check if we can go to next page
+								const canGoNext = table.getCanNextPage()
+								const currentPage = table.getState().pagination.pageIndex
+
+								console.log('➡️ [Table] Next button clicked:', {
+									currentPage,
+									canGoNext,
+									hasMore,
+									isFetchingMore,
+									totalRows: table.getFilteredRowModel().rows.length,
+								})
+
+								// If we can go to next page, do it
+								if (canGoNext) {
+									console.log('✅ [Table] Moving to next page')
+									table.nextPage()
+								}
+								// If we're on last page and there's more data on server, load next batch
+								else if (hasMore && onLoadMore && !isFetchingMore) {
+									console.log('📥 [Table] Loading next batch from server')
+									// Set flag so we know to move to next page when data arrives
+									waitingForNextBatchRef.current = true
+									onLoadMore()
+								}
+							}}
+							disabled={!table.getCanNextPage() && !hasMore}
 						>
-							{t('table.next')}
+							{isFetchingMore ? (
+								<>
+									<Spinner className='mr-2' />
+									{t('table.loading')}
+								</>
+							) : (
+								t('table.next')
+							)}
 							<IconChevronRight className='h-4 w-4' />
 						</Button>
 					</div>

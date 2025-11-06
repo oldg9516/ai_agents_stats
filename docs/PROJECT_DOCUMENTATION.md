@@ -19,10 +19,13 @@
 ## Project Overview
 
 ### Purpose
+
 AI Agent Statistics Dashboard is a comprehensive analytics platform designed to monitor and analyze the performance of AI agents in customer support operations. The dashboard compares AI-generated responses with human edits to measure quality, track improvements across prompt versions, and provide actionable insights through interactive visualizations.
 
 ### Business Context
+
 The platform is used by **Lev Haolam** to:
+
 - Track AI agent quality across different customer support categories
 - Monitor prompt version improvements over time
 - Identify patterns in human edits vs AI-generated content
@@ -30,6 +33,7 @@ The platform is used by **Lev Haolam** to:
 - Optimize AI agent prompts based on data-driven insights
 
 ### Target Users
+
 - **Product Managers**: Monitor overall AI performance
 - **Data Analysts**: Dive deep into quality metrics
 - **Prompt Engineers**: Track version improvements
@@ -40,11 +44,13 @@ The platform is used by **Lev Haolam** to:
 ## Tech Stack
 
 ### Frontend Framework
+
 - **Next.js 16.0.0** - React framework with App Router
 - **React 19.2.0** - UI library
 - **TypeScript 5.x** - Type safety
 
 ### Styling
+
 - **Tailwind CSS v4** - Utility-first CSS framework
 - **shadcn/ui** - Component library (new-york style)
 - **next-themes** - Dark mode support
@@ -52,27 +58,32 @@ The platform is used by **Lev Haolam** to:
 - **clsx + tailwind-merge** - Class merging utilities
 
 ### UI Components
+
 - **@radix-ui** - Headless UI primitives (Avatar, Checkbox, Dialog, Dropdown, Select, etc.)
 - **@tabler/icons-react** - Icon library
 - **lucide-react** - Additional icons
 
 ### Data & State Management
+
 - **@supabase/supabase-js** - PostgreSQL database client with real-time subscriptions
 - **@tanstack/react-table** - Powerful table management (sorting, filtering, pagination)
 - **React hooks** - Custom hooks for data fetching and filters
 
 ### Data Visualization
+
 - **Recharts** - Composable charting library
   - Area charts (quality trends)
   - Pie charts (category distribution)
   - Bar charts (version comparison)
 
 ### Utilities
+
 - **date-fns** - Date formatting and manipulation
 - **zod** - Schema validation
 - **sonner** - Toast notifications
 
 ### Development Tools
+
 - **ESLint** - Code linting
 - **@vercel/analytics** - Analytics tracking
 
@@ -229,11 +240,13 @@ app/dashboard/page.tsx (Server Component)
 ### Rendering Strategy
 
 **Server Components** (Default):
+
 - `app/layout.tsx` - Root layout
 - `app/dashboard/page.tsx` - Dashboard page wrapper
 - `app/detailed-stats/page.tsx` - Table page wrapper
 
 **Client Components** (`'use client'`):
+
 - `components/dashboard-content.tsx` - Main dashboard logic
 - All chart components (Recharts requires client)
 - All filter components (interactive state)
@@ -241,6 +254,7 @@ app/dashboard/page.tsx (Server Component)
 - Table components (TanStack Table)
 
 **Why this split?**
+
 - Server components for initial HTML (fast FCP)
 - Client components for interactivity
 - Smaller JavaScript bundles
@@ -272,6 +286,7 @@ CREATE INDEX idx_email ON ai_human_comparison(email);
 ### Data Types
 
 **Request Subtypes (Categories):**
+
 - `customization_request`
 - `shipping_or_delivery_question`
 - `damaged_or_leaking_item_report`
@@ -288,23 +303,26 @@ CREATE INDEX idx_email ON ai_human_comparison(email);
 - `other`
 
 **Prompt Versions:**
+
 - `v1`, `v2`, `v3`, `v4`, etc.
 - Tracks iterations of AI prompts
 
 **Qualified Agents:**
+
 ```typescript
 // constants/qualified-agents.ts
 export const QUALIFIED_AGENTS = [
-  'marianna@levhaolam.com',
-  'laure@levhaolam.com',
-  'matea@levhaolam.com',
-  'yakov@levhaolam.com',
+	'marianna@levhaolam.com',
+	'laure@levhaolam.com',
+	'sofia@levhaolam.com',
+	'yakov@levhaolam.com',
 ]
 ```
 
 ### Calculated Metrics
 
 **Quality Percentage Formula:**
+
 ```
 Good % = (Records NOT changed by qualified agents / Total records by qualified agents) × 100
 ```
@@ -312,6 +330,7 @@ Good % = (Records NOT changed by qualified agents / Total records by qualified a
 **Only records processed by qualified agents count toward quality metrics.**
 
 **Quality Scoring:**
+
 - 🔴 **Poor (0-30%)**: Red background
 - 🟡 **Medium (31-60%)**: Yellow background
 - 🟢 **Good (61-100%)**: Green background
@@ -325,12 +344,14 @@ Good % = (Records NOT changed by qualified agents / Total records by qualified a
 **Purpose:** Main client component that orchestrates data fetching, filtering, and rendering.
 
 **Key Features:**
+
 - Uses `useDashboardData()` hook for real-time data
 - Uses `useFilters()` hook for URL-synced filters
 - Manages loading states with skeletons
 - Handles errors with error boundaries
 
 **Data Flow:**
+
 ```typescript
 const { data, isLoading, error } = useDashboardData(filters)
 
@@ -351,16 +372,19 @@ const { data, isLoading, error } = useDashboardData(filters)
 **KPI Cards:**
 
 1. **Total Records**
+
    - Current vs previous period
    - Trend indicator (↑ ↓ →)
    - Percentage change
 
 2. **Average Quality**
+
    - Weighted average across all categories
    - Color-coded by quality level
    - Trend comparison
 
 3. **Best Category**
+
    - Category with highest quality %
    - Shows improvement vs previous period
    - Dynamic category label
@@ -371,18 +395,19 @@ const { data, isLoading, error } = useDashboardData(filters)
    - Trend indicator
 
 **Reusable KPI Card Component:**
+
 ```typescript
 interface KPICardProps {
-  title: string
-  value: string | number
-  trend?: {
-    value: number
-    percentage: number
-    direction: 'up' | 'down' | 'neutral'
-  }
-  icon: React.ReactNode
-  description?: string
-  className?: string
+	title: string
+	value: string | number
+	trend?: {
+		value: number
+		percentage: number
+		direction: 'up' | 'down' | 'neutral'
+	}
+	icon: React.ReactNode
+	description?: string
+	className?: string
 }
 ```
 
@@ -395,6 +420,7 @@ interface KPICardProps {
 **Type:** Multi-area chart with smooth curves
 
 **Features:**
+
 - Multiple data series (one per category)
 - Interactive legend with checkboxes (show/hide categories)
 - Time period selector: 7d, 30d, 3m, All
@@ -403,6 +429,7 @@ interface KPICardProps {
 - Smooth natural curves (not angular)
 
 **Data Format:**
+
 ```typescript
 interface QualityTrendData {
   category: string        // "shipping_or_delivery_question"
@@ -419,6 +446,7 @@ interface QualityTrendData {
 ```
 
 **Theme Colors:**
+
 - Uses CSS variables: `--chart-1` through `--chart-5`
 - Automatically cycles through theme palette
 - Each category gets consistent color
@@ -430,6 +458,7 @@ interface QualityTrendData {
 **Type:** Donut chart
 
 **Features:**
+
 - Shows distribution of records across categories
 - Center label: total records count
 - Responsive sizing (aspect-square, max-h-[300px])
@@ -438,11 +467,12 @@ interface QualityTrendData {
 - Hover tooltips with quality %
 
 **Data Format:**
+
 ```typescript
 interface CategoryDistributionData {
-  category: string        // "shipping_or_delivery_question"
-  totalRecords: number    // 145
-  goodPercentage: number  // 78.5
+	category: string // "shipping_or_delivery_question"
+	totalRecords: number // 145
+	goodPercentage: number // 78.5
 }
 ```
 
@@ -453,6 +483,7 @@ interface CategoryDistributionData {
 **Type:** Vertical bar chart
 
 **Features:**
+
 - Compares quality % across prompt versions
 - Sorted by version number (v1, v2, v3, ...)
 - Labels on top of bars showing exact percentage
@@ -460,11 +491,12 @@ interface CategoryDistributionData {
 - Shows total records in tooltip
 
 **Data Format:**
+
 ```typescript
 interface VersionComparisonData {
-  version: string         // "v3"
-  goodPercentage: number  // 82.1
-  totalRecords: number    // 456
+	version: string // "v3"
+	goodPercentage: number // 82.1
+	totalRecords: number // 456
 }
 ```
 
@@ -475,6 +507,7 @@ interface VersionComparisonData {
 **Type:** Advanced data table using TanStack Table
 
 **Features:**
+
 - Hierarchical data (version-level + week-level rows)
 - Multi-column sorting
 - Search/filter by category
@@ -484,20 +517,22 @@ interface VersionComparisonData {
 - Responsive design
 
 **Data Structure:**
+
 ```typescript
 interface DetailedStatsRow {
-  category: string
-  version: string
-  dates: string | null              // "Oct 15 - Oct 22" or null
-  sortOrder: number                 // 1 = version-level, 2 = week-level
-  totalRecords: number
-  recordsQualifiedAgents: number    // Qualified agents only
-  changedRecords: number
-  goodPercentage: number
+	category: string
+	version: string
+	dates: string | null // "Oct 15 - Oct 22" or null
+	sortOrder: number // 1 = version-level, 2 = week-level
+	totalRecords: number
+	recordsQualifiedAgents: number // Qualified agents only
+	changedRecords: number
+	goodPercentage: number
 }
 ```
 
 **Visual Hierarchy:**
+
 - Version-level rows: Bold text, gray background
 - Week-level rows: Indented, muted text
 
@@ -506,6 +541,7 @@ interface DetailedStatsRow {
 ### 5. Filters (`components/filters/`)
 
 **Filter Sheet** (Mobile-first design):
+
 - Collapsible sheet drawer
 - Active filter count badge
 - Grouped filters with accordion
@@ -513,14 +549,17 @@ interface DetailedStatsRow {
 **Filter Types:**
 
 1. **Date Range Filter**
+
    - Predefined ranges (Last 7d, 30d, 3m, All time)
    - Syncs with URL query params
 
 2. **Version Filter**
+
    - Multi-select dropdown
    - Shows all available versions from DB
 
 3. **Category Filter**
+
    - Multi-select dropdown
    - Human-readable labels (not snake_case)
 
@@ -529,6 +568,7 @@ interface DetailedStatsRow {
    - Defaults to all qualified agents
 
 **State Management:**
+
 - Custom `useFilters()` hook
 - Synced with URL params for shareable links
 - Persisted to localStorage
@@ -541,22 +581,26 @@ interface DetailedStatsRow {
 ### ✅ Current Features
 
 1. **Real-time Dashboard**
+
    - Live data updates via Supabase Realtime
    - Auto-refresh on data changes
    - Loading skeletons for smooth UX
 
 2. **KPI Metrics**
+
    - 4 key performance indicators
    - Trend comparison (current vs previous period)
    - Visual trend indicators (↑ ↓ →)
 
 3. **Interactive Charts**
+
    - Quality trends over time (area chart)
    - Category distribution (donut chart)
    - Version comparison (bar chart)
    - Responsive and mobile-friendly
 
 4. **Advanced Table**
+
    - Hierarchical data display
    - Sorting and filtering
    - Pagination
@@ -564,6 +608,7 @@ interface DetailedStatsRow {
    - Search functionality
 
 5. **Powerful Filtering**
+
    - Date range selection
    - Version filtering
    - Category filtering
@@ -572,6 +617,7 @@ interface DetailedStatsRow {
    - LocalStorage persistence
 
 6. **Dark Mode**
+
    - System preference detection
    - Manual toggle
    - Consistent theme colors
@@ -642,6 +688,7 @@ Dashboard updates automatically
 ### 4. Data Queries (Simplified)
 
 **KPI Calculation:**
+
 ```sql
 -- Current period
 SELECT
@@ -658,6 +705,7 @@ WHERE email IN ('qualified_agents...')
 ```
 
 **Quality Trends:**
+
 ```sql
 SELECT
   request_subtype as category,
@@ -674,6 +722,7 @@ ORDER BY week_start, request_subtype;
 ## Setup & Configuration
 
 ### Prerequisites
+
 - Node.js 18+ (or compatible runtime)
 - npm/pnpm/yarn
 - Supabase account
@@ -682,12 +731,14 @@ ORDER BY week_start, request_subtype;
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd ai_agent_stats
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    # or
@@ -695,11 +746,13 @@ ORDER BY week_start, request_subtype;
    ```
 
 3. **Set up environment variables**
+
    ```bash
    cp .env.local.example .env.local
    ```
 
    Edit `.env.local`:
+
    ```bash
    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
@@ -715,11 +768,13 @@ ORDER BY week_start, request_subtype;
 ### Supabase Setup
 
 1. **Create Supabase project**
+
    - Go to https://supabase.com
    - Create new project
    - Note your project URL and anon key
 
 2. **Create table**
+
    ```sql
    CREATE TABLE ai_human_comparison (
      id bigserial PRIMARY KEY,
@@ -738,10 +793,12 @@ ORDER BY week_start, request_subtype;
    ```
 
 3. **Enable Realtime** (optional)
+
    - Go to Database → Replication
    - Enable replication for `ai_human_comparison` table
 
 4. **Set up Row Level Security** (recommended)
+
    ```sql
    ALTER TABLE ai_human_comparison ENABLE ROW LEVEL SECURITY;
 
@@ -753,35 +810,38 @@ ORDER BY week_start, request_subtype;
 ### Configuration Files
 
 **`components.json`** (shadcn/ui):
+
 ```json
 {
-  "style": "new-york",
-  "tailwind": {
-    "cssVariables": true
-  },
-  "aliases": {
-    "components": "@/components",
-    "utils": "@/lib/utils"
-  }
+	"style": "new-york",
+	"tailwind": {
+		"cssVariables": true
+	},
+	"aliases": {
+		"components": "@/components",
+		"utils": "@/lib/utils"
+	}
 }
 ```
 
 **`constants/qualified-agents.ts`**:
+
 ```typescript
 export const QUALIFIED_AGENTS = [
-  'marianna@levhaolam.com',
-  'laure@levhaolam.com',
-  'matea@levhaolam.com',
-  'yakov@levhaolam.com',
+	'marianna@levhaolam.com',
+	'laure@levhaolam.com',
+	''sofia@levhaolam.com',
+	'yakov@levhaolam.com',
 ]
 ```
 
 **`constants/category-labels.ts`**:
+
 ```typescript
 export const CATEGORY_LABELS: Record<string, string> = {
-  customization_request: 'Customization',
-  shipping_or_delivery_question: 'Shipping',
-  // ... add more mappings
+	customization_request: 'Customization',
+	shipping_or_delivery_question: 'Shipping',
+	// ... add more mappings
 }
 ```
 
@@ -808,6 +868,7 @@ npm run lint
 ### Adding a New Component
 
 1. **shadcn/ui component:**
+
    ```bash
    npx shadcn@latest add button
    ```
@@ -822,6 +883,7 @@ npm run lint
 
 1. Create file in `components/charts/`
 2. Follow existing pattern:
+
    ```typescript
    'use client'
 
@@ -829,84 +891,93 @@ npm run lint
    import { ChartContainer, ChartConfig } from '@/components/ui/chart'
 
    interface MyChartProps {
-     data: MyData[]
+   	data: MyData[]
    }
 
    export function MyChart({ data }: MyChartProps) {
-     const chartConfig = useMemo(() => ({
-       // Define colors and labels
-     }), [data])
+   	const chartConfig = useMemo(
+   		() => ({
+   			// Define colors and labels
+   		}),
+   		[data]
+   	)
 
-     return (
-       <Card>
-         <CardHeader>...</CardHeader>
-         <CardContent>
-           <ChartContainer config={chartConfig}>
-             {/* Recharts component */}
-           </ChartContainer>
-         </CardContent>
-       </Card>
-     )
+   	return (
+   		<Card>
+   			<CardHeader>...</CardHeader>
+   			<CardContent>
+   				<ChartContainer config={chartConfig}>
+   					{/* Recharts component */}
+   				</ChartContainer>
+   			</CardContent>
+   		</Card>
+   	)
    }
    ```
 
 ### Adding a New Query
 
 1. Add type in `lib/supabase/types.ts`:
+
    ```typescript
    export interface MyNewData {
-     field1: string
-     field2: number
+   	field1: string
+   	field2: number
    }
    ```
 
 2. Add query in `lib/supabase/queries.ts`:
+
    ```typescript
    export async function getMyNewData(
-     filters: DashboardFilters
+   	filters: DashboardFilters
    ): Promise<MyNewData[]> {
-     const supabase = createClient()
+   	const supabase = createClient()
 
-     const { data, error } = await supabase
-       .from('ai_human_comparison')
-       .select('*')
-       .in('email', filters.agents)
-       // ... add filters
+   	const { data, error } = await supabase
+   		.from('ai_human_comparison')
+   		.select('*')
+   		.in('email', filters.agents)
+   	// ... add filters
 
-     if (error) throw error
-     return data || []
+   	if (error) throw error
+   	return data || []
    }
    ```
 
 3. Use in component:
    ```typescript
    const { data, isLoading } = useQuery({
-     queryKey: ['myNewData', filters],
-     queryFn: () => getMyNewData(filters)
+   	queryKey: ['myNewData', filters],
+   	queryFn: () => getMyNewData(filters),
    })
    ```
 
 ### Code Style Guidelines
 
 **TypeScript:**
+
 - Use strict mode
 - Prefer `interface` over `type`
 - Always type function parameters and returns
 - Use `const` over `let`
 
 **React:**
+
 - Prefer functional components
 - Use hooks (no class components)
 - Memoize expensive calculations with `useMemo`
 - Use `useCallback` for functions passed as props
 
 **Naming Conventions:**
+
 - Components: PascalCase (e.g., `MyComponent.tsx`)
 - Files: kebab-case (e.g., `my-component.tsx`)
 - Hooks: camelCase starting with `use` (e.g., `useMyHook`)
 - Constants: UPPER_SNAKE_CASE (e.g., `QUALIFIED_AGENTS`)
 
 **File Organization:**
+
 - One component per file
 - Co-locate related components (e.g., `charts/`)
 - Separate logic from presentation when possible
@@ -918,11 +989,13 @@ npm run lint
 ### Vercel (Recommended)
 
 1. **Connect GitHub repository**
+
    - Go to https://vercel.com
    - Import Git repository
    - Select project
 
 2. **Configure environment variables**
+
    - Add `NEXT_PUBLIC_SUPABASE_URL`
    - Add `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
@@ -943,12 +1016,14 @@ npm start
 ### Environment Variables
 
 **Production:**
+
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://prod-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=prod-anon-key
 ```
 
 **Staging:**
+
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://staging-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=staging-anon-key
@@ -957,12 +1032,14 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=staging-anon-key
 ### Performance Optimization
 
 **Current optimizations:**
+
 - Server Components for initial HTML
 - Code splitting (automatic with Next.js)
 - Image optimization (Next.js built-in)
 - Font optimization (Geist fonts with next/font)
 
 **Recommended additions:**
+
 - Enable Vercel Analytics
 - Set up caching headers
 - Use Supabase Edge Functions for heavy queries
@@ -975,26 +1052,31 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=staging-anon-key
 ### Common Issues
 
 **1. "Failed to connect to Supabase"**
+
 - Check `.env.local` has correct credentials
 - Verify Supabase project is running
 - Test connection: `/api/test-connection`
 
 **2. "No data showing in dashboard"**
+
 - Verify table has data: `SELECT COUNT(*) FROM ai_human_comparison;`
 - Check filters aren't too restrictive
 - Verify qualified agents list matches DB emails
 
 **3. "Hydration mismatch error"**
+
 - Ensure client components have `'use client'` directive
 - Avoid using `window` or `localStorage` in server components
 - Check for mismatched HTML between server and client
 
 **4. "Chart not rendering"**
+
 - Verify data is not empty
 - Check console for Recharts errors
 - Ensure ChartContainer has className with height
 
 **5. "Filters not persisting"**
+
 - Check localStorage is enabled
 - Verify URL params are updating
 - Clear browser cache and try again
@@ -1002,14 +1084,16 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=staging-anon-key
 ### Debug Mode
 
 Add to `.env.local`:
+
 ```bash
 NEXT_PUBLIC_DEBUG=true
 ```
 
 Then in code:
+
 ```typescript
 if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
-  console.log('Debug info:', data)
+	console.log('Debug info:', data)
 }
 ```
 
@@ -1018,12 +1102,14 @@ if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
 ## Performance Metrics
 
 **Current Performance:**
+
 - Lighthouse Score: 95+ (Performance)
 - First Contentful Paint: <1s
 - Time to Interactive: <2s
 - Bundle Size: ~200KB (gzipped)
 
 **Database Query Performance:**
+
 - KPI queries: <100ms
 - Chart queries: <200ms
 - Table queries: <500ms (with pagination)
@@ -1033,12 +1119,14 @@ if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
 ## Security Considerations
 
 **Current Security:**
+
 - ✅ Environment variables for secrets
 - ✅ Supabase RLS (Row Level Security) ready
 - ✅ HTTPS only (Vercel default)
 - ✅ No sensitive data in client bundle
 
 **Recommendations:**
+
 - Enable Supabase RLS policies
 - Add authentication (if needed)
 - Rate limiting on API routes
@@ -1052,10 +1140,12 @@ if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
 **Recommended Setup:**
 
 1. **Vercel Analytics**
+
    - Already installed (`@vercel/analytics`)
    - Tracks page views, performance
 
 2. **Error Tracking**
+
    - Add Sentry for production errors
    - Track query failures
 
@@ -1071,22 +1161,26 @@ if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
 ### Development Workflow
 
 1. Create feature branch
+
    ```bash
    git checkout -b feature/my-feature
    ```
 
 2. Make changes
+
    - Write code
    - Add types
    - Update documentation
 
 3. Test locally
+
    ```bash
    npm run dev
    npm run build  # Test production build
    ```
 
 4. Commit changes
+
    ```bash
    git add .
    git commit -m "Add my feature"
@@ -1114,55 +1208,63 @@ if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
 ### Supabase Queries
 
 **`getKPIData(filters)`**
+
 - Returns: `Promise<KPIData>`
 - Fetches 4 KPI metrics with trends
 
 **`getQualityTrends(filters)`**
+
 - Returns: `Promise<QualityTrendData[]>`
 - Time series data grouped by week
 
 **`getCategoryDistribution(filters)`**
+
 - Returns: `Promise<CategoryDistributionData[]>`
 - Aggregated by category
 
 **`getVersionComparison(filters)`**
+
 - Returns: `Promise<VersionComparisonData[]>`
 - Aggregated by version
 
 **`getDetailedStats(filters)`**
+
 - Returns: `Promise<DetailedStatsRow[]>`
 - Hierarchical table data
 
 **`getFilterOptions()`**
+
 - Returns: `Promise<FilterOptions>`
 - Available versions and categories
 
 ### Custom Hooks
 
 **`useDashboardData(filters)`**
+
 ```typescript
 interface UseDashboardDataReturn {
-  data: {
-    kpi: KPIData | null
-    qualityTrends: QualityTrendData[]
-    categoryDistribution: CategoryDistributionData[]
-    versionComparison: VersionComparisonData[]
-    detailedStats: DetailedStatsRow[]
-  }
-  isLoading: boolean
-  error: Error | null
+	data: {
+		kpi: KPIData | null
+		qualityTrends: QualityTrendData[]
+		categoryDistribution: CategoryDistributionData[]
+		versionComparison: VersionComparisonData[]
+		detailedStats: DetailedStatsRow[]
+	}
+	isLoading: boolean
+	error: Error | null
 }
 ```
 
 **`useFilters()`**
+
 ```typescript
 interface UseFiltersReturn {
-  filters: DashboardFilters
-  setDateRange: (from: Date, to: Date) => void
-  setVersions: (versions: string[]) => void
-  setCategories: (categories: string[]) => void
-  setAgents: (agents: string[]) => void
-  resetFilters: () => void
+	filters: DashboardFilters
+	setDateRange: (from: Date, to: Date) => void
+	setVersions: (versions: string[]) => void
+	setCategories: (categories: string[]) => void
+	setAgents: (agents: string[]) => void
+	resetFilters: () => void
 }
 ```
 
@@ -1193,6 +1295,7 @@ Private - Lev Haolam Internal Use Only
 ## Support & Contact
 
 For questions or issues:
+
 - Create GitHub issue
 - Contact: dev team
 - Documentation: See `/docs` folder

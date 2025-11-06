@@ -173,6 +173,7 @@
 		"type": "Тип",
 		"status": "Статус",
 		"requirements": "Требования",
+		"humanReply": "Ответ человека",
 		"aiDraft": "AI черновик",
 		"createdAt": "Создано",
 		"export": "Экспорт CSV",

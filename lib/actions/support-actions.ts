@@ -129,6 +129,37 @@ export async function fetchRequestCategoryStatsAction(dateRange: {
 }
 
 /**
+ * Fetch support threads with pagination
+ * Separate action for paginated loading
+ */
+export async function fetchSupportThreadsAction(
+	filters: SupportFilters,
+	pagination?: { limit: number; offset: number }
+) {
+	try {
+		const startTime = Date.now()
+		const threads = await fetchSupportThreads(supabaseServer, filters, pagination)
+		const queryTime = Date.now() - startTime
+		console.log(`✅ [Support Threads Action] Fetched ${threads.length} threads in ${queryTime}ms`)
+
+		return {
+			success: true,
+			data: threads,
+		}
+	} catch (error) {
+		console.error('❌ [Server Action] Error fetching support threads:', error)
+		return {
+			success: false,
+			error:
+				error instanceof Error
+					? error.message
+					: 'Failed to fetch support threads',
+			data: null,
+		}
+	}
+}
+
+/**
  * Fetch minimum created_at date from support_threads_data
  * Used for "All Time" filter
  */

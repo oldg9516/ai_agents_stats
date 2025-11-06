@@ -10,6 +10,7 @@ import { IconArrowLeft, IconCheck, IconX } from '@tabler/icons-react'
 import { getStatusLabel } from '@/constants/support-statuses'
 import { getRequestTypeLabel } from '@/constants/request-types'
 import { REQUIREMENT_TYPES, getAllRequirementKeys } from '@/constants/requirement-types'
+import { isQualifiedAgent } from '@/constants/qualified-agents'
 import { format } from 'date-fns'
 
 interface ThreadDetailPageProps {
@@ -120,6 +121,15 @@ export default async function ThreadDetailPage({ params }: ThreadDetailPageProps
 								<p className='text-sm'>{thread.prompt_version || '—'}</p>
 							</div>
 							<div>
+								<p className='text-sm font-medium text-muted-foreground'>Direction</p>
+								<p className='text-sm'>{thread.direction || '—'}</p>
+							</div>
+						</div>
+
+						<Separator />
+
+						<div className='grid grid-cols-2 gap-4'>
+							<div>
 								<p className='text-sm font-medium text-muted-foreground'>Created At</p>
 								<p className='text-sm'>
 									{thread.created_at
@@ -163,7 +173,7 @@ export default async function ThreadDetailPage({ params }: ThreadDetailPageProps
 							<p className='text-sm font-medium text-muted-foreground mb-2'>
 								Quality Score
 							</p>
-							{thread.qualityPercentage !== null ? (
+							{thread.human_reply && thread.email && isQualifiedAgent(thread.email) && thread.qualityPercentage !== null ? (
 								<div className='flex items-center gap-2'>
 									<div
 										className={`px-3 py-1 rounded font-medium ${
@@ -183,9 +193,7 @@ export default async function ThreadDetailPage({ params }: ThreadDetailPageProps
 									</span>
 								</div>
 							) : (
-								<p className='text-sm text-muted-foreground'>
-									No quality data available
-								</p>
+								<p className='text-sm text-muted-foreground'>—</p>
 							)}
 						</div>
 
@@ -195,7 +203,7 @@ export default async function ThreadDetailPage({ params }: ThreadDetailPageProps
 							<p className='text-sm font-medium text-muted-foreground mb-2'>
 								Reviewed By
 							</p>
-							<p className='text-sm'>{thread.email || 'Not reviewed'}</p>
+							<p className='text-sm'>{thread.email || '—'}</p>
 						</div>
 					</CardContent>
 				</Card>
@@ -261,6 +269,23 @@ export default async function ThreadDetailPage({ params }: ThreadDetailPageProps
 						)}
 					</CardContent>
 				</Card>
+
+				{/* Human Agent Response */}
+				{thread.human_reply && (
+					<Card className='lg:col-span-2'>
+						<CardHeader>
+							<CardTitle>Human Agent Response</CardTitle>
+							<CardDescription>{thread.email || 'Unknown agent'}</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<div className='rounded-lg bg-muted p-4 max-h-96 overflow-y-auto'>
+								<pre className='text-sm whitespace-pre-wrap font-sans'>
+									{thread.human_reply}
+								</pre>
+							</div>
+						</CardContent>
+					</Card>
+				)}
 			</div>
 		</div>
 	)

@@ -23,6 +23,7 @@ import { IconCheck, IconX, IconExternalLink } from '@tabler/icons-react'
 import { getStatusLabel } from '@/constants/support-statuses'
 import { getRequestTypeLabel } from '@/constants/request-types'
 import { REQUIREMENT_TYPES, getAllRequirementKeys } from '@/constants/requirement-types'
+import { isQualifiedAgent } from '@/constants/qualified-agents'
 import { format } from 'date-fns'
 import type { SupportThread } from '@/lib/supabase/types'
 
@@ -132,6 +133,17 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 										</div>
 										<div>
 											<p className='text-xs sm:text-sm font-medium text-muted-foreground'>
+												Direction
+											</p>
+											<p className='text-xs sm:text-sm'>{thread.direction || '—'}</p>
+										</div>
+									</div>
+
+									<Separator />
+
+									<div className='grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4'>
+										<div>
+											<p className='text-xs sm:text-sm font-medium text-muted-foreground'>
 												Created At
 											</p>
 											<p className='text-xs sm:text-sm'>
@@ -178,7 +190,7 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 										<p className='text-xs sm:text-sm font-medium text-muted-foreground mb-2'>
 											Quality Score
 										</p>
-										{thread.qualityPercentage !== null ? (
+										{thread.human_reply && thread.email && isQualifiedAgent(thread.email) && thread.qualityPercentage !== null ? (
 											<div className='flex flex-col sm:flex-row sm:items-center gap-2'>
 												<div
 													className={`px-2 sm:px-3 py-1 rounded font-medium text-xs sm:text-sm w-fit ${
@@ -196,9 +208,7 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 												</span>
 											</div>
 										) : (
-											<p className='text-xs sm:text-sm text-muted-foreground'>
-												No quality data available
-											</p>
+											<p className='text-xs sm:text-sm text-muted-foreground'>—</p>
 										)}
 									</div>
 
@@ -209,7 +219,7 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 											Reviewed By
 										</p>
 										<p className='text-xs sm:text-sm break-all'>
-											{thread.email || 'Not reviewed'}
+											{thread.email || '—'}
 										</p>
 									</div>
 								</CardContent>
@@ -282,6 +292,26 @@ export function ThreadDetailModal({ thread }: ThreadDetailModalProps) {
 								)}
 							</CardContent>
 						</Card>
+
+						{/* Human Agent Response */}
+						{thread.human_reply && (
+							<Card>
+								<CardHeader>
+									<CardTitle className='text-base sm:text-lg'>Human Agent Response</CardTitle>
+									<CardDescription className='text-xs sm:text-sm'>
+										{thread.email || 'Unknown agent'}
+									</CardDescription>
+								</CardHeader>
+								<CardContent>
+									<div className='rounded-lg bg-muted p-3 sm:p-4 max-h-[50vh] overflow-y-auto'>
+										<div
+											className='prose prose-sm sm:prose dark:prose-invert max-w-none text-xs sm:text-sm leading-relaxed'
+											dangerouslySetInnerHTML={{ __html: thread.human_reply }}
+										/>
+									</div>
+								</CardContent>
+							</Card>
+						)}
 					</div>
 				</div>
 			</DialogContent>

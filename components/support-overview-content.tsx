@@ -1,21 +1,22 @@
 'use client'
 
-import { useMemo } from 'react'
-import { useTranslations } from 'next-intl'
+import { usePaginatedThreads } from '@/lib/hooks/use-paginated-threads'
 import { useSupportData } from '@/lib/hooks/use-support-data'
 import { useSupportFilters } from '@/lib/hooks/use-support-filters'
+import { useTranslations } from 'next-intl'
+import { useMemo } from 'react'
+import { AIDraftFlowSankey } from './charts/ai-draft-flow-sankey'
+import { RequirementsCorrelationHeatmap } from './charts/requirements-correlation-heatmap'
+import { ResolutionTimeChart } from './charts/resolution-time-chart'
+import { StatusDistributionChart } from './charts/status-distribution-chart'
 import { FilterSheet } from './filters/filter-sheet'
 import { SupportFilterBar } from './filters/support-filter-bar'
 import { AgentResponseRateCard } from './kpi/agent-response-rate-card'
-import { ReplyRequiredCard } from './kpi/reply-required-card'
-import { DataCollectionRateCard } from './kpi/data-collection-rate-card'
 import { AvgRequirementsCard } from './kpi/avg-requirements-card'
-import { StatusDistributionChart } from './charts/status-distribution-chart'
-import { ResolutionTimeChart } from './charts/resolution-time-chart'
-import { AIDraftFlowSankey } from './charts/ai-draft-flow-sankey'
-import { RequirementsCorrelationHeatmap } from './charts/requirements-correlation-heatmap'
-import { SupportThreadsTable } from './tables/support-threads-table'
+import { DataCollectionRateCard } from './kpi/data-collection-rate-card'
+import { ReplyRequiredCard } from './kpi/reply-required-card'
 import { SupportOverviewSkeleton } from './loading/support-overview-skeleton'
+import { SupportThreadsTable } from './tables/support-threads-table'
 
 /**
  * Support Overview Content - Client Component
@@ -24,7 +25,7 @@ import { SupportOverviewSkeleton } from './loading/support-overview-skeleton'
  * - Filters (date, status, request type, requirements, version)
  * - 4 KPI cards
  * - 4 charts (status pie, resolution bar, Sankey, heatmap)
- * - Support threads table with CSV export
+ * - Support threads table with paginated loading (60 records per batch)
  * - Data fetching via React Query with caching
  */
 export function SupportOverviewContent() {
@@ -40,16 +41,25 @@ export function SupportOverviewContent() {
 		resetFilters,
 	} = useSupportFilters()
 
-	// Fetch support data with React Query
+	// Fetch support data with React Query (KPIs and charts)
 	const { data, isLoading, error } = useSupportData(filters)
 
-	// Calculate available versions from threads
+	// Fetch paginated threads (60 records per batch, cached in session)
+	const {
+		allLoadedThreads,
+		hasMore,
+		isLoadingInitial,
+		isFetchingMore,
+		loadNextBatch,
+	} = usePaginatedThreads()
+
+	// Calculate available versions from paginated threads
 	const availableVersions = useMemo(() => {
-		if (!data.threads.length) return []
+		if (!allLoadedThreads.length) return []
 		return Array.from(
-			new Set(data.threads.map(t => t.prompt_version).filter(Boolean))
+			new Set(allLoadedThreads.map(t => t.prompt_version).filter(Boolean))
 		).sort() as string[]
-	}, [data.threads])
+	}, [allLoadedThreads])
 
 	// Count active filters
 	const getActiveFilterCount = () => {
@@ -84,8 +94,8 @@ export function SupportOverviewContent() {
 		return count
 	}
 
-	// Show loading state
-	if (isLoading) {
+	// Show loading state (wait for both KPIs/charts AND initial threads)
+	if (isLoading || isLoadingInitial) {
 		return <SupportOverviewSkeleton />
 	}
 
@@ -127,9 +137,7 @@ export function SupportOverviewContent() {
 			<div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
 				<AgentResponseRateCard data={data.kpis?.agentResponseRate || null} />
 				<ReplyRequiredCard data={data.kpis?.replyRequired || null} />
-				<DataCollectionRateCard
-					data={data.kpis?.dataCollectionRate || null}
-				/>
+				<DataCollectionRateCard data={data.kpis?.dataCollectionRate || null} />
 				<AvgRequirementsCard data={data.kpis?.avgRequirements || null} />
 			</div>
 
@@ -141,8 +149,13 @@ export function SupportOverviewContent() {
 				<RequirementsCorrelationHeatmap data={data.correlationMatrix} />
 			</div>
 
-			{/* Support Threads Table */}
-			<SupportThreadsTable data={data.threads} />
+			{/* Support Threads Table with Pagination */}
+			<SupportThreadsTable
+				data={allLoadedThreads}
+				hasMore={hasMore}
+				isFetchingMore={isFetchingMore}
+				onLoadMore={loadNextBatch}
+			/>
 		</div>
 	)
 }
