@@ -37,7 +37,7 @@ export function StatusDistributionChart({ data }: StatusDistributionChartProps) 
 	const chartConfig = useMemo(() => {
 		const config: ChartConfig = {}
 		data.forEach((item, index) => {
-			const chartIndex = (index % 5) + 1
+			const chartIndex = (index % 12) + 1
 			const safeName = toSafeCssName(item.status)
 			config[safeName] = {
 				label: item.status, // Use original status as label

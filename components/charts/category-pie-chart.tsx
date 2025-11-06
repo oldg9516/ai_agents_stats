@@ -17,14 +17,14 @@ import {
 	type ChartConfig,
 } from '@/components/ui/chart'
 import { getCategoryLabel } from '@/constants/category-labels'
-import type { CategoryDistributionData } from '@/lib/supabase/types'
+import type { CategoryDistributionResult } from '@/lib/supabase/types'
 import { useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { Label, Pie, PieChart, Cell } from 'recharts'
 
 interface CategoryPieChartProps {
-	data: CategoryDistributionData[]
+	data: CategoryDistributionResult
 	onCategoryClick?: (category: string) => void
 }
 
@@ -49,32 +49,31 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
 	// Create chart config dynamically from data
 	const chartConfig = useMemo(() => {
 		const config: ChartConfig = {}
-		data.forEach((item, index) => {
-			const chartIndex = (index % 5) + 1
+		data.categories.forEach((item, index) => {
+			const chartIndex = (index % 12) + 1
 			config[item.category] = {
 				label: getCategoryLabel(item.category),
 				color: `var(--chart-${chartIndex})`,
 			}
 		})
 		return config
-	}, [data])
+	}, [data.categories])
 
 	// Transform data for Recharts format
 	const chartData = useMemo(() => {
-		return data.map(item => ({
+		return data.categories.map(item => ({
 			category: item.category,
 			records: item.totalRecords,
 			quality: item.goodPercentage,
 			fill: `var(--color-${item.category})`,
 		}))
-	}, [data])
+	}, [data.categories])
 
-	// Calculate total records
-	const totalRecords = useMemo(() => {
-		return data.reduce((sum, item) => sum + item.totalRecords, 0)
-	}, [data])
+	// Use totalCount from query result instead of summing categories
+	// This ensures accurate count even if data is truncated by Supabase limit
+	const totalRecords = data.totalCount
 
-	if (data.length === 0) {
+	if (data.categories.length === 0) {
 		return (
 			<Card>
 				<CardHeader>

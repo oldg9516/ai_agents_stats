@@ -40,12 +40,28 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 		const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
 
 		if (days === 'all') {
-			// Check if from date is very old (before 2023)
-			return from.getFullYear() < 2023
+			// "All time" is active only if it doesn't match any standard preset
+			// This means it's either custom dates or from database minimum date
+			const is7d = Math.abs(diffDays - 7) <= 1
+			const is30d = Math.abs(diffDays - 30) <= 1
+			const is90d = Math.abs(diffDays - 90) <= 2 // Slightly larger tolerance for 3 months
+
+			const result = !is7d && !is30d && !is90d
+
+			
+
+			// Active only if it doesn't match any preset
+			return result
 		}
 
-		// Allow 1 day tolerance for date comparison
-		return Math.abs(diffDays - days) <= 1
+		// For numeric days, use tolerance based on the period
+		// 3 months (90 days) gets slightly larger tolerance due to month length variations
+		const tolerance = days === 90 ? 2 : 1
+		const result = Math.abs(diffDays - days) <= tolerance
+
+		
+
+		return result
 	}
 
 	// Quick date range handlers
@@ -74,6 +90,10 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 		start.setMonth(end.getMonth() - 3)
 		start.setDate(end.getDate() + 1) // Adjust to include today
 		start.setHours(0, 0, 0, 0) // Start of day
+
+		const diffDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+		
+
 		onChange(start, end)
 	}
 
@@ -81,13 +101,21 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 		setIsLoadingAllTime(true)
 		try {
 			const end = new Date()
+			end.setHours(23, 59, 59, 999) // End of today
 			const start = await fetchMinCreatedDate()
+			start.setHours(0, 0, 0, 0) // Start of day
+
+			const diffDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+			
+
 			onChange(start, end)
 		} catch (error) {
 			console.error('Error fetching min date:', error)
 			// Fallback to hardcoded date
 			const end = new Date()
+			end.setHours(23, 59, 59, 999)
 			const start = new Date('2020-01-01')
+			start.setHours(0, 0, 0, 0)
 			onChange(start, end)
 		} finally {
 			setIsLoadingAllTime(false)

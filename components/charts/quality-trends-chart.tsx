@@ -40,7 +40,7 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 		const config: ChartConfig = {}
 
 		uniqueCategories.forEach((category, index) => {
-			const chartIndex = (index % 5) + 1
+			const chartIndex = (index % 12) + 1
 			config[category] = {
 				label: getCategoryLabel(category),
 				color: `var(--chart-${chartIndex})`,
@@ -56,15 +56,22 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 	}, [data])
 
 	// Hide all categories beyond the first 3 by default
-	const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(new Set())
-
-	// Update hidden categories when categories change
-	useEffect(() => {
+	// Use useMemo to compute initial hidden categories based on data
+	const initialHiddenCategories = useMemo(() => {
 		if (categories.length > 3) {
 			const categoriesToHide = categories.slice(3).map(c => c.name)
-			setHiddenCategories(new Set(categoriesToHide))
+			return new Set(categoriesToHide)
 		}
+		return new Set<string>()
 	}, [categories])
+
+	const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(new Set())
+
+	// Sync hiddenCategories with initialHiddenCategories when categories change
+	// This ensures new categories beyond 3 are hidden
+	useEffect(() => {
+		setHiddenCategories(initialHiddenCategories)
+	}, [initialHiddenCategories])
 
 	// Transform data for Recharts format
 	// Input: [{ category, weekStart, goodPercentage }, ...]

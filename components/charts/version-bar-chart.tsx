@@ -57,7 +57,7 @@ export function VersionBarChart({ data }: VersionBarChartProps) {
 		}
 		// Add each version to config
 		data.forEach((item, index) => {
-			const chartIndex = (index % 5) + 1
+			const chartIndex = (index % 12) + 1
 			config[item.version] = {
 				label: item.version,
 				color: `var(--chart-${chartIndex})`,
