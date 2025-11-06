@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl'
 import { CategoryPieChart } from './charts/category-pie-chart'
 import { QualityTrendsChart } from './charts/quality-trends-chart'
 import { VersionBarChart } from './charts/version-bar-chart'
+import { DateRangeSelector } from './filters/date-range-selector'
 import { FilterBar } from './filters/filter-bar'
 import { FilterSheet } from './filters/filter-sheet'
 import { KPISection } from './kpi/kpi-section'
@@ -130,21 +131,32 @@ export function DashboardContent() {
 
 	return (
 		<div className='flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6'>
-			{/* Filter Button */}
-			<div className='flex justify-start'>
-				<FilterSheet
-					title={t('filterSheet.dashboardTitle')}
-					description={t('filterSheet.dashboardDescription')}
-					activeFilterCount={getActiveFilterCount()}
-				>
-					<FilterBar
+			{/* Date Range and Filters */}
+			<div className='flex flex-col gap-4 lg:flex-row lg:items-center'>
+				{/* More Filters Button - First on large screens, top on mobile */}
+				<div className='lg:order-1'>
+					<FilterSheet
+						title={t('filterSheet.dashboardTitle')}
+						description={t('filterSheet.dashboardDescription')}
+						activeFilterCount={getActiveFilterCount()}
+					>
+						<FilterBar
+							filters={filters}
+							onFiltersChange={handleFiltersChange}
+							onReset={resetFilters}
+							availableVersions={filterOptions.versions}
+							availableCategories={filterOptions.categories}
+						/>
+					</FilterSheet>
+				</div>
+
+				{/* Date Range Selector - Fills remaining space on large screens */}
+				<div className='lg:order-2 lg:flex-1'>
+					<DateRangeSelector
 						filters={filters}
 						onFiltersChange={handleFiltersChange}
-						onReset={resetFilters}
-						availableVersions={filterOptions.versions}
-						availableCategories={filterOptions.categories}
 					/>
-				</FilterSheet>
+				</div>
 			</div>
 
 			{/* KPI Cards Section */}

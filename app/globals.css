@@ -63,11 +63,11 @@
   --border: oklch(0.92 0.004 286.32);
   --input: oklch(0.92 0.004 286.32);
   --ring: oklch(0.75 0.183 55.934);
-  --chart-1: oklch(0.837 0.128 66.29);
-  --chart-2: oklch(0.705 0.213 47.604);
-  --chart-3: oklch(0.646 0.222 41.116);
-  --chart-4: oklch(0.553 0.195 38.402);
-  --chart-5: oklch(0.47 0.157 37.304);
+  --chart-1: oklch(0.65 0.25 270); /* Blue/Purple */
+  --chart-2: oklch(0.65 0.25 150); /* Green */
+  --chart-3: oklch(0.70 0.25 50);  /* Orange */
+  --chart-4: oklch(0.65 0.25 330); /* Pink/Red */
+  --chart-5: oklch(0.70 0.25 200); /* Cyan/Blue */
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.141 0.005 285.823);
   --sidebar-primary: oklch(0.646 0.222 41.116);
@@ -97,11 +97,11 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.408 0.123 38.172);
-  --chart-1: oklch(0.837 0.128 66.29);
-  --chart-2: oklch(0.705 0.213 47.604);
-  --chart-3: oklch(0.646 0.222 41.116);
-  --chart-4: oklch(0.553 0.195 38.402);
-  --chart-5: oklch(0.47 0.157 37.304);
+  --chart-1: oklch(0.65 0.25 270); /* Blue/Purple */
+  --chart-2: oklch(0.65 0.25 150); /* Green */
+  --chart-3: oklch(0.70 0.25 50);  /* Orange */
+  --chart-4: oklch(0.65 0.25 330); /* Pink/Red */
+  --chart-5: oklch(0.70 0.25 200); /* Cyan/Blue */
   --sidebar: oklch(0.21 0.006 285.885);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.705 0.213 47.604);

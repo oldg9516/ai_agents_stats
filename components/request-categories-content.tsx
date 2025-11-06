@@ -1,13 +1,13 @@
 'use client'
 
-import { useState } from 'react'
 import { RequestCategoriesTable } from '@/components/tables/request-categories-table'
 import { Button } from '@/components/ui/button'
-import { IconX, IconCalendar, IconLoader2 } from '@tabler/icons-react'
-import { useTranslations } from 'next-intl'
-import { fetchSupportMinCreatedDate } from '@/lib/actions/support-actions'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { fetchSupportMinCreatedDate } from '@/lib/actions/support-actions'
+import { IconLoader2 } from '@tabler/icons-react'
+import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 
 /**
  * Request Categories Content - Client Component
@@ -30,6 +30,20 @@ export function RequestCategoriesContent() {
 	})
 
 	const [isLoadingAllTime, setIsLoadingAllTime] = useState(false)
+
+	// Helper to check if current range matches a preset
+	const isActiveRange = (days: number | 'all') => {
+		const diffMs = dateRange.to.getTime() - dateRange.from.getTime()
+		const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
+
+		if (days === 'all') {
+			// Check if from date is very old (before 2023)
+			return dateRange.from.getFullYear() < 2023
+		}
+
+		// Allow 1 day tolerance for date comparison
+		return Math.abs(diffDays - days) <= 1
+	}
 
 	// Quick date setters
 	const set7Days = () => {
@@ -93,16 +107,43 @@ export function RequestCategoriesContent() {
 	return (
 		<div className='flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6'>
 			{/* Date Filter */}
-			<div className='flex flex-col gap-4'>
-				{/* Quick buttons */}
+			<div className='flex flex-wrap gap-3'>
+				{/* Quick buttons - compact, inline */}
 				<div className='flex flex-wrap gap-2'>
-					<Button variant='outline' size='sm' onClick={set7Days}>
+					<Button
+						variant='outline'
+						size='sm'
+						onClick={set7Days}
+						className={`h-8 px-3 text-xs ${
+							isActiveRange(7)
+								? 'bg-orange-500 text-white hover:bg-orange-600 border-orange-500'
+								: ''
+						}`}
+					>
 						{t('quickOptions.7d')}
 					</Button>
-					<Button variant='outline' size='sm' onClick={set30Days}>
+					<Button
+						variant='outline'
+						size='sm'
+						onClick={set30Days}
+						className={`h-8 px-3 text-xs ${
+							isActiveRange(30)
+								? 'bg-orange-500 text-white hover:bg-orange-600 border-orange-500'
+								: ''
+						}`}
+					>
 						{t('quickOptions.30d')}
 					</Button>
-					<Button variant='outline' size='sm' onClick={set3Months}>
+					<Button
+						variant='outline'
+						size='sm'
+						onClick={set3Months}
+						className={`h-8 px-3 text-xs ${
+							isActiveRange(90)
+								? 'bg-orange-500 text-white hover:bg-orange-600 border-orange-500'
+								: ''
+						}`}
+					>
 						{t('quickOptions.3m')}
 					</Button>
 					<Button
@@ -110,10 +151,15 @@ export function RequestCategoriesContent() {
 						size='sm'
 						onClick={setAllTime}
 						disabled={isLoadingAllTime}
+						className={`h-8 px-3 text-xs ${
+							isActiveRange('all')
+								? 'bg-orange-500 text-white hover:bg-orange-600 border-orange-500'
+								: ''
+						}`}
 					>
 						{isLoadingAllTime ? (
 							<>
-								<IconLoader2 className='mr-2 h-4 w-4 animate-spin' />
+								<IconLoader2 className='mr-2 h-3 w-3 animate-spin' />
 								{tCommon('loading')}
 							</>
 						) : (
@@ -122,22 +168,34 @@ export function RequestCategoriesContent() {
 					</Button>
 				</div>
 
-				{/* Manual date inputs */}
-				<div className='flex flex-col sm:flex-row gap-4 items-end'>
-					<div className='flex-1 space-y-2'>
-						<Label htmlFor='from'>{t('from')}</Label>
+				{/* Manual date inputs - inline layout */}
+				<div className='flex items-center gap-2 flex-wrap'>
+					<div className='flex items-center gap-1.5'>
+						<Label
+							htmlFor='from'
+							className='text-xs text-muted-foreground whitespace-nowrap'
+						>
+							{t('from')}
+						</Label>
 						<Input
 							id='from'
 							type='date'
+							className='h-8 text-xs w-auto'
 							value={formatDateForInput(dateRange.from)}
 							onChange={handleFromChange}
 						/>
 					</div>
-					<div className='flex-1 space-y-2'>
-						<Label htmlFor='to'>{t('to')}</Label>
+					<div className='flex items-center gap-1.5'>
+						<Label
+							htmlFor='to'
+							className='text-xs text-muted-foreground whitespace-nowrap'
+						>
+							{t('to')}
+						</Label>
 						<Input
 							id='to'
 							type='date'
+							className='h-8 text-xs w-auto'
 							value={formatDateForInput(dateRange.to)}
 							onChange={handleToChange}
 						/>

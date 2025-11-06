@@ -11,6 +11,7 @@ import { ResolutionTimeChart } from './charts/resolution-time-chart'
 import { StatusDistributionChart } from './charts/status-distribution-chart'
 import { FilterSheet } from './filters/filter-sheet'
 import { SupportFilterBar } from './filters/support-filter-bar'
+import { SupportDateRangeSelector } from './filters/support-date-range-selector'
 import { AgentResponseRateCard } from './kpi/agent-response-rate-card'
 import { AvgRequirementsCard } from './kpi/avg-requirements-card'
 import { DataCollectionRateCard } from './kpi/data-collection-rate-card'
@@ -113,24 +114,35 @@ export function SupportOverviewContent() {
 
 	return (
 		<div className='flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6'>
-			{/* Filter Button */}
-			<div className='flex justify-start'>
-				<FilterSheet
-					title={t('filterSheet.supportTitle')}
-					description={t('filterSheet.supportDescription')}
-					activeFilterCount={getActiveFilterCount()}
-				>
-					<SupportFilterBar
-						filters={filters}
+			{/* Filters Section */}
+			<div className='flex flex-col gap-3 lg:flex-row lg:items-center'>
+				{/* More Filters Button - First on large screens, top on mobile */}
+				<div className='lg:order-1'>
+					<FilterSheet
+						title={t('filterSheet.supportTitle')}
+						description={t('filterSheet.supportDescription')}
+						activeFilterCount={getActiveFilterCount()}
+					>
+						<SupportFilterBar
+							filters={filters}
+							onStatusesChange={setStatuses}
+							onRequestTypesChange={setRequestTypes}
+							onRequirementsChange={setRequirements}
+							onVersionsChange={setVersions}
+							onReset={resetFilters}
+							availableVersions={availableVersions}
+						/>
+					</FilterSheet>
+				</div>
+
+				{/* Date Range Selector - Fills remaining space on large screens */}
+				<div className='lg:order-2 lg:flex-1'>
+					<SupportDateRangeSelector
+						from={filters.dateRange.from}
+						to={filters.dateRange.to}
 						onDateRangeChange={setDateRange}
-						onStatusesChange={setStatuses}
-						onRequestTypesChange={setRequestTypes}
-						onRequirementsChange={setRequirements}
-						onVersionsChange={setVersions}
-						onReset={resetFilters}
-						availableVersions={availableVersions}
 					/>
-				</FilterSheet>
+				</div>
 			</div>
 
 			{/* KPI Cards */}

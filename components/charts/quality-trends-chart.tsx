@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { format } from 'date-fns'
 import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
-import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import {
@@ -22,22 +21,18 @@ interface QualityTrendsChartProps {
 	data: QualityTrendData[]
 }
 
-type TimePeriod = '7d' | '30d' | '3m' | 'all'
-
 /**
  * Quality Trends Chart - Area chart showing quality trends over time
  *
  * Features:
  * - Multi-area chart (one per category)
  * - Interactive legend with checkboxes
- * - Time period selector
  * - Responsive design
  * - Uses theme colors automatically
+ * - Data is filtered by page-level date range filters
  */
 export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 	const t = useTranslations()
-	const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('30d')
-	const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(new Set())
 
 	// Create chart config dynamically from categories
 	const { chartConfig, categories } = useMemo(() => {
@@ -60,9 +55,21 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 		return { chartConfig: config, categories: cats }
 	}, [data])
 
+	// Hide all categories beyond the first 3 by default
+	const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(new Set())
+
+	// Update hidden categories when categories change
+	useEffect(() => {
+		if (categories.length > 3) {
+			const categoriesToHide = categories.slice(3).map(c => c.name)
+			setHiddenCategories(new Set(categoriesToHide))
+		}
+	}, [categories])
+
 	// Transform data for Recharts format
 	// Input: [{ category, weekStart, goodPercentage }, ...]
 	// Output: [{ week: "2024-01-01", "Category1": 85.2, "Category2": 70.5 }, ...]
+	// Note: Data is already filtered by page-level date filters
 	const chartData = useMemo(() => {
 		// Group by week
 		const weekMap = new Map<string, Record<string, number | string>>()
@@ -76,49 +83,42 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 		})
 
 		// Convert to array and sort by date
-		const result = Array.from(weekMap.values()).sort(
+		return Array.from(weekMap.values()).sort(
 			(a, b) => new Date(a.week).getTime() - new Date(b.week).getTime()
 		)
+	}, [data])
 
-		// Filter by time period
-		const now = new Date()
-		const filterDate = new Date(now)
-
-		switch (selectedPeriod) {
-			case '7d':
-				filterDate.setDate(now.getDate() - 7)
-				break
-			case '30d':
-				filterDate.setDate(now.getDate() - 30)
-				break
-			case '3m':
-				filterDate.setMonth(now.getMonth() - 3)
-				break
-			case 'all':
-				return result // No filtering
-		}
-
-		return result.filter((d) => new Date(d.week) >= filterDate)
-	}, [data, selectedPeriod])
-
-	// Toggle category visibility
+	// Toggle category visibility - max 3 categories can be shown at once
 	const toggleCategory = (categoryName: string) => {
 		setHiddenCategories((prev) => {
 			const newSet = new Set(prev)
+			const visibleCount = categories.length - newSet.size
+
 			if (newSet.has(categoryName)) {
-				newSet.delete(categoryName)
+				// If category is hidden, try to show it
+				// But only if we don't already have 3 visible
+				if (visibleCount < 3) {
+					newSet.delete(categoryName)
+				}
 			} else {
+				// If category is visible, hide it (always allowed)
 				newSet.add(categoryName)
 			}
 			return newSet
 		})
 	}
 
-	// Format week for x-axis
+	// Format week for x-axis - show week end date (Saturday) instead of start
 	const formatWeek = (dateString: string) => {
 		try {
-			const date = new Date(dateString)
-			return format(date, 'MMM d')
+			const weekStart = new Date(dateString)
+			// Add 6 days to get to Saturday (end of week)
+			const weekEnd = new Date(weekStart)
+			weekEnd.setDate(weekStart.getDate() + 6)
+			// But don't go beyond today
+			const today = new Date()
+			const displayDate = weekEnd > today ? today : weekEnd
+			return format(displayDate, 'MMM d')
 		} catch {
 			return dateString
 		}
@@ -128,57 +128,51 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 		<Card>
 			<CardHeader>
 				<div className="flex flex-col gap-4">
-					<div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-						<div className="flex-1 min-w-0">
-							<div className="flex items-center gap-1.5">
-								<CardTitle className="text-lg sm:text-xl">{t('charts.qualityTrends.title')}</CardTitle>
-								<InfoTooltip content={t('charts.qualityTrends.tooltip')} />
-							</div>
-							<CardDescription className="text-sm mt-1">
-								{t('charts.qualityTrends.description')}
-							</CardDescription>
+					<div className="flex-1 min-w-0">
+						<div className="flex items-center gap-1.5">
+							<CardTitle className="text-lg sm:text-xl">{t('charts.qualityTrends.title')}</CardTitle>
+							<InfoTooltip content={t('charts.qualityTrends.tooltip')} />
 						</div>
-
-						{/* Time Period Selector */}
-						<div className="flex flex-wrap gap-2 sm:flex-nowrap">
-							{(['7d', '30d', '3m', 'all'] as const).map((period) => (
-								<Button
-									key={period}
-									variant={selectedPeriod === period ? 'default' : 'outline'}
-									size="sm"
-									onClick={() => setSelectedPeriod(period)}
-									className="text-xs sm:text-sm flex-1 sm:flex-none whitespace-nowrap"
-								>
-									{period === '7d' && t('filters.quickOptions.7d')}
-									{period === '30d' && t('filters.quickOptions.30d')}
-									{period === '3m' && t('filters.quickOptions.3m')}
-									{period === 'all' && t('filters.quickOptions.all')}
-								</Button>
-							))}
-						</div>
+						<CardDescription className="text-sm mt-1">
+							{t('charts.qualityTrends.description')}
+						</CardDescription>
 					</div>
 
-					{/* Interactive Legend with Checkboxes */}
-					<div className='flex flex-wrap gap-3 sm:gap-4'>
-						{categories.map((category) => (
-							<div key={category.name} className='flex items-center gap-2 min-w-0'>
-								<Checkbox
-									id={`category-${category.name}`}
-									checked={!hiddenCategories.has(category.name)}
-									onCheckedChange={() => toggleCategory(category.name)}
-								/>
-								<Label
-									htmlFor={`category-${category.name}`}
-									className='flex items-center gap-2 cursor-pointer min-w-0'
-								>
-									<div
-										className='w-3 h-3 rounded-sm shrink-0'
-										style={{ backgroundColor: `var(--color-${category.name})` }}
-									/>
-									<span className='text-xs sm:text-sm truncate'>{category.label}</span>
-								</Label>
-							</div>
-						))}
+					{/* Interactive Legend with Checkboxes - Max 3 visible */}
+					<div className='flex flex-col gap-2'>
+						<div className='flex flex-wrap gap-3 sm:gap-4'>
+							{categories.map((category) => {
+								const isVisible = !hiddenCategories.has(category.name)
+								const visibleCount = categories.length - hiddenCategories.size
+								const isDisabled = !isVisible && visibleCount >= 3
+
+								return (
+									<div key={category.name} className='flex items-center gap-2 min-w-0'>
+										<Checkbox
+											id={`category-${category.name}`}
+											checked={isVisible}
+											onCheckedChange={() => toggleCategory(category.name)}
+											disabled={isDisabled}
+										/>
+										<Label
+											htmlFor={`category-${category.name}`}
+											className={`flex items-center gap-2 min-w-0 ${
+												isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+											}`}
+										>
+											<div
+												className='w-3 h-3 rounded-sm shrink-0'
+												style={{ backgroundColor: `var(--color-${category.name})` }}
+											/>
+											<span className='text-xs sm:text-sm truncate'>{category.label}</span>
+										</Label>
+									</div>
+								)
+							})}
+						</div>
+						<p className='text-xs text-muted-foreground'>
+							{t('charts.qualityTrends.maxThreeCategories')}
+						</p>
 					</div>
 				</div>
 			</CardHeader>

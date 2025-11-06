@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card } from '@/components/ui/card'
 import { fetchMinCreatedDate } from '@/lib/actions/dashboard-actions'
 import { IconLoader2 } from '@tabler/icons-react'
+import { useTranslations } from 'next-intl'
+import { useEffect, useState } from 'react'
 
 interface DateRangeFilterProps {
 	from: Date
@@ -124,16 +123,14 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 	}
 
 	return (
-		<div className="space-y-3">
-			<Label className="text-sm font-medium">{t('filters.dateRange')}</Label>
-
-			{/* Quick Buttons */}
-			<div className="grid grid-cols-2 gap-2">
+		<div className='flex flex-wrap gap-4 sm:items-center'>
+			{/* Quick Buttons - Single row */}
+			<div className='flex flex-wrap gap-2'>
 				<Button
 					onClick={setLast7Days}
-					variant="outline"
-					size="sm"
-					className={`text-xs sm:text-sm ${
+					variant='outline'
+					size='sm'
+					className={`text-xs h-9 px-4 ${
 						isActiveRange(7)
 							? 'bg-orange-500 text-white hover:bg-orange-600 border-orange-500'
 							: ''
@@ -143,9 +140,9 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 				</Button>
 				<Button
 					onClick={setLast30Days}
-					variant="outline"
-					size="sm"
-					className={`text-xs sm:text-sm ${
+					variant='outline'
+					size='sm'
+					className={`text-xs h-9 px-4 ${
 						isActiveRange(30)
 							? 'bg-orange-500 text-white hover:bg-orange-600 border-orange-500'
 							: ''
@@ -155,9 +152,9 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 				</Button>
 				<Button
 					onClick={setLast3Months}
-					variant="outline"
-					size="sm"
-					className={`text-xs sm:text-sm ${
+					variant='outline'
+					size='sm'
+					className={`text-xs h-9 px-4 ${
 						isActiveRange(90)
 							? 'bg-orange-500 text-white hover:bg-orange-600 border-orange-500'
 							: ''
@@ -167,10 +164,10 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 				</Button>
 				<Button
 					onClick={setAllTime}
-					variant="outline"
-					size="sm"
+					variant='outline'
+					size='sm'
 					disabled={isLoadingAllTime}
-					className={`text-xs sm:text-sm ${
+					className={`text-xs h-9 px-4 ${
 						isActiveRange('all')
 							? 'bg-orange-500 text-white hover:bg-orange-600 border-orange-500'
 							: ''
@@ -178,7 +175,7 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 				>
 					{isLoadingAllTime ? (
 						<>
-							<IconLoader2 className="mr-2 h-3 w-3 animate-spin" />
+							<IconLoader2 className='mr-1 h-3 w-3 animate-spin' />
 							Loading...
 						</>
 					) : (
@@ -187,49 +184,73 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 				</Button>
 			</div>
 
-			{/* Manual Date Inputs */}
+			{/* Manual Date Inputs - Inline */}
 			{isClient && (
-				<div className="grid grid-cols-2 gap-3">
-					<div className="space-y-1.5">
-						<Label htmlFor="date-from" className="text-xs text-muted-foreground">
+				<div className='flex items-center gap-2 flex-wrap'>
+					<div className='flex items-center gap-1.5'>
+						<Label
+							htmlFor='date-from'
+							className='text-xs text-muted-foreground whitespace-nowrap'
+						>
 							{t('filters.from')}
 						</Label>
 						<Input
-							id="date-from"
-							type="date"
+							id='date-from'
+							type='date'
 							value={formatDateForInput(from)}
 							onChange={handleFromChange}
 							max={formatDateForInput(to)}
+							className='h-9 text-xs w-auto'
 						/>
 					</div>
-					<div className="space-y-1.5">
-						<Label htmlFor="date-to" className="text-xs text-muted-foreground">
+					<div className='flex items-center gap-1.5'>
+						<Label
+							htmlFor='date-to'
+							className='text-xs text-muted-foreground whitespace-nowrap'
+						>
 							{t('filters.to')}
 						</Label>
 						<Input
-							id="date-to"
-							type="date"
+							id='date-to'
+							type='date'
 							value={formatDateForInput(to)}
 							onChange={handleToChange}
 							min={formatDateForInput(from)}
 							max={formatDateForInput(new Date())}
+							className='h-9 text-xs w-auto'
 						/>
 					</div>
 				</div>
 			)}
 			{!isClient && (
-				<div className="grid grid-cols-2 gap-3">
-					<div className="space-y-1.5">
-						<Label htmlFor="date-from" className="text-xs text-muted-foreground">
+				<div className='flex items-center gap-2 flex-wrap'>
+					<div className='flex items-center gap-1.5'>
+						<Label
+							htmlFor='date-from'
+							className='text-xs text-muted-foreground whitespace-nowrap'
+						>
 							{t('filters.from')}
 						</Label>
-						<Input id="date-from" type="date" disabled />
+						<Input
+							id='date-from'
+							type='date'
+							disabled
+							className='h-8 text-xs w-auto'
+						/>
 					</div>
-					<div className="space-y-1.5">
-						<Label htmlFor="date-to" className="text-xs text-muted-foreground">
+					<div className='flex items-center gap-1.5'>
+						<Label
+							htmlFor='date-to'
+							className='text-xs text-muted-foreground whitespace-nowrap'
+						>
 							{t('filters.to')}
 						</Label>
-						<Input id="date-to" type="date" disabled />
+						<Input
+							id='date-to'
+							type='date'
+							disabled
+							className='h-8 text-xs w-auto'
+						/>
 					</div>
 				</div>
 			)}

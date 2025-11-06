@@ -9,13 +9,11 @@ import { getAllStatuses, getStatusLabel } from '@/constants/support-statuses'
 import type { SupportFilters } from '@/lib/supabase/types'
 import { IconRefresh } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'
-import { DateRangeFilter } from './date-range-filter'
 import { MultiSelectFilter } from './multi-select-filter'
 import { RequirementsFilter } from './requirements-filter'
 
 interface SupportFilterBarProps {
 	filters: SupportFilters
-	onDateRangeChange: (from: Date, to: Date) => void
 	onStatusesChange: (statuses: string[]) => void
 	onRequestTypesChange: (types: string[]) => void
 	onRequirementsChange: (requirements: string[]) => void
@@ -25,19 +23,19 @@ interface SupportFilterBarProps {
 }
 
 /**
- * Support Filter Bar - All filters for support overview
+ * Support Filter Bar - Filters for support overview (without date range)
  *
  * Features:
- * - Date range picker
  * - Status multi-select
  * - Request type multi-select
  * - Requirements multi-select
  * - Version multi-select
  * - Reset button
+ *
+ * Note: Date range filter moved to page level (DateRangeSelector component)
  */
 export function SupportFilterBar({
 	filters,
-	onDateRangeChange,
 	onStatusesChange,
 	onRequestTypesChange,
 	onRequirementsChange,
@@ -74,13 +72,6 @@ export function SupportFilterBar({
 	return (
 		<div className='space-y-4'>
 			<div className='grid gap-4 sm:gap-6 grid-cols-1'>
-				{/* Date Range */}
-				<DateRangeFilter
-					from={filters.dateRange.from}
-					to={filters.dateRange.to}
-					onChange={onDateRangeChange}
-				/>
-
 				{/* Status */}
 				<MultiSelectFilter
 					label={t('filters.status')}

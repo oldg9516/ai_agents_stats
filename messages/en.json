@@ -111,9 +111,10 @@
 	},
 	"charts": {
 		"qualityTrends": {
-			"title": "Quality Trends Over Time",
+			"title": "Quality Trends",
 			"description": "Track quality percentage by category",
-			"tooltip": "Time-series visualization showing AI quality trends grouped by week. Each line represents a different request category. Use this to identify quality patterns, seasonal variations, and track improvement over time."
+			"tooltip": "Time-series visualization showing AI quality trends grouped by week. Each line represents a different request category. Use this to identify quality patterns, seasonal variations, and track improvement over time.",
+			"maxThreeCategories": "Maximum 3 categories can be displayed at once"
 		},
 		"categoryDistribution": {
 			"title": "Quality by Category",
@@ -330,7 +331,7 @@
 				}
 			},
 			"qualityTrends": {
-				"title": "Quality Trends Over Time",
+				"title": "Quality Trends",
 				"description": "Multi-line area chart showing quality percentage trends for each category over time.",
 				"features": {
 					"title": "Features:",

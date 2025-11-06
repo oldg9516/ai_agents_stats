@@ -5,7 +5,6 @@ import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 import type { DashboardFilters } from '@/lib/supabase/types'
 import { IconRefresh } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'
-import { DateRangeFilter } from './date-range-filter'
 import { MultiSelectFilter } from './multi-select-filter'
 import { useEffect } from 'react'
 import { toast } from 'sonner'
@@ -19,14 +18,15 @@ interface FilterBarProps {
 }
 
 /**
- * Filter Bar - Container for all dashboard filters
+ * Filter Bar - Container for dashboard filters (without date range)
  *
  * Features:
- * - Date range filter
  * - Version multi-select
  * - Category multi-select
  * - Agent multi-select
  * - Reset button
+ *
+ * Note: Date range filter moved to page level (DateRangeSelector component)
  */
 export function FilterBar({
 	filters,
@@ -65,13 +65,6 @@ export function FilterBar({
 	return (
 		<div className='space-y-4'>
 			<div className='grid gap-4 sm:gap-6 grid-cols-1'>
-				{/* Date Range Filter */}
-				<DateRangeFilter
-					from={filters.dateRange.from}
-					to={filters.dateRange.to}
-					onChange={(from, to) => onFiltersChange({ dateRange: { from, to } })}
-				/>
-
 				{/* Version Filter */}
 				<MultiSelectFilter
 					label={t('filters.versions')}
