@@ -1,5 +1,6 @@
 'use client'
 
+import { TableSkeleton } from '@/components/loading/table-skeleton'
 import { Button } from '@/components/ui/button'
 import {
 	Card,
@@ -17,17 +18,23 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/components/ui/table'
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { getCategoryLabel } from '@/constants/category-labels'
-import type { DetailedStatsRow, DashboardFilters } from '@/lib/supabase/types'
+import { useDetailedStatsPaginated } from '@/lib/queries/dashboard-queries'
+import type { DashboardFilters, DetailedStatsRow } from '@/lib/supabase/types'
 import { exportToCSV } from '@/lib/utils/export'
 import { getQualityBgClass } from '@/lib/utils/quality-colors'
-import { TableSkeleton } from '@/components/loading/table-skeleton'
 import {
 	IconChevronLeft,
 	IconChevronRight,
 	IconDownload,
-	IconSearch,
 	IconLoader2,
+	IconSearch,
 } from '@tabler/icons-react'
 import {
 	flexRender,
@@ -38,10 +45,9 @@ import {
 	type ColumnDef,
 	type SortingState,
 } from '@tanstack/react-table'
-import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
-import { useDetailedStatsPaginated } from '@/lib/queries/dashboard-queries'
+import { useMemo, useState } from 'react'
 
 interface DetailedStatsTableProps {
 	filters: DashboardFilters
@@ -87,6 +93,33 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 	// Handle category click
 	const handleCategoryClick = (category: string) => {
 		router.push(`/dashboard/category/${encodeURIComponent(category)}`)
+	}
+
+	// Helper to check if date is after new logic cutoff (11.11.2025)
+	const isNewLogic = (dates: string | null): boolean => {
+		if (!dates) return false // Version-level rows don't have dates
+
+		// Extract SECOND date (end of week) from "DD.MM.YYYY — DD.MM.YYYY" format
+		// This ensures that if the week includes 11.11.2025, it uses new logic
+		const secondDate = dates.split(' — ')[1]
+		const [day, month, year] = secondDate.split('.')
+		const dateObj = new Date(`${year}-${month}-${day}`)
+		const cutoffDate = new Date('2025-11-11')
+
+		return dateObj >= cutoffDate
+	}
+
+	// Calculate AI metrics
+	const calculateAIMetrics = (row: DetailedStatsRow) => {
+		const total = row.recordsQualifiedAgents
+		if (total === 0) return { failureRate: 0, successRate: 0 }
+
+		const failureRate =
+			((row.criticalErrors + row.meaningfulImprovements) / total) * 100
+		const successRate =
+			((row.noSignificantChanges + row.stylisticPreferences) / total) * 100
+
+		return { failureRate, successRate }
 	}
 
 	// Define columns
@@ -167,28 +200,41 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 			},
 			{
 				accessorKey: 'totalRecords',
-				header: () => <div className='text-center'>{t('table.totalRecords')}</div>,
+				header: () => (
+					<div className='text-center'>{t('table.totalRecords')}</div>
+				),
 				cell: ({ getValue }) => {
 					return <div className='text-left'>{getValue() as number}</div>
 				},
 			},
 			{
 				accessorKey: 'recordsQualifiedAgents',
-				header: () => <div className='text-center'>{t('table.qualifiedAgents')}</div>,
+				header: () => (
+					<div className='text-center'>{t('table.qualifiedAgents')}</div>
+				),
 				cell: ({ getValue }) => {
 					return <div className='text-left'>{getValue() as number}</div>
 				},
 			},
 			{
 				accessorKey: 'changedRecords',
-				header: () => <div className='text-center'>{t('table.recordsChanged')}</div>,
+				header: () => (
+					<div className='text-center'>{t('table.recordsChanged')}</div>
+				),
 				cell: ({ getValue }) => {
 					return <div className='text-left'>{getValue() as number}</div>
 				},
 			},
 			{
 				accessorKey: 'goodPercentage',
-				header: () => <div className='text-center'>{t('table.goodPercentage')}</div>,
+				header: () => (
+					<div className='text-center text-xs'>
+						{t('table.goodPercentage')}
+						<div className='text-[10px] text-muted-foreground font-normal'>
+							(OLD)
+						</div>
+					</div>
+				),
 				cell: ({ getValue }) => {
 					const value = getValue() as number
 					return (
@@ -205,6 +251,193 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 				},
 			},
 			{
+				accessorKey: 'aiFailureRate',
+				header: () => (
+					<div className='text-center text-xs'>
+						AI Failure Rate
+						<div className='text-[10px] text-muted-foreground font-normal'>
+							(NEW)
+						</div>
+					</div>
+				),
+				cell: ({ row }) => {
+					const useNewLogic = isNewLogic(row.original.dates)
+					const isVersionLevel = row.original.sortOrder === 1
+
+					if (!useNewLogic) {
+						return (
+							<div className='text-left text-muted-foreground text-sm'>-</div>
+						)
+					}
+
+					const { failureRate } = calculateAIMetrics(row.original)
+					const total = row.original.recordsQualifiedAgents
+
+					// Color coding: red > 30%, orange 15-30%, green < 15%
+					const bgClass =
+						failureRate > 30
+							? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+							: failureRate > 15
+							? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200'
+							: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
+
+					return (
+						<div className='flex justify-left'>
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<span
+											className={`inline-block px-2 py-1 rounded text-sm font-medium cursor-help ${bgClass}`}
+										>
+											{failureRate.toFixed(1)}%
+										</span>
+									</TooltipTrigger>
+									<TooltipContent side='bottom' className='max-w-xs'>
+										<div className='space-y-1 text-xs'>
+											<div className='font-semibold mb-2'>
+												AI Failure Breakdown:
+											</div>
+											<div className='flex justify-between gap-4'>
+												<span className='text-red-600 dark:text-red-400'>
+													🔴 Critical Errors:
+												</span>
+												<span className='font-medium'>
+													{row.original.criticalErrors} (
+													{total > 0
+														? (
+																(row.original.criticalErrors / total) *
+																100
+														  ).toFixed(1)
+														: 0}
+													%)
+												</span>
+											</div>
+											<div className='flex justify-between gap-4'>
+												<span className='text-orange-600 dark:text-orange-400'>
+													🟠 Meaningful Improvements:
+												</span>
+												<span className='font-medium'>
+													{row.original.meaningfulImprovements} (
+													{total > 0
+														? (
+																(row.original.meaningfulImprovements / total) *
+																100
+														  ).toFixed(1)
+														: 0}
+													%)
+												</span>
+											</div>
+											<div className='border-t pt-1 mt-1'>
+												<div className='flex justify-between gap-4 font-semibold'>
+													<span>Total Failures:</span>
+													<span>
+														{row.original.criticalErrors +
+															row.original.meaningfulImprovements}
+													</span>
+												</div>
+											</div>
+										</div>
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+						</div>
+					)
+				},
+			},
+			{
+				accessorKey: 'aiSuccessRate',
+				header: () => (
+					<div className='text-center text-xs'>
+						AI Success Rate
+						<div className='text-[10px] text-muted-foreground font-normal'>
+							(NEW)
+						</div>
+					</div>
+				),
+				cell: ({ row }) => {
+					const useNewLogic = isNewLogic(row.original.dates)
+
+					if (!useNewLogic) {
+						return (
+							<div className='text-left text-muted-foreground text-sm'>-</div>
+						)
+					}
+
+					const { successRate } = calculateAIMetrics(row.original)
+					const total = row.original.recordsQualifiedAgents
+
+					// Color coding: green > 70%, orange 50-70%, red < 50%
+					const bgClass =
+						successRate > 70
+							? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
+							: successRate > 50
+							? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200'
+							: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+
+					return (
+						<div className='flex justify-left'>
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<span
+											className={`inline-block px-2 py-1 rounded text-sm font-medium cursor-help ${bgClass}`}
+										>
+											{successRate.toFixed(1)}%
+										</span>
+									</TooltipTrigger>
+									<TooltipContent side='bottom' className='max-w-xs'>
+										<div className='space-y-1 text-xs'>
+											<div className='font-semibold mb-2'>
+												AI Success Breakdown:
+											</div>
+											<div className='flex justify-between gap-4'>
+												<span className='text-blue-600 dark:text-blue-400'>
+													🔵 No Significant Change:
+												</span>
+												<span className='font-medium'>
+													{row.original.noSignificantChanges} (
+													{total > 0
+														? (
+																(row.original.noSignificantChanges / total) *
+																100
+														  ).toFixed(1)
+														: 0}
+													%)
+												</span>
+											</div>
+											<div className='flex justify-between gap-4'>
+												<span className='text-green-600 dark:text-green-400'>
+													🟢 Stylistic Preference:
+												</span>
+												<span className='font-medium'>
+													{row.original.stylisticPreferences} (
+													{total > 0
+														? (
+																(row.original.stylisticPreferences / total) *
+																100
+														  ).toFixed(1)
+														: 0}
+													%)
+												</span>
+											</div>
+											<div className='border-t pt-1 mt-1'>
+												<div className='flex justify-between gap-4 font-semibold'>
+													<span>Total Successes:</span>
+													<span>
+														{row.original.noSignificantChanges +
+															row.original.stylisticPreferences}
+													</span>
+												</div>
+											</div>
+										</div>
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+						</div>
+					)
+				},
+			},
+			{
 				accessorKey: 'sortOrder',
 				header: '',
 				enableSorting: true,
@@ -213,6 +446,45 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 		],
 		[t]
 	)
+
+	// Find the latest week for each category (to highlight)
+	const latestWeeksByCategory = useMemo(() => {
+		const latestMap = new Map<string, string>()
+
+		data.forEach(row => {
+			// Only process week-level rows (sortOrder !== 1)
+			if (row.sortOrder !== 1 && row.dates) {
+				const category = row.category
+				const version = row.version
+				const key = `${category}-${version}`
+
+				// Extract first date from "DD.MM.YYYY — DD.MM.YYYY" format
+				const firstDate = row.dates.split(' — ')[0]
+				const [day, month, year] = firstDate.split('.')
+				const dateStr = `${year}-${month}-${day}` // YYYY-MM-DD for comparison
+
+				// Check if this is the latest date for this category-version
+				const existing = latestMap.get(key)
+				if (!existing || dateStr > existing) {
+					latestMap.set(key, dateStr)
+				}
+			}
+		})
+
+		return latestMap
+	}, [data])
+
+	// Helper to check if a row is the latest week for its category
+	const isLatestWeek = (row: DetailedStatsRow): boolean => {
+		if (row.sortOrder === 1 || !row.dates) return false
+
+		const key = `${row.category}-${row.version}`
+		const firstDate = row.dates.split(' — ')[0]
+		const [day, month, year] = firstDate.split('.')
+		const dateStr = `${year}-${month}-${day}`
+
+		return latestWeeksByCategory.get(key) === dateStr
+	}
 
 	// Initialize table (client-side sorting/filtering only - NO client-side pagination)
 	const table = useReactTable({
@@ -252,13 +524,13 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 	// Handle page navigation
 	const handlePreviousPage = () => {
 		if (hasPreviousPage) {
-			setCurrentPage((prev) => prev - 1)
+			setCurrentPage(prev => prev - 1)
 		}
 	}
 
 	const handleNextPage = () => {
 		if (hasNextPage) {
-			setCurrentPage((prev) => prev + 1)
+			setCurrentPage(prev => prev + 1)
 		}
 	}
 
@@ -363,24 +635,33 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 						</TableHeader>
 						<TableBody>
 							{table.getRowModel().rows?.length ? (
-								table.getRowModel().rows.map(row => (
-									<TableRow
-										key={row.id}
-										data-state={row.getIsSelected() && 'selected'}
-										className={
-											row.original.sortOrder === 1 ? 'bg-muted/50' : ''
-										}
-									>
-										{row.getVisibleCells().map(cell => (
-											<TableCell key={cell.id}>
-												{flexRender(
-													cell.column.columnDef.cell,
-													cell.getContext()
-												)}
-											</TableCell>
-										))}
-									</TableRow>
-								))
+								table.getRowModel().rows.map(row => {
+									const isVersion = row.original.sortOrder === 1
+									const isLatest = isLatestWeek(row.original)
+
+									return (
+										<TableRow
+											key={row.id}
+											data-state={row.getIsSelected() && 'selected'}
+											className={
+												isVersion
+													? 'bg-muted/50'
+													: isLatest
+													? 'bg-blue-50/50 dark:bg-blue-950/20 border-l-2 border-l-blue-500'
+													: ''
+											}
+										>
+											{row.getVisibleCells().map(cell => (
+												<TableCell key={cell.id}>
+													{flexRender(
+														cell.column.columnDef.cell,
+														cell.getContext()
+													)}
+												</TableCell>
+											))}
+										</TableRow>
+									)
+								})
 							) : (
 								<TableRow>
 									<TableCell
@@ -398,11 +679,9 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 				{/* Server-Side Pagination */}
 				<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-4'>
 					<div className='text-xs sm:text-sm text-muted-foreground text-center sm:text-left'>
-						{t('table.showing')}{' '}
-						{currentPage * pageSize + 1}{' '}
-						{t('table.to')}{' '}
-						{Math.min((currentPage + 1) * pageSize, totalCount)}{' '}
-						{t('table.of')} {totalCount}
+						{t('table.showing')} {currentPage * pageSize + 1} {t('table.to')}{' '}
+						{Math.min((currentPage + 1) * pageSize, totalCount)} {t('table.of')}{' '}
+						{totalCount}
 						{isFetching && !isLoading && (
 							<span className='ml-2 inline-flex items-center gap-1'>
 								<IconLoader2 className='h-3 w-3 animate-spin' />
@@ -439,11 +718,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 													<span className='px-1 text-xs'>...</span>
 												)}
 												<Button
-													variant={
-														currentPage === page
-															? 'default'
-															: 'outline'
-													}
+													variant={currentPage === page ? 'default' : 'outline'}
 													size='sm'
 													onClick={() => handlePageClick(page)}
 													disabled={isFetching}

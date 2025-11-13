@@ -405,9 +405,9 @@ export async function getDetailedStats(
 	const { dateRange, versions, categories, agents } = filters
 
 	// OPTIMIZATION: Select only fields needed for detailed stats calculation
-	// This reduces data transfer significantly (5 fields instead of all)
+	// This reduces data transfer significantly (6 fields instead of all)
 	const selectFields =
-		'created_at, email, changed, request_subtype, prompt_version'
+		'created_at, email, changed, request_subtype, prompt_version, change_classification'
 
 	let query = supabase
 		.from('ai_human_comparison')
@@ -442,6 +442,7 @@ export async function getDetailedStats(
 		changed: boolean
 		request_subtype: string | null
 		prompt_version: string | null
+		change_classification: string | null
 	}
 	const records = data as unknown as DetailedStatsRecord[]
 	const rows: DetailedStatsRow[] = []
@@ -462,6 +463,16 @@ export async function getDetailedStats(
 		return acc
 	}, {} as Record<string, { category: string; version: string; records: DetailedStatsRecord[] }>)
 
+	// Helper function to count change classifications
+	const countClassifications = (records: DetailedStatsRecord[]) => {
+		return {
+			criticalErrors: records.filter(r => r.change_classification === 'critical_error').length,
+			meaningfulImprovements: records.filter(r => r.change_classification === 'meaningful_improvement').length,
+			stylisticPreferences: records.filter(r => r.change_classification === 'stylistic_preference').length,
+			noSignificantChanges: records.filter(r => r.change_classification === 'no_significant_change').length,
+		}
+	}
+
 	// Process each version group
 	Object.values(versionGroups).forEach(group => {
 		// If agents filter is empty, use all records (no filtering by qualified agents)
@@ -472,6 +483,7 @@ export async function getDetailedStats(
 				: group.records
 		const changedRecords = qualifiedRecords.filter(r => r.changed)
 		const unchangedRecords = qualifiedRecords.filter(r => !r.changed)
+		const classifications = countClassifications(qualifiedRecords)
 
 		// Level 1: Version-level row
 		rows.push({
@@ -488,6 +500,7 @@ export async function getDetailedStats(
 							(unchangedRecords.length / qualifiedRecords.length) * 100
 					  )
 					: 0,
+			...classifications,
 		})
 
 		// Level 2: Week-level rows
@@ -509,6 +522,7 @@ export async function getDetailedStats(
 					: weekRecords
 			const weekChangedRecords = weekQualifiedRecords.filter(r => r.changed)
 			const weekUnchangedRecords = weekQualifiedRecords.filter(r => !r.changed)
+			const weekClassifications = countClassifications(weekQualifiedRecords)
 
 			const weekStartDate = new Date(weekStart)
 			const weekEndDate = new Date(weekStartDate)
@@ -533,16 +547,33 @@ export async function getDetailedStats(
 									100
 						  )
 						: 0,
+				...weekClassifications,
 			})
 		})
 	})
 
-	// Sort: category ASC, sortOrder ASC, version ASC, dates DESC
+	// Sort: category ASC, sortOrder ASC, version ASC, dates DESC (newest first)
 	return rows.sort((a, b) => {
 		if (a.category !== b.category) return a.category.localeCompare(b.category)
 		if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder
 		if (a.version !== b.version) return a.version.localeCompare(b.version)
-		if (a.dates && b.dates) return b.dates.localeCompare(a.dates)
+
+		// For dates, parse DD.MM.YYYY format and compare as actual dates (newest first)
+		if (a.dates && b.dates) {
+			// Extract first date from "DD.MM.YYYY — DD.MM.YYYY" format
+			const dateStrA = a.dates.split(' — ')[0]
+			const dateStrB = b.dates.split(' — ')[0]
+
+			// Convert DD.MM.YYYY to YYYY-MM-DD for proper comparison
+			const [dayA, monthA, yearA] = dateStrA.split('.')
+			const [dayB, monthB, yearB] = dateStrB.split('.')
+			const dateA = new Date(`${yearA}-${monthA}-${dayA}`)
+			const dateB = new Date(`${yearB}-${monthB}-${dayB}`)
+
+			// Descending order (newest first)
+			return dateB.getTime() - dateA.getTime()
+		}
+
 		return 0
 	})
 }
@@ -646,24 +677,29 @@ export async function getDetailedStatsPaginated(
 		}
 	}
 
-	// SQL function returns total_count in every row (for efficiency)
+	// SQL function returns out_total_count in every row (for efficiency)
 	// @ts-expect-error - accessing dynamic SQL result fields
-	const totalCount = data[0].total_count || 0
+	const totalCount = data[0].out_total_count || 0
 	const totalPages = Math.ceil(totalCount / pageSize)
 
 	// Map SQL results to DetailedStatsRow type
+	// Note: SQL function returns fields with 'out_' prefix to avoid ambiguity
 	// @ts-expect-error - data.map exists but type is inferred as never
 	const rows: DetailedStatsRow[] = data.map((row: unknown) => {
 		const r = row as Record<string, unknown>
 		return {
-			category: (r.category as string) || 'unknown',
-			version: (r.version as string) || 'unknown',
-			dates: r.dates as string | null,
-			sortOrder: r.sort_order as number,
-			totalRecords: Number(r.total_records),
-			recordsQualifiedAgents: Number(r.records_qualified_agents),
-			changedRecords: Number(r.changed_records),
-			goodPercentage: Number(r.good_percentage),
+			category: (r.out_category as string) || 'unknown',
+			version: (r.out_version as string) || 'unknown',
+			dates: r.out_dates as string | null,
+			sortOrder: r.out_sort_order as number,
+			totalRecords: Number(r.out_total_records),
+			recordsQualifiedAgents: Number(r.out_records_qualified_agents),
+			changedRecords: Number(r.out_changed_records),
+			goodPercentage: Number(r.out_good_percentage),
+			criticalErrors: Number(r.out_critical_errors || 0),
+			meaningfulImprovements: Number(r.out_meaningful_improvements || 0),
+			stylisticPreferences: Number(r.out_stylistic_preferences || 0),
+			noSignificantChanges: Number(r.out_no_significant_changes || 0),
 		}
 	})
 

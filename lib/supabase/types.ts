@@ -194,6 +194,11 @@ export interface DetailedStatsRow {
   recordsQualifiedAgents: number
   changedRecords: number
   goodPercentage: number
+  // Change classification breakdown
+  criticalErrors: number
+  meaningfulImprovements: number
+  stylisticPreferences: number
+  noSignificantChanges: number
 }
 
 /**
