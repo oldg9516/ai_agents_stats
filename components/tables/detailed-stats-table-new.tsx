@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { TableSkeleton } from '@/components/loading/table-skeleton'
@@ -27,6 +28,7 @@ import {
 import { getCategoryLabel } from '@/constants/category-labels'
 import { useDetailedStatsPaginated } from '@/lib/queries/dashboard-queries'
 import type { DashboardFilters, DetailedStatsRow } from '@/lib/supabase/types'
+import { exportToCSV } from '@/lib/utils/export'
 import {
 	IconChevronLeft,
 	IconChevronRight,
@@ -66,9 +68,7 @@ interface DetailedStatsTableNewProps {
  * - Quality color coding
  * - Click on category (version-level rows) to view details
  */
-export function DetailedStatsTableNew({
-	filters,
-}: DetailedStatsTableNewProps) {
+export function DetailedStatsTableNew({ filters }: DetailedStatsTableNewProps) {
 	const t = useTranslations()
 	const router = useRouter()
 
@@ -196,7 +196,7 @@ export function DetailedStatsTableNew({
 			{
 				accessorKey: 'totalRecords',
 				header: () => (
-					<div className='text-center'>{t('table.totalRecords')}</div>
+					<div className='text-left'>{t('table.totalRecords')}</div>
 				),
 				cell: ({ getValue }) => {
 					return <div className='text-left'>{getValue() as number}</div>
@@ -248,8 +248,8 @@ export function DetailedStatsTableNew({
 													failureRate > 30
 														? 'bg-red-100 dark:bg-red-900 text-red-900 dark:text-red-100'
 														: failureRate > 15
-															? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100'
-															: 'bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-100'
+														? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100'
+														: 'bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-100'
 												}`}
 											>
 												{failureRate.toFixed(1)}%
@@ -291,8 +291,8 @@ export function DetailedStatsTableNew({
 												failureRate > 30
 													? 'bg-red-100 dark:bg-red-900 text-red-900 dark:text-red-100'
 													: failureRate > 15
-														? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100'
-														: 'bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-100'
+													? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100'
+													: 'bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-100'
 											}`}
 										>
 											{failureRate.toFixed(1)}%
@@ -346,8 +346,8 @@ export function DetailedStatsTableNew({
 													successRate < 60
 														? 'bg-red-100 dark:bg-red-900 text-red-900 dark:text-red-100'
 														: successRate < 80
-															? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100'
-															: 'bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-100'
+														? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100'
+														: 'bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-100'
 												}`}
 											>
 												{successRate.toFixed(1)}%
@@ -390,8 +390,8 @@ export function DetailedStatsTableNew({
 												successRate < 60
 													? 'bg-red-100 dark:bg-red-900 text-red-900 dark:text-red-100'
 													: successRate < 80
-														? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100'
-														: 'bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-100'
+													? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100'
+													: 'bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-100'
 											}`}
 										>
 											{successRate.toFixed(1)}%
@@ -403,7 +403,8 @@ export function DetailedStatsTableNew({
 												{t('table.aiSuccessRateTooltip')}
 											</div>
 											<div className='text-xs'>
-												No Significant Changes: {row.original.noSignificantChanges}
+												No Significant Changes:{' '}
+												{row.original.noSignificantChanges}
 											</div>
 											<div className='text-xs'>
 												Stylistic Preferences:{' '}
@@ -420,6 +421,43 @@ export function DetailedStatsTableNew({
 		],
 		[t]
 	)
+
+	// Find the latest week for each category (to highlight)
+	const latestWeeksByCategory = useMemo(() => {
+		const latestMap = new Map<string, string>()
+
+		if (!data) return latestMap
+
+		data.forEach((row) => {
+			// Only process week-level rows (sortOrder !== 1)
+			if (row.sortOrder !== 1 && row.dates) {
+				const key = `${row.category}-${row.version}`
+				const firstDate = row.dates.split(' — ')[0]
+				const [day, month, year] = firstDate.split('.')
+				const dateStr = `${year}-${month}-${day}`
+
+				// If no date for this key yet, or current date is more recent
+				const currentLatest = latestMap.get(key)
+				if (!currentLatest || dateStr > currentLatest) {
+					latestMap.set(key, dateStr)
+				}
+			}
+		})
+
+		return latestMap
+	}, [data])
+
+	// Helper to check if a row is the latest week for its category
+	const isLatestWeek = (row: DetailedStatsRow): boolean => {
+		if (row.sortOrder === 1 || !row.dates) return false
+
+		const key = `${row.category}-${row.version}`
+		const firstDate = row.dates.split(' — ')[0]
+		const [day, month, year] = firstDate.split('.')
+		const dateStr = `${year}-${month}-${day}`
+
+		return latestWeeksByCategory.get(key) === dateStr
+	}
 
 	// Create table instance
 	const table = useReactTable({
@@ -445,80 +483,34 @@ export function DetailedStatsTableNew({
 
 	// CSV Export (current page only)
 	const handleExport = () => {
-		if (!data || data.length === 0) {
-			console.warn('No data to export')
-			return
-		}
-
-		// Define CSV headers
-		const headers = [
-			'Category',
-			'Version',
-			'Dates',
-			'Total Records',
-			'Qualified Agents',
-			'Records Changed',
-			'AI Failure Rate (%)',
-			'AI Success Rate (%)',
-		]
-
-		// Convert data to CSV rows
-		const rows = data.map((row) => [
-			getCategoryLabel(row.category),
-			row.version,
-			row.dates || '-',
-			row.totalRecords.toString(),
-			row.recordsQualifiedAgents.toString(),
-			row.changedRecords.toString(),
-			isNewLogic(row.dates)
+		const csvData = (data || []).map(row => ({
+			Category: getCategoryLabel(row.category),
+			Version: row.version,
+			Dates: row.dates || '-',
+			'Total Records': row.totalRecords,
+			'Qualified Agents': row.recordsQualifiedAgents,
+			'Records Changed': row.changedRecords,
+			'AI Failure Rate (%)': isNewLogic(row.dates)
 				? calculateAIMetrics(row).failureRate.toFixed(1)
 				: '-',
-			isNewLogic(row.dates)
+			'AI Success Rate (%)': isNewLogic(row.dates)
 				? calculateAIMetrics(row).successRate.toFixed(1)
 				: '-',
-		])
+		}))
 
-		// Combine headers and rows
-		const csvContent = [headers, ...rows]
-			.map((row) =>
-				row
-					.map((cell) => {
-						// Escape quotes and wrap in quotes if contains comma or newline
-						const escaped = cell.replace(/"/g, '""')
-						return escaped.includes(',') || escaped.includes('\n')
-							? `"${escaped}"`
-							: escaped
-					})
-					.join(',')
-			)
-			.join('\n')
-
-		// Create blob and download
-		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-		const link = document.createElement('a')
-		const url = URL.createObjectURL(blob)
-
-		link.setAttribute('href', url)
-		link.setAttribute('download', 'detailed-stats-new.csv')
-		link.style.visibility = 'hidden'
-
-		document.body.appendChild(link)
-		link.click()
-		document.body.removeChild(link)
-
-		URL.revokeObjectURL(url)
+		exportToCSV(csvData as any, 'detailed-stats-new.csv')
 	}
 
 	// Pagination handlers
 	const goToNextPage = () => {
 		if (hasNextPage) {
-			setCurrentPage((prev) => prev + 1)
+			setCurrentPage(prev => prev + 1)
 		}
 	}
 
 	const goToPreviousPage = () => {
 		if (hasPreviousPage) {
-			setCurrentPage((prev) => prev - 1)
+			setCurrentPage(prev => prev - 1)
 		}
 	}
 
@@ -541,7 +533,9 @@ export function DetailedStatsTableNew({
 			<Card>
 				<CardHeader>
 					<CardTitle>{t('table.detailedStats')}</CardTitle>
-					<CardDescription>{t('table.detailedStatsDescription')}</CardDescription>
+					<CardDescription>
+						{t('table.detailedStatsDescription')}
+					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<div className='flex flex-col items-center justify-center min-h-[200px] gap-2'>
@@ -579,7 +573,7 @@ export function DetailedStatsTableNew({
 						<Input
 							placeholder={t('table.searchCategory')}
 							value={globalFilter}
-							onChange={(e) => setGlobalFilter(e.target.value)}
+							onChange={e => setGlobalFilter(e.target.value)}
 							className='pl-9'
 						/>
 					</div>
@@ -592,16 +586,28 @@ export function DetailedStatsTableNew({
 				<div className='border rounded-md'>
 					<Table>
 						<TableHeader>
-							{table.getHeaderGroups().map((headerGroup) => (
+							{table.getHeaderGroups().map(headerGroup => (
 								<TableRow key={headerGroup.id}>
-									{headerGroup.headers.map((header) => (
-										<TableHead key={header.id}>
-											{header.isPlaceholder
-												? null
-												: flexRender(
+									{headerGroup.headers.map(header => (
+										<TableHead
+											key={header.id}
+											className={
+												header.column.getCanSort()
+													? 'cursor-pointer select-none'
+													: ''
+											}
+											onClick={header.column.getToggleSortingHandler()}
+										>
+											{header.isPlaceholder ? null : (
+												<div className='flex items-center gap-2'>
+													{flexRender(
 														header.column.columnDef.header,
 														header.getContext()
 													)}
+													{header.column.getIsSorted() === 'asc' && <span>↑</span>}
+													{header.column.getIsSorted() === 'desc' && <span>↓</span>}
+												</div>
+											)}
 										</TableHead>
 									))}
 								</TableRow>
@@ -618,18 +624,32 @@ export function DetailedStatsTableNew({
 									</TableCell>
 								</TableRow>
 							) : (
-								table.getRowModel().rows.map((row) => (
-									<TableRow key={row.id}>
-										{row.getVisibleCells().map((cell) => (
-											<TableCell key={cell.id}>
-												{flexRender(
-													cell.column.columnDef.cell,
-													cell.getContext()
-												)}
-											</TableCell>
-										))}
-									</TableRow>
-								))
+								table.getRowModel().rows.map(row => {
+									const isVersion = row.original.sortOrder === 1
+									const isLatest = isLatestWeek(row.original)
+
+									return (
+										<TableRow
+											key={row.id}
+											className={
+												isVersion
+													? 'bg-muted/50'
+													: isLatest
+													? 'bg-blue-50/50 dark:bg-blue-950/20 border-l-2 border-l-blue-500'
+													: ''
+											}
+										>
+											{row.getVisibleCells().map(cell => (
+												<TableCell key={cell.id}>
+													{flexRender(
+														cell.column.columnDef.cell,
+														cell.getContext()
+													)}
+												</TableCell>
+											))}
+										</TableRow>
+									)
+								})
 							)}
 						</TableBody>
 					</Table>
