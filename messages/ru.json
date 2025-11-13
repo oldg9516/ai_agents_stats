@@ -16,7 +16,8 @@
 		"noDataAvailable": "Нет доступных данных за выбранный период",
 		"all": "Все",
 		"selected": "выбрано",
-		"noOptionsFound": "Опции не найдены"
+		"noOptionsFound": "Опции не найдены",
+		"export": "Экспорт CSV"
 	},
 	"header": {
 		"title": "Lev Haolam AI"
@@ -185,6 +186,10 @@
 		"recordsChanged": "Изменено",
 		"quality": "Качество",
 		"goodPercentage": "Качество %",
+		"aiFailureRate": "Ошибки AI",
+		"aiSuccessRate": "Успешность AI",
+		"aiFailureRateTooltip": "Детализация ошибок AI",
+		"aiSuccessRateTooltip": "Детализация успешности AI",
 		"threadId": "ID треда",
 		"ticketId": "ID тикета",
 		"type": "Тип",
@@ -204,14 +209,21 @@
 		"loading": "Загрузка",
 		"searchPlaceholder": "Поиск...",
 		"searchByCategory": "Поиск по категории...",
+		"searchCategory": "Поиск по категории...",
 		"searchByThreadOrTicket": "Поиск по ID треда или тикета...",
 		"noResults": "Нет результатов.",
 		"sortBy": "Сортировать по",
 		"filterBy": "Фильтровать по",
 		"previous": "Предыдущая",
 		"next": "Следующая",
+		"firstPage": "Первая",
+		"lastPage": "Последняя",
+		"pageOf": "Страница {current} из {total}",
+		"showingRecords": "Показано {from} - {to} из {total} записей",
 		"detailedStatistics": "Детальная статистика",
 		"detailedStatisticsDesc": "Метрики качества по категориям, версиям и неделям",
+		"detailedStats": "Детальная статистика",
+		"detailedStatsDescription": "Метрики качества по категориям, версиям и неделям",
 		"supportThreads": "Треды поддержки",
 		"supportThreadsDesc": "Все треды поддержки с метриками качества"
 	},

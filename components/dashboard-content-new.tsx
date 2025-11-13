@@ -14,7 +14,7 @@ import { FilterBar } from './filters/filter-bar'
 import { FilterSheet } from './filters/filter-sheet'
 import { KPISectionNew } from './kpi/kpi-section-new'
 import { SupportOverviewSkeleton } from './loading/support-overview-skeleton'
-import { DetailedStatsTable } from './tables/detailed-stats-table'
+import { DetailedStatsTableNew } from './tables/detailed-stats-table-new'
 
 /**
  * Dashboard Content NEW - Client Component
@@ -176,8 +176,8 @@ export function DashboardContentNew() {
 				)}
 			</div>
 
-			{/* Detailed Stats Table - Shows both OLD (Good %) and NEW (Success/Failure) columns */}
-			<DetailedStatsTable filters={filters} />
+			{/* Detailed Stats Table - Shows only NEW (Success/Failure) columns, hides OLD (Good %) */}
+			<DetailedStatsTableNew filters={filters} />
 		</div>
 	)
 }

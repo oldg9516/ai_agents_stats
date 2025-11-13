@@ -16,7 +16,8 @@
 		"noDataAvailable": "No data available for the selected period",
 		"all": "All",
 		"selected": "selected",
-		"noOptionsFound": "No options found"
+		"noOptionsFound": "No options found",
+		"export": "Export CSV"
 	},
 	"header": {
 		"title": "Lev Haolam AI"
@@ -185,6 +186,10 @@
 		"recordsChanged": "Changed",
 		"quality": "Quality",
 		"goodPercentage": "Good %",
+		"aiFailureRate": "AI Failure Rate",
+		"aiSuccessRate": "AI Success Rate",
+		"aiFailureRateTooltip": "AI Failure Rate Breakdown",
+		"aiSuccessRateTooltip": "AI Success Rate Breakdown",
 		"threadId": "Thread ID",
 		"ticketId": "Ticket ID",
 		"type": "Type",
@@ -204,14 +209,21 @@
 		"loading": "Loading",
 		"searchPlaceholder": "Search...",
 		"searchByCategory": "Search by category...",
+		"searchCategory": "Search by category...",
 		"searchByThreadOrTicket": "Search by thread ID or ticket ID...",
 		"noResults": "No results found.",
 		"sortBy": "Sort by",
 		"filterBy": "Filter by",
 		"previous": "Previous",
 		"next": "Next",
+		"firstPage": "First",
+		"lastPage": "Last",
+		"pageOf": "Page {current} of {total}",
+		"showingRecords": "Showing {from} to {to} of {total} records",
 		"detailedStatistics": "Detailed Statistics",
 		"detailedStatisticsDesc": "Quality metrics by category, version, and week",
+		"detailedStats": "Detailed Statistics",
+		"detailedStatsDescription": "Quality metrics by category, version, and week",
 		"supportThreads": "Support Threads",
 		"supportThreadsDesc": "All support threads with quality metrics"
 	},
