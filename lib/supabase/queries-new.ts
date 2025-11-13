@@ -385,6 +385,7 @@ export async function getQualityTrendsNew(
 			weekStart: group.weekStart,
 			successRate,
 			failureRate,
+			goodPercentage: successRate, // For compatibility with old chart components
 			noSignificantChange: classifications.noSignificantChange,
 			stylisticPreference: classifications.stylisticPreference,
 			criticalError: classifications.criticalError,
@@ -469,6 +470,7 @@ export async function getCategoryDistributionNew(
 			totalRecords: catRecords.length,
 			successRate,
 			failureRate,
+			goodPercentage: successRate, // For compatibility with old chart components
 			noSignificantChange: classifications.noSignificantChange,
 			stylisticPreference: classifications.stylisticPreference,
 			criticalError: classifications.criticalError,
@@ -541,6 +543,7 @@ export async function getVersionComparisonNew(
 			version,
 			successRate,
 			failureRate,
+			goodPercentage: successRate, // For compatibility with old chart components
 			totalRecords: versionRecords.length,
 			noSignificantChange: classifications.noSignificantChange,
 			stylisticPreference: classifications.stylisticPreference,

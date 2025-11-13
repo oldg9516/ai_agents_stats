@@ -269,6 +269,7 @@ export interface QualityTrendDataNew {
   weekStart: string // ISO date
   successRate: number // (no_significant_change + stylistic_preference) / total * 100
   failureRate: number // (critical_error + meaningful_improvement) / total * 100
+  goodPercentage: number // For compatibility with old chart components (same as successRate)
   // Breakdown for tooltips
   noSignificantChange: number
   stylisticPreference: number
@@ -285,6 +286,7 @@ export interface CategoryDistributionDataNew {
   totalRecords: number
   successRate: number
   failureRate: number
+  goodPercentage: number // For compatibility with old chart components (same as successRate)
   // Classification breakdown
   noSignificantChange: number
   stylisticPreference: number
@@ -307,6 +309,7 @@ export interface VersionComparisonDataNew {
   version: string
   successRate: number
   failureRate: number
+  goodPercentage: number // For compatibility with old chart components (same as successRate)
   totalRecords: number
   // Classification breakdown
   noSignificantChange: number

@@ -27,8 +27,6 @@ import {
 import { getCategoryLabel } from '@/constants/category-labels'
 import { useDetailedStatsPaginated } from '@/lib/queries/dashboard-queries'
 import type { DashboardFilters, DetailedStatsRow } from '@/lib/supabase/types'
-import { exportToCSV } from '@/lib/utils/export'
-import { getQualityBgClass } from '@/lib/utils/quality-colors'
 import {
 	IconChevronLeft,
 	IconChevronRight,
@@ -447,22 +445,68 @@ export function DetailedStatsTableNew({
 
 	// CSV Export (current page only)
 	const handleExport = () => {
-		const csvData = (data || []).map((row) => ({
-			Category: getCategoryLabel(row.category),
-			Version: row.version,
-			Dates: row.dates || '-',
-			'Total Records': row.totalRecords,
-			'Qualified Agents': row.recordsQualifiedAgents,
-			'Records Changed': row.changedRecords,
-			'AI Failure Rate (%)': isNewLogic(row.dates)
+		if (!data || data.length === 0) {
+			console.warn('No data to export')
+			return
+		}
+
+		// Define CSV headers
+		const headers = [
+			'Category',
+			'Version',
+			'Dates',
+			'Total Records',
+			'Qualified Agents',
+			'Records Changed',
+			'AI Failure Rate (%)',
+			'AI Success Rate (%)',
+		]
+
+		// Convert data to CSV rows
+		const rows = data.map((row) => [
+			getCategoryLabel(row.category),
+			row.version,
+			row.dates || '-',
+			row.totalRecords.toString(),
+			row.recordsQualifiedAgents.toString(),
+			row.changedRecords.toString(),
+			isNewLogic(row.dates)
 				? calculateAIMetrics(row).failureRate.toFixed(1)
 				: '-',
-			'AI Success Rate (%)': isNewLogic(row.dates)
+			isNewLogic(row.dates)
 				? calculateAIMetrics(row).successRate.toFixed(1)
 				: '-',
-		}))
+		])
 
-		exportToCSV(csvData, 'detailed-stats-new.csv')
+		// Combine headers and rows
+		const csvContent = [headers, ...rows]
+			.map((row) =>
+				row
+					.map((cell) => {
+						// Escape quotes and wrap in quotes if contains comma or newline
+						const escaped = cell.replace(/"/g, '""')
+						return escaped.includes(',') || escaped.includes('\n')
+							? `"${escaped}"`
+							: escaped
+					})
+					.join(',')
+			)
+			.join('\n')
+
+		// Create blob and download
+		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+		const link = document.createElement('a')
+		const url = URL.createObjectURL(blob)
+
+		link.setAttribute('href', url)
+		link.setAttribute('download', 'detailed-stats-new.csv')
+		link.style.visibility = 'hidden'
+
+		document.body.appendChild(link)
+		link.click()
+		document.body.removeChild(link)
+
+		URL.revokeObjectURL(url)
 	}
 
 	// Pagination handlers
