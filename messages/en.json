@@ -3,6 +3,7 @@
 		"back": "Back",
 		"home": "Home",
 		"dashboard": "Dashboard",
+		"dashboard-new": "New Dashboard",
 		"detailedStats": "Detailed Stats",
 		"supportOverview": "Support Overview",
 		"requestCategories": "Request Categories",
@@ -76,10 +77,25 @@
 			"description": "Average quality percentage across all categories",
 			"tooltip": "Percentage of AI outputs used without modifications by qualified agents. Higher percentage indicates better AI performance. Quality is calculated as: (Unchanged records / Total records by qualified agents) × 100"
 		},
+		"aiSuccessRate": {
+			"title": "AI Success Rate",
+			"description": "AI outputs requiring no or minor changes",
+			"tooltip": "Percentage of AI outputs classified as 'no significant change' or 'stylistic preference' by qualified agents. Higher percentage indicates better AI performance. Success Rate = (No Significant Changes + Stylistic Preferences) / Total × 100"
+		},
+		"aiFailureRate": {
+			"title": "AI Failure Rate",
+			"description": "AI outputs requiring significant changes",
+			"tooltip": "Percentage of AI outputs classified as 'critical error' or 'meaningful improvement' by qualified agents. Lower percentage indicates better AI performance. Failure Rate = (Critical Errors + Meaningful Improvements) / Total × 100"
+		},
 		"bestCategory": {
 			"title": "Best Category",
 			"description": "Category with the highest quality percentage",
 			"tooltip": "The request category where AI performs best, measured by the highest percentage of outputs used without human edits. Helps identify AI strengths and areas for improvement."
+		},
+		"worstCategory": {
+			"title": "Worst Category",
+			"description": "Category with the highest failure rate",
+			"tooltip": "The request category where AI performs worst, measured by the highest percentage of outputs requiring significant changes. Helps identify areas needing improvement."
 		},
 		"recordsChanged": {
 			"title": "Records Changed",

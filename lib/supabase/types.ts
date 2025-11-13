@@ -222,6 +222,99 @@ export interface FilterOptions {
   categories: string[]
 }
 
+// ============================================================================
+// NEW DASHBOARD TYPES (using change_classification)
+// ============================================================================
+
+/**
+ * KPI Data structure for NEW dashboard
+ * Uses AI Success/Failure rates instead of simple changed/unchanged
+ */
+export interface KPIDataNew {
+  totalRecords: {
+    current: number
+    previous: number
+    trend: TrendData
+  }
+  aiSuccessRate: {
+    current: number // (no_significant_change + stylistic_preference) / total * 100
+    previous: number
+    trend: TrendData
+  }
+  aiFailureRate: {
+    current: number // (critical_error + meaningful_improvement) / total * 100
+    previous: number
+    trend: TrendData
+  }
+  bestCategory: {
+    category: string
+    successRate: number
+    previousSuccessRate: number
+    trend: TrendData
+  }
+  worstCategory: {
+    category: string
+    failureRate: number
+    previousFailureRate: number
+    trend: TrendData
+  }
+}
+
+/**
+ * Quality Trends data for NEW dashboard (line chart)
+ * Tracks both success and failure rates over time
+ */
+export interface QualityTrendDataNew {
+  category: string
+  weekStart: string // ISO date
+  successRate: number // (no_significant_change + stylistic_preference) / total * 100
+  failureRate: number // (critical_error + meaningful_improvement) / total * 100
+  // Breakdown for tooltips
+  noSignificantChange: number
+  stylisticPreference: number
+  criticalError: number
+  meaningfulImprovement: number
+  totalRecords: number
+}
+
+/**
+ * Category Distribution data for NEW dashboard (pie chart)
+ */
+export interface CategoryDistributionDataNew {
+  category: string
+  totalRecords: number
+  successRate: number
+  failureRate: number
+  // Classification breakdown
+  noSignificantChange: number
+  stylisticPreference: number
+  criticalError: number
+  meaningfulImprovement: number
+}
+
+/**
+ * Category Distribution result with total count (NEW dashboard)
+ */
+export interface CategoryDistributionResultNew {
+  categories: CategoryDistributionDataNew[]
+  totalCount: number
+}
+
+/**
+ * Version Comparison data for NEW dashboard (bar chart)
+ */
+export interface VersionComparisonDataNew {
+  version: string
+  successRate: number
+  failureRate: number
+  totalRecords: number
+  // Classification breakdown
+  noSignificantChange: number
+  stylisticPreference: number
+  criticalError: number
+  meaningfulImprovement: number
+}
+
 /**
  * Pagination state
  */
