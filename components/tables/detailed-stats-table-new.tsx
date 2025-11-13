@@ -195,27 +195,21 @@ export function DetailedStatsTableNew({ filters }: DetailedStatsTableNewProps) {
 			},
 			{
 				accessorKey: 'totalRecords',
-				header: () => (
-					<div className='text-left'>{t('table.totalRecords')}</div>
-				),
+				header: t('table.totalRecords'),
 				cell: ({ getValue }) => {
 					return <div className='text-left'>{getValue() as number}</div>
 				},
 			},
 			{
 				accessorKey: 'recordsQualifiedAgents',
-				header: () => (
-					<div className='text-center'>{t('table.qualifiedAgents')}</div>
-				),
+				header: t('table.qualifiedAgents'),
 				cell: ({ getValue }) => {
 					return <div className='text-left'>{getValue() as number}</div>
 				},
 			},
 			{
 				accessorKey: 'changedRecords',
-				header: () => (
-					<div className='text-center'>{t('table.recordsChanged')}</div>
-				),
+				header: t('table.recordsChanged'),
 				cell: ({ getValue }) => {
 					return <div className='text-left'>{getValue() as number}</div>
 				},
@@ -238,34 +232,63 @@ export function DetailedStatsTableNew({ filters }: DetailedStatsTableNewProps) {
 					// For version-level rows, show aggregate if any weeks have new logic
 					if (isVersionLevel) {
 						const { failureRate } = calculateAIMetrics(row.original)
+						const total = row.original.recordsQualifiedAgents
+
+						// Color coding: red > 30%, orange 15-30%, green < 15%
+						const bgClass =
+							failureRate > 30
+								? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+								: failureRate > 15
+								? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200'
+								: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
+
 						return (
 							<div className='flex justify-left'>
 								<TooltipProvider>
 									<Tooltip>
 										<TooltipTrigger asChild>
 											<span
-												className={`inline-block px-2 py-1 rounded text-sm font-medium cursor-help ${
-													failureRate > 30
-														? 'bg-red-100 dark:bg-red-900 text-red-900 dark:text-red-100'
-														: failureRate > 15
-														? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100'
-														: 'bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-100'
-												}`}
+												className={`inline-block px-2 py-1 rounded text-sm font-medium cursor-help ${bgClass}`}
 											>
 												{failureRate.toFixed(1)}%
 											</span>
 										</TooltipTrigger>
-										<TooltipContent>
-											<div className='space-y-1'>
-												<div className='font-semibold'>
-													{t('table.aiFailureRateTooltip')}
+										<TooltipContent side='bottom' className='max-w-xs'>
+											<div className='space-y-1 text-xs'>
+												<div className='font-semibold mb-2'>
+													AI Failure Breakdown:
 												</div>
-												<div className='text-xs'>
-													Critical Errors: {row.original.criticalErrors}
+												<div className='flex justify-between gap-4'>
+													<span className='text-red-600 dark:text-red-400'>
+														🔴 Critical Errors:
+													</span>
+													<span className='font-medium'>
+														{row.original.criticalErrors} (
+														{total > 0
+															? ((row.original.criticalErrors / total) * 100).toFixed(1)
+															: 0}
+														%)
+													</span>
 												</div>
-												<div className='text-xs'>
-													Meaningful Improvements:{' '}
-													{row.original.meaningfulImprovements}
+												<div className='flex justify-between gap-4'>
+													<span className='text-orange-600 dark:text-orange-400'>
+														🟠 Meaningful Improvements:
+													</span>
+													<span className='font-medium'>
+														{row.original.meaningfulImprovements} (
+														{total > 0
+															? ((row.original.meaningfulImprovements / total) * 100).toFixed(1)
+															: 0}
+														%)
+													</span>
+												</div>
+												<div className='border-t pt-1 mt-1'>
+													<div className='flex justify-between gap-4 font-semibold'>
+														<span>Total Failures:</span>
+														<span>
+															{row.original.criticalErrors + row.original.meaningfulImprovements}
+														</span>
+													</div>
 												</div>
 											</div>
 										</TooltipContent>
@@ -281,34 +304,63 @@ export function DetailedStatsTableNew({ filters }: DetailedStatsTableNewProps) {
 					}
 
 					const { failureRate } = calculateAIMetrics(row.original)
+					const total = row.original.recordsQualifiedAgents
+
+					// Color coding: red > 30%, orange 15-30%, green < 15%
+					const bgClass =
+						failureRate > 30
+							? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+							: failureRate > 15
+							? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200'
+							: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
+
 					return (
 						<div className='flex justify-left'>
 							<TooltipProvider>
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<span
-											className={`inline-block px-2 py-1 rounded text-sm font-medium cursor-help ${
-												failureRate > 30
-													? 'bg-red-100 dark:bg-red-900 text-red-900 dark:text-red-100'
-													: failureRate > 15
-													? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100'
-													: 'bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-100'
-											}`}
+											className={`inline-block px-2 py-1 rounded text-sm font-medium cursor-help ${bgClass}`}
 										>
 											{failureRate.toFixed(1)}%
 										</span>
 									</TooltipTrigger>
-									<TooltipContent>
-										<div className='space-y-1'>
-											<div className='font-semibold'>
-												{t('table.aiFailureRateTooltip')}
+									<TooltipContent side='bottom' className='max-w-xs'>
+										<div className='space-y-1 text-xs'>
+											<div className='font-semibold mb-2'>
+												AI Failure Breakdown:
 											</div>
-											<div className='text-xs'>
-												Critical Errors: {row.original.criticalErrors}
+											<div className='flex justify-between gap-4'>
+												<span className='text-red-600 dark:text-red-400'>
+													🔴 Critical Errors:
+												</span>
+												<span className='font-medium'>
+													{row.original.criticalErrors} (
+													{total > 0
+														? ((row.original.criticalErrors / total) * 100).toFixed(1)
+														: 0}
+													%)
+												</span>
 											</div>
-											<div className='text-xs'>
-												Meaningful Improvements:{' '}
-												{row.original.meaningfulImprovements}
+											<div className='flex justify-between gap-4'>
+												<span className='text-orange-600 dark:text-orange-400'>
+													🟠 Meaningful Improvements:
+												</span>
+												<span className='font-medium'>
+													{row.original.meaningfulImprovements} (
+													{total > 0
+														? ((row.original.meaningfulImprovements / total) * 100).toFixed(1)
+														: 0}
+													%)
+												</span>
+											</div>
+											<div className='border-t pt-1 mt-1'>
+												<div className='flex justify-between gap-4 font-semibold'>
+													<span>Total Failures:</span>
+													<span>
+														{row.original.criticalErrors + row.original.meaningfulImprovements}
+													</span>
+												</div>
 											</div>
 										</div>
 									</TooltipContent>
@@ -336,35 +388,63 @@ export function DetailedStatsTableNew({ filters }: DetailedStatsTableNewProps) {
 					// For version-level rows, show aggregate if any weeks have new logic
 					if (isVersionLevel) {
 						const { successRate } = calculateAIMetrics(row.original)
+						const total = row.original.recordsQualifiedAgents
+
+						// Color coding: green > 70%, orange 50-70%, red < 50%
+						const bgClass =
+							successRate > 70
+								? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
+								: successRate > 50
+								? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200'
+								: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+
 						return (
 							<div className='flex justify-left'>
 								<TooltipProvider>
 									<Tooltip>
 										<TooltipTrigger asChild>
 											<span
-												className={`inline-block px-2 py-1 rounded text-sm font-medium cursor-help ${
-													successRate < 60
-														? 'bg-red-100 dark:bg-red-900 text-red-900 dark:text-red-100'
-														: successRate < 80
-														? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100'
-														: 'bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-100'
-												}`}
+												className={`inline-block px-2 py-1 rounded text-sm font-medium cursor-help ${bgClass}`}
 											>
 												{successRate.toFixed(1)}%
 											</span>
 										</TooltipTrigger>
-										<TooltipContent>
-											<div className='space-y-1'>
-												<div className='font-semibold'>
-													{t('table.aiSuccessRateTooltip')}
+										<TooltipContent side='bottom' className='max-w-xs'>
+											<div className='space-y-1 text-xs'>
+												<div className='font-semibold mb-2'>
+													AI Success Breakdown:
 												</div>
-												<div className='text-xs'>
-													No Significant Changes:{' '}
-													{row.original.noSignificantChanges}
+												<div className='flex justify-between gap-4'>
+													<span className='text-blue-600 dark:text-blue-400'>
+														🔵 No Significant Change:
+													</span>
+													<span className='font-medium'>
+														{row.original.noSignificantChanges} (
+														{total > 0
+															? ((row.original.noSignificantChanges / total) * 100).toFixed(1)
+															: 0}
+														%)
+													</span>
 												</div>
-												<div className='text-xs'>
-													Stylistic Preferences:{' '}
-													{row.original.stylisticPreferences}
+												<div className='flex justify-between gap-4'>
+													<span className='text-green-600 dark:text-green-400'>
+														🟢 Stylistic Preference:
+													</span>
+													<span className='font-medium'>
+														{row.original.stylisticPreferences} (
+														{total > 0
+															? ((row.original.stylisticPreferences / total) * 100).toFixed(1)
+															: 0}
+														%)
+													</span>
+												</div>
+												<div className='border-t pt-1 mt-1'>
+													<div className='flex justify-between gap-4 font-semibold'>
+														<span>Total Successes:</span>
+														<span>
+															{row.original.noSignificantChanges + row.original.stylisticPreferences}
+														</span>
+													</div>
 												</div>
 											</div>
 										</TooltipContent>
@@ -380,35 +460,63 @@ export function DetailedStatsTableNew({ filters }: DetailedStatsTableNewProps) {
 					}
 
 					const { successRate } = calculateAIMetrics(row.original)
+					const total = row.original.recordsQualifiedAgents
+
+					// Color coding: green > 70%, orange 50-70%, red < 50%
+					const bgClass =
+						successRate > 70
+							? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
+							: successRate > 50
+							? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200'
+							: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+
 					return (
 						<div className='flex justify-left'>
 							<TooltipProvider>
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<span
-											className={`inline-block px-2 py-1 rounded text-sm font-medium cursor-help ${
-												successRate < 60
-													? 'bg-red-100 dark:bg-red-900 text-red-900 dark:text-red-100'
-													: successRate < 80
-													? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-900 dark:text-yellow-100'
-													: 'bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-100'
-											}`}
+											className={`inline-block px-2 py-1 rounded text-sm font-medium cursor-help ${bgClass}`}
 										>
 											{successRate.toFixed(1)}%
 										</span>
 									</TooltipTrigger>
-									<TooltipContent>
-										<div className='space-y-1'>
-											<div className='font-semibold'>
-												{t('table.aiSuccessRateTooltip')}
+									<TooltipContent side='bottom' className='max-w-xs'>
+										<div className='space-y-1 text-xs'>
+											<div className='font-semibold mb-2'>
+												AI Success Breakdown:
 											</div>
-											<div className='text-xs'>
-												No Significant Changes:{' '}
-												{row.original.noSignificantChanges}
+											<div className='flex justify-between gap-4'>
+												<span className='text-blue-600 dark:text-blue-400'>
+													🔵 No Significant Change:
+												</span>
+												<span className='font-medium'>
+													{row.original.noSignificantChanges} (
+													{total > 0
+														? ((row.original.noSignificantChanges / total) * 100).toFixed(1)
+														: 0}
+													%)
+												</span>
 											</div>
-											<div className='text-xs'>
-												Stylistic Preferences:{' '}
-												{row.original.stylisticPreferences}
+											<div className='flex justify-between gap-4'>
+												<span className='text-green-600 dark:text-green-400'>
+													🟢 Stylistic Preference:
+												</span>
+												<span className='font-medium'>
+													{row.original.stylisticPreferences} (
+													{total > 0
+														? ((row.original.stylisticPreferences / total) * 100).toFixed(1)
+														: 0}
+													%)
+												</span>
+											</div>
+											<div className='border-t pt-1 mt-1'>
+												<div className='flex justify-between gap-4 font-semibold'>
+													<span>Total Successes:</span>
+													<span>
+														{row.original.noSignificantChanges + row.original.stylisticPreferences}
+													</span>
+												</div>
 											</div>
 										</div>
 									</TooltipContent>
@@ -428,7 +536,7 @@ export function DetailedStatsTableNew({ filters }: DetailedStatsTableNewProps) {
 
 		if (!data) return latestMap
 
-		data.forEach((row) => {
+		data.forEach(row => {
 			// Only process week-level rows (sortOrder !== 1)
 			if (row.sortOrder !== 1 && row.dates) {
 				const key = `${row.category}-${row.version}`
@@ -604,8 +712,12 @@ export function DetailedStatsTableNew({ filters }: DetailedStatsTableNewProps) {
 														header.column.columnDef.header,
 														header.getContext()
 													)}
-													{header.column.getIsSorted() === 'asc' && <span>↑</span>}
-													{header.column.getIsSorted() === 'desc' && <span>↓</span>}
+													{header.column.getIsSorted() === 'asc' && (
+														<span>↑</span>
+													)}
+													{header.column.getIsSorted() === 'desc' && (
+														<span>↓</span>
+													)}
 												</div>
 											)}
 										</TableHead>
