@@ -52,11 +52,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				icon: IconDashboard,
 			},
 			{
-				title: t('dashboard-new'),
-				url: '/dashboard-new',
-				icon: IconDashboard,
-			},
-			{
 				title: t('detailedStats'),
 				url: '/detailed-stats',
 				icon: IconListDetails,

@@ -315,7 +315,6 @@ export const QUALIFIED_AGENTS = [
 	'marianna@levhaolam.com',
 	'laure@levhaolam.com',
 	'sofia@levhaolam.com',
-	'yakov@levhaolam.com',
 ]
 ```
 
@@ -830,8 +829,7 @@ ORDER BY week_start, request_subtype;
 export const QUALIFIED_AGENTS = [
 	'marianna@levhaolam.com',
 	'laure@levhaolam.com',
-	''sofia@levhaolam.com',
-	'yakov@levhaolam.com',
+	'sofia@levhaolam.com',
 ]
 ```
 

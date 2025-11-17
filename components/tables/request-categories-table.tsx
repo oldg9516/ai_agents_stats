@@ -112,6 +112,13 @@ export function RequestCategoriesTable({ dateRange }: RequestCategoriesTableProp
 		[t]
 	)
 
+	// Calculate totals from ALL data (not just current page)
+	const totals = useMemo(() => {
+		const totalCount = data.reduce((sum, row) => sum + row.count, 0)
+		const totalPercent = data.reduce((sum, row) => sum + row.percent, 0)
+		return { totalCount, totalPercent }
+	}, [data])
+
 	// Create table instance
 	const table = useReactTable({
 		data,
@@ -149,9 +156,18 @@ export function RequestCategoriesTable({ dateRange }: RequestCategoriesTableProp
 			`${row.percent}%`,
 		])
 
+		// Add total row
+		const totalRow = [
+			'Total',
+			'',
+			totals.totalCount,
+			`${totals.totalPercent.toFixed(1)}%`,
+		]
+
 		const csv = [
 			headers.join(','),
 			...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+			totalRow.map(cell => `"${cell}"`).join(','),
 		].join('\n')
 
 		const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -269,18 +285,31 @@ export function RequestCategoriesTable({ dateRange }: RequestCategoriesTableProp
 						</TableHeader>
 						<TableBody>
 							{table.getRowModel().rows?.length ? (
-								table.getRowModel().rows.map((row) => (
-									<TableRow
-										key={row.id}
-										data-state={row.getIsSelected() && 'selected'}
-									>
-										{row.getVisibleCells().map((cell) => (
-											<TableCell key={cell.id}>
-												{flexRender(cell.column.columnDef.cell, cell.getContext())}
-											</TableCell>
-										))}
+								<>
+									{table.getRowModel().rows.map((row) => (
+										<TableRow
+											key={row.id}
+											data-state={row.getIsSelected() && 'selected'}
+										>
+											{row.getVisibleCells().map((cell) => (
+												<TableCell key={cell.id}>
+													{flexRender(cell.column.columnDef.cell, cell.getContext())}
+												</TableCell>
+											))}
+										</TableRow>
+									))}
+									{/* Total Row */}
+									<TableRow className='bg-muted/50 font-semibold border-t-2'>
+										<TableCell className='font-bold'>Total</TableCell>
+										<TableCell></TableCell>
+										<TableCell className='text-center font-bold'>
+											{totals.totalCount.toLocaleString()}
+										</TableCell>
+										<TableCell className='text-center font-bold'>
+											{totals.totalPercent.toFixed(1)}%
+										</TableCell>
 									</TableRow>
-								))
+								</>
 							) : (
 								<TableRow>
 									<TableCell colSpan={columns.length} className='h-24 text-center'>

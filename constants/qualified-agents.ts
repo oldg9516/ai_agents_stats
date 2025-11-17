@@ -13,7 +13,6 @@ export const QUALIFIED_AGENTS = [
 	'marianna@levhaolam.com',
 	'laure@levhaolam.com',
 	'sofia@levhaolam.com',
-	'yakov@levhaolam.com',
 ] as const
 
 export type QualifiedAgent = (typeof QUALIFIED_AGENTS)[number]
@@ -34,7 +33,6 @@ export function getAgentName(email: QualifiedAgent): string {
 		'marianna@levhaolam.com': 'Marianna',
 		'laure@levhaolam.com': 'Laure',
 		'sofia@levhaolam.com': 'Sofia',
-		'yakov@levhaolam.com': 'Yakov',
 	}
 	return names[email] || email
 }

@@ -67,7 +67,6 @@ export const QUALIFIED_AGENTS = [
 	'marianna@levhaolam.com',
 	'laure@levhaolam.com',
 	'sofia@levhaolam.com',
-	'yakov@levhaolam.com',
 ]
 ```
 

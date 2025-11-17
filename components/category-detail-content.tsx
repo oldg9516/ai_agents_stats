@@ -1,29 +1,40 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useTranslations } from 'next-intl'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { KPICard } from '@/components/kpi/kpi-card'
-import { CategoryDetailFilters } from '@/components/filters/category-detail-filters'
-import { VersionStatsTable } from '@/components/category/version-stats-table'
 import { AgentQualityChart } from '@/components/category/agent-quality-chart'
 import { CategoryRecordsTable } from '@/components/category/category-records-table'
-import { getCategoryLabel } from '@/constants/category-labels'
-import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
-import { fetchCategoryDetail } from '@/lib/actions/category-actions'
-import type { CategoryDetailData, CategoryFilters } from '@/lib/supabase/types'
-import { IconArrowLeft, IconExternalLink, IconTrendingUp, IconTrendingDown, IconMinus } from '@tabler/icons-react'
-import { subDays } from 'date-fns'
-import { Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts'
+import { VersionStatsTable } from '@/components/category/version-stats-table'
+import { CategoryDetailFilters } from '@/components/filters/category-detail-filters'
+import { KPICard } from '@/components/kpi/kpi-card'
+import { Button } from '@/components/ui/button'
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card'
 import {
 	ChartContainer,
 	ChartTooltip,
 	ChartTooltipContent,
 	type ChartConfig,
 } from '@/components/ui/chart'
-import { format } from 'date-fns'
+import { getCategoryLabel } from '@/constants/category-labels'
+import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
+import { fetchCategoryDetail } from '@/lib/actions/category-actions'
+import type { CategoryDetailData, CategoryFilters } from '@/lib/supabase/types'
+import {
+	IconArrowLeft,
+	IconExternalLink,
+	IconMinus,
+	IconTrendingDown,
+	IconTrendingUp,
+} from '@tabler/icons-react'
+import { format, subDays } from 'date-fns'
+import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 import { toast } from 'sonner'
 
 interface CategoryDetailContentProps {
@@ -55,7 +66,9 @@ export function CategoryDetailContent({
 	const tCommon = useTranslations('common')
 
 	// State
-	const [data, setData] = useState<CategoryDetailData | null>(initialData || null)
+	const [data, setData] = useState<CategoryDetailData | null>(
+		initialData || null
+	)
 	const [isLoading, setIsLoading] = useState(!initialData)
 	const [filters, setFilters] = useState<CategoryFilters>({
 		dateRange: {
@@ -73,7 +86,10 @@ export function CategoryDetailContent({
 		const loadData = async () => {
 			setIsLoading(true)
 			try {
-				const result = await fetchCategoryDetail(categoryName, filters, { page, pageSize })
+				const result = await fetchCategoryDetail(categoryName, filters, {
+					page,
+					pageSize,
+				})
 				setData(result)
 			} catch (error) {
 				console.error('Error loading category data:', error)
@@ -111,7 +127,7 @@ export function CategoryDetailContent({
 	}
 
 	// Get available versions from data
-	const availableVersions = data?.versionStats.map((v) => v.version) || []
+	const availableVersions = data?.versionStats.map(v => v.version) || []
 
 	// Chart config for trends
 	const chartConfig: ChartConfig = {
@@ -123,7 +139,7 @@ export function CategoryDetailContent({
 
 	// Transform weekly trends for chart
 	const chartData =
-		data?.weeklyTrends.map((trend) => ({
+		data?.weeklyTrends.map(trend => ({
 			week: format(new Date(trend.weekStart), 'MMM dd'),
 			quality: Number(trend.goodPercentage.toFixed(1)),
 			records: trend.totalRecords,
@@ -170,16 +186,14 @@ export function CategoryDetailContent({
 						<h1 className='text-2xl font-bold tracking-tight'>
 							{getCategoryLabel(categoryName)}
 						</h1>
-						<p className='text-sm text-muted-foreground'>
-							{t('subtitle')}
-						</p>
+						<p className='text-sm text-muted-foreground'>{t('subtitle')}</p>
 					</div>
 				</div>
 
 				{isModal && (
 					<Button variant='outline' size='sm' asChild>
 						<a
-							href={`/dashboard/category/${categoryName}`}
+							href={`/dashboard/category/${encodeURIComponent(categoryName)}`}
 							target='_blank'
 							rel='noopener noreferrer'
 						>
@@ -220,7 +234,13 @@ export function CategoryDetailContent({
 				/>
 				<KPICard
 					title={t('kpis.trend')}
-					value={`${data.kpis.quality.trend.direction === 'up' ? '+' : data.kpis.quality.trend.direction === 'down' ? '-' : ''}${data.kpis.quality.trend.percentage.toFixed(1)}%`}
+					value={`${
+						data.kpis.quality.trend.direction === 'up'
+							? '+'
+							: data.kpis.quality.trend.direction === 'down'
+							? '-'
+							: ''
+					}${data.kpis.quality.trend.percentage.toFixed(1)}%`}
 					icon={
 						data.kpis.quality.trend.direction === 'up' ? (
 							<IconTrendingUp className='h-4 w-4' />
@@ -260,7 +280,7 @@ export function CategoryDetailContent({
 									axisLine={false}
 									tickMargin={8}
 									domain={[0, 100]}
-									tickFormatter={(value) => `${value}%`}
+									tickFormatter={value => `${value}%`}
 								/>
 								<ChartTooltip
 									content={
