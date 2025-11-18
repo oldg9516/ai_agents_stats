@@ -26,6 +26,10 @@ export function exportToCSV(data: DetailedStatsRow[], filename: string = 'ai_sta
 		'Records Qualified Agents',
 		'Changed Records',
 		'Good Percentage',
+		'Critical Errors',
+		'Meaningful Improvements',
+		'No Significant Changes',
+		'Stylistic Preferences',
 	]
 
 	// Convert data to CSV rows
@@ -37,6 +41,10 @@ export function exportToCSV(data: DetailedStatsRow[], filename: string = 'ai_sta
 		row.recordsQualifiedAgents.toString(),
 		row.changedRecords.toString(),
 		`${row.goodPercentage.toFixed(1)}%`,
+		row.criticalErrors?.toString() || '0',
+		row.meaningfulImprovements?.toString() || '0',
+		row.noSignificantChanges?.toString() || '0',
+		row.stylisticPreferences?.toString() || '0',
 	])
 
 	// Combine headers and rows
