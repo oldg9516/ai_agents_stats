@@ -111,7 +111,11 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 
 	// Calculate AI metrics
 	const calculateAIMetrics = (row: DetailedStatsRow) => {
-		const total = row.recordsQualifiedAgents
+		// Use totalRecords when "All Agents" filter (agents = [])
+		// Use recordsQualifiedAgents when filtering by specific agents
+		const total = filters.agents.length === 0
+			? row.totalRecords
+			: row.recordsQualifiedAgents
 		if (total === 0) return { failureRate: 0, successRate: 0 }
 
 		const failureRate =
@@ -271,7 +275,11 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 					}
 
 					const { failureRate } = calculateAIMetrics(row.original)
-					const total = row.original.recordsQualifiedAgents
+					// Use totalRecords when "All Agents" filter (agents = [])
+					// Use recordsQualifiedAgents when filtering by specific agents
+					const total = filters.agents.length === 0
+						? row.original.totalRecords
+						: row.original.recordsQualifiedAgents
 
 					// Color coding: red > 30%, orange 15-30%, green < 15%
 					const bgClass =
