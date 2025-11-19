@@ -69,13 +69,13 @@
 	"kpi": {
 		"totalRecords": {
 			"title": "Total Records",
-			"description": "Records processed by agents",
-			"tooltip": "Shows the total count of AI-generated outputs. Only records processed by qualified team members are included in quality calculations."
+			"description": "All records processed by agents",
+			"tooltip": "Shows the total count of AI-generated outputs from all agents. Includes all records in the selected date range, filtered by version and category if specified."
 		},
 		"averageQuality": {
 			"title": "Average Quality",
 			"description": "Average quality percentage across all categories",
-			"tooltip": "Percentage of AI outputs used without modifications by qualified agents. Higher percentage indicates better AI performance. Quality is calculated as: (Unchanged records / Total records by qualified agents) × 100"
+			"tooltip": "Percentage of AI outputs used without modifications by any agent. Higher percentage indicates better AI performance. Quality is calculated as: (Unchanged records / Total records) × 100"
 		},
 		"aiSuccessRate": {
 			"title": "AI Success Rate",
@@ -90,17 +90,17 @@
 		"bestCategory": {
 			"title": "Best Category",
 			"description": "Category with the highest quality percentage",
-			"tooltip": "The request category where AI performs best, measured by the highest percentage of outputs used without human edits. Helps identify AI strengths and areas for improvement."
+			"tooltip": "The request category where AI performs best, measured by the highest percentage of outputs used without any edits. Helps identify AI strengths and areas for improvement."
 		},
 		"worstCategory": {
 			"title": "Worst Category",
 			"description": "Category with the highest failure rate",
-			"tooltip": "The request category where AI performs worst, measured by the highest percentage of outputs requiring significant changes. Helps identify areas needing improvement."
+			"tooltip": "The request category where AI performs worst, measured by the highest percentage of outputs requiring changes. Helps identify areas needing improvement."
 		},
 		"recordsChanged": {
 			"title": "Records Changed",
 			"description": "Number of records edited by agents",
-			"tooltip": "Count of AI-generated outputs that required human modifications. Lower numbers indicate better AI quality. Includes any edits made by qualified agents before use."
+			"tooltip": "Count of AI-generated outputs that required human modifications from any agent. Lower numbers indicate better AI quality."
 		},
 		"agentResponseRate": {
 			"title": "Agent Response Rate",
