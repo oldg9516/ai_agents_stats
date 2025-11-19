@@ -36,7 +36,6 @@ function getDashboardQueryKey(filters: DashboardFilters) {
 			to: filters.dateRange.to.toISOString(),
 			versions: filters.versions.sort(),
 			categories: filters.categories.sort(),
-			agents: filters.agents.sort(),
 		},
 	] as const
 }
@@ -183,7 +182,6 @@ function getPaginatedStatsQueryKey(
 			to: filters.dateRange.to.toISOString(),
 			versions: filters.versions.sort(),
 			categories: filters.categories.sort(),
-			agents: filters.agents.sort(),
 			page,
 			pageSize,
 		},

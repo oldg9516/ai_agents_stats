@@ -647,19 +647,14 @@ export async function getDetailedStatsPaginated(
 	hasNextPage: boolean
 	hasPreviousPage: boolean
 }> {
-	const { dateRange, versions, categories, agents } = filters
-
-	// If agents array is empty, pass NULL to show ALL agents from database
-	// Otherwise, pass the agent list (could be qualified agents or specific selection)
-	const agentList = agents.length > 0 ? agents : null
+	const { dateRange, versions, categories } = filters
 
 	// @ts-expect-error - Supabase RPC types not fully generated yet
-	const { data, error } = await supabase.rpc('get_detailed_stats_paginated', {
+	const { data, error} = await supabase.rpc('get_detailed_stats_paginated', {
 		p_from_date: dateRange.from.toISOString(),
 		p_to_date: dateRange.to.toISOString(),
 		p_versions: versions.length > 0 ? versions : null,
 		p_categories: categories.length > 0 ? categories : null,
-		p_agents: agentList,
 		p_page: page,
 		p_page_size: pageSize,
 	})
@@ -693,7 +688,6 @@ export async function getDetailedStatsPaginated(
 			dates: r.out_dates as string | null,
 			sortOrder: r.out_sort_order as number,
 			totalRecords: Number(r.out_total_records),
-			recordsQualifiedAgents: Number(r.out_records_qualified_agents),
 			changedRecords: Number(r.out_changed_records),
 			goodPercentage: Number(r.out_good_percentage),
 			criticalErrors: Number(r.out_critical_errors || 0),

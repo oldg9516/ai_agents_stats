@@ -103,13 +103,9 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 		return dateObj >= cutoffDate
 	}
 
-	// Calculate AI metrics
+	// Calculate AI metrics (always from all agents)
 	const calculateAIMetrics = (row: DetailedStatsRow) => {
-		// Use totalRecords when "All Agents" filter (agents = [])
-		// Use recordsQualifiedAgents when filtering by specific agents
-		const total = filters.agents.length === 0
-			? row.totalRecords
-			: row.recordsQualifiedAgents
+		const total = row.totalRecords
 		if (total === 0) return { failureRate: 0, successRate: 0 }
 
 		const failureRate =
@@ -206,15 +202,6 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 				},
 			},
 			{
-				accessorKey: 'recordsQualifiedAgents',
-				header: () => (
-					<div className='text-center'>{t('table.qualifiedAgents')}</div>
-				),
-				cell: ({ getValue }) => {
-					return <div className='text-left'>{getValue() as number}</div>
-				},
-			},
-			{
 				accessorKey: 'changedRecords',
 				header: () => (
 					<div className='text-center'>{t('table.recordsChanged')}</div>
@@ -253,7 +240,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 				id: 'aiFailureGroup',
 				header: () => (
 					<div className='text-center text-xs'>
-						AI Failure Rate
+						{t('table.aiFailureRate')}
 						<div className='text-[10px] text-muted-foreground font-normal'>
 							(NEW)
 						</div>
@@ -264,7 +251,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 						accessorKey: 'criticalErrors',
 						header: () => (
 							<div className='text-center text-xs'>
-								Critical
+								{t('table.critical')}
 							</div>
 						),
 						cell: ({ row }) => {
@@ -274,10 +261,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 								return <div className='text-center text-muted-foreground text-sm'>-</div>
 							}
 
-							const total = filters.agents.length === 0
-								? row.original.totalRecords
-								: row.original.recordsQualifiedAgents
-
+							const total = row.original.totalRecords
 							const count = row.original.criticalErrors
 							const percent = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0'
 
@@ -294,7 +278,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 						accessorKey: 'meaningfulImprovements',
 						header: () => (
 							<div className='text-center text-xs'>
-								Meaningful
+								{t('table.meaningful')}
 							</div>
 						),
 						cell: ({ row }) => {
@@ -304,10 +288,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 								return <div className='text-center text-muted-foreground text-sm'>-</div>
 							}
 
-							const total = filters.agents.length === 0
-								? row.original.totalRecords
-								: row.original.recordsQualifiedAgents
-
+							const total = row.original.totalRecords
 							const count = row.original.meaningfulImprovements
 							const percent = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0'
 
@@ -327,7 +308,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 				id: 'aiSuccessGroup',
 				header: () => (
 					<div className='text-center text-xs'>
-						AI Success Rate
+						{t('table.aiSuccessRate')}
 						<div className='text-[10px] text-muted-foreground font-normal'>
 							(NEW)
 						</div>
@@ -338,7 +319,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 						accessorKey: 'noSignificantChanges',
 						header: () => (
 							<div className='text-center text-xs'>
-								No Changes
+								{t('table.noChanges')}
 							</div>
 						),
 						cell: ({ row }) => {
@@ -348,10 +329,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 								return <div className='text-center text-muted-foreground text-sm'>-</div>
 							}
 
-							const total = filters.agents.length === 0
-								? row.original.totalRecords
-								: row.original.recordsQualifiedAgents
-
+							const total = row.original.totalRecords
 							const count = row.original.noSignificantChanges
 							const percent = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0'
 
@@ -368,7 +346,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 						accessorKey: 'stylisticPreferences',
 						header: () => (
 							<div className='text-center text-xs'>
-								Stylistic
+								{t('table.stylistic')}
 							</div>
 						),
 						cell: ({ row }) => {
@@ -378,10 +356,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 								return <div className='text-center text-muted-foreground text-sm'>-</div>
 							}
 
-							const total = filters.agents.length === 0
-								? row.original.totalRecords
-								: row.original.recordsQualifiedAgents
-
+							const total = row.original.totalRecords
 							const count = row.original.stylisticPreferences
 							const percent = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0'
 

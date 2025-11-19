@@ -68,9 +68,9 @@
 	},
 	"kpi": {
 		"totalRecords": {
-			"title": "Qualified Agents Records",
-			"description": "Records processed by qualified agents",
-			"tooltip": "Shows the total count of AI-generated outputs that were reviewed by qualified agents. Only records processed by qualified team members are included in quality calculations."
+			"title": "Total Records",
+			"description": "Records processed by agents",
+			"tooltip": "Shows the total count of AI-generated outputs. Only records processed by qualified team members are included in quality calculations."
 		},
 		"averageQuality": {
 			"title": "Average Quality",
@@ -189,6 +189,10 @@
 		"aiSuccessRate": "AI Success Rate",
 		"aiFailureRateTooltip": "AI Failure Rate Breakdown",
 		"aiSuccessRateTooltip": "AI Success Rate Breakdown",
+		"critical": "Critical",
+		"meaningful": "Meaningful",
+		"noChanges": "No Changes",
+		"stylistic": "Stylistic",
 		"threadId": "Thread ID",
 		"ticketId": "Ticket ID",
 		"type": "Type",

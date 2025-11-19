@@ -36,7 +36,6 @@ export interface Database {
 					p_to_date: string
 					p_versions: string[] | null
 					p_categories: string[] | null
-					p_agents: string[] | null
 					p_page: number
 					p_page_size: number
 				}
@@ -46,7 +45,6 @@ export interface Database {
 					dates: string | null
 					sort_order: number
 					total_records: number
-					records_qualified_agents: number
 					changed_records: number
 					good_percentage: number
 					total_count: number
@@ -192,7 +190,6 @@ export interface DetailedStatsRow {
 	dates: string | null // Week range or null for version-level rows
 	sortOrder: number // 1 for version-level, 2 for week-level
 	totalRecords: number
-	recordsQualifiedAgents: number
 	changedRecords: number
 	goodPercentage: number
 	// Change classification breakdown
@@ -212,7 +209,6 @@ export interface DashboardFilters {
 	}
 	versions: string[] // [] = all versions
 	categories: string[] // [] = all categories
-	agents: string[] // Must have at least 1
 }
 
 /**

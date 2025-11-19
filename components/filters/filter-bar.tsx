@@ -1,7 +1,6 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 import type { DashboardFilters } from '@/lib/supabase/types'
 import { IconRefresh } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'
@@ -23,7 +22,6 @@ interface FilterBarProps {
  * Features:
  * - Version multi-select
  * - Category multi-select
- * - Agent multi-select
  * - Reset button
  *
  * Note: Date range filter moved to page level (DateRangeSelector component)
@@ -84,47 +82,6 @@ export function FilterBar({
 					placeholder={t('filters.searchCategories')}
 					allowEmpty={true}
 				/>
-
-				{/* Agent Filter with Special Options */}
-				<div className='space-y-2'>
-					<MultiSelectFilter
-						label={t('filters.qualifiedAgents')}
-						options={[...QUALIFIED_AGENTS]}
-						selected={filters.agents}
-						onChange={agents => onFiltersChange({ agents })}
-						placeholder={t('filters.searchAgents')}
-						searchable={true}
-						allowEmpty={true}
-					/>
-
-					{/* Quick Agent Selection Buttons */}
-					<div className='grid grid-cols-2 gap-2'>
-						<Button
-							onClick={() => onFiltersChange({ agents: [...QUALIFIED_AGENTS] })}
-							variant='outline'
-							size='sm'
-							className={`text-xs ${
-								filters.agents.length > 0 && filters.agents.length === QUALIFIED_AGENTS.length
-									? 'bg-orange-500 text-white hover:bg-orange-600 border-orange-500'
-									: ''
-							}`}
-						>
-							{t('filters.qualifiedOnly')}
-						</Button>
-						<Button
-							onClick={() => onFiltersChange({ agents: [] })}
-							variant='outline'
-							size='sm'
-							className={`text-xs ${
-								filters.agents.length === 0
-									? 'bg-orange-500 text-white hover:bg-orange-600 border-orange-500'
-									: ''
-							}`}
-						>
-							{t('filters.allAgents')}
-						</Button>
-					</div>
-				</div>
 			</div>
 
 			{/* Reset Button */}

@@ -1,4 +1,3 @@
-import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 import type { DashboardFilters } from '@/lib/supabase/types'
 import { StateCreator } from 'zustand'
 
@@ -20,7 +19,6 @@ function getDefaultDashboardFilters(): DashboardFilters {
 		},
 		versions: [], // Empty = all versions
 		categories: [], // Empty = all categories
-		agents: [...QUALIFIED_AGENTS], // All qualified agents by default
 	}
 }
 
@@ -32,7 +30,6 @@ export interface DashboardSlice {
 	setDashboardDateRange: (from: Date, to: Date) => void
 	setDashboardVersions: (versions: string[]) => void
 	setDashboardCategories: (categories: string[]) => void
-	setDashboardAgents: (agents: string[]) => void
 	resetDashboardFilters: () => void
 	updateDashboardFilters: (filters: Partial<DashboardFilters>) => void
 }
@@ -68,14 +65,6 @@ export const createDashboardSlice: StateCreator<
 			dashboardFilters: {
 				...state.dashboardFilters,
 				categories,
-			},
-		})),
-
-	setDashboardAgents: agents =>
-		set(state => ({
-			dashboardFilters: {
-				...state.dashboardFilters,
-				agents, // Allow empty array to show ALL agents from database
 			},
 		})),
 
