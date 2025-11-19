@@ -17,7 +17,6 @@ export function useDashboardFilters() {
 		setDashboardDateRange,
 		setDashboardVersions,
 		setDashboardCategories,
-		setDashboardAgents,
 		resetDashboardFilters,
 	} = useStore()
 
@@ -26,7 +25,6 @@ export function useDashboardFilters() {
 		setDateRange: setDashboardDateRange,
 		setVersions: setDashboardVersions,
 		setCategories: setDashboardCategories,
-		setAgents: setDashboardAgents,
 		resetFilters: resetDashboardFilters,
 	}
 }

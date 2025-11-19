@@ -1,4 +1,3 @@
-import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 import type { DashboardFilters, SupportFilters } from '@/lib/supabase/types'
 
 /**
@@ -16,7 +15,6 @@ export function getDefaultFilters(): DashboardFilters {
 		},
 		versions: [], // Empty = all versions
 		categories: [], // Empty = all categories
-		agents: [...QUALIFIED_AGENTS], // All qualified agents by default
 	}
 }
 
@@ -70,18 +68,10 @@ export function parseFiltersFromSearchParams(
 			? categoriesParam.split(',').filter(Boolean)
 			: defaults.categories
 
-	// Parse agents
-	const agentsParam = searchParams.agents
-	const agents =
-		typeof agentsParam === 'string'
-			? agentsParam.split(',').filter(Boolean)
-			: defaults.agents
-
 	return {
 		dateRange,
 		versions,
 		categories,
-		agents,
 	}
 }
 

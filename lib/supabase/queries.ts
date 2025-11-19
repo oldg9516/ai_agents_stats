@@ -53,7 +53,7 @@ function getPreviousPeriod(from: Date, to: Date): { from: Date; to: Date } {
  * Fetch KPI Data with trends
  */
 export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
-	const { dateRange, versions, categories, agents } = filters
+	const { dateRange, versions, categories } = filters
 	const previousPeriod = getPreviousPeriod(dateRange.from, dateRange.to)
 
 	// OPTIMIZATION: Select only fields needed for KPI calculation (not SELECT *)
@@ -71,15 +71,6 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 		.select(selectFields, { count: 'exact' })
 		.gte('created_at', previousPeriod.from.toISOString())
 		.lte('created_at', previousPeriod.to.toISOString())
-
-	// Apply email filter ONLY if agents array is not empty
-	// agents: [] = ALL agents (no filter)
-	// agents: [...QUALIFIED_AGENTS] = only qualified agents
-	// agents: ['specific@email.com'] = specific agent
-	if (agents.length > 0) {
-		currentQuery = currentQuery.in('email', agents)
-		previousQuery = previousQuery.in('email', agents)
-	}
 
 	// Apply filters
 	if (versions.length > 0) {
@@ -192,18 +183,13 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 export async function getQualityTrends(
 	filters: DashboardFilters
 ): Promise<QualityTrendData[]> {
-	const { dateRange, versions, categories, agents } = filters
+	const { dateRange, versions, categories } = filters
 
 	let query = supabase
 		.from('ai_human_comparison')
 		.select('request_subtype, created_at, changed')
 		.gte('created_at', dateRange.from.toISOString())
 		.lte('created_at', dateRange.to.toISOString())
-
-	// Apply email filter ONLY if agents array is not empty
-	if (agents.length > 0) {
-		query = query.in('email', agents)
-	}
 
 	if (versions.length > 0) {
 		query = query.in('prompt_version', versions)
@@ -279,18 +265,13 @@ function getDayStart(date: Date): string {
 export async function getCategoryDistribution(
 	filters: DashboardFilters
 ): Promise<CategoryDistributionResult> {
-	const { dateRange, versions, categories, agents } = filters
+	const { dateRange, versions, categories } = filters
 
 	let query = supabase
 		.from('ai_human_comparison')
 		.select('request_subtype, changed', { count: 'exact' })
 		.gte('created_at', dateRange.from.toISOString())
 		.lte('created_at', dateRange.to.toISOString())
-
-	// Apply email filter ONLY if agents array is not empty
-	if (agents.length > 0) {
-		query = query.in('email', agents)
-	}
 
 	if (versions.length > 0) {
 		query = query.in('prompt_version', versions)
@@ -346,18 +327,13 @@ export async function getCategoryDistribution(
 export async function getVersionComparison(
 	filters: DashboardFilters
 ): Promise<VersionComparisonData[]> {
-	const { dateRange, versions, categories, agents } = filters
+	const { dateRange, versions, categories } = filters
 
 	let query = supabase
 		.from('ai_human_comparison')
 		.select('prompt_version, changed')
 		.gte('created_at', dateRange.from.toISOString())
 		.lte('created_at', dateRange.to.toISOString())
-
-	// Apply email filter ONLY if agents array is not empty
-	if (agents.length > 0) {
-		query = query.in('email', agents)
-	}
 
 	if (versions.length > 0) {
 		query = query.in('prompt_version', versions)
@@ -402,7 +378,7 @@ export async function getVersionComparison(
 export async function getDetailedStats(
 	filters: DashboardFilters
 ): Promise<DetailedStatsRow[]> {
-	const { dateRange, versions, categories, agents } = filters
+	const { dateRange, versions, categories } = filters
 
 	// OPTIMIZATION: Select only fields needed for detailed stats calculation
 	// This reduces data transfer significantly (6 fields instead of all)
@@ -414,11 +390,6 @@ export async function getDetailedStats(
 		.select(selectFields)
 		.gte('created_at', dateRange.from.toISOString())
 		.lte('created_at', dateRange.to.toISOString())
-
-	// Apply email filter ONLY if agents array is not empty
-	if (agents.length > 0) {
-		query = query.in('email', agents)
-	}
 
 	if (versions.length > 0) {
 		query = query.in('prompt_version', versions)
@@ -475,15 +446,11 @@ export async function getDetailedStats(
 
 	// Process each version group
 	Object.values(versionGroups).forEach(group => {
-		// If agents filter is empty, use all records (no filtering by qualified agents)
-		// Otherwise, filter by the specified agents list
-		const qualifiedRecords =
-			agents.length > 0
-				? group.records.filter(r => r.email && agents.includes(r.email))
-				: group.records
-		const changedRecords = qualifiedRecords.filter(r => r.changed)
-		const unchangedRecords = qualifiedRecords.filter(r => !r.changed)
-		const classifications = countClassifications(qualifiedRecords)
+		// Use all records (no filtering by qualified agents)
+		const allRecords = group.records
+		const changedRecords = allRecords.filter(r => r.changed)
+		const unchangedRecords = allRecords.filter(r => !r.changed)
+		const classifications = countClassifications(allRecords)
 
 		// Level 1: Version-level row
 		rows.push({
@@ -491,13 +458,12 @@ export async function getDetailedStats(
 			version: group.version,
 			dates: null,
 			sortOrder: 1,
-			totalRecords: group.records.length,
-			recordsQualifiedAgents: qualifiedRecords.length,
+			totalRecords: allRecords.length,
 			changedRecords: changedRecords.length,
 			goodPercentage:
-				qualifiedRecords.length > 0
+				allRecords.length > 0
 					? Math.round(
-							(unchangedRecords.length / qualifiedRecords.length) * 100
+							(unchangedRecords.length / allRecords.length) * 100
 					  )
 					: 0,
 			...classifications,
@@ -514,15 +480,10 @@ export async function getDetailedStats(
 		}, {} as Record<string, DetailedStatsRecord[]>)
 
 		Object.entries(weekGroups).forEach(([weekStart, weekRecords]) => {
-			// If agents filter is empty, use all records (no filtering by qualified agents)
-			// Otherwise, filter by the specified agents list
-			const weekQualifiedRecords =
-				agents.length > 0
-					? weekRecords.filter(r => r.email && agents.includes(r.email))
-					: weekRecords
-			const weekChangedRecords = weekQualifiedRecords.filter(r => r.changed)
-			const weekUnchangedRecords = weekQualifiedRecords.filter(r => !r.changed)
-			const weekClassifications = countClassifications(weekQualifiedRecords)
+			// Use all records (no filtering by qualified agents)
+			const weekChangedRecords = weekRecords.filter(r => r.changed)
+			const weekUnchangedRecords = weekRecords.filter(r => !r.changed)
+			const weekClassifications = countClassifications(weekRecords)
 
 			const weekStartDate = new Date(weekStart)
 			const weekEndDate = new Date(weekStartDate)
@@ -538,12 +499,11 @@ export async function getDetailedStats(
 				dates: dateRange,
 				sortOrder: 2,
 				totalRecords: weekRecords.length,
-				recordsQualifiedAgents: weekQualifiedRecords.length,
 				changedRecords: weekChangedRecords.length,
 				goodPercentage:
-					weekQualifiedRecords.length > 0
+					weekRecords.length > 0
 						? Math.round(
-								(weekUnchangedRecords.length / weekQualifiedRecords.length) *
+								(weekUnchangedRecords.length / weekRecords.length) *
 									100
 						  )
 						: 0,
@@ -708,7 +668,7 @@ export async function getDetailedStatsPaginated(
 }
 
 /**
- * Get default filters (Last 30 days, all versions, all categories, ALL agents)
+ * Get default filters (Last 30 days, all versions, all categories)
  */
 export function getDefaultFilters(): DashboardFilters {
 	const to = endOfDay(new Date())
@@ -718,6 +678,5 @@ export function getDefaultFilters(): DashboardFilters {
 		dateRange: { from, to },
 		versions: [],
 		categories: [],
-		agents: [], // Empty array = ALL agents (no filter)
 	}
 }

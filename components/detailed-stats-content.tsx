@@ -7,7 +7,6 @@ import { DetailedStatsTable } from './tables/detailed-stats-table'
 import { FilterSheet } from './filters/filter-sheet'
 import { FilterBar } from './filters/filter-bar'
 import { DateRangeSelector } from './filters/date-range-selector'
-import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 
 /**
  * Detailed Stats Content - Client Component for detailed stats page
@@ -23,7 +22,6 @@ export function DetailedStatsContent() {
 		setDateRange,
 		setVersions,
 		setCategories,
-		setAgents,
 		resetFilters,
 	} = useFilters()
 
@@ -48,9 +46,6 @@ export function DetailedStatsContent() {
 		if (updates.categories !== undefined) {
 			setCategories(updates.categories)
 		}
-		if (updates.agents !== undefined) {
-			setAgents(updates.agents)
-		}
 	}
 
 	// Count active filters (excluding date range, which has its own selector)
@@ -71,14 +66,6 @@ export function DetailedStatsContent() {
 			filterOptions &&
 			filters.categories.length > 0 &&
 			filters.categories.length < filterOptions.categories.length
-		) {
-			count++
-		}
-
-		// Check if agents are filtered
-		if (
-			filters.agents.length > 0 &&
-			filters.agents.length < QUALIFIED_AGENTS.length
 		) {
 			count++
 		}

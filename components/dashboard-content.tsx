@@ -1,6 +1,5 @@
 'use client'
 
-import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 import { fetchFilterOptions } from '@/lib/actions/dashboard-actions'
 import { useDashboardData } from '@/lib/hooks/use-dashboard-data'
 import { useFilters } from '@/lib/hooks/use-filters'
@@ -32,7 +31,6 @@ export function DashboardContent() {
 		setDateRange,
 		setVersions,
 		setCategories,
-		setAgents,
 		resetFilters,
 	} = useFilters()
 
@@ -61,9 +59,6 @@ export function DashboardContent() {
 		if (updates.categories !== undefined) {
 			setCategories(updates.categories)
 		}
-		if (updates.agents !== undefined) {
-			setAgents(updates.agents)
-		}
 
 		// Invalidate all dashboard queries to force refetch with new filters
 		queryClient.invalidateQueries({ queryKey: ['dashboard'] })
@@ -88,14 +83,6 @@ export function DashboardContent() {
 			filterOptions &&
 			filters.categories.length > 0 &&
 			filters.categories.length < filterOptions.categories.length
-		) {
-			count++
-		}
-
-		// Check if agents are filtered
-		if (
-			filters.agents.length > 0 &&
-			filters.agents.length < QUALIFIED_AGENTS.length
 		) {
 			count++
 		}
