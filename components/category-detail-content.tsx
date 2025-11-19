@@ -76,7 +76,7 @@ export function CategoryDetailContent({
 			to: new Date(),
 		},
 		versions: [],
-		agents: [...QUALIFIED_AGENTS],
+		agents: [], // All agents (no filter)
 	})
 	const [page, setPage] = useState(0)
 	const pageSize = 20
@@ -110,7 +110,7 @@ export function CategoryDetailContent({
 				to: new Date(),
 			},
 			versions: [],
-			agents: [...QUALIFIED_AGENTS],
+			agents: [], // All agents (no filter)
 		})
 		setPage(0)
 	}

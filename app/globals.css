@@ -125,3 +125,8 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.408 0.123 38.172);
 }
+
+/* Prevent layout shift when modal opens by compensating for scrollbar */
+body {
+  scrollbar-gutter: stable;
+}

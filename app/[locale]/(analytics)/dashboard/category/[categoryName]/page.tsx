@@ -6,7 +6,6 @@
  */
 
 import { fetchCategoryDetail, checkCategoryExists } from '@/lib/actions/category-actions'
-import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 import { notFound } from 'next/navigation'
 import { subDays } from 'date-fns'
 import { CategoryDetailContent } from '@/components/category-detail-content'
@@ -36,7 +35,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 				to: new Date(),
 			},
 			versions: [],
-			agents: [...QUALIFIED_AGENTS],
+			agents: [], // All agents (no filter)
 		},
 		{ page: 0, pageSize: 20 }
 	)

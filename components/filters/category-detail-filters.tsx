@@ -7,7 +7,6 @@ import { Card } from '@/components/ui/card'
 import { IconFilterOff } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'
 import type { CategoryFilters } from '@/lib/supabase/types'
-import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 
 interface CategoryDetailFiltersProps {
 	filters: CategoryFilters
@@ -22,7 +21,6 @@ interface CategoryDetailFiltersProps {
  * Filters for category detail page:
  * - Date range (quick buttons + manual)
  * - Versions multi-select
- * - Agents multi-select (qualified agents)
  * - Reset button
  */
 export function CategoryDetailFilters({
@@ -49,14 +47,6 @@ export function CategoryDetailFilters({
 		})
 	}
 
-	// Handler for agents change
-	const handleAgentsChange = (agents: string[]) => {
-		onFiltersChange({
-			...filters,
-			agents,
-		})
-	}
-
 	return (
 		<Card className='p-4 space-y-4'>
 			<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
@@ -72,7 +62,7 @@ export function CategoryDetailFilters({
 				</Button>
 			</div>
 
-			<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+			<div className='grid gap-4 sm:grid-cols-2'>
 				{/* Date Range Filter */}
 				<div>
 					<DateRangeFilter
@@ -94,34 +84,16 @@ export function CategoryDetailFilters({
 						allowEmpty={true}
 					/>
 				</div>
-
-				{/* Agents Filter */}
-				<div>
-					<MultiSelectFilter
-						label={t('agents')}
-						options={[...QUALIFIED_AGENTS]}
-						selected={filters.agents}
-						onChange={handleAgentsChange}
-						placeholder={t('searchAgents')}
-						searchable={true}
-						allowEmpty={true}
-					/>
-				</div>
 			</div>
 
 			{/* Active Filters Summary */}
-			<div className='flex flex-wrap gap-2 text-xs text-muted-foreground'>
-				{filters.versions.length > 0 && (
+			{filters.versions.length > 0 && (
+				<div className='flex flex-wrap gap-2 text-xs text-muted-foreground'>
 					<span>
 						{t('versionsSelected', { count: filters.versions.length })}
 					</span>
-				)}
-				{filters.agents.length > 0 && filters.agents.length < QUALIFIED_AGENTS.length && (
-					<span>
-						{t('agentsSelected', { count: filters.agents.length })}
-					</span>
-				)}
-			</div>
+				</div>
+			)}
 		</Card>
 	)
 }

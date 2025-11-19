@@ -48,7 +48,7 @@ export async function fetchCategoryDetail(
       to: new Date(),
     },
     versions: [], // All versions
-    agents: [...QUALIFIED_AGENTS], // All qualified agents
+    agents: [], // All agents (no filter)
   }
 
   const appliedFilters: CategoryFilters = {
@@ -97,7 +97,7 @@ export async function fetchCategoryKPIs(
       to: new Date(),
     },
     versions: [],
-    agents: [...QUALIFIED_AGENTS],
+    agents: [], // All agents (no filter)
   }
 
   const appliedFilters: CategoryFilters = {
@@ -127,7 +127,7 @@ export async function fetchCategoryTrends(
       to: new Date(),
     },
     versions: [],
-    agents: [...QUALIFIED_AGENTS],
+    agents: [], // All agents (no filter)
   }
 
   const appliedFilters: CategoryFilters = {
@@ -157,7 +157,7 @@ export async function fetchCategoryVersions(
       to: new Date(),
     },
     versions: [],
-    agents: [...QUALIFIED_AGENTS],
+    agents: [], // All agents (no filter)
   }
 
   const appliedFilters: CategoryFilters = {
@@ -187,7 +187,7 @@ export async function fetchCategoryAgents(
       to: new Date(),
     },
     versions: [],
-    agents: [...QUALIFIED_AGENTS],
+    agents: [], // All agents (no filter)
   }
 
   const appliedFilters: CategoryFilters = {
@@ -218,7 +218,7 @@ export async function fetchCategoryRecordsPage(
       to: new Date(),
     },
     versions: [],
-    agents: [...QUALIFIED_AGENTS],
+    agents: [], // All agents (no filter)
   }
 
   const appliedFilters: CategoryFilters = {

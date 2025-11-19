@@ -9,7 +9,6 @@
  */
 
 import { fetchCategoryDetail, checkCategoryExists } from '@/lib/actions/category-actions'
-import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 import { notFound } from 'next/navigation'
 import { subDays } from 'date-fns'
 import { CategoryDetailModal } from '@/components/category-detail-modal'
@@ -39,7 +38,7 @@ export default async function CategoryModalPage({ params }: CategoryModalPagePro
 				to: new Date(),
 			},
 			versions: [],
-			agents: [...QUALIFIED_AGENTS],
+			agents: [], // All agents (no filter)
 		},
 		{ page: 0, pageSize: 20 }
 	)
