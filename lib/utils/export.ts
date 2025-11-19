@@ -29,6 +29,7 @@ export function exportToCSV(data: DetailedStatsRow[], filename: string = 'ai_sta
 		'Meaningful Improvements',
 		'No Significant Changes',
 		'Stylistic Preferences',
+		'Context Shifts',
 	]
 
 	// Convert data to CSV rows
@@ -43,6 +44,7 @@ export function exportToCSV(data: DetailedStatsRow[], filename: string = 'ai_sta
 		row.meaningfulImprovements?.toString() || '0',
 		row.noSignificantChanges?.toString() || '0',
 		row.stylisticPreferences?.toString() || '0',
+		row.contextShifts?.toString() || '0',
 	])
 
 	// Combine headers and rows

@@ -57,8 +57,8 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 	const previousPeriod = getPreviousPeriod(dateRange.from, dateRange.to)
 
 	// OPTIMIZATION: Select only fields needed for KPI calculation (not SELECT *)
-	// This reduces data transfer significantly (only 2 fields instead of all)
-	const selectFields = 'changed, request_subtype'
+	// This reduces data transfer significantly (only 3 fields instead of all)
+	const selectFields = 'changed, request_subtype, change_classification'
 
 	let currentQuery = supabase
 		.from('ai_human_comparison')
@@ -95,6 +95,7 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 	type KPIRecord = {
 		changed: boolean
 		request_subtype: string | null
+		change_classification: string | null
 	}
 	const currentRecords = currentData as unknown as KPIRecord[]
 	const previousRecords = previousData as unknown as KPIRecord[]
@@ -103,19 +104,35 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 	const currentTotal = currentCount || 0
 	const previousTotal = previousCount || 0
 
+	// Count context_shift records to exclude from quality calculations
+	const currentContextShift = currentRecords.filter(r => r.change_classification === 'context_shift').length
+	const previousContextShift = previousRecords.filter(r => r.change_classification === 'context_shift').length
+
+	// Evaluable records (excluding context_shift)
+	const currentEvaluable = currentTotal - currentContextShift
+	const previousEvaluable = previousTotal - previousContextShift
+
 	const currentChanged = currentRecords.filter(r => r.changed).length
 	const previousChanged = previousRecords.filter(r => r.changed).length
+
+	// Changed records excluding context_shift (for "Records Changed" KPI)
+	const currentChangedEvaluable = currentChanged - currentContextShift
+	const previousChangedEvaluable = previousChanged - previousContextShift
 
 	const currentUnchanged = currentTotal - currentChanged
 	const previousUnchanged = previousTotal - previousChanged
 
+	// Quality calculated from evaluable records
 	const currentAvgQuality =
-		currentTotal > 0 ? (currentUnchanged / currentTotal) * 100 : 0
+		currentEvaluable > 0 ? (currentUnchanged / currentEvaluable) * 100 : 0
 	const previousAvgQuality =
-		previousTotal > 0 ? (previousUnchanged / previousTotal) * 100 : 0
+		previousEvaluable > 0 ? (previousUnchanged / previousEvaluable) * 100 : 0
 
-	// Calculate best category
+	// Calculate best category (excluding context_shift from calculations)
 	const categoryStats = currentRecords.reduce((acc, record) => {
+		// Skip context_shift records
+		if (record.change_classification === 'context_shift') return acc
+
 		const cat = record.request_subtype ?? 'unknown'
 		if (!acc[cat]) {
 			acc[cat] = { total: 0, unchanged: 0 }
@@ -127,7 +144,7 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 
 	const bestCategory = Object.entries(categoryStats).reduce(
 		(best, [cat, stats]) => {
-			const percentage = (stats.unchanged / stats.total) * 100
+			const percentage = stats.total > 0 ? (stats.unchanged / stats.total) * 100 : 0
 			if (percentage > best.percentage) {
 				return { category: cat, percentage }
 			}
@@ -136,9 +153,9 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 		{ category: '', percentage: 0 }
 	)
 
-	// Calculate previous percentage for best category
+	// Calculate previous percentage for best category (excluding context_shift)
 	const previousCategoryData = previousRecords.filter(
-		r => r.request_subtype === bestCategory.category
+		r => r.request_subtype === bestCategory.category && r.change_classification !== 'context_shift'
 	)
 	const previousCategoryTotal = previousCategoryData.length
 	const previousCategoryUnchanged = previousCategoryData.filter(
@@ -170,9 +187,9 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 			),
 		},
 		recordsChanged: {
-			current: currentChanged,
-			previous: previousChanged,
-			trend: calculateTrend(currentChanged, previousChanged),
+			current: currentChangedEvaluable,
+			previous: previousChangedEvaluable,
+			trend: calculateTrend(currentChangedEvaluable, previousChangedEvaluable),
 		},
 	}
 }
@@ -187,7 +204,7 @@ export async function getQualityTrends(
 
 	let query = supabase
 		.from('ai_human_comparison')
-		.select('request_subtype, created_at, changed')
+		.select('request_subtype, created_at, changed, change_classification')
 		.gte('created_at', dateRange.from.toISOString())
 		.lte('created_at', dateRange.to.toISOString())
 
@@ -209,13 +226,16 @@ export async function getQualityTrends(
 
 	const records = data as unknown as AIHumanComparisonRow[]
 
+	// Filter out context_shift records before calculations
+	const evaluableRecords = records.filter(r => r.change_classification !== 'context_shift')
+
 	// Calculate date range in days
 	const diffMs = dateRange.to.getTime() - dateRange.from.getTime()
 	const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
 	const groupByDay = diffDays <= 14 // Use day grouping for periods ≤ 14 days
 
-	// Group by category and day/week
-	const grouped = records.reduce((acc, record) => {
+	// Group by category and day/week (only evaluable records)
+	const grouped = evaluableRecords.reduce((acc, record) => {
 		const category = record.request_subtype ?? 'unknown'
 		const dateKey = groupByDay
 			? getDayStart(new Date(record.created_at ?? new Date()))
@@ -269,7 +289,7 @@ export async function getCategoryDistribution(
 
 	let query = supabase
 		.from('ai_human_comparison')
-		.select('request_subtype, changed', { count: 'exact' })
+		.select('request_subtype, changed, change_classification', { count: 'exact' })
 		.gte('created_at', dateRange.from.toISOString())
 		.lte('created_at', dateRange.to.toISOString())
 
@@ -292,14 +312,18 @@ export async function getCategoryDistribution(
 	const records = data as unknown as AIHumanComparisonRow[]
 	const totalCount = count || 0
 
+	// Filter out context_shift records
+	const evaluableRecords = records.filter(r => r.change_classification !== 'context_shift')
+
 	console.log('🥧 Category Distribution Results:', {
 		recordsReturned: records.length,
+		evaluableRecords: evaluableRecords.length,
 		totalCount: totalCount,
 		dateRange: `${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`,
 	})
 
-	// Group by category
-	const grouped = records.reduce((acc, record) => {
+	// Group by category (only evaluable records)
+	const grouped = evaluableRecords.reduce((acc, record) => {
 		const cat = record.request_subtype ?? 'unknown'
 		if (!acc[cat]) {
 			acc[cat] = { total: 0, unchanged: 0 }
@@ -312,7 +336,7 @@ export async function getCategoryDistribution(
 	const categoriesData = Object.entries(grouped).map(([category, stats]) => ({
 		category,
 		totalRecords: stats.total,
-		goodPercentage: (stats.unchanged / stats.total) * 100,
+		goodPercentage: stats.total > 0 ? (stats.unchanged / stats.total) * 100 : 0,
 	}))
 
 	return {
@@ -331,7 +355,7 @@ export async function getVersionComparison(
 
 	let query = supabase
 		.from('ai_human_comparison')
-		.select('prompt_version, changed')
+		.select('prompt_version, changed, change_classification')
 		.gte('created_at', dateRange.from.toISOString())
 		.lte('created_at', dateRange.to.toISOString())
 
@@ -352,8 +376,11 @@ export async function getVersionComparison(
 
 	const records = data as unknown as AIHumanComparisonRow[]
 
-	// Group by version
-	const grouped = records.reduce((acc, record) => {
+	// Filter out context_shift records
+	const evaluableRecords = records.filter(r => r.change_classification !== 'context_shift')
+
+	// Group by version (only evaluable records)
+	const grouped = evaluableRecords.reduce((acc, record) => {
 		const ver = record.prompt_version ?? 'unknown'
 		if (!acc[ver]) {
 			acc[ver] = { total: 0, unchanged: 0 }
@@ -367,7 +394,7 @@ export async function getVersionComparison(
 		.map(([version, stats]) => ({
 			version,
 			totalRecords: stats.total,
-			goodPercentage: (stats.unchanged / stats.total) * 100,
+			goodPercentage: stats.total > 0 ? (stats.unchanged / stats.total) * 100 : 0,
 		}))
 		.sort((a, b) => a.version.localeCompare(b.version))
 }
@@ -441,6 +468,7 @@ export async function getDetailedStats(
 			meaningfulImprovements: records.filter(r => r.change_classification === 'meaningful_improvement').length,
 			stylisticPreferences: records.filter(r => r.change_classification === 'stylistic_preference').length,
 			noSignificantChanges: records.filter(r => r.change_classification === 'no_significant_change').length,
+			contextShifts: records.filter(r => r.change_classification === 'context_shift').length,
 		}
 	}
 
@@ -654,6 +682,7 @@ export async function getDetailedStatsPaginated(
 			meaningfulImprovements: Number(r.out_meaningful_improvements || 0),
 			stylisticPreferences: Number(r.out_stylistic_preferences || 0),
 			noSignificantChanges: Number(r.out_no_significant_changes || 0),
+			contextShifts: Number(r.out_context_shifts || 0),
 		}
 	})
 

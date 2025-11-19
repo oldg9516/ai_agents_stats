@@ -82,6 +82,13 @@ export interface AIHumanComparisonRow {
 	improvement_suggestions: any | null // jsonb
 	similarity_score: number | null
 	prompt_version: string | null // Version (v1, v2, v3, etc.)
+	change_classification:
+		| 'critical_error'
+		| 'meaningful_improvement'
+		| 'stylistic_preference'
+		| 'no_significant_change'
+		| 'context_shift'
+		| null // Classification of changes
 }
 
 /**
@@ -197,6 +204,7 @@ export interface DetailedStatsRow {
 	meaningfulImprovements: number
 	stylisticPreferences: number
 	noSignificantChanges: number
+	contextShifts: number // Context shift cases (excluded from quality calculations)
 }
 
 /**

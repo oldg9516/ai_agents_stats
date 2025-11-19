@@ -103,15 +103,18 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 		return dateObj >= cutoffDate
 	}
 
-	// Calculate AI metrics (always from all agents)
+	// Calculate AI metrics (excluding context_shift from calculations)
 	const calculateAIMetrics = (row: DetailedStatsRow) => {
 		const total = row.totalRecords
-		if (total === 0) return { failureRate: 0, successRate: 0 }
+		const contextShifts = row.contextShifts || 0
+		const evaluable = total - contextShifts // Exclude context_shift
+
+		if (evaluable === 0) return { failureRate: 0, successRate: 0 }
 
 		const failureRate =
-			((row.criticalErrors + row.meaningfulImprovements) / total) * 100
+			((row.criticalErrors + row.meaningfulImprovements) / evaluable) * 100
 		const successRate =
-			((row.noSignificantChanges + row.stylisticPreferences) / total) * 100
+			((row.noSignificantChanges + row.stylisticPreferences) / evaluable) * 100
 
 		return { failureRate, successRate }
 	}
@@ -250,20 +253,25 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 					{
 						accessorKey: 'criticalErrors',
 						header: () => (
-							<div className='text-center text-xs'>
-								{t('table.critical')}
-							</div>
+							<div className='text-center text-xs'>{t('table.critical')}</div>
 						),
 						cell: ({ row }) => {
 							const useNewLogic = isNewLogic(row.original.dates)
 
 							if (!useNewLogic) {
-								return <div className='text-center text-muted-foreground text-sm'>-</div>
+								return (
+									<div className='text-center text-muted-foreground text-sm'>
+										-
+									</div>
+								)
 							}
 
 							const total = row.original.totalRecords
+							const contextShifts = row.original.contextShifts || 0
+							const evaluable = total - contextShifts
 							const count = row.original.criticalErrors
-							const percent = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0'
+							const percent =
+								evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
 
 							return (
 								<div className='flex justify-center'>
@@ -277,20 +285,25 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 					{
 						accessorKey: 'meaningfulImprovements',
 						header: () => (
-							<div className='text-center text-xs'>
-								{t('table.meaningful')}
-							</div>
+							<div className='text-center text-xs'>{t('table.meaningful')}</div>
 						),
 						cell: ({ row }) => {
 							const useNewLogic = isNewLogic(row.original.dates)
 
 							if (!useNewLogic) {
-								return <div className='text-center text-muted-foreground text-sm'>-</div>
+								return (
+									<div className='text-center text-muted-foreground text-sm'>
+										-
+									</div>
+								)
 							}
 
 							const total = row.original.totalRecords
+							const contextShifts = row.original.contextShifts || 0
+							const evaluable = total - contextShifts
 							const count = row.original.meaningfulImprovements
-							const percent = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0'
+							const percent =
+								evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
 
 							return (
 								<div className='flex justify-center'>
@@ -318,20 +331,25 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 					{
 						accessorKey: 'noSignificantChanges',
 						header: () => (
-							<div className='text-center text-xs'>
-								{t('table.noChanges')}
-							</div>
+							<div className='text-center text-xs'>{t('table.noChanges')}</div>
 						),
 						cell: ({ row }) => {
 							const useNewLogic = isNewLogic(row.original.dates)
 
 							if (!useNewLogic) {
-								return <div className='text-center text-muted-foreground text-sm'>-</div>
+								return (
+									<div className='text-center text-muted-foreground text-sm'>
+										-
+									</div>
+								)
 							}
 
 							const total = row.original.totalRecords
+							const contextShifts = row.original.contextShifts || 0
+							const evaluable = total - contextShifts
 							const count = row.original.noSignificantChanges
-							const percent = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0'
+							const percent =
+								evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
 
 							return (
 								<div className='flex justify-center'>
@@ -345,24 +363,61 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 					{
 						accessorKey: 'stylisticPreferences',
 						header: () => (
+							<div className='text-center text-xs'>{t('table.stylistic')}</div>
+						),
+						cell: ({ row }) => {
+							const useNewLogic = isNewLogic(row.original.dates)
+
+							if (!useNewLogic) {
+								return (
+									<div className='text-center text-muted-foreground text-sm'>
+										-
+									</div>
+								)
+							}
+
+							const total = row.original.totalRecords
+							const contextShifts = row.original.contextShifts || 0
+							const evaluable = total - contextShifts
+							const count = row.original.stylisticPreferences
+							const percent =
+								evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
+
+							return (
+								<div className='flex justify-center'>
+									<span className='inline-block px-2 py-1 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'>
+										{count} ({percent}%)
+									</span>
+								</div>
+							)
+						},
+					},
+					{
+						accessorKey: 'contextShifts',
+						header: () => (
 							<div className='text-center text-xs'>
-								{t('table.stylistic')}
+								{t('table.contextShift')}
 							</div>
 						),
 						cell: ({ row }) => {
 							const useNewLogic = isNewLogic(row.original.dates)
 
 							if (!useNewLogic) {
-								return <div className='text-center text-muted-foreground text-sm'>-</div>
+								return (
+									<div className='text-center text-muted-foreground text-sm'>
+										-
+									</div>
+								)
 							}
 
 							const total = row.original.totalRecords
-							const count = row.original.stylisticPreferences
-							const percent = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0'
+							const count = row.original.contextShifts
+							const percent =
+								total > 0 ? ((count / total) * 100).toFixed(1) : '0.0'
 
 							return (
 								<div className='flex justify-center'>
-									<span className='inline-block px-2 py-1 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'>
+									<span className='inline-block px-2 py-1 rounded text-xs font-medium bg-gray-200 dark:bg-gray-900/30 text-gray-600 dark:text-gray-400'>
 										{count} ({percent}%)
 									</span>
 								</div>
