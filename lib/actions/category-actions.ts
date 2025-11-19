@@ -24,7 +24,6 @@ import type {
   CategoryAgentStats,
   CategoryRecord,
 } from '@/lib/supabase/types'
-import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 import { subDays } from 'date-fns'
 
 /**
@@ -111,7 +110,7 @@ export async function fetchCategoryKPIs(
     agents: filters?.agents || defaultFilters.agents,
   }
 
-  return getCategoryKPIData(categoryName, appliedFilters)
+  return getCategoryKPIData([categoryName], appliedFilters)
 }
 
 /**
@@ -141,7 +140,7 @@ export async function fetchCategoryTrends(
     agents: filters?.agents || defaultFilters.agents,
   }
 
-  return getCategoryWeeklyTrends(categoryName, appliedFilters)
+  return getCategoryWeeklyTrends([categoryName], appliedFilters)
 }
 
 /**
@@ -171,7 +170,7 @@ export async function fetchCategoryVersions(
     agents: filters?.agents || defaultFilters.agents,
   }
 
-  return getCategoryVersionStats(categoryName, appliedFilters)
+  return getCategoryVersionStats([categoryName], appliedFilters)
 }
 
 /**
@@ -201,7 +200,7 @@ export async function fetchCategoryAgents(
     agents: filters?.agents || defaultFilters.agents,
   }
 
-  return getCategoryAgentStats(categoryName, appliedFilters)
+  return getCategoryAgentStats([categoryName], appliedFilters)
 }
 
 /**
@@ -235,7 +234,7 @@ export async function fetchCategoryRecordsPage(
   const defaultPagination = { page: 0, pageSize: 50 }
   const appliedPagination = pagination || defaultPagination
 
-  return getCategoryRecords(categoryName, appliedFilters, appliedPagination)
+  return getCategoryRecords([categoryName], appliedFilters, appliedPagination)
 }
 
 /**
