@@ -47,10 +47,10 @@ function getPreviousPeriod(from: Date, to: Date): { from: Date; to: Date } {
 }
 
 /**
- * Get KPI data for a specific category
+ * Get KPI data for one or more categories
  */
 export async function getCategoryKPIData(
-  categoryName: string,
+  categories: string[],
   filters: CategoryFilters
 ): Promise<CategoryKPIData> {
   const { dateRange, versions, agents } = filters
@@ -66,7 +66,7 @@ export async function getCategoryKPIData(
   let currentQuery = supabase
     .from('ai_human_comparison')
     .select(selectFields, { count: 'exact' })
-    .eq('request_subtype', categoryName)
+    .in('request_subtype', categories)
     .gte('created_at', dateRange.from.toISOString())
     .lte('created_at', dateRange.to.toISOString())
     .in('email', emailFilter)
@@ -75,7 +75,7 @@ export async function getCategoryKPIData(
   let previousQuery = supabase
     .from('ai_human_comparison')
     .select(selectFields, { count: 'exact' })
-    .eq('request_subtype', categoryName)
+    .in('request_subtype', categories)
     .gte('created_at', previousPeriod.from.toISOString())
     .lte('created_at', previousPeriod.to.toISOString())
     .in('email', emailFilter)
@@ -135,7 +135,7 @@ export async function getCategoryKPIData(
  * Get weekly trend data for category (last 12 weeks)
  */
 export async function getCategoryWeeklyTrends(
-  categoryName: string,
+  categories: string[],
   filters: CategoryFilters
 ): Promise<CategoryWeeklyTrend[]> {
   const { dateRange, versions, agents } = filters
@@ -145,7 +145,7 @@ export async function getCategoryWeeklyTrends(
   let query = supabase
     .from('ai_human_comparison')
     .select('created_at, changed')
-    .eq('request_subtype', categoryName)
+    .in('request_subtype', categories)
     .gte('created_at', dateRange.from.toISOString())
     .lte('created_at', dateRange.to.toISOString())
     .in('email', emailFilter)
@@ -206,7 +206,7 @@ export async function getCategoryWeeklyTrends(
  * Get version breakdown stats for category
  */
 export async function getCategoryVersionStats(
-  categoryName: string,
+  categories: string[],
   filters: CategoryFilters
 ): Promise<CategoryVersionStats[]> {
   const { dateRange, versions, agents } = filters
@@ -216,7 +216,7 @@ export async function getCategoryVersionStats(
   let query = supabase
     .from('ai_human_comparison')
     .select('prompt_version, changed')
-    .eq('request_subtype', categoryName)
+    .in('request_subtype', categories)
     .gte('created_at', dateRange.from.toISOString())
     .lte('created_at', dateRange.to.toISOString())
     .in('email', emailFilter)
@@ -268,7 +268,7 @@ export async function getCategoryVersionStats(
  * Get agent breakdown stats for category
  */
 export async function getCategoryAgentStats(
-  categoryName: string,
+  categories: string[],
   filters: CategoryFilters
 ): Promise<CategoryAgentStats[]> {
   const { dateRange, versions, agents } = filters
@@ -278,7 +278,7 @@ export async function getCategoryAgentStats(
   let query = supabase
     .from('ai_human_comparison')
     .select('email, changed')
-    .eq('request_subtype', categoryName)
+    .in('request_subtype', categories)
     .gte('created_at', dateRange.from.toISOString())
     .lte('created_at', dateRange.to.toISOString())
     .in('email', emailFilter)
@@ -330,7 +330,7 @@ export async function getCategoryAgentStats(
  * Get detailed records for category (with pagination)
  */
 export async function getCategoryRecords(
-  categoryName: string,
+  categories: string[],
   filters: CategoryFilters,
   pagination: { page: number; pageSize: number }
 ): Promise<{ data: CategoryRecord[]; total: number }> {
@@ -342,7 +342,7 @@ export async function getCategoryRecords(
   let query = supabase
     .from('ai_human_comparison')
     .select('id, prompt_version, created_at, email, changed', { count: 'exact' })
-    .eq('request_subtype', categoryName)
+    .in('request_subtype', categories)
     .gte('created_at', dateRange.from.toISOString())
     .lte('created_at', dateRange.to.toISOString())
     .in('email', emailFilter)

@@ -29,16 +29,21 @@ import { subDays } from 'date-fns'
 
 /**
  * Fetch complete category detail data
+ * Supports single category or multiple categories (array)
  */
 export async function fetchCategoryDetail(
-  categoryName: string,
+  categories: string | string[],
   filters?: Partial<CategoryFilters>,
   pagination?: { page: number; pageSize: number }
 ): Promise<CategoryDetailData> {
-  // Check if category exists
-  const exists = await categoryExists(categoryName)
+  // Normalize to array
+  const categoryArray = Array.isArray(categories) ? categories : [categories]
+  const categoryName = categoryArray.join(',') // For display
+
+  // Check if first category exists (basic validation)
+  const exists = await categoryExists(categoryArray[0])
   if (!exists) {
-    throw new Error(`Category "${categoryName}" not found`)
+    throw new Error(`Category "${categoryArray[0]}" not found`)
   }
 
   // Default filters
@@ -62,15 +67,15 @@ export async function fetchCategoryDetail(
 
   // Fetch all data in parallel for performance
   const [kpis, weeklyTrends, versionStats, agentStats, records] = await Promise.all([
-    getCategoryKPIData(categoryName, appliedFilters),
-    getCategoryWeeklyTrends(categoryName, appliedFilters),
-    getCategoryVersionStats(categoryName, appliedFilters),
-    getCategoryAgentStats(categoryName, appliedFilters),
-    getCategoryRecords(categoryName, appliedFilters, appliedPagination),
+    getCategoryKPIData(categoryArray, appliedFilters),
+    getCategoryWeeklyTrends(categoryArray, appliedFilters),
+    getCategoryVersionStats(categoryArray, appliedFilters),
+    getCategoryAgentStats(categoryArray, appliedFilters),
+    getCategoryRecords(categoryArray, appliedFilters, appliedPagination),
   ])
 
   return {
-    categoryName,
+    categoryName, // Display name (comma-separated if multiple)
     kpis,
     weeklyTrends,
     versionStats,
