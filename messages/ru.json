@@ -16,7 +16,9 @@
 		"all": "Все",
 		"selected": "выбрано",
 		"noOptionsFound": "Опции не найдены",
-		"export": "Экспорт CSV"
+		"export": "Экспорт CSV",
+		"apply": "Применить",
+		"cancel": "Отмена"
 	},
 	"header": {
 		"title": "Lev Haolam AI"
@@ -49,7 +51,6 @@
 		"status": "Статус",
 		"requestType": "Тип запроса",
 		"requirements": "Требования",
-		"apply": "Применить",
 		"reset": "Сбросить",
 		"resetFilters": "Сбросить фильтры",
 		"selectAll": "Выбрать все",

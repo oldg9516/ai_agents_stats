@@ -16,7 +16,9 @@
 		"all": "All",
 		"selected": "selected",
 		"noOptionsFound": "No options found",
-		"export": "Export CSV"
+		"export": "Export CSV",
+		"apply": "Apply",
+		"cancel": "Cancel"
 	},
 	"header": {
 		"title": "Lev Haolam AI"
@@ -47,7 +49,6 @@
 		"status": "Status",
 		"requestType": "Request Type",
 		"requirements": "Requirements",
-		"apply": "Apply",
 		"reset": "Reset",
 		"resetFilters": "Reset Filters",
 		"selectAll": "Select All",

@@ -26,10 +26,23 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 	const [isClient, setIsClient] = useState(false)
 	const [isLoadingAllTime, setIsLoadingAllTime] = useState(false)
 
+	// Local state for pending date changes
+	const [pendingFrom, setPendingFrom] = useState(from)
+	const [pendingTo, setPendingTo] = useState(to)
+
+	// Track if there are unsaved changes
+	const hasChanges = pendingFrom.getTime() !== from.getTime() || pendingTo.getTime() !== to.getTime()
+
 	// Avoid hydration mismatch by only rendering dates on client
 	useEffect(() => {
 		setIsClient(true)
 	}, [])
+
+	// Update pending dates when props change (e.g., from quick buttons or external reset)
+	useEffect(() => {
+		setPendingFrom(from)
+		setPendingTo(to)
+	}, [from, to])
 
 	// Helper to check if current range matches a preset
 	const isActiveRange = (days: number | 'all') => {
@@ -135,19 +148,30 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 		}
 	}
 
-	// Handle input change
+	// Handle input change (update pending state only)
 	const handleFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const newFrom = new Date(e.target.value)
 		if (!isNaN(newFrom.getTime())) {
-			onChange(newFrom, to)
+			setPendingFrom(newFrom)
 		}
 	}
 
 	const handleToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const newTo = new Date(e.target.value)
 		if (!isNaN(newTo.getTime())) {
-			onChange(from, newTo)
+			setPendingTo(newTo)
 		}
+	}
+
+	// Apply pending changes
+	const handleApply = () => {
+		onChange(pendingFrom, pendingTo)
+	}
+
+	// Cancel pending changes
+	const handleCancel = () => {
+		setPendingFrom(from)
+		setPendingTo(to)
 	}
 
 	return (
@@ -225,9 +249,9 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 						<Input
 							id='date-from'
 							type='date'
-							value={formatDateForInput(from)}
+							value={formatDateForInput(pendingFrom)}
 							onChange={handleFromChange}
-							max={formatDateForInput(to)}
+							max={formatDateForInput(pendingTo)}
 							className='h-9 text-xs w-auto'
 						/>
 					</div>
@@ -241,13 +265,33 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 						<Input
 							id='date-to'
 							type='date'
-							value={formatDateForInput(to)}
+							value={formatDateForInput(pendingTo)}
 							onChange={handleToChange}
-							min={formatDateForInput(from)}
+							min={formatDateForInput(pendingFrom)}
 							max={formatDateForInput(new Date())}
 							className='h-9 text-xs w-auto'
 						/>
 					</div>
+					{/* Apply/Cancel buttons - only show when there are changes */}
+					{hasChanges && (
+						<>
+							<Button
+								onClick={handleApply}
+								size='sm'
+								className='h-9 px-3 text-xs bg-orange-500 hover:bg-orange-600'
+							>
+								{t('common.apply')}
+							</Button>
+							<Button
+								onClick={handleCancel}
+								variant='outline'
+								size='sm'
+								className='h-9 px-3 text-xs'
+							>
+								{t('common.cancel')}
+							</Button>
+						</>
+					)}
 				</div>
 			)}
 			{!isClient && (
