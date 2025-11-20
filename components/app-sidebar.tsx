@@ -16,13 +16,12 @@ import {
 	IconReport,
 	IconSearch,
 	IconSettings,
+	IconTicket,
 } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'
 import * as React from 'react'
 
-import { NavDocuments } from '@/components/nav-documents'
 import { NavMain } from '@/components/nav-main'
-import { NavSecondary } from '@/components/nav-secondary'
 import { NavUser } from '@/components/nav-user'
 import {
 	Sidebar,
@@ -52,6 +51,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				icon: IconDashboard,
 			},
 			{
+				title: t('ticketsReview'),
+				url: '/tickets-review',
+				icon: IconTicket,
+			},
+			{
+				title: t('requestCategories'),
+				url: '/request-categories',
+				icon: IconCategory,
+			},
+			{
 				title: t('detailedStats'),
 				url: '/detailed-stats',
 				icon: IconListDetails,
@@ -61,11 +70,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				url: '/support-overview',
 				icon: IconHeadset,
 			},
-			{
-				title: t('requestCategories'),
-				url: '/request-categories',
-				icon: IconCategory,
-			},
+
 			{
 				title: t('documentation'),
 				url: '/docs',
@@ -177,8 +182,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			</SidebarHeader>
 			<SidebarContent>
 				<NavMain items={data.navMain} />
-				<NavDocuments items={data.documents} />
-				<NavSecondary items={data.navSecondary} className='mt-auto' />
+				{/* <NavDocuments items={data.documents} /> */}
+				{/* <NavSecondary items={data.navSecondary} className='mt-auto' /> */}
 			</SidebarContent>
 			<SidebarFooter>
 				<NavUser user={data.user} />

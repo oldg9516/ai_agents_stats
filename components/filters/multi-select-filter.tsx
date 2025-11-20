@@ -21,6 +21,7 @@ interface MultiSelectFilterProps {
 	placeholder?: string
 	searchable?: boolean
 	allowEmpty?: boolean
+	formatLabel?: (value: string) => string
 }
 
 /**
@@ -39,6 +40,7 @@ export function MultiSelectFilter({
 	placeholder = 'Search...',
 	searchable = true,
 	allowEmpty = true,
+	formatLabel,
 }: MultiSelectFilterProps) {
 	const t = useTranslations()
 	const [isOpen, setIsOpen] = useState(false)
@@ -169,7 +171,7 @@ export function MultiSelectFilter({
 										htmlFor={`option-${option}`}
 										className="flex-1 cursor-pointer text-sm"
 									>
-										{option}
+										{formatLabel ? formatLabel(option) : option}
 									</Label>
 								</div>
 							))

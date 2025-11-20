@@ -3,11 +3,15 @@ import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { createDashboardSlice, DashboardSlice } from './slices/dashboard-slice'
 import { createSupportSlice, SupportSlice } from './slices/support-slice'
+import {
+	createTicketsReviewSlice,
+	TicketsReviewSlice,
+} from './slices/tickets-review-slice'
 
 /**
  * Global store combining all slices
  */
-type StoreState = DashboardSlice & SupportSlice
+type StoreState = DashboardSlice & SupportSlice & TicketsReviewSlice
 
 // Clean up invalid localStorage data on startup
 if (typeof window !== 'undefined') {
@@ -16,7 +20,7 @@ if (typeof window !== 'undefined') {
 		try {
 			const parsed = JSON.parse(stored)
 			// Check if version exists, if not - clear old data
-			if (!parsed.version || parsed.version < 4) {
+			if (!parsed.version || parsed.version < 6) {
 				localStorage.removeItem('ai-stats-storage')
 			}
 		} catch (e) {
@@ -32,19 +36,21 @@ export const useStore = create<StoreState>()(
 			(...a) => ({
 				...createDashboardSlice(...a),
 				...createSupportSlice(...a),
+				...createTicketsReviewSlice(...a),
 			}),
 			{
 				name: 'ai-stats-storage',
-				version: 4, // Changed from 3 to 4 to fix date calculation bug
+				version: 6, // Changed from 5 to 6 to add review status filter
 				partialize: state => ({
 					// Persist only filter states
 					dashboardFilters: state.dashboardFilters,
 					supportFilters: state.supportFilters,
+					ticketsReviewFilters: state.ticketsReviewFilters,
 				}),
 				// Migration function for version changes
 				migrate: (persistedState: any, version: number) => {
 					// Force reset on version change
-					if (version !== 4) {
+					if (version !== 5) {
 						return null
 					}
 
@@ -61,6 +67,16 @@ export const useStore = create<StoreState>()(
 
 					if (persistedState?.supportFilters?.dateRange) {
 						const from = new Date(persistedState.supportFilters.dateRange.from)
+						const now = new Date()
+						if (from > now) {
+							return null
+						}
+					}
+
+					if (persistedState?.ticketsReviewFilters?.dateRange) {
+						const from = new Date(
+							persistedState.ticketsReviewFilters.dateRange.from
+						)
 						const now = new Date()
 						if (from > now) {
 							return null
@@ -130,6 +146,35 @@ export const useStore = create<StoreState>()(
 						} else {
 							state.supportFilters.dateRange.from = from
 							state.supportFilters.dateRange.to = to
+						}
+					}
+
+					// Validate and fix tickets review dates
+					if (state.ticketsReviewFilters?.dateRange) {
+						const from = new Date(state.ticketsReviewFilters.dateRange.from)
+						const to = new Date(state.ticketsReviewFilters.dateRange.to)
+
+						// Check if dates are valid and not in future
+						const now = new Date()
+						if (
+							isNaN(from.getTime()) ||
+							isNaN(to.getTime()) ||
+							from > now ||
+							to > now
+						) {
+							// Reset to default (last 30 days)
+							const defaultTo = new Date()
+							defaultTo.setHours(23, 59, 59, 999)
+							const defaultFrom = new Date()
+							defaultFrom.setDate(defaultFrom.getDate() - 30)
+							defaultFrom.setHours(0, 0, 0, 0)
+							state.ticketsReviewFilters.dateRange = {
+								from: defaultFrom,
+								to: defaultTo,
+							}
+						} else {
+							state.ticketsReviewFilters.dateRange.from = from
+							state.ticketsReviewFilters.dateRange.to = to
 						}
 					}
 				},

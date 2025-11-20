@@ -6,6 +6,7 @@
 		"detailedStats": "Detailed Stats",
 		"supportOverview": "Support Overview",
 		"requestCategories": "Request Categories",
+		"ticketsReview": "Tickets Review",
 		"documentation": "Documentation",
 		"settings": "Settings",
 		"search": "Search",
@@ -887,6 +888,80 @@
 			"count": "Count",
 			"percent": "Percent",
 			"search": "Search by type or subtype..."
+		}
+	},
+	"ticketsReview": {
+		"title": "Tickets Review",
+		"description": "Analysis of tickets changed by agents",
+		"table": {
+			"date": "Date",
+			"agent": "Agent",
+			"customerEmail": "Customer Email",
+			"aiRating": "AI Rating",
+			"classification": "Classification",
+			"status": "Status",
+			"export": "Export CSV",
+			"search": "Search by ticket ID, agent, or customer email...",
+			"noResults": "No tickets found",
+			"showing": "Showing",
+			"to": "to",
+			"of": "of",
+			"results": "results",
+			"loading": "Loading",
+			"previous": "Previous",
+			"next": "Next"
+		},
+		"filters": {
+			"title": "Filters",
+			"dateRange": "Date Range",
+			"category": "Category",
+			"version": "Version",
+			"classification": "Classification",
+			"agent": "Agent",
+			"status": "Status",
+			"reset": "Reset Filters",
+			"searchCategories": "Search categories...",
+			"searchVersions": "Search versions...",
+			"searchClassifications": "Search classifications...",
+			"searchAgents": "Search agents...",
+			"searchStatuses": "Search statuses..."
+		},
+		"statuses": {
+			"processed": "Processed",
+			"unprocessed": "Unprocessed"
+		},
+		"classifications": {
+			"critical_error": "Critical Error",
+			"meaningful_improvement": "Meaningful Improvement",
+			"stylistic_preference": "Stylistic Preference",
+			"no_significant_change": "No Significant Change",
+			"context_shift": "Context Shift"
+		},
+		"modal": {
+			"title": "Ticket Details",
+			"ticketInformation": "Ticket Information",
+			"ticketId": "Ticket ID",
+			"threadId": "Thread ID",
+			"category": "Category",
+			"version": "Version",
+			"createdAt": "Created At",
+			"customerRequest": "Customer Request",
+			"customerRequestDesc": "Original customer message",
+			"agentResponse": "Agent Response",
+			"unknownAgent": "Unknown agent",
+			"aiResponse": "AI Response",
+			"aiResponseDesc": "AI-generated response",
+			"comment": "Comment",
+			"commentDesc": "Agent's comment about changes",
+			"openFullPage": "Open in Full Page",
+			"open": "Open",
+			"close": "Close",
+			"approveAiAnswer": "Approve AI Answer",
+			"aiApproved": "AI answer approved",
+			"markAsProcessed": "Mark as Processed",
+			"markAsUnprocessed": "Mark as Unprocessed",
+			"saving": "Saving...",
+			"saved": "Saved!"
 		}
 	}
 }

@@ -6,6 +6,7 @@
 		"detailedStats": "Детальная статистика",
 		"supportOverview": "Обзор поддержки",
 		"requestCategories": "Категории запросов",
+		"ticketsReview": "Обзор тикетов",
 		"documentation": "Документация",
 		"settings": "Настройки",
 		"search": "Поиск",
@@ -887,6 +888,80 @@
 			"count": "Количество",
 			"percent": "Процент",
 			"search": "Поиск по типу или подтипу..."
+		}
+	},
+	"ticketsReview": {
+		"title": "Обзор тикетов",
+		"description": "Анализ тикетов, изменённых агентами",
+		"table": {
+			"date": "Дата",
+			"agent": "Агент",
+			"customerEmail": "Почта клиента",
+			"aiRating": "Оценка AI",
+			"classification": "Классификация",
+			"status": "Статус",
+			"export": "Экспорт CSV",
+			"search": "Поиск по ID тикета, агенту или почте клиента...",
+			"noResults": "Тикеты не найдены",
+			"showing": "Показано",
+			"to": "до",
+			"of": "из",
+			"results": "результатов",
+			"loading": "Загрузка",
+			"previous": "Предыдущая",
+			"next": "Следующая"
+		},
+		"filters": {
+			"title": "Фильтры",
+			"dateRange": "Диапазон дат",
+			"category": "Категория",
+			"version": "Версия",
+			"classification": "Классификация",
+			"agent": "Агент",
+			"status": "Статус",
+			"reset": "Сбросить фильтры",
+			"searchCategories": "Поиск категорий...",
+			"searchVersions": "Поиск версий...",
+			"searchClassifications": "Поиск классификаций...",
+			"searchAgents": "Поиск агентов...",
+			"searchStatuses": "Поиск статусов..."
+		},
+		"statuses": {
+			"processed": "Обработано",
+			"unprocessed": "Не обработано"
+		},
+		"classifications": {
+			"critical_error": "Критическая ошибка",
+			"meaningful_improvement": "Значительное улучшение",
+			"stylistic_preference": "Стилистическое предпочтение",
+			"no_significant_change": "Нет значительных изменений",
+			"context_shift": "Изменение контекста"
+		},
+		"modal": {
+			"title": "Детали тикета",
+			"ticketInformation": "Информация о тикете",
+			"ticketId": "ID тикета",
+			"threadId": "ID треда",
+			"category": "Категория",
+			"version": "Версия",
+			"createdAt": "Создан",
+			"customerRequest": "Запрос клиента",
+			"customerRequestDesc": "Оригинальное сообщение клиента",
+			"agentResponse": "Ответ агента",
+			"unknownAgent": "Неизвестный агент",
+			"aiResponse": "Ответ AI",
+			"aiResponseDesc": "AI-сгенерированный ответ",
+			"comment": "Комментарий",
+			"commentDesc": "Комментарий агента об изменениях",
+			"openFullPage": "Открыть на полную страницу",
+			"open": "Открыть",
+			"close": "Закрыть",
+			"approveAiAnswer": "Одобрить AI ответ",
+			"aiApproved": "AI ответ одобрен",
+			"markAsProcessed": "Отметить как обработано",
+			"markAsUnprocessed": "Отметить как не обработано",
+			"saving": "Сохранение...",
+			"saved": "Сохранено!"
 		}
 	}
 }

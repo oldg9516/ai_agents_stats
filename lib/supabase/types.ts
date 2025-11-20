@@ -13,7 +13,11 @@ export interface Database {
 				Row: AIHumanComparisonRow
 				Insert: AIHumanComparisonInsert
 				Update: AIHumanComparisonUpdate
+				Relationships: []
 			}
+		}
+		Views: {
+			[_ in never]: never
 		}
 		Functions: {
 			get_min_created_date: {
@@ -50,6 +54,12 @@ export interface Database {
 					total_count: number
 				}>
 			}
+		}
+		Enums: {
+			[_ in never]: never
+		}
+		CompositeTypes: {
+			[_ in never]: never
 		}
 	}
 }
@@ -89,6 +99,8 @@ export interface AIHumanComparisonRow {
 		| 'no_significant_change'
 		| 'context_shift'
 		| null // Classification of changes
+	review_status: 'processed' | 'unprocessed' | null // Review status for tickets review
+	ai_approved: boolean | null // Whether AI answer was approved
 }
 
 /**
@@ -115,6 +127,8 @@ export interface AIHumanComparisonUpdate {
 	email?: string
 	changed?: boolean
 	human_reply?: string
+	review_status?: 'processed' | 'unprocessed'
+	ai_approved?: boolean
 }
 
 /**
@@ -479,4 +493,33 @@ export interface CategoryDetailData {
 		data: CategoryRecord[]
 		total: number // Total count for pagination
 	}
+}
+
+// ============================================================================
+// Tickets Review Types
+// ============================================================================
+
+/**
+ * Tickets Review Record (combined from ai_human_comparison + support_threads_data + support_dialogs)
+ */
+export interface TicketReviewRecord extends AIHumanComparisonRow {
+	// Field from support_threads_data (via JOIN on thread_id)
+	user: string | null // Customer email from support_threads_data.user JSON
+	// Field from support_dialogs (via JOIN on thread_id, direction='incoming')
+	customer_request_text: string | null // Customer's request text from support_dialogs
+}
+
+/**
+ * Tickets Review Filters
+ */
+export interface TicketsReviewFilters {
+	dateRange: {
+		from: Date
+		to: Date
+	}
+	categories: string[] // request_subtype - [] = all
+	versions: string[] // prompt_version - [] = all
+	classifications: string[] // change_classification - [] = all
+	agents: string[] // email - [] = all agents
+	reviewStatuses: string[] // review_status - [] = all (processed/unprocessed)
 }
