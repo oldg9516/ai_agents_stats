@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
 import { updateTicketReview } from '@/lib/actions/ticket-update-actions'
 import type { TicketReviewRecord } from '@/lib/supabase/types'
 import { IconCheck, IconExternalLink } from '@tabler/icons-react'
@@ -54,6 +55,7 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 		ticket.review_status || 'unprocessed'
 	)
 	const [aiApproved, setAiApproved] = useState(ticket.ai_approved || false)
+	const [manualComment, setManualComment] = useState(ticket.manual_comment || '')
 	const [isSaving, setIsSaving] = useState(false)
 
 	// Close modal by navigating back
@@ -96,6 +98,23 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 			// Revert on error
 			setAiApproved(ticket.ai_approved || false)
 			toast.error(result.error || 'Failed to update AI approval')
+		}
+
+		setIsSaving(false)
+	}
+
+	// Update manual comment
+	const handleSaveComment = async () => {
+		setIsSaving(true)
+
+		const result = await updateTicketReview(ticket.id, {
+			manualComment: manualComment,
+		})
+
+		if (result.success) {
+			toast.success(t('modal.saved'))
+		} else {
+			toast.error(result.error || 'Failed to save comment')
 		}
 
 		setIsSaving(false)
@@ -341,15 +360,15 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 							)}
 						</div>
 
-						{/* Comment */}
+						{/* AI Comment */}
 						{ticket.comment && (
 							<Card>
 								<CardHeader>
 									<CardTitle className='text-base sm:text-lg'>
-										{t('modal.comment')}
+										{t('modal.aiComment')}
 									</CardTitle>
 									<CardDescription className='text-xs sm:text-sm'>
-										{t('modal.commentDesc')}
+										{t('modal.aiCommentDesc')}
 									</CardDescription>
 								</CardHeader>
 								<CardContent>
@@ -361,6 +380,35 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 								</CardContent>
 							</Card>
 						)}
+
+						{/* Manual Comment */}
+						<Card>
+							<CardHeader>
+								<CardTitle className='text-base sm:text-lg'>
+									{t('modal.comment')}
+								</CardTitle>
+								<CardDescription className='text-xs sm:text-sm'>
+									{t('modal.commentDesc')}
+								</CardDescription>
+							</CardHeader>
+							<CardContent className='space-y-3'>
+								<Textarea
+									placeholder={t('modal.commentPlaceholder')}
+									value={manualComment}
+									onChange={(e) => setManualComment(e.target.value)}
+									className='min-h-[120px] resize-none'
+									disabled={isSaving}
+								/>
+								<Button
+									onClick={handleSaveComment}
+									disabled={isSaving}
+									className='w-full sm:w-auto'
+									size='sm'
+								>
+									{isSaving ? t('modal.saving') : t('modal.saveComment')}
+								</Button>
+							</CardContent>
+						</Card>
 
 						{/* Review Actions */}
 						<Card>

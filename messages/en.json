@@ -44,7 +44,7 @@
 		"from": "From",
 		"to": "To",
 		"versions": "Versions",
-		"categories": "Categories",
+		"categories": "Subcategories",
 		"agents": "Agents",
 		"qualifiedAgents": "Qualified Agents",
 		"status": "Status",
@@ -55,7 +55,7 @@
 		"selectAll": "Select All",
 		"deselectAll": "Deselect All",
 		"searchVersions": "Search versions...",
-		"searchCategories": "Search categories...",
+		"searchCategories": "Search subcategories...",
 		"searchAgents": "Search agents...",
 		"searchStatuses": "Search statuses...",
 		"searchRequestTypes": "Search request types...",
@@ -72,11 +72,11 @@
 		"totalRecords": {
 			"title": "Total Records",
 			"description": "AI outputs reviewed by agents",
-			"tooltip": "Shows the total count of AI-generated outputs that were reviewed by any agent. Each record represents an AI response that was checked and either used as-is or modified. Includes all records in the selected date range (including context_shift cases), filtered by version and category if specified."
+			"tooltip": "Shows the total count of AI-generated outputs that were reviewed by any agent. Each record represents an AI response that was checked and either used as-is or modified. Includes all records in the selected date range (including context_shift cases), filtered by version and subcategory if specified."
 		},
 		"averageQuality": {
 			"title": "Average Quality",
-			"description": "Average quality percentage across all categories",
+			"description": "Average quality percentage across all subcategories",
 			"tooltip": "Percentage of AI outputs used without modifications by any agent. Higher percentage indicates better AI performance. Quality is calculated as: (Unchanged records / Evaluable records) × 100. Note: Context shift cases are excluded from quality calculations as conditions changed between AI and human responses."
 		},
 		"aiSuccessRate": {
@@ -90,14 +90,14 @@
 			"tooltip": "Percentage of AI outputs classified as 'critical error' or 'meaningful improvement' by qualified agents. Lower percentage indicates better AI performance. Failure Rate = (Critical Errors + Meaningful Improvements) / Evaluable records × 100. Note: Context shift cases are excluded from calculations."
 		},
 		"bestCategory": {
-			"title": "Best Category",
-			"description": "Category with the highest quality percentage",
-			"tooltip": "The request category where AI performs best, measured by the highest percentage of outputs used without any edits. Helps identify AI strengths and areas for improvement."
+			"title": "Best Subcategory",
+			"description": "Subcategory with the highest quality percentage",
+			"tooltip": "The request subcategory where AI performs best, measured by the highest percentage of outputs used without any edits. Helps identify AI strengths and areas for improvement."
 		},
 		"worstCategory": {
-			"title": "Worst Category",
-			"description": "Category with the highest failure rate",
-			"tooltip": "The request category where AI performs worst, measured by the highest percentage of outputs requiring changes. Helps identify areas needing improvement."
+			"title": "Worst Subcategory",
+			"description": "Subcategory with the highest failure rate",
+			"tooltip": "The request subcategory where AI performs worst, measured by the highest percentage of outputs requiring changes. Helps identify areas needing improvement."
 		},
 		"recordsChanged": {
 			"title": "Records Changed",
@@ -130,15 +130,15 @@
 	"charts": {
 		"qualityTrends": {
 			"title": "Quality Trends",
-			"description": "Track quality percentage by category",
-			"tooltip": "Time-series visualization showing AI quality trends grouped by week. Each line represents a different request category. Use this to identify quality patterns, seasonal variations, and track improvement over time. Note: Context shift cases are excluded from quality calculations.",
-			"maxThreeCategories": "Maximum 3 categories can be displayed at once"
+			"description": "Track quality percentage by subcategory",
+			"tooltip": "Time-series visualization showing AI quality trends grouped by week. Each line represents a different request subcategory. Use this to identify quality patterns, seasonal variations, and track improvement over time. Note: Context shift cases are excluded from quality calculations.",
+			"maxThreeCategories": "Maximum 3 subcategories can be displayed at once"
 		},
 		"categoryDistribution": {
-			"title": "Quality by Category",
-			"description": "Distribution of records across categories",
+			"title": "Quality by Subcategory",
+			"description": "Distribution of records across subcategories",
 			"totalRecords": "Total Records",
-			"tooltip": "Pie chart showing the distribution of quality percentages across different request categories. Helps identify which types of requests AI handles best and which need improvement. Note: Context shift cases are excluded from quality calculations."
+			"tooltip": "Pie chart showing the distribution of quality percentages across different request subcategories. Helps identify which types of requests AI handles best and which need improvement. Note: Context shift cases are excluded from quality calculations."
 		},
 		"versionComparison": {
 			"title": "Version Comparison",
@@ -179,7 +179,7 @@
 		}
 	},
 	"table": {
-		"category": "Category",
+		"category": "Subcategory",
 		"version": "Version",
 		"dates": "Dates",
 		"totalRecords": "Total Records",
@@ -214,8 +214,8 @@
 		"results": "results",
 		"loading": "Loading",
 		"searchPlaceholder": "Search...",
-		"searchByCategory": "Search by category...",
-		"searchCategory": "Search by category...",
+		"searchByCategory": "Search by subcategory...",
+		"searchCategory": "Search by subcategory...",
 		"searchByThreadOrTicket": "Search by thread ID or ticket ID...",
 		"noResults": "No results found.",
 		"sortBy": "Sort by",
@@ -227,9 +227,9 @@
 		"pageOf": "Page {current} of {total}",
 		"showingRecords": "Showing {from} to {to} of {total} records",
 		"detailedStatistics": "Detailed Statistics",
-		"detailedStatisticsDesc": "Quality metrics by category, version, and week",
+		"detailedStatisticsDesc": "Quality metrics by subcategory, version, and week",
 		"detailedStats": "Detailed Statistics",
-		"detailedStatsDescription": "Quality metrics by category, version, and week",
+		"detailedStatsDescription": "Quality metrics by subcategory, version, and week",
 		"supportThreads": "Support Threads",
 		"supportThreadsDesc": "All support threads with quality metrics"
 	},
@@ -275,7 +275,7 @@
 			},
 			"filtering": {
 				"title": "Advanced Filtering",
-				"description": "Filter data by date range, versions, categories, and agents for targeted analysis."
+				"description": "Filter data by date range, versions, subcategories, and agents for targeted analysis."
 			},
 			"export": {
 				"title": "Data Export",
@@ -343,14 +343,14 @@
 				},
 				"averageQuality": {
 					"title": "Average Quality",
-					"whatItShows": "Average quality percentage across all categories (weighted by volume).",
+					"whatItShows": "Average quality percentage across all subcategories (weighted by volume).",
 					"formula": "Records NOT changed by qualified agents / Total records × 100",
 					"badge": "Percentage metric"
 				},
 				"bestCategory": {
-					"title": "Best Category",
-					"whatItShows": "The category with the highest quality percentage.",
-					"display": "Category name + quality percentage",
+					"title": "Best Subcategory",
+					"whatItShows": "The subcategory with the highest quality percentage.",
+					"display": "Subcategory name + quality percentage",
 					"badge": "Text + percentage"
 				},
 				"recordsChanged": {
@@ -366,33 +366,33 @@
 			},
 			"qualityTrends": {
 				"title": "Quality Trends",
-				"description": "Multi-line area chart showing quality percentage trends for each category over time.",
+				"description": "Multi-line area chart showing quality percentage trends for each subcategory over time.",
 				"features": {
 					"title": "Features:",
 					"timePeriod": "Time Period Selector: Quick buttons for 7 days, 30 days, 3 months, or All time",
-					"interactiveLegend": "Interactive Legend: Click checkboxes to show/hide specific categories",
-					"gradientAreas": "Gradient Areas: Each category is color-coded with filled area under the line",
+					"interactiveLegend": "Interactive Legend: Click checkboxes to show/hide specific subcategories",
+					"gradientAreas": "Gradient Areas: Each subcategory is color-coded with filled area under the line",
 					"hoverTooltips": "Hover Tooltips: See exact percentage and date when hovering over data points",
 					"dataGrouping": "Data Grouping: Records are grouped by week starting date"
 				},
 				"howToUse": {
 					"title": "📊 How to Use",
-					"description": "Use this chart to identify trends over time. Look for improving categories (upward trend) or categories that need attention (downward trend). Compare multiple categories to see which performs best consistently."
+					"description": "Use this chart to identify trends over time. Look for improving subcategories (upward trend) or subcategories that need attention (downward trend). Compare multiple subcategories to see which performs best consistently."
 				}
 			},
 			"categoryPieChart": {
-				"title": "Quality by Category (Pie Chart)",
-				"description": "Donut chart showing the distribution of records across different request categories with their quality metrics.",
+				"title": "Quality by Subcategory (Pie Chart)",
+				"description": "Donut chart showing the distribution of records across different request subcategories with their quality metrics.",
 				"whatItDisplays": {
 					"title": "What it displays:",
-					"centerLabel": "Center Label: Total record count across all categories",
-					"segments": "Segments: Each slice represents a category, sized by record volume",
-					"legend": "Legend: Below chart, shows category names with color coding",
-					"hoverTooltip": "Hover Tooltip: Shows number of records and quality percentage for that category"
+					"centerLabel": "Center Label: Total record count across all subcategories",
+					"segments": "Segments: Each slice represents a subcategory, sized by record volume",
+					"legend": "Legend: Below chart, shows subcategory names with color coding",
+					"hoverTooltip": "Hover Tooltip: Shows number of records and quality percentage for that subcategory"
 				},
 				"insights": {
 					"title": "💡 Insights",
-					"description": "Use this to understand which categories have the most volume and how quality varies across categories. Larger slices indicate more records, while tooltip quality % shows performance."
+					"description": "Use this to understand which subcategories have the most volume and how quality varies across subcategories. Larger slices indicate more records, while tooltip quality % shows performance."
 				}
 			},
 			"versionBarChart": {
@@ -415,12 +415,12 @@
 				"description": "Hierarchical table showing detailed breakdowns by version and week.",
 				"tableStructure": {
 					"title": "Table Structure:",
-					"level1": "Level 1 (Bold): Version-level rows showing category + version aggregates",
+					"level1": "Level 1 (Bold): Version-level rows showing subcategory + version aggregates",
 					"level2": "Level 2 (Indented): Week-level rows showing weekly data within each version"
 				},
 				"columns": {
 					"title": "Columns:",
-					"category": "Category: Request type",
+					"category": "Subcategory: Request type",
 					"version": "Version: Prompt version",
 					"dates": "Dates: Week range (for week rows)",
 					"totalRecords": "Total Records: Count",
@@ -431,7 +431,7 @@
 				"features": {
 					"title": "Features:",
 					"sortable": "Sortable: Click column headers to sort",
-					"searchable": "Searchable: Search by category name",
+					"searchable": "Searchable: Search by subcategory name",
 					"pagination": "Pagination: 20 rows per page",
 					"csvExport": "CSV Export: Download all visible data"
 				}
@@ -610,7 +610,7 @@
 			},
 			"availableFeatures": {
 				"title": "Available Features:",
-				"filters": "All filters from dashboard (Date, Version, Category, Agents)",
+				"filters": "All filters from dashboard (Date, Version, Subcategory, Agents)",
 				"hierarchicalTable": "Hierarchical table with version and week-level rows",
 				"csvExport": "CSV export functionality"
 			},
@@ -639,11 +639,11 @@
 					"description": "Filter by prompt version to compare performance across iterations. Select multiple to compare."
 				},
 				"categories": {
-					"title": "Categories",
+					"title": "Subcategories",
 					"type": "Type: Multi-select dropdown",
 					"options": "Options: Request subtypes from database",
 					"features": "Features: Searchable, Select All/Deselect All",
-					"description": "Filter by request category to focus on specific types of content. Useful for analyzing performance by content type."
+					"description": "Filter by request subcategory to focus on specific types of content. Useful for analyzing performance by content type."
 				},
 				"qualifiedAgents": {
 					"title": "Qualified Agents",
@@ -683,7 +683,7 @@
 				"description": "Export filtered data to CSV format for reporting, analysis in Excel, or archival.",
 				"howToExport": {
 					"title": "How to Export:",
-					"step1": "1. Apply desired filters (date range, categories, versions, etc.)",
+					"step1": "1. Apply desired filters (date range, subcategories, versions, etc.)",
 					"step2": "2. Click the \"Download CSV\" button above the table (top right)",
 					"step3": "3. File downloads automatically with timestamp in filename",
 					"step4": "4. Open in Excel, Google Sheets, or any CSV reader"
@@ -779,7 +779,7 @@
 	},
 	"filterSheet": {
 		"dashboardTitle": "Dashboard Filters",
-		"dashboardDescription": "Customize your dashboard view by filtering data across date ranges, versions, categories, and qualified agents.",
+		"dashboardDescription": "Customize your dashboard view by filtering data across date ranges, versions, subcategories, and qualified agents.",
 		"supportTitle": "Support Filters",
 		"supportDescription": "Filter support threads by date range, status, request type, requirements, and prompt version.",
 		"filters": "Filters"
@@ -790,7 +790,7 @@
 		"open": "Open"
 	},
 	"category": {
-		"subtitle": "Detailed statistics and quality metrics",
+		"subtitle": "Detailed statistics and quality metrics for subcategory",
 		"openInFullPage": "Open in Full Page",
 		"filters": {
 			"title": "Filters",
@@ -804,7 +804,7 @@
 		},
 		"kpis": {
 			"totalRecords": "Total Records",
-			"totalRecordsDesc": "All records in category",
+			"totalRecordsDesc": "All records in subcategory",
 			"quality": "Quality",
 			"qualityDesc": "Good percentage (not changed)",
 			"changed": "Changed",
@@ -862,8 +862,8 @@
 			"lastPage": "Last page"
 		},
 		"errors": {
-			"noData": "No data available for this category",
-			"loadFailed": "Failed to load category data"
+			"noData": "No data available for this subcategory",
+			"loadFailed": "Failed to load subcategory data"
 		},
 		"export": {
 			"comingSoon": "CSV export coming soon"
@@ -914,13 +914,13 @@
 		"filters": {
 			"title": "Filters",
 			"dateRange": "Date Range",
-			"category": "Category",
+			"category": "Subcategory",
 			"version": "Version",
 			"classification": "Classification",
 			"agent": "Agent",
 			"status": "Status",
 			"reset": "Reset Filters",
-			"searchCategories": "Search categories...",
+			"searchCategories": "Search subcategories...",
 			"searchVersions": "Search versions...",
 			"searchClassifications": "Search classifications...",
 			"searchAgents": "Search agents...",
@@ -942,7 +942,7 @@
 			"ticketInformation": "Ticket Information",
 			"ticketId": "Ticket ID",
 			"threadId": "Thread ID",
-			"category": "Category",
+			"category": "Subcategory",
 			"version": "Version",
 			"createdAt": "Created At",
 			"customerRequest": "Customer Request",
@@ -951,8 +951,12 @@
 			"unknownAgent": "Unknown agent",
 			"aiResponse": "AI Response",
 			"aiResponseDesc": "AI-generated response",
+			"aiComment": "AI Comment",
+			"aiCommentDesc": "AI-generated comment about the ticket",
 			"comment": "Comment",
-			"commentDesc": "Agent's comment about changes",
+			"commentDesc": "Your notes and observations",
+			"commentPlaceholder": "Add your comment about this ticket...",
+			"saveComment": "Save Comment",
 			"openFullPage": "Open in Full Page",
 			"open": "Open",
 			"close": "Close",

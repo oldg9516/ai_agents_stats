@@ -109,6 +109,7 @@ export async function updateTicketReview(
 	data: {
 		reviewStatus?: 'processed' | 'unprocessed'
 		aiApproved?: boolean
+		manualComment?: string
 	}
 ): Promise<UpdateTicketReviewResult> {
 	try {
@@ -125,6 +126,7 @@ export async function updateTicketReview(
 		const updateData: {
 			review_status?: 'processed' | 'unprocessed'
 			ai_approved?: boolean
+			manual_comment?: string
 		} = {}
 
 		if (data.reviewStatus !== undefined) {
@@ -132,6 +134,9 @@ export async function updateTicketReview(
 		}
 		if (data.aiApproved !== undefined) {
 			updateData.ai_approved = data.aiApproved
+		}
+		if (data.manualComment !== undefined) {
+			updateData.manual_comment = data.manualComment
 		}
 
 		const { error } = await supabase

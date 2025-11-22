@@ -79,7 +79,8 @@ export interface AIHumanComparisonRow {
 	ai_reply: string | null
 	ai_reply_date: string | null
 	human_reply_date: string | null
-	comment: string | null
+	comment: string | null // AI-generated comment
+	manual_comment: string | null // Manual reviewer comment
 	request_subtype: string | null // Category
 	email: string | null // Agent email
 	changes: any | null // jsonb

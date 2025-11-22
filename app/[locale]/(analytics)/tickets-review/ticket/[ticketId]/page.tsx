@@ -1,8 +1,4 @@
-import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { supabaseServer } from '@/lib/supabase/server'
-import { fetchTicketDetail } from '@/lib/supabase/queries-tickets-review'
+import { Button } from '@/components/ui/button'
 import {
 	Card,
 	CardContent,
@@ -10,10 +6,17 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { fetchTicketDetail } from '@/lib/supabase/queries-tickets-review'
+import { supabaseServer } from '@/lib/supabase/server'
 import { IconArrowLeft } from '@tabler/icons-react'
 import { format } from 'date-fns'
+import { Metadata } from 'next'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import { TicketCommentEditor } from '@/components/ticket-comment-editor'
+import { TicketReviewActions } from '@/components/ticket-review-actions'
+import { getTranslations } from 'next-intl/server'
 
 interface TicketDetailPageProps {
 	params: Promise<{
@@ -39,12 +42,15 @@ export async function generateMetadata({
  * - Customer request
  * - Agent response
  * - AI response
- * - Comment
+ * - AI comment (if exists)
+ * - Manual comment editor
+ * - Review actions (status, AI approval)
  */
 export default async function TicketDetailPage({
 	params,
 }: TicketDetailPageProps) {
 	const { ticketId } = await params
+	const t = await getTranslations('ticketsReview.modal')
 
 	// Fetch ticket details
 	let ticket
@@ -126,7 +132,9 @@ export default async function TicketDetailPage({
 							</p>
 							{ticket.change_classification ? (
 								<div
-									className={`inline-block px-3 py-1 rounded text-sm ${getClassificationColor(ticket.change_classification)}`}
+									className={`inline-block px-3 py-1 rounded text-sm ${getClassificationColor(
+										ticket.change_classification
+									)}`}
 								>
 									{ticket.change_classification}
 								</div>
@@ -184,12 +192,12 @@ export default async function TicketDetailPage({
 					</CardContent>
 				</Card>
 
-				{/* Comment Card (if exists) */}
+				{/* AI Comment Card (if exists) */}
 				{ticket.comment && (
 					<Card>
 						<CardHeader>
-							<CardTitle>Comment</CardTitle>
-							<CardDescription>Agent's comment about changes</CardDescription>
+							<CardTitle>{t('aiComment')}</CardTitle>
+							<CardDescription>{t('aiCommentDesc')}</CardDescription>
 						</CardHeader>
 						<CardContent>
 							<div className='rounded-lg bg-muted p-4 max-h-80 overflow-y-auto'>
@@ -226,7 +234,9 @@ export default async function TicketDetailPage({
 					<Card>
 						<CardHeader>
 							<CardTitle>Agent Response</CardTitle>
-							<CardDescription>{ticket.email || 'Unknown agent'}</CardDescription>
+							<CardDescription>
+								{ticket.email || 'Unknown agent'}
+							</CardDescription>
 						</CardHeader>
 						<CardContent>
 							<div className='rounded-lg bg-muted p-4 max-h-96 overflow-y-auto'>
@@ -257,6 +267,19 @@ export default async function TicketDetailPage({
 					</Card>
 				)}
 			</div>
+
+			{/* Manual Comment Editor */}
+			<TicketCommentEditor
+				ticketId={ticket.id}
+				initialComment={ticket.manual_comment}
+			/>
+
+			{/* Review Actions */}
+			<TicketReviewActions
+				ticketId={ticket.id}
+				initialReviewStatus={ticket.review_status}
+				initialAiApproved={ticket.ai_approved}
+			/>
 		</div>
 	)
 }
