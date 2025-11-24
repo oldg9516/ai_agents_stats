@@ -329,9 +329,9 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 				),
 				columns: [
 					{
-						accessorKey: 'noSignificantChanges',
+						accessorKey: 'stylisticPreferences',
 						header: () => (
-							<div className='text-center text-xs'>{t('table.noChanges')}</div>
+							<div className='text-center text-xs'>{t('table.stylistic')}</div>
 						),
 						cell: ({ row }) => {
 							const useNewLogic = isNewLogic(row.original.dates)
@@ -353,7 +353,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 
 							return (
 								<div className='flex justify-center'>
-									<span className='inline-block px-2 py-1 rounded text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'>
+									<span className='inline-block px-2 py-1 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'>
 										{count} ({percent}%)
 									</span>
 								</div>
@@ -361,9 +361,9 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 						},
 					},
 					{
-						accessorKey: 'stylisticPreferences',
+						accessorKey: 'noSignificantChanges',
 						header: () => (
-							<div className='text-center text-xs'>{t('table.stylistic')}</div>
+							<div className='text-center text-xs'>{t('table.noChanges')}</div>
 						),
 						cell: ({ row }) => {
 							const useNewLogic = isNewLogic(row.original.dates)
@@ -385,7 +385,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 
 							return (
 								<div className='flex justify-center'>
-									<span className='inline-block px-2 py-1 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'>
+									<span className='inline-block px-2 py-1 rounded text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'>
 										{count} ({percent}%)
 									</span>
 								</div>
