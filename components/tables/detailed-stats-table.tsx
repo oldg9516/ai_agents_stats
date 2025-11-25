@@ -22,7 +22,6 @@ import { getCategoryLabel } from '@/constants/category-labels'
 import { useDetailedStatsPaginated } from '@/lib/queries/dashboard-queries'
 import type { DashboardFilters, DetailedStatsRow } from '@/lib/supabase/types'
 import { exportToCSV } from '@/lib/utils/export'
-import { getQualityBgClass } from '@/lib/utils/quality-colors'
 import {
 	IconChevronLeft,
 	IconChevronRight,
@@ -125,6 +124,8 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 			{
 				accessorKey: 'category',
 				header: t('table.category'),
+				size: 200,
+				maxSize: 200,
 				cell: ({ row }) => {
 					const isVersionLevel = row.original.sortOrder === 1
 					const category = row.original.category
@@ -132,7 +133,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 					if (isVersionLevel) {
 						return (
 							<div
-								className='font-semibold cursor-pointer hover:text-primary transition-colors'
+								className='font-semibold cursor-pointer hover:text-primary transition-colors whitespace-normal max-w-[200px]'
 								onClick={() => handleCategoryClick(category)}
 							>
 								{getCategoryLabel(category)}
@@ -141,7 +142,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 					}
 
 					return (
-						<div className='pl-4 text-muted-foreground'>
+						<div className='pl-4 text-muted-foreground whitespace-normal max-w-[200px]'>
 							{getCategoryLabel(category)}
 						</div>
 					)
@@ -200,40 +201,79 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 				header: () => (
 					<div className='text-center'>{t('table.totalRecords')}</div>
 				),
-				cell: ({ getValue }) => {
-					return <div className='text-left'>{getValue() as number}</div>
-				},
-			},
-			{
-				accessorKey: 'changedRecords',
-				header: () => (
-					<div className='text-center'>{t('table.recordsChanged')}</div>
-				),
-				cell: ({ getValue }) => {
-					return <div className='text-left'>{getValue() as number}</div>
-				},
-			},
-			{
-				accessorKey: 'goodPercentage',
-				header: () => (
-					<div className='text-center text-xs'>
-						{t('table.goodPercentage')}
-						<div className='text-[10px] text-muted-foreground font-normal'>
-							(OLD)
+				cell: ({ row }) => {
+					const isVersionLevel = row.original.sortOrder === 1
+					return (
+						<div
+							className={
+								isVersionLevel ? 'text-left font-semibold' : 'text-left'
+							}
+						>
+							{row.original.totalRecords}
 						</div>
+					)
+				},
+			},
+			{
+				accessorKey: 'reviewedRecords',
+				header: () => (
+					<div className='text-center'>{t('table.reviewedRecords')}</div>
+				),
+				cell: ({ row }) => {
+					const isVersionLevel = row.original.sortOrder === 1
+					return (
+						<div
+							className={
+								isVersionLevel ? 'text-left font-semibold' : 'text-left'
+							}
+						>
+							{row.original.reviewedRecords}
+						</div>
+					)
+				},
+			},
+			{
+				accessorKey: 'aiErrors',
+				header: () => (
+					<div className='text-center whitespace-pre-line'>
+						{t('table.aiErrors')}
 					</div>
 				),
-				cell: ({ getValue }) => {
-					const value = getValue() as number
+				cell: ({ row }) => {
+					const isVersionLevel = row.original.sortOrder === 1
+					const errors = row.original.aiErrors
+					const reviewed = row.original.reviewedRecords
+					const percentage = reviewed > 0 ? (errors / reviewed) * 100 : 0
 					return (
-						<div className='flex justify-left'>
-							<span
-								className={`inline-block px-2 py-1 rounded text-sm font-medium ${getQualityBgClass(
-									value
-								)}`}
-							>
-								{value.toFixed(1)}%
-							</span>
+						<div
+							className={
+								isVersionLevel ? 'text-left font-semibold' : 'text-left'
+							}
+						>
+							{errors} ({percentage.toFixed(1)}%)
+						</div>
+					)
+				},
+			},
+			{
+				accessorKey: 'aiQuality',
+				header: () => (
+					<div className='text-center text-sm whitespace-pre-line'>
+						{t('table.aiQuality')}
+					</div>
+				),
+				cell: ({ row }) => {
+					const isVersionLevel = row.original.sortOrder === 1
+					const quality = row.original.aiQuality
+					const reviewed = row.original.reviewedRecords
+					const percentage = reviewed > 0 ? (quality / reviewed) * 100 : 0
+					return (
+						<div
+							className={
+								isVersionLevel ? 'text-left font-semibold' : 'text-left'
+							}
+						>
+							{quality} ({percentage.toFixed(1)}%)
 						</div>
 					)
 				},
@@ -242,25 +282,20 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 			{
 				id: 'aiFailureGroup',
 				header: () => (
-					<div className='text-center text-xs'>
-						{t('table.aiFailureRate')}
-						<div className='text-[10px] text-muted-foreground font-normal'>
-							(NEW)
-						</div>
-					</div>
+					<div className='text-center text-xs'>{t('table.aiFailureRate')}</div>
 				),
 				columns: [
 					{
 						accessorKey: 'criticalErrors',
 						header: () => (
-							<div className='text-center text-xs'>{t('table.critical')}</div>
+							<div className='text-center text-sm'>{t('table.critical')}</div>
 						),
 						cell: ({ row }) => {
 							const useNewLogic = isNewLogic(row.original.dates)
 
 							if (!useNewLogic) {
 								return (
-									<div className='text-center text-muted-foreground text-sm'>
+									<div className='text-left text-muted-foreground text-sm'>
 										-
 									</div>
 								)
@@ -274,7 +309,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 								evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
 
 							return (
-								<div className='flex justify-center'>
+								<div className='flex justify-left'>
 									<span className='inline-block px-2 py-1 rounded text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'>
 										{count} ({percent}%)
 									</span>
@@ -285,14 +320,14 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 					{
 						accessorKey: 'meaningfulImprovements',
 						header: () => (
-							<div className='text-center text-xs'>{t('table.meaningful')}</div>
+							<div className='text-center text-sm'>{t('table.meaningful')}</div>
 						),
 						cell: ({ row }) => {
 							const useNewLogic = isNewLogic(row.original.dates)
 
 							if (!useNewLogic) {
 								return (
-									<div className='text-center text-muted-foreground text-sm'>
+									<div className='text-left text-muted-foreground text-sm'>
 										-
 									</div>
 								)
@@ -306,7 +341,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 								evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
 
 							return (
-								<div className='flex justify-center'>
+								<div className='flex justify-left'>
 									<span className='inline-block px-2 py-1 rounded text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200'>
 										{count} ({percent}%)
 									</span>
@@ -320,25 +355,20 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 			{
 				id: 'aiSuccessGroup',
 				header: () => (
-					<div className='text-center text-xs'>
-						{t('table.aiSuccessRate')}
-						<div className='text-[10px] text-muted-foreground font-normal'>
-							(NEW)
-						</div>
-					</div>
+					<div className='text-center text-xs'>{t('table.aiSuccessRate')}</div>
 				),
 				columns: [
 					{
 						accessorKey: 'stylisticPreferences',
 						header: () => (
-							<div className='text-center text-xs'>{t('table.stylistic')}</div>
+							<div className='text-center text-sm'>{t('table.stylistic')}</div>
 						),
 						cell: ({ row }) => {
 							const useNewLogic = isNewLogic(row.original.dates)
 
 							if (!useNewLogic) {
 								return (
-									<div className='text-center text-muted-foreground text-sm'>
+									<div className='text-left text-muted-foreground text-sm'>
 										-
 									</div>
 								)
@@ -352,7 +382,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 								evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
 
 							return (
-								<div className='flex justify-center'>
+								<div className='flex justify-left'>
 									<span className='inline-block px-2 py-1 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'>
 										{count} ({percent}%)
 									</span>
@@ -363,14 +393,16 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 					{
 						accessorKey: 'noSignificantChanges',
 						header: () => (
-							<div className='text-center text-xs'>{t('table.noChanges')}</div>
+							<div className='text-center text-sm whitespace-pre-line'>
+								{t('table.noChanges')}
+							</div>
 						),
 						cell: ({ row }) => {
 							const useNewLogic = isNewLogic(row.original.dates)
 
 							if (!useNewLogic) {
 								return (
-									<div className='text-center text-muted-foreground text-sm'>
+									<div className='text-left text-muted-foreground text-sm'>
 										-
 									</div>
 								)
@@ -384,7 +416,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 								evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
 
 							return (
-								<div className='flex justify-center'>
+								<div className='flex justify-left'>
 									<span className='inline-block px-2 py-1 rounded text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'>
 										{count} ({percent}%)
 									</span>
@@ -395,7 +427,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 					{
 						accessorKey: 'contextShifts',
 						header: () => (
-							<div className='text-center text-xs'>
+							<div className='text-center text-sm whitespace-pre-line'>
 								{t('table.contextShift')}
 							</div>
 						),
@@ -404,7 +436,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 
 							if (!useNewLogic) {
 								return (
-									<div className='text-center text-muted-foreground text-sm'>
+									<div className='text-left text-muted-foreground text-sm'>
 										-
 									</div>
 								)
@@ -416,7 +448,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 								total > 0 ? ((count / total) * 100).toFixed(1) : '0.0'
 
 							return (
-								<div className='flex justify-center'>
+								<div className='flex justify-left'>
 									<span className='inline-block px-2 py-1 rounded text-xs font-medium bg-gray-200 dark:bg-gray-900/30 text-gray-600 dark:text-gray-400'>
 										{count} ({percent}%)
 									</span>

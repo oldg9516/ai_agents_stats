@@ -20,8 +20,9 @@ RETURNS TABLE (
   out_dates text,
   out_sort_order integer,
   out_total_records bigint,
-  out_changed_records bigint,
-  out_good_percentage numeric,
+  out_reviewed_records bigint,
+  out_ai_errors bigint,
+  out_ai_quality bigint,
   out_critical_errors bigint,
   out_meaningful_improvements bigint,
   out_stylistic_preferences bigint,
@@ -75,21 +76,14 @@ BEGIN
       NULL::timestamp with time zone AS week_start_date,
       1 AS sort_order,
       COUNT(*)::bigint AS total_records,
-      COUNT(*) FILTER (WHERE changed = true)::bigint AS changed_records,
-      COUNT(*) FILTER (WHERE change_classification = 'context_shift')::bigint AS context_shifts,
-      CASE
-        WHEN (COUNT(*) - COUNT(*) FILTER (WHERE change_classification = 'context_shift')) > 0 THEN
-          ROUND(
-            (COUNT(*) FILTER (WHERE changed = false)::numeric /
-             (COUNT(*) - COUNT(*) FILTER (WHERE change_classification = 'context_shift'))::numeric) * 100,
-            0
-          )
-        ELSE 0
-      END AS good_percentage,
+      COUNT(*) FILTER (WHERE change_classification IS NOT NULL)::bigint AS reviewed_records,
+      COUNT(*) FILTER (WHERE change_classification IN ('critical_error', 'meaningful_improvement'))::bigint AS ai_errors,
+      COUNT(*) FILTER (WHERE change_classification IN ('no_significant_change', 'stylistic_preference'))::bigint AS ai_quality,
       COUNT(*) FILTER (WHERE change_classification = 'critical_error')::bigint AS critical_errors,
       COUNT(*) FILTER (WHERE change_classification = 'meaningful_improvement')::bigint AS meaningful_improvements,
       COUNT(*) FILTER (WHERE change_classification = 'stylistic_preference')::bigint AS stylistic_preferences,
       COUNT(*) FILTER (WHERE change_classification = 'no_significant_change')::bigint AS no_significant_changes,
+      COUNT(*) FILTER (WHERE change_classification = 'context_shift')::bigint AS context_shifts,
       v_total_count AS total_count
     FROM filtered_data
     GROUP BY request_subtype, prompt_version
@@ -103,21 +97,14 @@ BEGIN
       DATE_TRUNC('week', created_at) AS week_start_date,
       2 AS sort_order,
       COUNT(*)::bigint AS total_records,
-      COUNT(*) FILTER (WHERE changed = true)::bigint AS changed_records,
-      COUNT(*) FILTER (WHERE change_classification = 'context_shift')::bigint AS context_shifts,
-      CASE
-        WHEN (COUNT(*) - COUNT(*) FILTER (WHERE change_classification = 'context_shift')) > 0 THEN
-          ROUND(
-            (COUNT(*) FILTER (WHERE changed = false)::numeric /
-             (COUNT(*) - COUNT(*) FILTER (WHERE change_classification = 'context_shift'))::numeric) * 100,
-            0
-          )
-        ELSE 0
-      END AS good_percentage,
+      COUNT(*) FILTER (WHERE change_classification IS NOT NULL)::bigint AS reviewed_records,
+      COUNT(*) FILTER (WHERE change_classification IN ('critical_error', 'meaningful_improvement'))::bigint AS ai_errors,
+      COUNT(*) FILTER (WHERE change_classification IN ('no_significant_change', 'stylistic_preference'))::bigint AS ai_quality,
       COUNT(*) FILTER (WHERE change_classification = 'critical_error')::bigint AS critical_errors,
       COUNT(*) FILTER (WHERE change_classification = 'meaningful_improvement')::bigint AS meaningful_improvements,
       COUNT(*) FILTER (WHERE change_classification = 'stylistic_preference')::bigint AS stylistic_preferences,
       COUNT(*) FILTER (WHERE change_classification = 'no_significant_change')::bigint AS no_significant_changes,
+      COUNT(*) FILTER (WHERE change_classification = 'context_shift')::bigint AS context_shifts,
       v_total_count AS total_count
     FROM filtered_data
     GROUP BY request_subtype, prompt_version, DATE_TRUNC('week', created_at)
@@ -130,8 +117,9 @@ BEGIN
       week_start_date,
       sort_order,
       total_records,
-      changed_records,
-      good_percentage,
+      reviewed_records,
+      ai_errors,
+      ai_quality,
       critical_errors,
       meaningful_improvements,
       stylistic_preferences,
@@ -147,8 +135,9 @@ BEGIN
       week_start_date,
       sort_order,
       total_records,
-      changed_records,
-      good_percentage,
+      reviewed_records,
+      ai_errors,
+      ai_quality,
       critical_errors,
       meaningful_improvements,
       stylistic_preferences,
@@ -163,8 +152,9 @@ BEGIN
     c.dates AS out_dates,
     c.sort_order AS out_sort_order,
     c.total_records AS out_total_records,
-    c.changed_records AS out_changed_records,
-    c.good_percentage AS out_good_percentage,
+    c.reviewed_records AS out_reviewed_records,
+    c.ai_errors AS out_ai_errors,
+    c.ai_quality AS out_ai_quality,
     c.critical_errors AS out_critical_errors,
     c.meaningful_improvements AS out_meaningful_improvements,
     c.stylistic_preferences AS out_stylistic_preferences,
@@ -172,7 +162,7 @@ BEGIN
     c.context_shifts AS out_context_shifts,
     c.total_count AS out_total_count
   FROM combined c
-  ORDER BY c.category, c.sort_order, c.version, c.week_start_date DESC NULLS FIRST
+  ORDER BY c.category, c.version, c.sort_order, c.week_start_date DESC NULLS FIRST
   LIMIT p_page_size
   OFFSET v_offset;
 END;

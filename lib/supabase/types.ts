@@ -212,8 +212,9 @@ export interface DetailedStatsRow {
 	dates: string | null // Week range or null for version-level rows
 	sortOrder: number // 1 for version-level, 2 for week-level
 	totalRecords: number
-	changedRecords: number
-	goodPercentage: number
+	reviewedRecords: number // Records with classification (not null)
+	aiErrors: number // Only critical_error + meaningful_improvement
+	aiQuality: number // Only no_significant_change + stylistic_preference
 	// Change classification breakdown
 	criticalErrors: number
 	meaningfulImprovements: number

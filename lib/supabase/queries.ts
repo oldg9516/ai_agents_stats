@@ -476,9 +476,22 @@ export async function getDetailedStats(
 	Object.values(versionGroups).forEach(group => {
 		// Use all records (no filtering by qualified agents)
 		const allRecords = group.records
-		const changedRecords = allRecords.filter(r => r.changed)
-		const unchangedRecords = allRecords.filter(r => !r.changed)
 		const classifications = countClassifications(allRecords)
+
+		// Reviewed records = records with classification (not null)
+		const reviewedRecords = allRecords.filter(r => r.change_classification !== null)
+
+		// AI Errors = critical_error + meaningful_improvement (from reviewed only)
+		const aiErrors = reviewedRecords.filter(
+			r => r.change_classification === 'critical_error' ||
+			     r.change_classification === 'meaningful_improvement'
+		).length
+
+		// AI Quality = no_significant_change + stylistic_preference (from reviewed only)
+		const aiQuality = reviewedRecords.filter(
+			r => r.change_classification === 'no_significant_change' ||
+			     r.change_classification === 'stylistic_preference'
+		).length
 
 		// Level 1: Version-level row
 		rows.push({
@@ -487,13 +500,9 @@ export async function getDetailedStats(
 			dates: null,
 			sortOrder: 1,
 			totalRecords: allRecords.length,
-			changedRecords: changedRecords.length,
-			goodPercentage:
-				allRecords.length > 0
-					? Math.round(
-							(unchangedRecords.length / allRecords.length) * 100
-					  )
-					: 0,
+			reviewedRecords: reviewedRecords.length,
+			aiErrors,
+			aiQuality,
 			...classifications,
 		})
 
@@ -509,9 +518,22 @@ export async function getDetailedStats(
 
 		Object.entries(weekGroups).forEach(([weekStart, weekRecords]) => {
 			// Use all records (no filtering by qualified agents)
-			const weekChangedRecords = weekRecords.filter(r => r.changed)
-			const weekUnchangedRecords = weekRecords.filter(r => !r.changed)
 			const weekClassifications = countClassifications(weekRecords)
+
+			// Reviewed records = records with classification (not null)
+			const weekReviewedRecords = weekRecords.filter(r => r.change_classification !== null)
+
+			// AI Errors = critical_error + meaningful_improvement (from reviewed only)
+			const weekAiErrors = weekReviewedRecords.filter(
+				r => r.change_classification === 'critical_error' ||
+				     r.change_classification === 'meaningful_improvement'
+			).length
+
+			// AI Quality = no_significant_change + stylistic_preference (from reviewed only)
+			const weekAiQuality = weekReviewedRecords.filter(
+				r => r.change_classification === 'no_significant_change' ||
+				     r.change_classification === 'stylistic_preference'
+			).length
 
 			const weekStartDate = new Date(weekStart)
 			const weekEndDate = new Date(weekStartDate)
@@ -527,14 +549,9 @@ export async function getDetailedStats(
 				dates: dateRange,
 				sortOrder: 2,
 				totalRecords: weekRecords.length,
-				changedRecords: weekChangedRecords.length,
-				goodPercentage:
-					weekRecords.length > 0
-						? Math.round(
-								(weekUnchangedRecords.length / weekRecords.length) *
-									100
-						  )
-						: 0,
+				reviewedRecords: weekReviewedRecords.length,
+				aiErrors: weekAiErrors,
+				aiQuality: weekAiQuality,
 				...weekClassifications,
 			})
 		})
@@ -676,8 +693,9 @@ export async function getDetailedStatsPaginated(
 			dates: r.out_dates as string | null,
 			sortOrder: r.out_sort_order as number,
 			totalRecords: Number(r.out_total_records),
-			changedRecords: Number(r.out_changed_records),
-			goodPercentage: Number(r.out_good_percentage),
+			reviewedRecords: Number(r.out_reviewed_records || 0),
+			aiErrors: Number(r.out_ai_errors || 0),
+			aiQuality: Number(r.out_ai_quality || 0),
 			criticalErrors: Number(r.out_critical_errors || 0),
 			meaningfulImprovements: Number(r.out_meaningful_improvements || 0),
 			stylisticPreferences: Number(r.out_stylistic_preferences || 0),
