@@ -114,6 +114,11 @@ export function TicketsReviewTable({
 	// Get classification label and color
 	const getClassificationLabel = (classification: string | null) => {
 		if (!classification) return '—'
+		// Только для валидных классификаций
+		const validClassifications = ['critical_error', 'meaningful_improvement', 'stylistic_preference', 'no_significant_change', 'context_shift']
+		if (!validClassifications.includes(classification)) {
+			return classification // Показать как есть, если неизвестный статус
+		}
 		return t(`ticketsReview.classifications.${classification}` as any)
 	}
 

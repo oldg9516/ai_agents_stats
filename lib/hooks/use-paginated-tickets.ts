@@ -27,8 +27,9 @@ export function usePaginatedTickets() {
 	const BATCH_SIZE = 60
 
 	// Generate cache key based on filters
+	// v2: Added change_classification IS NOT NULL filter
 	const getCacheKey = useCallback(() => {
-		return `tickets-review-cache-${JSON.stringify(filters)}`
+		return `tickets-review-cache-v2-${JSON.stringify(filters)}`
 	}, [filters])
 
 	// Load initial batch or from cache
@@ -105,16 +106,42 @@ export function usePaginatedTickets() {
 				setCurrentOffset(prev => prev + BATCH_SIZE)
 				setHasMore(result.data.length === BATCH_SIZE)
 
-				// Update cache with batch size
+				// Update cache with batch size (with error handling for quota exceeded)
 				const cacheKey = getCacheKey()
-				sessionStorage.setItem(
-					cacheKey,
-					JSON.stringify({
-						tickets: newTickets,
-						offset: currentOffset + BATCH_SIZE,
-						batchSize: BATCH_SIZE,
-					})
-				)
+				try {
+					sessionStorage.setItem(
+						cacheKey,
+						JSON.stringify({
+							tickets: newTickets,
+							offset: currentOffset + BATCH_SIZE,
+							batchSize: BATCH_SIZE,
+						})
+					)
+				} catch (e) {
+					// If quota exceeded, clear old caches and try again
+					if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+						console.warn('SessionStorage quota exceeded, clearing old caches')
+						// Clear all ticket caches
+						Object.keys(sessionStorage).forEach(key => {
+							if (key.startsWith('tickets-review-cache-')) {
+								sessionStorage.removeItem(key)
+							}
+						})
+						// Try one more time with empty storage
+						try {
+							sessionStorage.setItem(
+								cacheKey,
+								JSON.stringify({
+									tickets: newTickets,
+									offset: currentOffset + BATCH_SIZE,
+									batchSize: BATCH_SIZE,
+								})
+							)
+						} catch (retryError) {
+							console.error('Failed to cache tickets even after clearing:', retryError)
+						}
+					}
+				}
 			}
 		} catch (error) {
 			console.error('Error loading more tickets:', error)
@@ -129,6 +156,16 @@ export function usePaginatedTickets() {
 		isFetchingMore,
 		getCacheKey,
 	])
+
+	// Clear old v1 caches on mount
+	useEffect(() => {
+		// Clear old version caches (without v2 prefix)
+		Object.keys(sessionStorage).forEach(key => {
+			if (key.startsWith('tickets-review-cache-') && !key.startsWith('tickets-review-cache-v2-')) {
+				sessionStorage.removeItem(key)
+			}
+		})
+	}, [])
 
 	// Load initial batch on mount or when filters change
 	useEffect(() => {

@@ -7,6 +7,7 @@ import { IconRefresh } from '@tabler/icons-react'
 import type { TicketsReviewFilters } from '@/lib/supabase/types'
 import { fetchTicketsReviewFilterOptionsAction } from '@/lib/actions/tickets-review-actions'
 import { MultiSelectFilter } from './multi-select-filter'
+import { CLASSIFICATION_TYPES } from '@/constants/classification-types'
 
 interface TicketsReviewFilterBarProps {
 	filters: TicketsReviewFilters
@@ -91,10 +92,13 @@ export function TicketsReviewFilterBar({
 			{/* Classification Filter */}
 			<MultiSelectFilter
 				label={t('ticketsReview.filters.classification')}
-				options={availableClassifications}
+				options={availableClassifications.filter(c => CLASSIFICATION_TYPES.includes(c as any))}
 				selected={filters.classifications}
 				onChange={onClassificationsChange}
 				placeholder={t('ticketsReview.filters.searchClassifications')}
+				formatLabel={(classification: string) =>
+					t(`ticketsReview.classifications.${classification}` as any)
+				}
 			/>
 
 			{/* Agent Filter */}

@@ -2,7 +2,7 @@
  * Tickets Review Database Queries
  *
  * All queries for the Tickets Review section
- * Fetches records from ai_human_comparison table where changed = true
+ * Fetches records from ai_human_comparison table where change_classification IS NOT NULL (reviewed records)
  * JOIN with support_threads_data to get customer email (user field)
  */
 
@@ -11,7 +11,7 @@ import type { TicketReviewRecord, TicketsReviewFilters } from './types'
 
 /**
  * Fetch Tickets Review Records with pagination
- * Shows only tickets that were changed by agents (changed = true)
+ * Shows only reviewed tickets (change_classification IS NOT NULL)
  * OPTIMIZED: SELECT only needed fields
  */
 export async function fetchTicketsReview(
@@ -64,9 +64,9 @@ export async function fetchTicketsReview(
 			ai_approved
 		`
 		)
-		.eq('changed', true) // Only show changed tickets
 		.gte('created_at', dateRange.from.toISOString())
 		.lt('created_at', dateRange.to.toISOString())
+		.not('change_classification', 'is', null)
 		.order('created_at', { ascending: false })
 		.range(offset, offset + limit - 1)
 
@@ -269,9 +269,9 @@ export async function fetchTicketsReviewFilterOptions(
 	const { data, error } = await supabase
 		.from('ai_human_comparison')
 		.select('request_subtype, prompt_version, change_classification, email')
-		.eq('changed', true)
 		.gte('created_at', dateRange.from.toISOString())
 		.lt('created_at', dateRange.to.toISOString())
+		.not('change_classification', 'is', null)
 
 	if (error) throw error
 
@@ -301,7 +301,7 @@ export async function fetchTicketsReviewFilterOptions(
 }
 
 /**
- * Fetch minimum created_at date from ai_human_comparison where changed = true
+ * Fetch minimum created_at date from ai_human_comparison where change_classification IS NOT NULL
  * Used for "All Time" filter
  */
 export async function fetchTicketsReviewMinCreatedDate(): Promise<Date> {

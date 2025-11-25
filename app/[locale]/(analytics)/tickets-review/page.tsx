@@ -5,13 +5,14 @@ import { Suspense } from 'react'
 
 export const metadata: Metadata = {
 	title: 'Tickets Review | AI Agent Stats',
-	description: 'Analyze tickets that were changed by agents',
+	description: 'Analyze reviewed tickets with classifications',
 }
 
 /**
  * Tickets Review Page - Server Component
  *
- * Main page for reviewing tickets changed by agents
+ * Main page for reviewing tickets with classifications
+ * Shows only reviewed tickets (change_classification IS NOT NULL)
  * Shows table with filters for detailed analysis
  * Data fetching handled by React Query on client side
  */
