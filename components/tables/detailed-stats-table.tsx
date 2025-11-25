@@ -163,6 +163,14 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 						</div>
 					)
 				},
+				// Custom sort function: extract version number and sort DESC (newest first)
+				sortingFn: (rowA, rowB) => {
+					const extractNum = (v: string) => {
+						const match = v.match(/\d+/)
+						return match ? parseInt(match[0]) : 0
+					}
+					return extractNum(rowB.original.version) - extractNum(rowA.original.version)
+				},
 			},
 			{
 				accessorKey: 'dates',

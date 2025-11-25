@@ -162,7 +162,11 @@ BEGIN
     c.context_shifts AS out_context_shifts,
     c.total_count AS out_total_count
   FROM combined c
-  ORDER BY c.category, c.version, c.sort_order, c.week_start_date DESC NULLS FIRST
+  ORDER BY
+    c.category,
+    CAST(SUBSTRING(c.version FROM '[0-9]+') AS INTEGER) DESC,
+    c.sort_order,
+    c.week_start_date DESC NULLS FIRST
   LIMIT p_page_size
   OFFSET v_offset;
 END;

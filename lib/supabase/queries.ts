@@ -50,6 +50,14 @@ function getPreviousPeriod(from: Date, to: Date): { from: Date; to: Date } {
 }
 
 /**
+ * Extract numeric version from version string (e.g., "v1" -> 1, "v2" -> 2)
+ */
+function extractVersionNumber(version: string): number {
+	const match = version.match(/\d+/)
+	return match ? parseInt(match[0]) : 0
+}
+
+/**
  * Fetch KPI Data with trends
  */
 export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
@@ -396,7 +404,7 @@ export async function getVersionComparison(
 			totalRecords: stats.total,
 			goodPercentage: stats.total > 0 ? (stats.unchanged / stats.total) * 100 : 0,
 		}))
-		.sort((a, b) => a.version.localeCompare(b.version))
+		.sort((a, b) => extractVersionNumber(b.version) - extractVersionNumber(a.version))
 }
 
 /**
@@ -557,11 +565,13 @@ export async function getDetailedStats(
 		})
 	})
 
-	// Sort: category ASC, sortOrder ASC, version ASC, dates DESC (newest first)
+	// Sort: category ASC, sortOrder ASC, version DESC (newest first), dates DESC (newest first)
 	return rows.sort((a, b) => {
 		if (a.category !== b.category) return a.category.localeCompare(b.category)
 		if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder
-		if (a.version !== b.version) return a.version.localeCompare(b.version)
+		if (a.version !== b.version) {
+			return extractVersionNumber(b.version) - extractVersionNumber(a.version)
+		}
 
 		// For dates, parse DD.MM.YYYY format and compare as actual dates (newest first)
 		if (a.dates && b.dates) {

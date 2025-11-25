@@ -1,18 +1,23 @@
 'use client'
 
-import { useMemo } from 'react'
-import { useTranslations } from 'next-intl'
-import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from 'recharts'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { InfoTooltip } from '@/components/ui/info-tooltip'
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card'
 import {
 	ChartContainer,
 	ChartTooltip,
 	ChartTooltipContent,
 	type ChartConfig,
 } from '@/components/ui/chart'
-import { getQualityColor } from '@/lib/utils/quality-colors'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 import type { VersionComparisonData } from '@/lib/supabase/types'
+import { useTranslations } from 'next-intl'
+import { useMemo } from 'react'
+import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from 'recharts'
 
 interface VersionBarChartProps {
 	data: VersionComparisonData[]
@@ -29,7 +34,7 @@ interface VersionBarChartProps {
 export function VersionBarChart({ data }: VersionBarChartProps) {
 	const t = useTranslations()
 
-	// Sort and transform data
+	// Sort and transform data (newest versions first)
 	const chartData = useMemo(() => {
 		const sorted = [...data].sort((a, b) => {
 			// Extract version number (e.g., "v1" -> 1)
@@ -37,10 +42,10 @@ export function VersionBarChart({ data }: VersionBarChartProps) {
 				const match = version.match(/\d+/)
 				return match ? parseInt(match[0]) : 0
 			}
-			return getVersionNum(a.version) - getVersionNum(b.version)
+			return getVersionNum(b.version) - getVersionNum(a.version)
 		})
 
-		return sorted.map((item) => ({
+		return sorted.map(item => ({
 			version: item.version,
 			quality: item.goodPercentage,
 			records: item.totalRecords,
@@ -70,7 +75,9 @@ export function VersionBarChart({ data }: VersionBarChartProps) {
 		return (
 			<Card>
 				<CardHeader>
-					<CardTitle className='text-lg sm:text-xl'>{t('charts.versionComparison.title')}</CardTitle>
+					<CardTitle className='text-lg sm:text-xl'>
+						{t('charts.versionComparison.title')}
+					</CardTitle>
 					<CardDescription className='text-sm'>
 						{t('charts.versionComparison.description')}
 					</CardDescription>
@@ -85,19 +92,24 @@ export function VersionBarChart({ data }: VersionBarChartProps) {
 	}
 
 	return (
-		<Card className="min-w-0">
+		<Card className='min-w-0'>
 			<CardHeader>
 				<div className='flex items-center gap-1.5'>
-					<CardTitle className='text-lg sm:text-xl'>{t('charts.versionComparison.title')}</CardTitle>
+					<CardTitle className='text-lg sm:text-xl'>
+						{t('charts.versionComparison.title')}
+					</CardTitle>
 					<InfoTooltip content={t('charts.versionComparison.tooltip')} />
 				</div>
 				<CardDescription className='text-sm'>
 					{t('charts.versionComparison.description')}
 				</CardDescription>
 			</CardHeader>
-			<CardContent className="overflow-hidden">
+			<CardContent className='overflow-hidden'>
 				<ChartContainer config={chartConfig} className='h-[300px] w-full'>
-					<BarChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 5 }}>
+					<BarChart
+						data={chartData}
+						margin={{ top: 20, right: 10, left: -20, bottom: 5 }}
+					>
 						<CartesianGrid vertical={false} strokeDasharray='3 3' />
 						<XAxis
 							dataKey='version'
@@ -110,7 +122,7 @@ export function VersionBarChart({ data }: VersionBarChartProps) {
 							tickLine={false}
 							tickMargin={5}
 							axisLine={false}
-							tickFormatter={(value) => `${value}%`}
+							tickFormatter={value => `${value}%`}
 						/>
 						<ChartTooltip
 							cursor={false}
@@ -121,7 +133,9 @@ export function VersionBarChart({ data }: VersionBarChartProps) {
 										<div className='flex flex-col gap-1'>
 											<div className='flex items-center justify-between gap-2'>
 												<span className='text-muted-foreground'>Version:</span>
-												<span className='font-medium'>{item.payload.version}</span>
+												<span className='font-medium'>
+													{item.payload.version}
+												</span>
 											</div>
 											<div className='flex items-center justify-between gap-2'>
 												<span className='text-muted-foreground'>Quality:</span>
@@ -129,7 +143,9 @@ export function VersionBarChart({ data }: VersionBarChartProps) {
 											</div>
 											<div className='flex items-center justify-between gap-2'>
 												<span className='text-muted-foreground'>Records:</span>
-												<span className='font-medium'>{item.payload.records}</span>
+												<span className='font-medium'>
+													{item.payload.records}
+												</span>
 											</div>
 										</div>
 									)}
