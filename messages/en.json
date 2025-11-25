@@ -888,6 +888,7 @@
 			"requestType": "Request Type",
 			"requestSubtype": "Request Subtype",
 			"count": "Count",
+			"agentResponses": "Agent Responses",
 			"percent": "Percent",
 			"search": "Search by type or subtype..."
 		}

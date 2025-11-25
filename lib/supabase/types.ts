@@ -396,6 +396,7 @@ export interface RequestCategoryStats {
 	request_subtype: string | null
 	count: number
 	percent: number
+	compared_count: number // Count of records with status = 'compared' from ai_human_comparison
 }
 
 // ============================================================================

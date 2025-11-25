@@ -1,19 +1,13 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { useTranslations } from 'next-intl'
-import {
-	useReactTable,
-	getCoreRowModel,
-	getSortedRowModel,
-	getFilteredRowModel,
-	getPaginationRowModel,
-	flexRender,
-	type ColumnDef,
-	type SortingState,
-} from '@tanstack/react-table'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
 	Table,
@@ -23,16 +17,28 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/components/ui/table'
+import { useRequestCategoryStats } from '@/lib/queries/support-queries'
+import type { RequestCategoryStats } from '@/lib/supabase/types'
 import {
-	IconDownload,
-	IconSearch,
 	IconChevronLeft,
 	IconChevronRight,
+	IconDownload,
 	IconLoader2,
+	IconSearch,
 } from '@tabler/icons-react'
-import type { RequestCategoryStats } from '@/lib/supabase/types'
+import {
+	flexRender,
+	getCoreRowModel,
+	getFilteredRowModel,
+	getPaginationRowModel,
+	getSortedRowModel,
+	useReactTable,
+	type ColumnDef,
+	type SortingState,
+} from '@tanstack/react-table'
 import { format } from 'date-fns'
-import { useRequestCategoryStats } from '@/lib/queries/support-queries'
+import { useTranslations } from 'next-intl'
+import { useMemo, useState } from 'react'
 
 interface RequestCategoriesTableProps {
 	dateRange: { from: Date; to: Date }
@@ -49,7 +55,9 @@ interface RequestCategoriesTableProps {
  * - Shows count and percentage for each category
  * - Date range filtering
  */
-export function RequestCategoriesTable({ dateRange }: RequestCategoriesTableProps) {
+export function RequestCategoriesTable({
+	dateRange,
+}: RequestCategoriesTableProps) {
 	const t = useTranslations()
 
 	// Fetch data with date filter
@@ -78,12 +86,18 @@ export function RequestCategoriesTable({ dateRange }: RequestCategoriesTableProp
 				cell: ({ getValue }) => {
 					const value = getValue() as string | null
 					return (
-						<div className={value === null ? 'text-muted-foreground italic' : ''}>
-							{value === null ? 'NULL' : value === 'multiply' ? (
+						<div
+							className={value === null ? 'text-muted-foreground italic' : ''}
+						>
+							{value === null ? (
+								'NULL'
+							) : value === 'multiply' ? (
 								<span className='px-2 py-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-medium'>
 									Multiple
 								</span>
-							) : value}
+							) : (
+								value
+							)}
 						</div>
 					)
 				},
@@ -93,7 +107,11 @@ export function RequestCategoriesTable({ dateRange }: RequestCategoriesTableProp
 				header: t('requestCategories.table.count'),
 				cell: ({ getValue }) => {
 					const value = getValue() as number
-					return <div className='text-center font-medium'>{value.toLocaleString()}</div>
+					return (
+						<div className='text-center font-medium'>
+							{value.toLocaleString()}
+						</div>
+					)
 				},
 			},
 			{
@@ -108,6 +126,18 @@ export function RequestCategoriesTable({ dateRange }: RequestCategoriesTableProp
 					)
 				},
 			},
+			{
+				accessorKey: 'compared_count',
+				header: t('requestCategories.table.agentResponses'),
+				cell: ({ getValue }) => {
+					const value = (getValue() as number) ?? 0
+					return (
+						<div className='text-center font-medium'>
+							{value.toLocaleString()}
+						</div>
+					)
+				},
+			},
 		],
 		[t]
 	)
@@ -115,8 +145,12 @@ export function RequestCategoriesTable({ dateRange }: RequestCategoriesTableProp
 	// Calculate totals from ALL data (not just current page)
 	const totals = useMemo(() => {
 		const totalCount = data.reduce((sum, row) => sum + row.count, 0)
+		const totalComparedCount = data.reduce(
+			(sum, row) => sum + (row.compared_count ?? 0),
+			0
+		)
 		const totalPercent = data.reduce((sum, row) => sum + row.percent, 0)
-		return { totalCount, totalPercent }
+		return { totalCount, totalComparedCount, totalPercent }
 	}, [data])
 
 	// Create table instance
@@ -135,7 +169,9 @@ export function RequestCategoriesTable({ dateRange }: RequestCategoriesTableProp
 		getPaginationRowModel: getPaginationRowModel(),
 		globalFilterFn: (row, columnId, filterValue) => {
 			const requestType = String(row.original.request_type || '').toLowerCase()
-			const requestSubtype = String(row.original.request_subtype || '').toLowerCase()
+			const requestSubtype = String(
+				row.original.request_subtype || ''
+			).toLowerCase()
 			const filter = String(filterValue).toLowerCase()
 			return requestType.includes(filter) || requestSubtype.includes(filter)
 		},
@@ -148,12 +184,19 @@ export function RequestCategoriesTable({ dateRange }: RequestCategoriesTableProp
 
 	// Handle CSV export
 	const handleExport = () => {
-		const headers = ['Request Type', 'Request Subtype', 'Count', 'Percent']
+		const headers = [
+			'Request Type',
+			'Request Subtype',
+			'Count',
+			'Percent',
+			'Agent Responses',
+		]
 		const rows = data.map(row => [
 			row.request_type,
 			row.request_subtype || 'NULL',
 			row.count,
 			`${row.percent}%`,
+			row.compared_count ?? 0,
 		])
 
 		// Add total row
@@ -162,6 +205,7 @@ export function RequestCategoriesTable({ dateRange }: RequestCategoriesTableProp
 			'',
 			totals.totalCount,
 			`${totals.totalPercent.toFixed(1)}%`,
+			totals.totalComparedCount,
 		]
 
 		const csv = [
@@ -174,7 +218,10 @@ export function RequestCategoriesTable({ dateRange }: RequestCategoriesTableProp
 		const link = document.createElement('a')
 		const url = URL.createObjectURL(blob)
 		link.setAttribute('href', url)
-		link.setAttribute('download', `request-categories-${format(new Date(), 'yyyy-MM-dd')}.csv`)
+		link.setAttribute(
+			'download',
+			`request-categories-${format(new Date(), 'yyyy-MM-dd')}.csv`
+		)
 		link.style.visibility = 'hidden'
 		document.body.appendChild(link)
 		link.click()
@@ -249,7 +296,7 @@ export function RequestCategoriesTable({ dateRange }: RequestCategoriesTableProp
 						<Input
 							placeholder={t('requestCategories.table.search')}
 							value={globalFilter}
-							onChange={(e) => setGlobalFilter(e.target.value)}
+							onChange={e => setGlobalFilter(e.target.value)}
 							className='pl-8'
 						/>
 					</div>
@@ -259,9 +306,9 @@ export function RequestCategoriesTable({ dateRange }: RequestCategoriesTableProp
 				<div className='rounded-md border overflow-x-auto'>
 					<Table>
 						<TableHeader>
-							{table.getHeaderGroups().map((headerGroup) => (
+							{table.getHeaderGroups().map(headerGroup => (
 								<TableRow key={headerGroup.id}>
-									{headerGroup.headers.map((header) => (
+									{headerGroup.headers.map(header => (
 										<TableHead key={header.id} className='whitespace-nowrap'>
 											{header.isPlaceholder ? null : (
 												<Button
@@ -286,14 +333,17 @@ export function RequestCategoriesTable({ dateRange }: RequestCategoriesTableProp
 						<TableBody>
 							{table.getRowModel().rows?.length ? (
 								<>
-									{table.getRowModel().rows.map((row) => (
+									{table.getRowModel().rows.map(row => (
 										<TableRow
 											key={row.id}
 											data-state={row.getIsSelected() && 'selected'}
 										>
-											{row.getVisibleCells().map((cell) => (
+											{row.getVisibleCells().map(cell => (
 												<TableCell key={cell.id}>
-													{flexRender(cell.column.columnDef.cell, cell.getContext())}
+													{flexRender(
+														cell.column.columnDef.cell,
+														cell.getContext()
+													)}
 												</TableCell>
 											))}
 										</TableRow>
@@ -308,11 +358,17 @@ export function RequestCategoriesTable({ dateRange }: RequestCategoriesTableProp
 										<TableCell className='text-center font-bold'>
 											{totals.totalPercent.toFixed(1)}%
 										</TableCell>
+										<TableCell className='text-center font-bold'>
+											{totals.totalComparedCount.toLocaleString()}
+										</TableCell>
 									</TableRow>
 								</>
 							) : (
 								<TableRow>
-									<TableCell colSpan={columns.length} className='h-24 text-center'>
+									<TableCell
+										colSpan={columns.length}
+										className='h-24 text-center'
+									>
 										{t('table.noResults')}
 									</TableCell>
 								</TableRow>
@@ -325,13 +381,17 @@ export function RequestCategoriesTable({ dateRange }: RequestCategoriesTableProp
 				<div className='flex items-center justify-between pt-4'>
 					<div className='text-sm text-muted-foreground'>
 						{t('table.showing')}{' '}
-						{table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}{' '}
+						{table.getState().pagination.pageIndex *
+							table.getState().pagination.pageSize +
+							1}{' '}
 						{t('table.to')}{' '}
 						{Math.min(
-							(table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+							(table.getState().pagination.pageIndex + 1) *
+								table.getState().pagination.pageSize,
 							table.getFilteredRowModel().rows.length
 						)}{' '}
-						{t('table.of')} {table.getFilteredRowModel().rows.length} {t('table.results')}
+						{t('table.of')} {table.getFilteredRowModel().rows.length}{' '}
+						{t('table.results')}
 					</div>
 					<div className='flex items-center space-x-2'>
 						<Button
@@ -344,8 +404,8 @@ export function RequestCategoriesTable({ dateRange }: RequestCategoriesTableProp
 							{t('table.previous')}
 						</Button>
 						<div className='text-sm text-muted-foreground'>
-							{t('table.page')} {table.getState().pagination.pageIndex + 1} {t('table.of')}{' '}
-							{table.getPageCount()}
+							{t('table.page')} {table.getState().pagination.pageIndex + 1}{' '}
+							{t('table.of')} {table.getPageCount()}
 						</div>
 						<Button
 							variant='outline'
