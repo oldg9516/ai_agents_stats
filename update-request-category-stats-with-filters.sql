@@ -1,5 +1,8 @@
--- Update get_request_category_stats function to include compared_count
--- This function shows request category statistics with agent response counts
+-- Update get_request_category_stats function to use consistent filtering logic
+-- This update adds filters to match KPI "Records Changed" logic:
+-- 1. status = 'compared'
+-- 2. change_classification IS NOT NULL
+-- 3. Exclude context_shift
 
 -- Drop all possible signatures of the function
 DROP FUNCTION IF EXISTS get_request_category_stats(timestamp with time zone, timestamp with time zone);
@@ -53,6 +56,8 @@ BEGIN
     WHERE ahc.status = 'compared'
       AND ahc.created_at >= date_from
       AND ahc.created_at <= date_to
+      AND ahc.change_classification IS NOT NULL
+      AND ahc.change_classification != 'context_shift'
     GROUP BY
       CASE
         WHEN ahc.request_subtype LIKE '%,%' THEN 'multiply'
@@ -74,4 +79,4 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Add comment
-COMMENT ON FUNCTION get_request_category_stats IS 'Returns request category statistics with agent response counts (status = compared)';
+COMMENT ON FUNCTION get_request_category_stats IS 'Returns request category statistics with agent response counts (status = compared, change_classification IS NOT NULL, excluding context_shift)';

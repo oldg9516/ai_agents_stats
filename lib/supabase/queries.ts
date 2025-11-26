@@ -65,8 +65,8 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 	const previousPeriod = getPreviousPeriod(dateRange.from, dateRange.to)
 
 	// OPTIMIZATION: Select only fields needed for KPI calculation (not SELECT *)
-	// This reduces data transfer significantly (only 3 fields instead of all)
-	const selectFields = 'changed, request_subtype, change_classification'
+	// This reduces data transfer significantly (4 fields instead of all)
+	const selectFields = 'changed, request_subtype, change_classification, status'
 
 	let currentQuery = supabase
 		.from('ai_human_comparison')
@@ -90,10 +90,41 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 		previousQuery = previousQuery.in('request_subtype', categories)
 	}
 
+	// Separate queries for "Records Changed" - only status = 'compared'
+	let currentChangedQuery = supabase
+		.from('ai_human_comparison')
+		.select('change_classification', { count: 'exact' })
+		.gte('created_at', dateRange.from.toISOString())
+		.lte('created_at', dateRange.to.toISOString())
+		.eq('status', 'compared')
+		.not('change_classification', 'is', null)
+		.not('change_classification', 'eq', 'context_shift')
+
+	let previousChangedQuery = supabase
+		.from('ai_human_comparison')
+		.select('change_classification', { count: 'exact' })
+		.gte('created_at', previousPeriod.from.toISOString())
+		.lte('created_at', previousPeriod.to.toISOString())
+		.eq('status', 'compared')
+		.not('change_classification', 'is', null)
+		.not('change_classification', 'eq', 'context_shift')
+
+	// Apply same filters to changed queries
+	if (versions.length > 0) {
+		currentChangedQuery = currentChangedQuery.in('prompt_version', versions)
+		previousChangedQuery = previousChangedQuery.in('prompt_version', versions)
+	}
+	if (categories.length > 0) {
+		currentChangedQuery = currentChangedQuery.in('request_subtype', categories)
+		previousChangedQuery = previousChangedQuery.in('request_subtype', categories)
+	}
+
 	const [
 		{ data: currentData, count: currentCount },
 		{ data: previousData, count: previousCount },
-	] = await Promise.all([currentQuery, previousQuery])
+		{ count: currentChangedCount },
+		{ count: previousChangedCount },
+	] = await Promise.all([currentQuery, previousQuery, currentChangedQuery, previousChangedQuery])
 
 	if (!currentData || !previousData) {
 		throw new Error('Failed to fetch KPI data')
@@ -104,6 +135,7 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 		changed: boolean
 		request_subtype: string | null
 		change_classification: string | null
+		status: string | null
 	}
 	const currentRecords = currentData as unknown as KPIRecord[]
 	const previousRecords = previousData as unknown as KPIRecord[]
@@ -112,23 +144,32 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 	const currentTotal = currentCount || 0
 	const previousTotal = previousCount || 0
 
+	// Count reviewed records (change_classification IS NOT NULL)
+	const currentReviewed = currentRecords.filter(r => r.change_classification !== null).length
+	const previousReviewed = previousRecords.filter(r => r.change_classification !== null).length
+
 	// Count context_shift records to exclude from quality calculations
 	const currentContextShift = currentRecords.filter(r => r.change_classification === 'context_shift').length
 	const previousContextShift = previousRecords.filter(r => r.change_classification === 'context_shift').length
 
-	// Evaluable records (excluding context_shift)
-	const currentEvaluable = currentTotal - currentContextShift
-	const previousEvaluable = previousTotal - previousContextShift
+	// Evaluable records (reviewed records excluding context_shift)
+	const currentEvaluable = currentReviewed - currentContextShift
+	const previousEvaluable = previousReviewed - previousContextShift
 
-	const currentChanged = currentRecords.filter(r => r.changed).length
-	const previousChanged = previousRecords.filter(r => r.changed).length
+	// Count records with changes - use count from separate SQL query (more accurate)
+	// This matches Request Categories table logic: status = 'compared', classification IS NOT NULL, excluding context_shift
+	const currentChanged = currentChangedCount || 0
+	const previousChanged = previousChangedCount || 0
 
-	// Changed records excluding context_shift (for "Records Changed" KPI)
-	const currentChangedEvaluable = currentChanged - currentContextShift
-	const previousChangedEvaluable = previousChanged - previousContextShift
-
-	const currentUnchanged = currentTotal - currentChanged
-	const previousUnchanged = previousTotal - previousChanged
+	// Unchanged records (no_significant_change or stylistic_preference - both are good quality)
+	const currentUnchanged = currentRecords.filter(
+		r => r.change_classification === 'no_significant_change' ||
+		     r.change_classification === 'stylistic_preference'
+	).length
+	const previousUnchanged = previousRecords.filter(
+		r => r.change_classification === 'no_significant_change' ||
+		     r.change_classification === 'stylistic_preference'
+	).length
 
 	// Quality calculated from evaluable records
 	const currentAvgQuality =
@@ -136,17 +177,21 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 	const previousAvgQuality =
 		previousEvaluable > 0 ? (previousUnchanged / previousEvaluable) * 100 : 0
 
-	// Calculate best category (excluding context_shift from calculations)
+	// Calculate best category (only reviewed records, excluding context_shift)
 	const categoryStats = currentRecords.reduce((acc, record) => {
-		// Skip context_shift records
-		if (record.change_classification === 'context_shift') return acc
+		// Skip non-reviewed and context_shift records
+		if (record.change_classification === null || record.change_classification === 'context_shift') return acc
 
 		const cat = record.request_subtype ?? 'unknown'
 		if (!acc[cat]) {
 			acc[cat] = { total: 0, unchanged: 0 }
 		}
 		acc[cat].total++
-		if (!record.changed) acc[cat].unchanged++
+		// Count no_significant_change and stylistic_preference as unchanged (good quality)
+		if (record.change_classification === 'no_significant_change' ||
+		    record.change_classification === 'stylistic_preference') {
+			acc[cat].unchanged++
+		}
 		return acc
 	}, {} as Record<string, { total: number; unchanged: number }>)
 
@@ -161,13 +206,16 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 		{ category: '', percentage: 0 }
 	)
 
-	// Calculate previous percentage for best category (excluding context_shift)
+	// Calculate previous percentage for best category (only reviewed records, excluding context_shift)
 	const previousCategoryData = previousRecords.filter(
-		r => r.request_subtype === bestCategory.category && r.change_classification !== 'context_shift'
+		r => r.request_subtype === bestCategory.category &&
+		     r.change_classification !== null &&
+		     r.change_classification !== 'context_shift'
 	)
 	const previousCategoryTotal = previousCategoryData.length
 	const previousCategoryUnchanged = previousCategoryData.filter(
-		r => !r.changed
+		r => r.change_classification === 'no_significant_change' ||
+		     r.change_classification === 'stylistic_preference'
 	).length
 	const previousCategoryPercentage =
 		previousCategoryTotal > 0
@@ -195,15 +243,16 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 			),
 		},
 		recordsChanged: {
-			current: currentChangedEvaluable,
-			previous: previousChangedEvaluable,
-			trend: calculateTrend(currentChangedEvaluable, previousChangedEvaluable),
+			current: currentChanged,
+			previous: previousChanged,
+			trend: calculateTrend(currentChanged, previousChanged),
 		},
 	}
 }
 
 /**
  * Fetch Quality Trends data (for line chart)
+ * Uses only reviewed records (change_classification IS NOT NULL)
  */
 export async function getQualityTrends(
 	filters: DashboardFilters
@@ -215,6 +264,7 @@ export async function getQualityTrends(
 		.select('request_subtype, created_at, changed, change_classification')
 		.gte('created_at', dateRange.from.toISOString())
 		.lte('created_at', dateRange.to.toISOString())
+		.not('change_classification', 'is', null) // Only reviewed records
 
 	if (versions.length > 0) {
 		query = query.in('prompt_version', versions)
