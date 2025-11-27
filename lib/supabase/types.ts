@@ -397,6 +397,8 @@ export interface RequestCategoryStats {
 	count: number
 	percent: number
 	compared_count: number // Count of records with status = 'compared' from ai_human_comparison
+	avg_response_time: number // Average response time in hours (from created_at to human_reply_date)
+	p90_response_time: number // 90th percentile response time in hours
 }
 
 // ============================================================================

@@ -45,6 +45,24 @@ interface RequestCategoriesTableProps {
 }
 
 /**
+ * Format response time from hours to human-readable string
+ * - Less than 1 hour: show minutes (e.g., "45m")
+ * - 1-24 hours: show hours with 1 decimal (e.g., "4.2h")
+ * - More than 24 hours: show days and hours (e.g., "2d 5h")
+ */
+function formatResponseTime(hours: number): string {
+	if (hours < 1) {
+		return `${Math.round(hours * 60)}m`
+	} else if (hours < 24) {
+		return `${hours.toFixed(1)}h`
+	} else {
+		const days = Math.floor(hours / 24)
+		const remainingHours = Math.round(hours % 24)
+		return `${days}d ${remainingHours}h`
+	}
+}
+
+/**
  * Request Categories Table - Shows request types and subtypes breakdown
  *
  * Features:
@@ -138,6 +156,30 @@ export function RequestCategoriesTable({
 					)
 				},
 			},
+			{
+				accessorKey: 'avg_response_time',
+				header: t('requestCategories.table.avgResponseTime'),
+				cell: ({ getValue }) => {
+					const value = (getValue() as number) ?? 0
+					return (
+						<div className='text-center'>
+							{value > 0 ? formatResponseTime(value) : '—'}
+						</div>
+					)
+				},
+			},
+			{
+				accessorKey: 'p90_response_time',
+				header: t('requestCategories.table.p90ResponseTime'),
+				cell: ({ getValue }) => {
+					const value = (getValue() as number) ?? 0
+					return (
+						<div className='text-center'>
+							{value > 0 ? formatResponseTime(value) : '—'}
+						</div>
+					)
+				},
+			},
 		],
 		[t]
 	)
@@ -190,6 +232,8 @@ export function RequestCategoriesTable({
 			'Count',
 			'Percent',
 			'Agent Responses',
+			'Avg Response Time (h)',
+			'P90 Response Time (h)',
 		]
 		const rows = data.map(row => [
 			row.request_type,
@@ -197,6 +241,8 @@ export function RequestCategoriesTable({
 			row.count,
 			`${row.percent}%`,
 			row.compared_count ?? 0,
+			row.avg_response_time ?? 0,
+			row.p90_response_time ?? 0,
 		])
 
 		// Add total row
@@ -206,6 +252,8 @@ export function RequestCategoriesTable({
 			totals.totalCount,
 			`${totals.totalPercent.toFixed(1)}%`,
 			totals.totalComparedCount,
+			'',
+			'',
 		]
 
 		const csv = [
@@ -309,7 +357,10 @@ export function RequestCategoriesTable({
 							{table.getHeaderGroups().map(headerGroup => (
 								<TableRow key={headerGroup.id}>
 									{headerGroup.headers.map(header => (
-										<TableHead key={header.id} className='whitespace-nowrap'>
+										<TableHead
+											key={header.id}
+											className={`whitespace-nowrap ${'text-center'}`}
+										>
 											{header.isPlaceholder ? null : (
 												<Button
 													variant='ghost'
@@ -361,6 +412,8 @@ export function RequestCategoriesTable({
 										<TableCell className='text-center font-bold'>
 											{totals.totalComparedCount.toLocaleString()}
 										</TableCell>
+										<TableCell></TableCell>
+										<TableCell></TableCell>
 									</TableRow>
 								</>
 							) : (

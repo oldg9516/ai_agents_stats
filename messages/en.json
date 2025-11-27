@@ -890,6 +890,8 @@
 			"count": "Count",
 			"agentResponses": "Agent Responses",
 			"percent": "Percent",
+			"avgResponseTime": "Avg Response Time",
+			"p90ResponseTime": "P90 Response Time",
 			"search": "Search by type or subtype..."
 		}
 	},

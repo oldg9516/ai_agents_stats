@@ -1,8 +1,7 @@
--- Update get_request_category_stats function to use consistent filtering logic
--- This update adds filters to match KPI "Records Changed" logic:
--- 1. status = 'compared'
--- 2. change_classification IS NOT NULL
--- 3. Exclude context_shift
+-- Update get_request_category_stats function to include response time metrics
+-- This update adds:
+-- 1. avg_response_time - average time from request creation to agent response (hours)
+-- 2. p90_response_time - 90th percentile response time (hours)
 
 -- Drop all possible signatures of the function
 DROP FUNCTION IF EXISTS get_request_category_stats(timestamp with time zone, timestamp with time zone);
@@ -18,7 +17,9 @@ RETURNS TABLE (
   request_subtype text,
   count bigint,
   percent numeric,
-  compared_count bigint
+  compared_count bigint,
+  avg_response_time numeric,
+  p90_response_time numeric
 ) AS $$
 BEGIN
   RETURN QUERY
@@ -63,20 +64,56 @@ BEGIN
         WHEN ahc.request_subtype LIKE '%,%' THEN 'multiply'
         ELSE ahc.request_subtype
       END
+  ),
+  -- Response time statistics from ai_human_comparison
+  response_time_stats AS (
+    SELECT
+      CASE
+        WHEN ahc.request_subtype LIKE '%,%' THEN 'multiply'
+        ELSE ahc.request_subtype
+      END AS request_subtype,
+      -- Average response time in hours
+      ROUND(
+        AVG(
+          EXTRACT(EPOCH FROM (ahc.human_reply_date - ahc.created_at)) / 3600
+        )::numeric,
+        1
+      ) AS avg_response_time,
+      -- P90 response time in hours (90% of tickets answered within this time)
+      ROUND(
+        PERCENTILE_CONT(0.9) WITHIN GROUP (
+          ORDER BY EXTRACT(EPOCH FROM (ahc.human_reply_date - ahc.created_at)) / 3600
+        )::numeric,
+        1
+      ) AS p90_response_time
+    FROM ai_human_comparison ahc
+    WHERE ahc.created_at >= date_from
+      AND ahc.created_at <= date_to
+      AND ahc.human_reply_date IS NOT NULL
+      AND ahc.created_at IS NOT NULL
+    GROUP BY
+      CASE
+        WHEN ahc.request_subtype LIKE '%,%' THEN 'multiply'
+        ELSE ahc.request_subtype
+      END
   )
   SELECT
     cs.request_type::text,
     cs.request_subtype::text,
     cs.category_count AS count,
     ROUND((cs.category_count::numeric / tr.total::numeric * 100), 1) AS percent,
-    COALESCE(cms.compared_count, 0) AS compared_count
+    COALESCE(cms.compared_count, 0) AS compared_count,
+    COALESCE(rts.avg_response_time, 0) AS avg_response_time,
+    COALESCE(rts.p90_response_time, 0) AS p90_response_time
   FROM category_stats cs
   CROSS JOIN total_records tr
   LEFT JOIN compared_stats cms
     ON cs.request_subtype = cms.request_subtype
+  LEFT JOIN response_time_stats rts
+    ON cs.request_subtype = rts.request_subtype
   ORDER BY cs.category_count DESC;
 END;
 $$ LANGUAGE plpgsql;
 
 -- Add comment
-COMMENT ON FUNCTION get_request_category_stats IS 'Returns request category statistics with agent response counts (status = compared, change_classification IS NOT NULL, excluding context_shift)';
+COMMENT ON FUNCTION get_request_category_stats IS 'Returns request category statistics with agent response counts and response time metrics (avg and P90 in hours)';
