@@ -326,12 +326,14 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 									</CardHeader>
 									<CardContent>
 										<div className='rounded-lg bg-muted p-3 sm:p-4 max-h-[50vh] overflow-y-auto'>
-											<div
-												className='prose prose-sm sm:prose dark:prose-invert max-w-none text-xs sm:text-sm leading-relaxed'
-												dangerouslySetInnerHTML={{
-													__html: ticket.human_reply,
-												}}
-											/>
+											<div className='text-xs sm:text-sm leading-loose [&>br]:block [&>br]:mt-2'>
+												{ticket.human_reply?.split(/\n+/).map((paragraph, i) => (
+													<span key={i}>
+														{i > 0 && <br />}
+														{paragraph}
+													</span>
+												))}
+											</div>
 										</div>
 									</CardContent>
 								</Card>
@@ -350,10 +352,14 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 									</CardHeader>
 									<CardContent>
 										<div className='rounded-lg bg-muted p-3 sm:p-4 max-h-[50vh] overflow-y-auto'>
-											<div
-												className='prose prose-sm sm:prose dark:prose-invert max-w-none text-xs sm:text-sm leading-relaxed'
-												dangerouslySetInnerHTML={{ __html: ticket.ai_reply }}
-											/>
+											<div className='text-xs sm:text-sm leading-loose [&>br]:block [&>br]:mt-2'>
+												{ticket.ai_reply?.split(/\n+/).map((paragraph, i) => (
+													<span key={i}>
+														{i > 0 && <br />}
+														{paragraph}
+													</span>
+												))}
+											</div>
 										</div>
 									</CardContent>
 								</Card>

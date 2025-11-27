@@ -240,10 +240,14 @@ export default async function TicketDetailPage({
 						</CardHeader>
 						<CardContent>
 							<div className='rounded-lg bg-muted p-4 max-h-96 overflow-y-auto'>
-								<div
-									className='prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed'
-									dangerouslySetInnerHTML={{ __html: ticket.human_reply }}
-								/>
+								<div className='text-sm leading-loose [&>br]:block [&>br]:mt-2'>
+									{ticket.human_reply?.split(/\n+/).map((paragraph, i) => (
+										<span key={i}>
+											{i > 0 && <br />}
+											{paragraph}
+										</span>
+									))}
+								</div>
 							</div>
 						</CardContent>
 					</Card>
@@ -258,10 +262,14 @@ export default async function TicketDetailPage({
 						</CardHeader>
 						<CardContent>
 							<div className='rounded-lg bg-muted p-4 max-h-96 overflow-y-auto'>
-								<div
-									className='prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed'
-									dangerouslySetInnerHTML={{ __html: ticket.ai_reply }}
-								/>
+								<div className='text-sm leading-loose [&>br]:block [&>br]:mt-2'>
+									{ticket.ai_reply?.split(/\n+/).map((paragraph, i) => (
+										<span key={i}>
+											{i > 0 && <br />}
+											{paragraph}
+										</span>
+									))}
+								</div>
 							</div>
 						</CardContent>
 					</Card>
