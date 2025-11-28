@@ -192,7 +192,36 @@ export function RequestCategoriesTable({
 			0
 		)
 		const totalPercent = data.reduce((sum, row) => sum + row.percent, 0)
-		return { totalCount, totalComparedCount, totalPercent }
+
+		// Calculate weighted average response times (weighted by compared_count)
+		const rowsWithResponseTime = data.filter(
+			row => (row.compared_count ?? 0) > 0 && (row.avg_response_time ?? 0) > 0
+		)
+		const totalWeightedAvg = rowsWithResponseTime.reduce(
+			(sum, row) => sum + (row.avg_response_time ?? 0) * (row.compared_count ?? 0),
+			0
+		)
+		const totalWeightedP90 = rowsWithResponseTime.reduce(
+			(sum, row) => sum + (row.p90_response_time ?? 0) * (row.compared_count ?? 0),
+			0
+		)
+		const totalResponseCount = rowsWithResponseTime.reduce(
+			(sum, row) => sum + (row.compared_count ?? 0),
+			0
+		)
+
+		const avgResponseTime =
+			totalResponseCount > 0 ? totalWeightedAvg / totalResponseCount : 0
+		const p90ResponseTime =
+			totalResponseCount > 0 ? totalWeightedP90 / totalResponseCount : 0
+
+		return {
+			totalCount,
+			totalComparedCount,
+			totalPercent,
+			avgResponseTime,
+			p90ResponseTime,
+		}
 	}, [data])
 
 	// Create table instance
@@ -252,8 +281,8 @@ export function RequestCategoriesTable({
 			totals.totalCount,
 			`${totals.totalPercent.toFixed(1)}%`,
 			totals.totalComparedCount,
-			'',
-			'',
+			totals.avgResponseTime > 0 ? totals.avgResponseTime.toFixed(1) : '',
+			totals.p90ResponseTime > 0 ? totals.p90ResponseTime.toFixed(1) : '',
 		]
 
 		const csv = [
@@ -412,8 +441,16 @@ export function RequestCategoriesTable({
 										<TableCell className='text-center font-bold'>
 											{totals.totalComparedCount.toLocaleString()}
 										</TableCell>
-										<TableCell></TableCell>
-										<TableCell></TableCell>
+										<TableCell className='text-center font-bold'>
+											{totals.avgResponseTime > 0
+												? formatResponseTime(totals.avgResponseTime)
+												: '—'}
+										</TableCell>
+										<TableCell className='text-center font-bold'>
+											{totals.p90ResponseTime > 0
+												? formatResponseTime(totals.p90ResponseTime)
+												: '—'}
+										</TableCell>
 									</TableRow>
 								</>
 							) : (
