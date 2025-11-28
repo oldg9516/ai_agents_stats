@@ -102,22 +102,6 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 		return dateObj >= cutoffDate
 	}
 
-	// Calculate AI metrics (excluding context_shift from calculations)
-	const calculateAIMetrics = (row: DetailedStatsRow) => {
-		const total = row.totalRecords
-		const contextShifts = row.contextShifts || 0
-		const evaluable = total - contextShifts // Exclude context_shift
-
-		if (evaluable === 0) return { failureRate: 0, successRate: 0 }
-
-		const failureRate =
-			((row.criticalErrors + row.meaningfulImprovements) / evaluable) * 100
-		const successRate =
-			((row.noSignificantChanges + row.stylisticPreferences) / evaluable) * 100
-
-		return { failureRate, successRate }
-	}
-
 	// Define columns
 	const columns = useMemo<ColumnDef<DetailedStatsRow>[]>(
 		() => [
@@ -251,7 +235,9 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 					const isVersionLevel = row.original.sortOrder === 1
 					const errors = row.original.aiErrors
 					const reviewed = row.original.reviewedRecords
-					const percentage = reviewed > 0 ? (errors / reviewed) * 100 : 0
+					const contextShifts = row.original.contextShifts || 0
+					const evaluable = reviewed - contextShifts
+					const percentage = evaluable > 0 ? (errors / evaluable) * 100 : 0
 					return (
 						<div
 							className={
@@ -274,7 +260,9 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 					const isVersionLevel = row.original.sortOrder === 1
 					const quality = row.original.aiQuality
 					const reviewed = row.original.reviewedRecords
-					const percentage = reviewed > 0 ? (quality / reviewed) * 100 : 0
+					const contextShifts = row.original.contextShifts || 0
+					const evaluable = reviewed - contextShifts
+					const percentage = evaluable > 0 ? (quality / evaluable) * 100 : 0
 					return (
 						<div
 							className={
