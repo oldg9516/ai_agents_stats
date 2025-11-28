@@ -12,6 +12,7 @@ const PAGE_TITLE_KEYS: Record<string, string> = {
 	'/detailed-stats': 'common.detailedStats',
 	'/support-overview': 'common.supportOverview',
 	'/request-categories': 'common.requestCategories',
+	'/tickets-review': 'common.ticketsReview',
 	'/docs': 'common.documentation',
 	'/settings': 'common.settings',
 }
