@@ -153,7 +153,10 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 						const match = v.match(/\d+/)
 						return match ? parseInt(match[0]) : 0
 					}
-					return extractNum(rowB.original.version) - extractNum(rowA.original.version)
+					return (
+						extractNum(rowB.original.version) -
+						extractNum(rowA.original.version)
+					)
 				},
 			},
 			{
@@ -287,9 +290,11 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 							<div className='text-center text-sm'>{t('table.critical')}</div>
 						),
 						cell: ({ row }) => {
+							const isVersionLevel = row.original.sortOrder === 1
 							const useNewLogic = isNewLogic(row.original.dates)
 
-							if (!useNewLogic) {
+							// For week-level rows, check date cutoff; for version-level, show if has data
+							if (!isVersionLevel && !useNewLogic) {
 								return (
 									<div className='text-left text-muted-foreground text-sm'>
 										-
@@ -301,12 +306,28 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 							const contextShifts = row.original.contextShifts || 0
 							const evaluable = total - contextShifts
 							const count = row.original.criticalErrors
+
+							// For version-level without new data, show dash
+							if (isVersionLevel && count === 0 && evaluable === 0) {
+								return (
+									<div className='text-left text-muted-foreground text-sm'>
+										-
+									</div>
+								)
+							}
+
 							const percent =
 								evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
 
 							return (
 								<div className='flex justify-left'>
-									<span className='inline-block px-2 py-1 rounded text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'>
+									<span
+										className={`inline-block rounded ${
+											isVersionLevel
+												? 'font-semibold text-foreground'
+												: 'px-2 py-1 text-sm font-normal bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+										}`}
+									>
 										{count} ({percent}%)
 									</span>
 								</div>
@@ -319,9 +340,11 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 							<div className='text-center text-sm'>{t('table.meaningful')}</div>
 						),
 						cell: ({ row }) => {
+							const isVersionLevel = row.original.sortOrder === 1
 							const useNewLogic = isNewLogic(row.original.dates)
 
-							if (!useNewLogic) {
+							// For week-level rows, check date cutoff; for version-level, show if has data
+							if (!isVersionLevel && !useNewLogic) {
 								return (
 									<div className='text-left text-muted-foreground text-sm'>
 										-
@@ -333,12 +356,28 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 							const contextShifts = row.original.contextShifts || 0
 							const evaluable = total - contextShifts
 							const count = row.original.meaningfulImprovements
+
+							// For version-level without new data, show dash
+							if (isVersionLevel && count === 0 && evaluable === 0) {
+								return (
+									<div className='text-left text-muted-foreground text-sm'>
+										-
+									</div>
+								)
+							}
+
 							const percent =
 								evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
 
 							return (
 								<div className='flex justify-left'>
-									<span className='inline-block px-2 py-1 rounded text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200'>
+									<span
+										className={`inline-block rounded ${
+											isVersionLevel
+												? 'font-semibold text-foreground'
+												: 'px-2 py-1 text-sm font-normal bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200'
+										}`}
+									>
 										{count} ({percent}%)
 									</span>
 								</div>
@@ -360,9 +399,11 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 							<div className='text-center text-sm'>{t('table.stylistic')}</div>
 						),
 						cell: ({ row }) => {
+							const isVersionLevel = row.original.sortOrder === 1
 							const useNewLogic = isNewLogic(row.original.dates)
 
-							if (!useNewLogic) {
+							// For week-level rows, check date cutoff; for version-level, show if has data
+							if (!isVersionLevel && !useNewLogic) {
 								return (
 									<div className='text-left text-muted-foreground text-sm'>
 										-
@@ -374,12 +415,28 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 							const contextShifts = row.original.contextShifts || 0
 							const evaluable = total - contextShifts
 							const count = row.original.noSignificantChanges
+
+							// For version-level without new data, show dash
+							if (isVersionLevel && count === 0 && evaluable === 0) {
+								return (
+									<div className='text-left text-muted-foreground text-sm'>
+										-
+									</div>
+								)
+							}
+
 							const percent =
 								evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
 
 							return (
 								<div className='flex justify-left'>
-									<span className='inline-block px-2 py-1 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'>
+									<span
+										className={`inline-block rounded ${
+											isVersionLevel
+												? 'font-semibold text-foreground'
+												: 'px-2 py-1 text-sm font-normal bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
+										}`}
+									>
 										{count} ({percent}%)
 									</span>
 								</div>
@@ -394,9 +451,11 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 							</div>
 						),
 						cell: ({ row }) => {
+							const isVersionLevel = row.original.sortOrder === 1
 							const useNewLogic = isNewLogic(row.original.dates)
 
-							if (!useNewLogic) {
+							// For week-level rows, check date cutoff; for version-level, show if has data
+							if (!isVersionLevel && !useNewLogic) {
 								return (
 									<div className='text-left text-muted-foreground text-sm'>
 										-
@@ -408,12 +467,28 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 							const contextShifts = row.original.contextShifts || 0
 							const evaluable = total - contextShifts
 							const count = row.original.stylisticPreferences
+
+							// For version-level without new data, show dash
+							if (isVersionLevel && count === 0 && evaluable === 0) {
+								return (
+									<div className='text-left text-muted-foreground text-sm'>
+										-
+									</div>
+								)
+							}
+
 							const percent =
 								evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
 
 							return (
 								<div className='flex justify-left'>
-									<span className='inline-block px-2 py-1 rounded text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'>
+									<span
+										className={`inline-block rounded ${
+											isVersionLevel
+												? 'font-semibold text-foreground'
+												: 'px-2 py-1 text-sm font-normal bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
+										}`}
+									>
 										{count} ({percent}%)
 									</span>
 								</div>
@@ -428,9 +503,11 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 							</div>
 						),
 						cell: ({ row }) => {
+							const isVersionLevel = row.original.sortOrder === 1
 							const useNewLogic = isNewLogic(row.original.dates)
 
-							if (!useNewLogic) {
+							// For week-level rows, check date cutoff; for version-level, show if has data
+							if (!isVersionLevel && !useNewLogic) {
 								return (
 									<div className='text-left text-muted-foreground text-sm'>
 										-
@@ -440,12 +517,28 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 
 							const total = row.original.totalRecords
 							const count = row.original.contextShifts
+
+							// For version-level without new data, show dash
+							if (isVersionLevel && count === 0 && total === 0) {
+								return (
+									<div className='text-left text-muted-foreground text-sm'>
+										-
+									</div>
+								)
+							}
+
 							const percent =
 								total > 0 ? ((count / total) * 100).toFixed(1) : '0.0'
 
 							return (
 								<div className='flex justify-left'>
-									<span className='inline-block px-2 py-1 rounded text-xs font-medium bg-gray-200 dark:bg-gray-900/30 text-gray-600 dark:text-gray-400'>
+									<span
+										className={`inline-block rounded ${
+											isVersionLevel
+												? 'font-semibold text-foreground'
+												: 'px-2 py-1 text-sm font-normal bg-gray-200 dark:bg-gray-900/30 text-gray-600 dark:text-gray-400'
+										}`}
+									>
 										{count} ({percent}%)
 									</span>
 								</div>
