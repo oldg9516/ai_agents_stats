@@ -26,40 +26,8 @@ export function usePaginatedTickets() {
 
 	const BATCH_SIZE = 60
 
-	// Generate cache key based on filters
-	// v2: Added change_classification IS NOT NULL filter
-	const getCacheKey = useCallback(() => {
-		return `tickets-review-cache-v2-${JSON.stringify(filters)}`
-	}, [filters])
-
-	// Load initial batch or from cache
+	// Load initial batch (no caching - data can change frequently)
 	const loadInitialBatch = useCallback(async () => {
-		const cacheKey = getCacheKey()
-		const cached = sessionStorage.getItem(cacheKey)
-
-		if (cached) {
-			try {
-				const { tickets, offset, batchSize } = JSON.parse(cached)
-				// Validate cache: only use if batch size matches current BATCH_SIZE
-				if (batchSize === BATCH_SIZE) {
-					setAllLoadedTickets(tickets)
-					setCurrentOffset(offset)
-					// Check if we can load more based on last batch size
-					const lastBatchSize = tickets.length % BATCH_SIZE
-					setHasMore(lastBatchSize === 0 && tickets.length > 0)
-					setIsLoadingInitial(false)
-					return
-				} else {
-					// Batch size changed, invalidate cache
-					sessionStorage.removeItem(cacheKey)
-				}
-			} catch (e) {
-				// Invalid cache, proceed with fetch
-				sessionStorage.removeItem(cacheKey)
-			}
-		}
-
-		// Fetch first batch
 		setIsLoadingInitial(true)
 		try {
 			const result = await fetchTicketsReviewAction(filters, {
@@ -71,25 +39,15 @@ export function usePaginatedTickets() {
 				setAllLoadedTickets(result.data)
 				setCurrentOffset(BATCH_SIZE)
 				setHasMore(result.data.length === BATCH_SIZE)
-
-				// Cache the result with batch size
-				sessionStorage.setItem(
-					cacheKey,
-					JSON.stringify({
-						tickets: result.data,
-						offset: BATCH_SIZE,
-						batchSize: BATCH_SIZE,
-					})
-				)
 			}
 		} catch (error) {
 			console.error('Error loading initial tickets batch:', error)
 		} finally {
 			setIsLoadingInitial(false)
 		}
-	}, [filters, getCacheKey])
+	}, [filters])
 
-	// Load next batch
+	// Load next batch (no caching - data can change frequently)
 	const loadNextBatch = useCallback(async () => {
 		if (!hasMore || isFetchingMore) return
 
@@ -105,43 +63,6 @@ export function usePaginatedTickets() {
 				setAllLoadedTickets(newTickets)
 				setCurrentOffset(prev => prev + BATCH_SIZE)
 				setHasMore(result.data.length === BATCH_SIZE)
-
-				// Update cache with batch size (with error handling for quota exceeded)
-				const cacheKey = getCacheKey()
-				try {
-					sessionStorage.setItem(
-						cacheKey,
-						JSON.stringify({
-							tickets: newTickets,
-							offset: currentOffset + BATCH_SIZE,
-							batchSize: BATCH_SIZE,
-						})
-					)
-				} catch (e) {
-					// If quota exceeded, clear old caches and try again
-					if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-						console.warn('SessionStorage quota exceeded, clearing old caches')
-						// Clear all ticket caches
-						Object.keys(sessionStorage).forEach(key => {
-							if (key.startsWith('tickets-review-cache-')) {
-								sessionStorage.removeItem(key)
-							}
-						})
-						// Try one more time with empty storage
-						try {
-							sessionStorage.setItem(
-								cacheKey,
-								JSON.stringify({
-									tickets: newTickets,
-									offset: currentOffset + BATCH_SIZE,
-									batchSize: BATCH_SIZE,
-								})
-							)
-						} catch (retryError) {
-							console.error('Failed to cache tickets even after clearing:', retryError)
-						}
-					}
-				}
 			}
 		} catch (error) {
 			console.error('Error loading more tickets:', error)
@@ -154,14 +75,12 @@ export function usePaginatedTickets() {
 		allLoadedTickets,
 		hasMore,
 		isFetchingMore,
-		getCacheKey,
 	])
 
-	// Clear old v1 caches on mount
+	// Clear all old ticket caches on mount (migration cleanup)
 	useEffect(() => {
-		// Clear old version caches (without v2 prefix)
 		Object.keys(sessionStorage).forEach(key => {
-			if (key.startsWith('tickets-review-cache-') && !key.startsWith('tickets-review-cache-v2-')) {
+			if (key.startsWith('tickets-review-cache-')) {
 				sessionStorage.removeItem(key)
 			}
 		})

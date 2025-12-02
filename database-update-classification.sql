@@ -76,7 +76,8 @@ BEGIN
       NULL::timestamp with time zone AS week_start_date,
       1 AS sort_order,
       COUNT(*)::bigint AS total_records,
-      COUNT(*) FILTER (WHERE change_classification IS NOT NULL)::bigint AS reviewed_records,
+      -- Only count records with known classification values (exclude unknown/other values)
+      COUNT(*) FILTER (WHERE change_classification IN ('critical_error', 'meaningful_improvement', 'stylistic_preference', 'no_significant_change', 'context_shift'))::bigint AS reviewed_records,
       COUNT(*) FILTER (WHERE change_classification IN ('critical_error', 'meaningful_improvement'))::bigint AS ai_errors,
       COUNT(*) FILTER (WHERE change_classification IN ('no_significant_change', 'stylistic_preference'))::bigint AS ai_quality,
       COUNT(*) FILTER (WHERE change_classification = 'critical_error')::bigint AS critical_errors,
@@ -97,7 +98,8 @@ BEGIN
       DATE_TRUNC('week', created_at) AS week_start_date,
       2 AS sort_order,
       COUNT(*)::bigint AS total_records,
-      COUNT(*) FILTER (WHERE change_classification IS NOT NULL)::bigint AS reviewed_records,
+      -- Only count records with known classification values (exclude unknown/other values)
+      COUNT(*) FILTER (WHERE change_classification IN ('critical_error', 'meaningful_improvement', 'stylistic_preference', 'no_significant_change', 'context_shift'))::bigint AS reviewed_records,
       COUNT(*) FILTER (WHERE change_classification IN ('critical_error', 'meaningful_improvement'))::bigint AS ai_errors,
       COUNT(*) FILTER (WHERE change_classification IN ('no_significant_change', 'stylistic_preference'))::bigint AS ai_quality,
       COUNT(*) FILTER (WHERE change_classification = 'critical_error')::bigint AS critical_errors,
