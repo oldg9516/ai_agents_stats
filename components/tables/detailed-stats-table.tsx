@@ -414,7 +414,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 							const total = row.original.totalRecords
 							const contextShifts = row.original.contextShifts || 0
 							const evaluable = total - contextShifts
-							const count = row.original.noSignificantChanges
+							const count = row.original.stylisticPreferences
 
 							// For version-level without new data, show dash
 							if (isVersionLevel && count === 0 && evaluable === 0) {
@@ -466,7 +466,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 							const total = row.original.totalRecords
 							const contextShifts = row.original.contextShifts || 0
 							const evaluable = total - contextShifts
-							const count = row.original.stylisticPreferences
+							const count = row.original.noSignificantChanges
 
 							// For version-level without new data, show dash
 							if (isVersionLevel && count === 0 && evaluable === 0) {

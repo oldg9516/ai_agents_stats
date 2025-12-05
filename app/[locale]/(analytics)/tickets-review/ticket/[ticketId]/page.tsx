@@ -14,6 +14,7 @@ import { format } from 'date-fns'
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { TicketChangesAccordion } from '@/components/ticket-changes-accordion'
 import { TicketCommentEditor } from '@/components/ticket-comment-editor'
 import { TicketReviewActions } from '@/components/ticket-review-actions'
 import { getTranslations } from 'next-intl/server'
@@ -275,6 +276,9 @@ export default async function TicketDetailPage({
 					</Card>
 				)}
 			</div>
+
+			{/* Changes/Suggestions Accordion */}
+			<TicketChangesAccordion changes={ticket.changes} />
 
 			{/* Manual Comment Editor */}
 			<TicketCommentEditor

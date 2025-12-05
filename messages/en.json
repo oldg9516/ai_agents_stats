@@ -971,6 +971,19 @@
 			"markAsUnprocessed": "Mark as Unprocessed",
 			"saving": "Saving...",
 			"saved": "Saved!"
+		},
+		"changes": {
+			"title": "Edit Suggestions",
+			"description": "Description",
+			"reason": "Reason",
+			"example": "Example",
+			"types": {
+				"info_removed": "Information Removed",
+				"info_added": "Information Added",
+				"tone": "Tone Change",
+				"structure": "Structure Change",
+				"accuracy": "Accuracy Issue"
+			}
 		}
 	}
 }

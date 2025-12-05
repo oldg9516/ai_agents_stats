@@ -34,6 +34,7 @@ import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { updateTicketReview } from '@/lib/actions/ticket-update-actions'
 import type { TicketReviewRecord } from '@/lib/supabase/types'
+import { TicketChangesAccordion } from '@/components/ticket-changes-accordion'
 import { IconCheck, IconExternalLink } from '@tabler/icons-react'
 import { format } from 'date-fns'
 import { useTranslations } from 'next-intl'
@@ -386,6 +387,9 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 								</CardContent>
 							</Card>
 						)}
+
+						{/* Changes/Suggestions Accordion */}
+						<TicketChangesAccordion changes={ticket.changes} />
 
 						{/* Manual Comment */}
 						<Card>
