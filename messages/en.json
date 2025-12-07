@@ -24,6 +24,13 @@
 	"header": {
 		"title": "Lev Haolam AI"
 	},
+	"dashboard": {
+		"scoringMode": {
+			"label": "Scoring",
+			"legacy": "Legacy",
+			"new": "New"
+		}
+	},
 	"sidebar": {
 		"appTitle": "Lev Haolam AI",
 		"navigation": "Navigation",
@@ -233,7 +240,8 @@
 		"detailedStats": "Detailed Statistics",
 		"detailedStatsDescription": "Quality metrics by subcategory, version, and week",
 		"supportThreads": "Support Threads",
-		"supportThreadsDesc": "All support threads with quality metrics"
+		"supportThreadsDesc": "All support threads with quality metrics",
+		"avgScore": "Avg Score"
 	},
 	"landing": {
 		"hero": {
@@ -335,6 +343,11 @@
 		"dashboard": {
 			"title": "Dashboard",
 			"description": "Main analytics page showing AI agent quality metrics, trends, and performance breakdowns.",
+			"scoringMode": {
+				"label": "Scoring",
+				"legacy": "Legacy",
+				"new": "New"
+			},
 			"kpis": {
 				"title": "KPI Cards (4 Metrics)",
 				"totalRecords": {
@@ -940,7 +953,23 @@
 			"meaningful_improvement": "Meaningful Improvement",
 			"stylistic_preference": "Stylistic Preference",
 			"no_significant_change": "No Significant Change",
-			"context_shift": "Context Shift"
+			"context_shift": "Context Shift",
+			"CRITICAL_FACT_ERROR": "Critical Fact Error",
+			"MAJOR_FUNCTIONAL_OMISSION": "Major Functional Omission",
+			"MINOR_INFO_GAP": "Minor Info Gap",
+			"CONFUSING_VERBOSITY": "Confusing Verbosity",
+			"TONAL_MISALIGNMENT": "Tonal Misalignment",
+			"STRUCTURAL_FIX": "Structural Fix",
+			"STYLISTIC_EDIT": "Stylistic Edit",
+			"PERFECT_MATCH": "Perfect Match",
+			"EXCL_WORKFLOW_SHIFT": "Excluded: Workflow Shift",
+			"EXCL_DATA_DISCREPANCY": "Excluded: Data Discrepancy"
+		},
+		"scoreGroups": {
+			"critical": "Critical",
+			"needs_work": "Needs Work",
+			"good": "Good",
+			"excluded": "Excluded"
 		},
 		"modal": {
 			"title": "Ticket Details",

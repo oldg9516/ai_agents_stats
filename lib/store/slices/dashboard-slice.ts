@@ -1,4 +1,4 @@
-import type { DashboardFilters } from '@/lib/supabase/types'
+import type { DashboardFilters, ScoringMode } from '@/lib/supabase/types'
 import { StateCreator } from 'zustand'
 
 /**
@@ -25,6 +25,7 @@ function getDefaultDashboardFilters(): DashboardFilters {
 export interface DashboardSlice {
 	// State
 	dashboardFilters: DashboardFilters
+	scoringMode: ScoringMode // 'legacy' or 'new'
 
 	// Actions
 	setDashboardDateRange: (from: Date, to: Date) => void
@@ -32,6 +33,7 @@ export interface DashboardSlice {
 	setDashboardCategories: (categories: string[]) => void
 	resetDashboardFilters: () => void
 	updateDashboardFilters: (filters: Partial<DashboardFilters>) => void
+	setScoringMode: (mode: ScoringMode) => void
 }
 
 export const createDashboardSlice: StateCreator<
@@ -42,6 +44,7 @@ export const createDashboardSlice: StateCreator<
 > = set => ({
 	// Initial state
 	dashboardFilters: getDefaultDashboardFilters(),
+	scoringMode: 'legacy', // Default to legacy mode
 
 	// Actions
 	setDashboardDateRange: (from, to) =>
@@ -80,4 +83,6 @@ export const createDashboardSlice: StateCreator<
 				...filters,
 			},
 		})),
+
+	setScoringMode: mode => set({ scoringMode: mode }),
 })

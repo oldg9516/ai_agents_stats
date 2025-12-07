@@ -18,6 +18,8 @@ export function useDashboardFilters() {
 		setDashboardVersions,
 		setDashboardCategories,
 		resetDashboardFilters,
+		scoringMode,
+		setScoringMode,
 	} = useStore()
 
 	return {
@@ -26,5 +28,7 @@ export function useDashboardFilters() {
 		setVersions: setDashboardVersions,
 		setCategories: setDashboardCategories,
 		resetFilters: resetDashboardFilters,
+		scoringMode,
+		setScoringMode,
 	}
 }

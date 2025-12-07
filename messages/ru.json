@@ -24,6 +24,13 @@
 	"header": {
 		"title": "Lev Haolam AI"
 	},
+	"dashboard": {
+		"scoringMode": {
+			"label": "Расчёт",
+			"legacy": "Legacy",
+			"new": "Новый"
+		}
+	},
 	"sidebar": {
 		"appTitle": "Lev Haolam AI",
 		"navigation": "Навигация",
@@ -233,7 +240,8 @@
 		"detailedStats": "Детальная статистика",
 		"detailedStatsDescription": "Метрики качества по подкатегориям, версиям и неделям",
 		"supportThreads": "Треды поддержки",
-		"supportThreadsDesc": "Все треды поддержки с метриками качества"
+		"supportThreadsDesc": "Все треды поддержки с метриками качества",
+		"avgScore": "Ср. балл"
 	},
 	"landing": {
 		"hero": {
@@ -335,6 +343,11 @@
 		"dashboard": {
 			"title": "Панель управления",
 			"description": "Главная страница аналитики, показывающая метрики качества AI-агентов, тренды и разбивку производительности.",
+			"scoringMode": {
+				"label": "Расчёт",
+				"legacy": "Legacy",
+				"new": "Новый"
+			},
 			"kpis": {
 				"title": "KPI карточки (4 метрики)",
 				"totalRecords": {
@@ -940,7 +953,23 @@
 			"meaningful_improvement": "Значительное улучшение",
 			"stylistic_preference": "Стилистическое предпочтение",
 			"no_significant_change": "Нет значительных изменений",
-			"context_shift": "Изменение контекста"
+			"context_shift": "Изменение контекста",
+			"CRITICAL_FACT_ERROR": "Критическая ошибка факта",
+			"MAJOR_FUNCTIONAL_OMISSION": "Серьёзный функциональный пропуск",
+			"MINOR_INFO_GAP": "Незначительный пробел информации",
+			"CONFUSING_VERBOSITY": "Избыточность/Шум",
+			"TONAL_MISALIGNMENT": "Несоответствие тона",
+			"STRUCTURAL_FIX": "Структурная правка",
+			"STYLISTIC_EDIT": "Стилистическая правка",
+			"PERFECT_MATCH": "Идеальное совпадение",
+			"EXCL_WORKFLOW_SHIFT": "Исключено: Смена контекста",
+			"EXCL_DATA_DISCREPANCY": "Исключено: Расхождение данных"
+		},
+		"scoreGroups": {
+			"critical": "Критично",
+			"needs_work": "Требует доработки",
+			"good": "Хорошо",
+			"excluded": "Исключено"
 		},
 		"modal": {
 			"title": "Детали тикета",

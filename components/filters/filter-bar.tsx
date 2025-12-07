@@ -85,7 +85,7 @@ export function FilterBar({
 			</div>
 
 			{/* Reset Button */}
-			<div className='flex justify-center sm:justify-end'>
+			<div className='flex justify-end'>
 				<Button
 					onClick={onReset}
 					variant='outline'

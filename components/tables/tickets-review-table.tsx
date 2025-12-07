@@ -39,6 +39,10 @@ import {
 } from '@tabler/icons-react'
 import type { TicketReviewRecord } from '@/lib/supabase/types'
 import { format } from 'date-fns'
+import {
+	getClassificationColor as getClassificationColorFromConstants,
+	CLASSIFICATION_TYPES,
+} from '@/constants/classification-types'
 
 interface TicketsReviewTableProps {
 	data: TicketReviewRecord[]
@@ -111,33 +115,18 @@ export function TicketsReviewTable({
 		prevDataLengthRef.current = currentLength
 	}, [memoizedData.length, pagination.pageSize])
 
-	// Get classification label and color
+	// Get classification label
 	const getClassificationLabel = (classification: string | null) => {
 		if (!classification) return '—'
-		// Только для валидных классификаций
-		const validClassifications = ['critical_error', 'meaningful_improvement', 'stylistic_preference', 'no_significant_change', 'context_shift']
-		if (!validClassifications.includes(classification)) {
-			return classification // Показать как есть, если неизвестный статус
+		// Check if it's a valid classification (legacy or new)
+		if (!CLASSIFICATION_TYPES.includes(classification as any)) {
+			return classification // Show as-is if unknown status
 		}
 		return t(`ticketsReview.classifications.${classification}` as any)
 	}
 
-	const getClassificationColor = (classification: string | null) => {
-		switch (classification) {
-			case 'critical_error':
-				return 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
-			case 'meaningful_improvement':
-				return 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300'
-			case 'stylistic_preference':
-				return 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
-			case 'no_significant_change':
-				return 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
-			case 'context_shift':
-				return 'bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300'
-			default:
-				return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-		}
-	}
+	// Use centralized color function
+	const getClassificationColor = getClassificationColorFromConstants
 
 	// Define columns
 	const columns = useMemo<ColumnDef<TicketReviewRecord>[]>(

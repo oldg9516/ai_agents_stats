@@ -18,6 +18,10 @@ import { TicketChangesAccordion } from '@/components/ticket-changes-accordion'
 import { TicketCommentEditor } from '@/components/ticket-comment-editor'
 import { TicketReviewActions } from '@/components/ticket-review-actions'
 import { getTranslations } from 'next-intl/server'
+import {
+	getClassificationColor,
+	calculateQualityScore,
+} from '@/constants/classification-types'
 
 interface TicketDetailPageProps {
 	params: Promise<{
@@ -66,23 +70,8 @@ export default async function TicketDetailPage({
 		notFound()
 	}
 
-	// Get classification label and color
-	const getClassificationColor = (classification: string | null) => {
-		switch (classification) {
-			case 'critical_error':
-				return 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
-			case 'meaningful_improvement':
-				return 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300'
-			case 'stylistic_preference':
-				return 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300'
-			case 'no_significant_change':
-				return 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
-			case 'context_shift':
-				return 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
-			default:
-				return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-		}
-	}
+	// Calculate quality score for display
+	const qualityScore = calculateQualityScore(ticket.change_classification)
 
 	return (
 		<div className='min-h-screen p-4 sm:p-6 space-y-6'>
@@ -132,12 +121,19 @@ export default async function TicketDetailPage({
 								Classification
 							</p>
 							{ticket.change_classification ? (
-								<div
-									className={`inline-block px-3 py-1 rounded text-sm ${getClassificationColor(
-										ticket.change_classification
-									)}`}
-								>
-									{ticket.change_classification}
+								<div className='flex items-center gap-2'>
+									<div
+										className={`inline-block px-3 py-1 rounded text-sm ${getClassificationColor(
+											ticket.change_classification
+										)}`}
+									>
+										{ticket.change_classification}
+									</div>
+									{qualityScore !== null && (
+										<span className='text-sm text-muted-foreground'>
+											(Score: {qualityScore})
+										</span>
+									)}
 								</div>
 							) : (
 								<p className='text-sm'>—</p>

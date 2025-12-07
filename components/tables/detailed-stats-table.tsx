@@ -1,6 +1,7 @@
 'use client'
 
 import { TableSkeleton } from '@/components/loading/table-skeleton'
+import { ScoringModeToggle } from '@/components/scoring-mode-toggle'
 import { Button } from '@/components/ui/button'
 import {
 	Card,
@@ -20,6 +21,7 @@ import {
 } from '@/components/ui/table'
 import { getCategoryLabel } from '@/constants/category-labels'
 import { useDetailedStatsPaginated } from '@/lib/queries/dashboard-queries'
+import { useDashboardFilters } from '@/lib/store/hooks/use-dashboard-filters'
 import type { DashboardFilters, DetailedStatsRow } from '@/lib/supabase/types'
 import { exportToCSV } from '@/lib/utils/export'
 import {
@@ -60,6 +62,7 @@ interface DetailedStatsTableProps {
 export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 	const t = useTranslations()
 	const router = useRouter()
+	const { scoringMode } = useDashboardFilters()
 
 	// Server-side pagination state
 	const [currentPage, setCurrentPage] = useState(0)
@@ -102,459 +105,615 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 		return dateObj >= cutoffDate
 	}
 
-	// Define columns
-	const columns = useMemo<ColumnDef<DetailedStatsRow>[]>(
-		() => [
-			{
-				accessorKey: 'category',
-				header: t('table.category'),
-				size: 200,
-				maxSize: 200,
-				cell: ({ row }) => {
-					const isVersionLevel = row.original.sortOrder === 1
-					const category = row.original.category
+	// Base columns (always shown)
+	const baseColumns: ColumnDef<DetailedStatsRow>[] = [
+		{
+			accessorKey: 'category',
+			header: t('table.category'),
+			size: 200,
+			maxSize: 200,
+			cell: ({ row }) => {
+				const isVersionLevel = row.original.sortOrder === 1
+				const category = row.original.category
 
-					if (isVersionLevel) {
-						return (
-							<div
-								className='font-semibold cursor-pointer hover:text-primary transition-colors whitespace-normal max-w-[200px]'
-								onClick={() => handleCategoryClick(category)}
-							>
-								{getCategoryLabel(category)}
-							</div>
-						)
-					}
-
+				if (isVersionLevel) {
 					return (
-						<div className='pl-4 text-muted-foreground whitespace-normal max-w-[200px]'>
+						<div
+							className='font-semibold cursor-pointer hover:text-primary transition-colors whitespace-normal max-w-[200px]'
+							onClick={() => handleCategoryClick(category)}
+						>
 							{getCategoryLabel(category)}
 						</div>
 					)
-				},
-			},
-			{
-				accessorKey: 'version',
-				header: t('table.version'),
-				cell: ({ row }) => {
-					const isVersionLevel = row.original.sortOrder === 1
-					return (
-						<div
-							className={
-								isVersionLevel ? 'font-semibold' : 'text-muted-foreground'
-							}
-						>
-							{row.original.version}
-						</div>
-					)
-				},
-				// Custom sort function: extract version number and sort DESC (newest first)
-				sortingFn: (rowA, rowB) => {
-					const extractNum = (v: string) => {
-						const match = v.match(/\d+/)
-						return match ? parseInt(match[0]) : 0
-					}
-					return (
-						extractNum(rowB.original.version) -
-						extractNum(rowA.original.version)
-					)
-				},
-			},
-			{
-				accessorKey: 'dates',
-				header: t('table.dates'),
-				cell: ({ getValue }) => {
-					const value = getValue() as string | null
-					return <div className='text-sm'>{value || '-'}</div>
-				},
-				// Custom sort function: extract first date from "DD.MM.YYYY — DD.MM.YYYY" format
-				// Version-level rows (null dates) should appear first
-				sortingFn: (rowA, rowB, columnId) => {
-					const dateA = rowA.getValue(columnId) as string | null
-					const dateB = rowB.getValue(columnId) as string | null
+				}
 
-					// Null dates (version-level rows) always come first
-					if (!dateA && !dateB) return 0
-					if (!dateA) return -1
-					if (!dateB) return 1
-
-					// Extract first date from "DD.MM.YYYY — DD.MM.YYYY" format
-					const firstDateA = dateA.split(' — ')[0]
-					const firstDateB = dateB.split(' — ')[0]
-
-					// Convert DD.MM.YYYY to YYYY-MM-DD for proper comparison
-					const [dayA, monthA, yearA] = firstDateA.split('.')
-					const [dayB, monthB, yearB] = firstDateB.split('.')
-					const dateStrA = `${yearA}-${monthA}-${dayA}`
-					const dateStrB = `${yearB}-${monthB}-${dayB}`
-
-					// Compare dates as strings (YYYY-MM-DD format sorts correctly lexically)
-					return dateStrA.localeCompare(dateStrB)
-				},
-			},
-			{
-				accessorKey: 'totalRecords',
-				header: () => (
-					<div className='text-center'>{t('table.totalRecords')}</div>
-				),
-				cell: ({ row }) => {
-					const isVersionLevel = row.original.sortOrder === 1
-					return (
-						<div
-							className={
-								isVersionLevel ? 'text-left font-semibold' : 'text-left'
-							}
-						>
-							{row.original.totalRecords}
-						</div>
-					)
-				},
-			},
-			{
-				accessorKey: 'reviewedRecords',
-				header: () => (
-					<div className='text-center'>{t('table.reviewedRecords')}</div>
-				),
-				cell: ({ row }) => {
-					const isVersionLevel = row.original.sortOrder === 1
-					return (
-						<div
-							className={
-								isVersionLevel ? 'text-left font-semibold' : 'text-left'
-							}
-						>
-							{row.original.reviewedRecords}
-						</div>
-					)
-				},
-			},
-			{
-				accessorKey: 'aiErrors',
-				header: () => (
-					<div className='text-center whitespace-pre-line'>
-						{t('table.aiErrors')}
+				return (
+					<div className='pl-4 text-muted-foreground whitespace-normal max-w-[200px]'>
+						{getCategoryLabel(category)}
 					</div>
-				),
-				cell: ({ row }) => {
-					const isVersionLevel = row.original.sortOrder === 1
-					const errors = row.original.aiErrors
-					const reviewed = row.original.reviewedRecords
-					const contextShifts = row.original.contextShifts || 0
-					const evaluable = reviewed - contextShifts
-					const percentage = evaluable > 0 ? (errors / evaluable) * 100 : 0
-					return (
-						<div
-							className={
-								isVersionLevel ? 'text-left font-semibold' : 'text-left'
-							}
-						>
-							{errors} ({percentage.toFixed(1)}%)
-						</div>
-					)
-				},
+				)
 			},
-			{
-				accessorKey: 'aiQuality',
-				header: () => (
-					<div className='text-center text-sm whitespace-pre-line'>
-						{t('table.aiQuality')}
+		},
+		{
+			accessorKey: 'version',
+			header: t('table.version'),
+			cell: ({ row }) => {
+				const isVersionLevel = row.original.sortOrder === 1
+				return (
+					<div
+						className={
+							isVersionLevel ? 'font-semibold' : 'text-muted-foreground'
+						}
+					>
+						{row.original.version}
 					</div>
-				),
-				cell: ({ row }) => {
-					const isVersionLevel = row.original.sortOrder === 1
-					const quality = row.original.aiQuality
-					const reviewed = row.original.reviewedRecords
-					const contextShifts = row.original.contextShifts || 0
-					const evaluable = reviewed - contextShifts
-					const percentage = evaluable > 0 ? (quality / evaluable) * 100 : 0
-					return (
-						<div
-							className={
-								isVersionLevel ? 'text-left font-semibold' : 'text-left'
-							}
-						>
-							{quality} ({percentage.toFixed(1)}%)
-						</div>
-					)
+				)
+			},
+			// Custom sort function: extract version number and sort DESC (newest first)
+			sortingFn: (rowA, rowB) => {
+				const extractNum = (v: string) => {
+					const match = v.match(/\d+/)
+					return match ? parseInt(match[0]) : 0
+				}
+				return (
+					extractNum(rowB.original.version) - extractNum(rowA.original.version)
+				)
+			},
+		},
+		{
+			accessorKey: 'dates',
+			header: t('table.dates'),
+			cell: ({ getValue }) => {
+				const value = getValue() as string | null
+				return <div className='text-sm'>{value || '-'}</div>
+			},
+			// Custom sort function: extract first date from "DD.MM.YYYY — DD.MM.YYYY" format
+			// Version-level rows (null dates) should appear first
+			sortingFn: (rowA, rowB, columnId) => {
+				const dateA = rowA.getValue(columnId) as string | null
+				const dateB = rowB.getValue(columnId) as string | null
+
+				// Null dates (version-level rows) always come first
+				if (!dateA && !dateB) return 0
+				if (!dateA) return -1
+				if (!dateB) return 1
+
+				// Extract first date from "DD.MM.YYYY — DD.MM.YYYY" format
+				const firstDateA = dateA.split(' — ')[0]
+				const firstDateB = dateB.split(' — ')[0]
+
+				// Convert DD.MM.YYYY to YYYY-MM-DD for proper comparison
+				const [dayA, monthA, yearA] = firstDateA.split('.')
+				const [dayB, monthB, yearB] = firstDateB.split('.')
+				const dateStrA = `${yearA}-${monthA}-${dayA}`
+				const dateStrB = `${yearB}-${monthB}-${dayB}`
+
+				// Compare dates as strings (YYYY-MM-DD format sorts correctly lexically)
+				return dateStrA.localeCompare(dateStrB)
+			},
+		},
+		{
+			accessorKey: 'totalRecords',
+			header: () => (
+				<div className='text-center'>{t('table.totalRecords')}</div>
+			),
+			cell: ({ row }) => {
+				const isVersionLevel = row.original.sortOrder === 1
+				return (
+					<div
+						className={isVersionLevel ? 'text-left font-semibold' : 'text-left'}
+					>
+						{row.original.totalRecords}
+					</div>
+				)
+			},
+		},
+		{
+			accessorKey: 'reviewedRecords',
+			header: () => (
+				<div className='text-center'>{t('table.reviewedRecords')}</div>
+			),
+			cell: ({ row }) => {
+				const isVersionLevel = row.original.sortOrder === 1
+				return (
+					<div
+						className={isVersionLevel ? 'text-left font-semibold' : 'text-left'}
+					>
+						{row.original.reviewedRecords}
+					</div>
+				)
+			},
+		},
+		{
+			accessorKey: 'aiErrors',
+			header: () => (
+				<div className='text-center whitespace-pre-line'>
+					{t('table.aiErrors')}
+				</div>
+			),
+			cell: ({ row }) => {
+				const isVersionLevel = row.original.sortOrder === 1
+				const errors = row.original.aiErrors
+				const reviewed = row.original.reviewedRecords
+				const contextShifts = row.original.contextShifts || 0
+				const evaluable = reviewed - contextShifts
+				const percentage = evaluable > 0 ? (errors / evaluable) * 100 : 0
+				return (
+					<div
+						className={isVersionLevel ? 'text-left font-semibold' : 'text-left'}
+					>
+						{errors} ({percentage.toFixed(1)}%)
+					</div>
+				)
+			},
+		},
+		{
+			accessorKey: 'aiQuality',
+			header: () => (
+				<div className='text-center text-sm whitespace-pre-line'>
+					{t('table.aiQuality')}
+				</div>
+			),
+			cell: ({ row }) => {
+				const isVersionLevel = row.original.sortOrder === 1
+				const quality = row.original.aiQuality
+				const reviewed = row.original.reviewedRecords
+				const contextShifts = row.original.contextShifts || 0
+				const evaluable = reviewed - contextShifts
+				const percentage = evaluable > 0 ? (quality / evaluable) * 100 : 0
+				return (
+					<div
+						className={isVersionLevel ? 'text-left font-semibold' : 'text-left'}
+					>
+						{quality} ({percentage.toFixed(1)}%)
+					</div>
+				)
+			},
+		},
+	]
+
+	// Legacy mode columns (5 classifications)
+	const legacyColumns: ColumnDef<DetailedStatsRow>[] = [
+		// AI Failure Rate - Column Group
+		{
+			id: 'aiFailureGroup',
+			header: () => (
+				<div className='text-center text-xs'>{t('table.aiFailureRate')}</div>
+			),
+			columns: [
+				{
+					accessorKey: 'criticalErrors',
+					header: () => (
+						<div className='text-center text-sm'>{t('table.critical')}</div>
+					),
+					cell: ({ row }) => {
+						const isVersionLevel = row.original.sortOrder === 1
+						const useNewLogic = isNewLogic(row.original.dates)
+
+						// For week-level rows, check date cutoff; for version-level, show if has data
+						if (!isVersionLevel && !useNewLogic) {
+							return (
+								<div className='text-left text-muted-foreground text-sm'>-</div>
+							)
+						}
+
+						const total = row.original.totalRecords
+						const contextShifts = row.original.contextShifts || 0
+						const evaluable = total - contextShifts
+						const count = row.original.criticalErrors
+
+						// For version-level without new data, show dash
+						if (isVersionLevel && count === 0 && evaluable === 0) {
+							return (
+								<div className='text-left text-muted-foreground text-sm'>-</div>
+							)
+						}
+
+						const percent =
+							evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
+
+						return (
+							<div className='flex justify-left'>
+								<span
+									className={`inline-block rounded ${
+										isVersionLevel
+											? 'font-semibold text-foreground'
+											: 'px-2 py-1 text-sm font-normal bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+									}`}
+								>
+									{count} ({percent}%)
+								</span>
+							</div>
+						)
+					},
 				},
-			},
-			// AI Failure Rate - Column Group
-			{
-				id: 'aiFailureGroup',
-				header: () => (
-					<div className='text-center text-xs'>{t('table.aiFailureRate')}</div>
-				),
-				columns: [
-					{
-						accessorKey: 'criticalErrors',
-						header: () => (
-							<div className='text-center text-sm'>{t('table.critical')}</div>
-						),
-						cell: ({ row }) => {
-							const isVersionLevel = row.original.sortOrder === 1
-							const useNewLogic = isNewLogic(row.original.dates)
+				{
+					accessorKey: 'meaningfulImprovements',
+					header: () => (
+						<div className='text-center text-sm'>{t('table.meaningful')}</div>
+					),
+					cell: ({ row }) => {
+						const isVersionLevel = row.original.sortOrder === 1
+						const useNewLogic = isNewLogic(row.original.dates)
 
-							// For week-level rows, check date cutoff; for version-level, show if has data
-							if (!isVersionLevel && !useNewLogic) {
-								return (
-									<div className='text-left text-muted-foreground text-sm'>
-										-
-									</div>
-								)
-							}
-
-							const total = row.original.totalRecords
-							const contextShifts = row.original.contextShifts || 0
-							const evaluable = total - contextShifts
-							const count = row.original.criticalErrors
-
-							// For version-level without new data, show dash
-							if (isVersionLevel && count === 0 && evaluable === 0) {
-								return (
-									<div className='text-left text-muted-foreground text-sm'>
-										-
-									</div>
-								)
-							}
-
-							const percent =
-								evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
-
+						// For week-level rows, check date cutoff; for version-level, show if has data
+						if (!isVersionLevel && !useNewLogic) {
 							return (
-								<div className='flex justify-left'>
-									<span
-										className={`inline-block rounded ${
-											isVersionLevel
-												? 'font-semibold text-foreground'
-												: 'px-2 py-1 text-sm font-normal bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
-										}`}
-									>
-										{count} ({percent}%)
-									</span>
-								</div>
+								<div className='text-left text-muted-foreground text-sm'>-</div>
 							)
-						},
-					},
-					{
-						accessorKey: 'meaningfulImprovements',
-						header: () => (
-							<div className='text-center text-sm'>{t('table.meaningful')}</div>
-						),
-						cell: ({ row }) => {
-							const isVersionLevel = row.original.sortOrder === 1
-							const useNewLogic = isNewLogic(row.original.dates)
+						}
 
-							// For week-level rows, check date cutoff; for version-level, show if has data
-							if (!isVersionLevel && !useNewLogic) {
-								return (
-									<div className='text-left text-muted-foreground text-sm'>
-										-
-									</div>
-								)
-							}
+						const total = row.original.totalRecords
+						const contextShifts = row.original.contextShifts || 0
+						const evaluable = total - contextShifts
+						const count = row.original.meaningfulImprovements
 
-							const total = row.original.totalRecords
-							const contextShifts = row.original.contextShifts || 0
-							const evaluable = total - contextShifts
-							const count = row.original.meaningfulImprovements
-
-							// For version-level without new data, show dash
-							if (isVersionLevel && count === 0 && evaluable === 0) {
-								return (
-									<div className='text-left text-muted-foreground text-sm'>
-										-
-									</div>
-								)
-							}
-
-							const percent =
-								evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
-
+						// For version-level without new data, show dash
+						if (isVersionLevel && count === 0 && evaluable === 0) {
 							return (
-								<div className='flex justify-left'>
-									<span
-										className={`inline-block rounded ${
-											isVersionLevel
-												? 'font-semibold text-foreground'
-												: 'px-2 py-1 text-sm font-normal bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200'
-										}`}
-									>
-										{count} ({percent}%)
-									</span>
-								</div>
+								<div className='text-left text-muted-foreground text-sm'>-</div>
 							)
-						},
-					},
-				],
-			},
-			// AI Success Rate - Column Group
-			{
-				id: 'aiSuccessGroup',
-				header: () => (
-					<div className='text-center text-xs'>{t('table.aiSuccessRate')}</div>
-				),
-				columns: [
-					{
-						accessorKey: 'stylisticPreferences',
-						header: () => (
-							<div className='text-center text-sm'>{t('table.stylistic')}</div>
-						),
-						cell: ({ row }) => {
-							const isVersionLevel = row.original.sortOrder === 1
-							const useNewLogic = isNewLogic(row.original.dates)
+						}
 
-							// For week-level rows, check date cutoff; for version-level, show if has data
-							if (!isVersionLevel && !useNewLogic) {
-								return (
-									<div className='text-left text-muted-foreground text-sm'>
-										-
-									</div>
-								)
-							}
+						const percent =
+							evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
 
-							const total = row.original.totalRecords
-							const contextShifts = row.original.contextShifts || 0
-							const evaluable = total - contextShifts
-							const count = row.original.stylisticPreferences
-
-							// For version-level without new data, show dash
-							if (isVersionLevel && count === 0 && evaluable === 0) {
-								return (
-									<div className='text-left text-muted-foreground text-sm'>
-										-
-									</div>
-								)
-							}
-
-							const percent =
-								evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
-
-							return (
-								<div className='flex justify-left'>
-									<span
-										className={`inline-block rounded ${
-											isVersionLevel
-												? 'font-semibold text-foreground'
-												: 'px-2 py-1 text-sm font-normal bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
-										}`}
-									>
-										{count} ({percent}%)
-									</span>
-								</div>
-							)
-						},
-					},
-					{
-						accessorKey: 'noSignificantChanges',
-						header: () => (
-							<div className='text-center text-sm whitespace-pre-line'>
-								{t('table.noChanges')}
+						return (
+							<div className='flex justify-left'>
+								<span
+									className={`inline-block rounded ${
+										isVersionLevel
+											? 'font-semibold text-foreground'
+											: 'px-2 py-1 text-sm font-normal bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200'
+									}`}
+								>
+									{count} ({percent}%)
+								</span>
 							</div>
-						),
-						cell: ({ row }) => {
-							const isVersionLevel = row.original.sortOrder === 1
-							const useNewLogic = isNewLogic(row.original.dates)
-
-							// For week-level rows, check date cutoff; for version-level, show if has data
-							if (!isVersionLevel && !useNewLogic) {
-								return (
-									<div className='text-left text-muted-foreground text-sm'>
-										-
-									</div>
-								)
-							}
-
-							const total = row.original.totalRecords
-							const contextShifts = row.original.contextShifts || 0
-							const evaluable = total - contextShifts
-							const count = row.original.noSignificantChanges
-
-							// For version-level without new data, show dash
-							if (isVersionLevel && count === 0 && evaluable === 0) {
-								return (
-									<div className='text-left text-muted-foreground text-sm'>
-										-
-									</div>
-								)
-							}
-
-							const percent =
-								evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
-
-							return (
-								<div className='flex justify-left'>
-									<span
-										className={`inline-block rounded ${
-											isVersionLevel
-												? 'font-semibold text-foreground'
-												: 'px-2 py-1 text-sm font-normal bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
-										}`}
-									>
-										{count} ({percent}%)
-									</span>
-								</div>
-							)
-						},
+						)
 					},
-					{
-						accessorKey: 'contextShifts',
-						header: () => (
-							<div className='text-center text-sm whitespace-pre-line'>
-								{t('table.contextShift')}
+				},
+			],
+		},
+		// AI Success Rate - Column Group
+		{
+			id: 'aiSuccessGroup',
+			header: () => (
+				<div className='text-center text-xs'>{t('table.aiSuccessRate')}</div>
+			),
+			columns: [
+				{
+					accessorKey: 'stylisticPreferences',
+					header: () => (
+						<div className='text-center text-sm'>{t('table.stylistic')}</div>
+					),
+					cell: ({ row }) => {
+						const isVersionLevel = row.original.sortOrder === 1
+						const useNewLogic = isNewLogic(row.original.dates)
+
+						// For week-level rows, check date cutoff; for version-level, show if has data
+						if (!isVersionLevel && !useNewLogic) {
+							return (
+								<div className='text-left text-muted-foreground text-sm'>-</div>
+							)
+						}
+
+						const total = row.original.totalRecords
+						const contextShifts = row.original.contextShifts || 0
+						const evaluable = total - contextShifts
+						const count = row.original.stylisticPreferences
+
+						// For version-level without new data, show dash
+						if (isVersionLevel && count === 0 && evaluable === 0) {
+							return (
+								<div className='text-left text-muted-foreground text-sm'>-</div>
+							)
+						}
+
+						const percent =
+							evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
+
+						return (
+							<div className='flex justify-left'>
+								<span
+									className={`inline-block rounded ${
+										isVersionLevel
+											? 'font-semibold text-foreground'
+											: 'px-2 py-1 text-sm font-normal bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
+									}`}
+								>
+									{count} ({percent}%)
+								</span>
 							</div>
-						),
-						cell: ({ row }) => {
-							const isVersionLevel = row.original.sortOrder === 1
-							const useNewLogic = isNewLogic(row.original.dates)
-
-							// For week-level rows, check date cutoff; for version-level, show if has data
-							if (!isVersionLevel && !useNewLogic) {
-								return (
-									<div className='text-left text-muted-foreground text-sm'>
-										-
-									</div>
-								)
-							}
-
-							const total = row.original.totalRecords
-							const count = row.original.contextShifts
-
-							// For version-level without new data, show dash
-							if (isVersionLevel && count === 0 && total === 0) {
-								return (
-									<div className='text-left text-muted-foreground text-sm'>
-										-
-									</div>
-								)
-							}
-
-							const percent =
-								total > 0 ? ((count / total) * 100).toFixed(1) : '0.0'
-
-							return (
-								<div className='flex justify-left'>
-									<span
-										className={`inline-block rounded ${
-											isVersionLevel
-												? 'font-semibold text-foreground'
-												: 'px-2 py-1 text-sm font-normal bg-gray-200 dark:bg-gray-900/30 text-gray-600 dark:text-gray-400'
-										}`}
-									>
-										{count} ({percent}%)
-									</span>
-								</div>
-							)
-						},
+						)
 					},
-				],
+				},
+				{
+					accessorKey: 'noSignificantChanges',
+					header: () => (
+						<div className='text-center text-sm whitespace-pre-line'>
+							{t('table.noChanges')}
+						</div>
+					),
+					cell: ({ row }) => {
+						const isVersionLevel = row.original.sortOrder === 1
+						const useNewLogic = isNewLogic(row.original.dates)
+
+						// For week-level rows, check date cutoff; for version-level, show if has data
+						if (!isVersionLevel && !useNewLogic) {
+							return (
+								<div className='text-left text-muted-foreground text-sm'>-</div>
+							)
+						}
+
+						const total = row.original.totalRecords
+						const contextShifts = row.original.contextShifts || 0
+						const evaluable = total - contextShifts
+						const count = row.original.noSignificantChanges
+
+						// For version-level without new data, show dash
+						if (isVersionLevel && count === 0 && evaluable === 0) {
+							return (
+								<div className='text-left text-muted-foreground text-sm'>-</div>
+							)
+						}
+
+						const percent =
+							evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
+
+						return (
+							<div className='flex justify-left'>
+								<span
+									className={`inline-block rounded ${
+										isVersionLevel
+											? 'font-semibold text-foreground'
+											: 'px-2 py-1 text-sm font-normal bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
+									}`}
+								>
+									{count} ({percent}%)
+								</span>
+							</div>
+						)
+					},
+				},
+				{
+					accessorKey: 'contextShifts',
+					header: () => (
+						<div className='text-center text-sm whitespace-pre-line'>
+							{t('table.contextShift')}
+						</div>
+					),
+					cell: ({ row }) => {
+						const isVersionLevel = row.original.sortOrder === 1
+						const useNewLogic = isNewLogic(row.original.dates)
+
+						// For week-level rows, check date cutoff; for version-level, show if has data
+						if (!isVersionLevel && !useNewLogic) {
+							return (
+								<div className='text-left text-muted-foreground text-sm'>-</div>
+							)
+						}
+
+						const total = row.original.totalRecords
+						const count = row.original.contextShifts
+
+						// For version-level without new data, show dash
+						if (isVersionLevel && count === 0 && total === 0) {
+							return (
+								<div className='text-left text-muted-foreground text-sm'>-</div>
+							)
+						}
+
+						const percent =
+							total > 0 ? ((count / total) * 100).toFixed(1) : '0.0'
+
+						return (
+							<div className='flex justify-left'>
+								<span
+									className={`inline-block rounded ${
+										isVersionLevel
+											? 'font-semibold text-foreground'
+											: 'px-2 py-1 text-sm font-normal bg-gray-200 dark:bg-gray-900/30 text-gray-600 dark:text-gray-400'
+									}`}
+								>
+									{count} ({percent}%)
+								</span>
+							</div>
+						)
+					},
+				},
+			],
+		},
+	]
+
+	// New mode columns (4 aggregated groups: Critical, Needs Work, Good, Excluded)
+	const newColumns: ColumnDef<DetailedStatsRow>[] = [
+		// Critical (Score 0-50): CRITICAL_FACT_ERROR + MAJOR_FUNCTIONAL_OMISSION
+		{
+			id: 'criticalGroup',
+			header: () => (
+				<div className='text-center text-sm whitespace-nowrap'>
+					{t('ticketsReview.scoreGroups.critical')}
+					<div className='text-xs text-muted-foreground'>(0-50%)</div>
+				</div>
+			),
+			cell: ({ row }) => {
+				const isVersionLevel = row.original.sortOrder === 1
+				const count =
+					(row.original.criticalFactErrors || 0) +
+					(row.original.majorFunctionalOmissions || 0)
+				const total = row.original.reviewedRecords
+				const excluded =
+					(row.original.exclWorkflowShifts || 0) +
+					(row.original.exclDataDiscrepancies || 0)
+				const evaluable = total - excluded
+				const percent =
+					evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
+
+				if (count === 0 && evaluable === 0) {
+					return (
+						<div className='text-left text-muted-foreground text-sm'>-</div>
+					)
+				}
+
+				return (
+					<div className='flex justify-left'>
+						<span
+							className={`inline-block rounded ${
+								isVersionLevel
+									? 'font-semibold text-foreground'
+									: 'px-2 py-1 text-sm font-normal bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+							}`}
+						>
+							{count} ({percent}%)
+						</span>
+					</div>
+				)
 			},
-			{
-				accessorKey: 'sortOrder',
-				header: '',
-				enableSorting: true,
-				enableHiding: true,
+		},
+		// Needs Work (Score 51-89): MINOR_INFO_GAP + CONFUSING_VERBOSITY + TONAL_MISALIGNMENT + STRUCTURAL_FIX
+		{
+			id: 'needsWorkGroup',
+			header: () => (
+				<div className='text-center text-sm whitespace-nowrap'>
+					{t('ticketsReview.scoreGroups.needs_work')}
+					<div className='text-xs text-muted-foreground'>(51%-89%)</div>
+				</div>
+			),
+			cell: ({ row }) => {
+				const isVersionLevel = row.original.sortOrder === 1
+				const count =
+					(row.original.minorInfoGaps || 0) +
+					(row.original.confusingVerbosity || 0) +
+					(row.original.tonalMisalignments || 0) +
+					(row.original.structuralFixes || 0)
+				const total = row.original.reviewedRecords
+				const excluded =
+					(row.original.exclWorkflowShifts || 0) +
+					(row.original.exclDataDiscrepancies || 0)
+				const evaluable = total - excluded
+				const percent =
+					evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
+
+				if (count === 0 && evaluable === 0) {
+					return (
+						<div className='text-left text-muted-foreground text-sm'>-</div>
+					)
+				}
+
+				return (
+					<div className='flex justify-left'>
+						<span
+							className={`inline-block rounded ${
+								isVersionLevel
+									? 'font-semibold text-foreground'
+									: 'px-2 py-1 text-sm font-normal bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+							}`}
+						>
+							{count} ({percent}%)
+						</span>
+					</div>
+				)
 			},
+		},
+		// Good (Score 90-100): STYLISTIC_EDIT + PERFECT_MATCH
+		{
+			id: 'goodGroup',
+			header: () => (
+				<div className='text-center text-sm whitespace-nowrap'>
+					{t('ticketsReview.scoreGroups.good')}
+					<div className='text-xs text-muted-foreground'>(90%-100%)</div>
+				</div>
+			),
+			cell: ({ row }) => {
+				const isVersionLevel = row.original.sortOrder === 1
+				const count =
+					(row.original.stylisticEdits || 0) +
+					(row.original.perfectMatches || 0)
+				const total = row.original.reviewedRecords
+				const excluded =
+					(row.original.exclWorkflowShifts || 0) +
+					(row.original.exclDataDiscrepancies || 0)
+				const evaluable = total - excluded
+				const percent =
+					evaluable > 0 ? ((count / evaluable) * 100).toFixed(1) : '0.0'
+
+				if (count === 0 && evaluable === 0) {
+					return (
+						<div className='text-left text-muted-foreground text-sm'>-</div>
+					)
+				}
+
+				return (
+					<div className='flex justify-left'>
+						<span
+							className={`inline-block rounded ${
+								isVersionLevel
+									? 'font-semibold text-foreground'
+									: 'px-2 py-1 text-sm font-normal bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
+							}`}
+						>
+							{count} ({percent}%)
+						</span>
+					</div>
+				)
+			},
+		},
+		// Excluded: EXCL_WORKFLOW_SHIFT + EXCL_DATA_DISCREPANCY
+		{
+			id: 'excludedGroup',
+			header: () => (
+				<div className='text-center text-sm whitespace-nowrap'>
+					{t('ticketsReview.scoreGroups.excluded')}
+				</div>
+			),
+			cell: ({ row }) => {
+				const isVersionLevel = row.original.sortOrder === 1
+				const count =
+					(row.original.exclWorkflowShifts || 0) +
+					(row.original.exclDataDiscrepancies || 0)
+				const total = row.original.reviewedRecords
+				const percent = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0'
+
+				if (count === 0 && total === 0) {
+					return (
+						<div className='text-left text-muted-foreground text-sm'>-</div>
+					)
+				}
+
+				return (
+					<div className='flex justify-left'>
+						<span
+							className={`inline-block rounded ${
+								isVersionLevel
+									? 'font-semibold text-foreground'
+									: 'px-2 py-1 text-sm font-normal bg-gray-200 dark:bg-gray-900/30 text-gray-600 dark:text-gray-400'
+							}`}
+						>
+							{count} ({percent}%)
+						</span>
+					</div>
+				)
+			},
+		},
+	]
+
+	// Hidden sortOrder column
+	const sortOrderColumn: ColumnDef<DetailedStatsRow> = {
+		accessorKey: 'sortOrder',
+		header: '',
+		enableSorting: true,
+		enableHiding: true,
+	}
+
+	// Define columns based on scoring mode
+	const columns = useMemo<ColumnDef<DetailedStatsRow>[]>(
+		() => [
+			...baseColumns,
+			...(scoringMode === 'legacy' ? legacyColumns : newColumns),
+			sortOrderColumn,
 		],
-		[t]
+		[t, scoringMode]
 	)
 
 	// Find the latest week for each category (to highlight)
@@ -693,15 +852,18 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 						</Button>
 					</div>
 
-					{/* Search Input */}
-					<div className='relative w-full sm:max-w-sm'>
-						<IconSearch className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
-						<Input
-							placeholder={t('table.searchByCategory')}
-							value={globalFilter}
-							onChange={e => setGlobalFilter(e.target.value)}
-							className='pl-10 text-sm'
-						/>
+					{/* Search Input & Scoring Mode Toggle */}
+					<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
+						<div className='relative w-full sm:max-w-sm'>
+							<IconSearch className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+							<Input
+								placeholder={t('table.searchByCategory')}
+								value={globalFilter}
+								onChange={e => setGlobalFilter(e.target.value)}
+								className='pl-10 text-sm'
+							/>
+						</div>
+						<ScoringModeToggle />
 					</div>
 				</div>
 			</CardHeader>
@@ -759,9 +921,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 											data-state={row.getIsSelected() && 'selected'}
 											className={
 												isVersion
-													? 'bg-muted/50'
-													: isLatest
-													? 'bg-blue-50/50 dark:bg-blue-950/20 border-l-2 border-l-blue-500'
+													? 'bg-blue-50/50 dark:bg-blue-950/20 border-t-4 border-t-muted-foreground/20'
 													: ''
 											}
 										>

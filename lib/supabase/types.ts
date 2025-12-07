@@ -6,6 +6,11 @@
  * Based on ai_human_comparison table structure
  */
 
+import type {
+	LegacyClassificationType,
+	NewClassificationType,
+} from '@/constants/classification-types'
+
 export interface Database {
 	public: {
 		Tables: {
@@ -94,12 +99,9 @@ export interface AIHumanComparisonRow {
 	similarity_score: number | null
 	prompt_version: string | null // Version (v1, v2, v3, etc.)
 	change_classification:
-		| 'critical_error'
-		| 'meaningful_improvement'
-		| 'stylistic_preference'
-		| 'no_significant_change'
-		| 'context_shift'
-		| null // Classification of changes
+		| LegacyClassificationType
+		| NewClassificationType
+		| null // Classification of changes (legacy or new format)
 	review_status: 'processed' | 'unprocessed' | null // Review status for tickets review
 	ai_approved: boolean | null // Whether AI answer was approved
 }
@@ -213,15 +215,33 @@ export interface DetailedStatsRow {
 	sortOrder: number // 1 for version-level, 2 for week-level
 	totalRecords: number
 	reviewedRecords: number // Records with classification (not null)
-	aiErrors: number // Only critical_error + meaningful_improvement
-	aiQuality: number // Only no_significant_change + stylistic_preference
-	// Change classification breakdown
+	aiErrors: number // Only critical_error + meaningful_improvement (legacy) or score < 90 (new)
+	aiQuality: number // Only no_significant_change + stylistic_preference (legacy) or score >= 90 (new)
+	// Legacy classification breakdown (v3.x)
 	criticalErrors: number
 	meaningfulImprovements: number
 	stylisticPreferences: number
 	noSignificantChanges: number
 	contextShifts: number // Context shift cases (excluded from quality calculations)
+	// New classification breakdown (v4.0)
+	criticalFactErrors: number
+	majorFunctionalOmissions: number
+	minorInfoGaps: number
+	confusingVerbosity: number
+	tonalMisalignments: number
+	structuralFixes: number
+	stylisticEdits: number
+	perfectMatches: number
+	exclWorkflowShifts: number
+	exclDataDiscrepancies: number
+	// New scoring (v4.0)
+	averageScore: number | null // Average quality score (0-100) for new system
 }
+
+/**
+ * Scoring mode for quality calculation
+ */
+export type ScoringMode = 'legacy' | 'new'
 
 /**
  * Dashboard Filters

@@ -7,6 +7,7 @@
  * Used by Parallel Routes to display ticket without leaving the table
  */
 
+import { TicketChangesAccordion } from '@/components/ticket-changes-accordion'
 import {
 	Accordion,
 	AccordionContent,
@@ -32,9 +33,13 @@ import {
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
+import {
+	calculateQualityScore,
+	getClassificationColor,
+	getScoreGroup,
+} from '@/constants/classification-types'
 import { updateTicketReview } from '@/lib/actions/ticket-update-actions'
 import type { TicketReviewRecord } from '@/lib/supabase/types'
-import { TicketChangesAccordion } from '@/components/ticket-changes-accordion'
 import { IconCheck, IconExternalLink } from '@tabler/icons-react'
 import { format } from 'date-fns'
 import { useTranslations } from 'next-intl'
@@ -56,7 +61,9 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 		ticket.review_status || 'unprocessed'
 	)
 	const [aiApproved, setAiApproved] = useState(ticket.ai_approved || false)
-	const [manualComment, setManualComment] = useState(ticket.manual_comment || '')
+	const [manualComment, setManualComment] = useState(
+		ticket.manual_comment || ''
+	)
 	const [isSaving, setIsSaving] = useState(false)
 
 	// Close modal by navigating back
@@ -121,23 +128,9 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 		setIsSaving(false)
 	}
 
-	// Get classification color
-	const getClassificationColor = (classification: string | null) => {
-		switch (classification) {
-			case 'critical_error':
-				return 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
-			case 'meaningful_improvement':
-				return 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300'
-			case 'stylistic_preference':
-				return 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
-			case 'no_significant_change':
-				return 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
-			case 'context_shift':
-				return 'bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300'
-			default:
-				return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-		}
-	}
+	// Get quality score for display
+	const qualityScore = calculateQualityScore(ticket.change_classification)
+	const scoreGroup = getScoreGroup(qualityScore)
 
 	return (
 		<Dialog open onOpenChange={handleClose}>
@@ -214,13 +207,20 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 													{t('table.classification')}
 												</p>
 												{ticket.change_classification ? (
-													<div
-														className={`inline-block px-2 sm:px-3 py-1 rounded text-xs sm:text-sm ${getClassificationColor(
-															ticket.change_classification
-														)}`}
-													>
-														{t(
-															`classifications.${ticket.change_classification}` as unknown as 'classifications.critical_error'
+													<div className='flex items-center gap-2'>
+														<div
+															className={`inline-block px-2 sm:px-3 py-1 rounded text-xs sm:text-sm ${getClassificationColor(
+																ticket.change_classification
+															)}`}
+														>
+															{t(
+																`classifications.${ticket.change_classification}` as unknown as 'classifications.critical_error'
+															)}
+														</div>
+														{qualityScore !== null && (
+															<span className='text-xs text-muted-foreground'>
+																(Score: {qualityScore})
+															</span>
 														)}
 													</div>
 												) : (
@@ -328,12 +328,14 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 									<CardContent>
 										<div className='rounded-lg bg-muted p-3 sm:p-4 max-h-[50vh] overflow-y-auto'>
 											<div className='text-xs sm:text-sm leading-loose [&>br]:block [&>br]:mt-2'>
-												{ticket.human_reply?.split(/\n+/).map((paragraph, i) => (
-													<span key={i}>
-														{i > 0 && <br />}
-														{paragraph}
-													</span>
-												))}
+												{ticket.human_reply
+													?.split(/\n+/)
+													.map((paragraph, i) => (
+														<span key={i}>
+															{i > 0 && <br />}
+															{paragraph}
+														</span>
+													))}
 											</div>
 										</div>
 									</CardContent>
@@ -405,7 +407,7 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 								<Textarea
 									placeholder={t('modal.commentPlaceholder')}
 									value={manualComment}
-									onChange={(e) => setManualComment(e.target.value)}
+									onChange={e => setManualComment(e.target.value)}
 									className='min-h-[120px] resize-none'
 									disabled={isSaving}
 								/>

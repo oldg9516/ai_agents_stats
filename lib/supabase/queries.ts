@@ -519,14 +519,61 @@ export async function getDetailedStats(
 		return acc
 	}, {} as Record<string, { category: string; version: string; records: DetailedStatsRecord[] }>)
 
-	// Helper function to count change classifications
+	// Helper function to count change classifications (legacy and new)
+	// Legacy classifications are mapped to new ones for unified counting:
+	// - critical_error -> CRITICAL_FACT_ERROR
+	// - meaningful_improvement -> MINOR_INFO_GAP
+	// - stylistic_preference -> STYLISTIC_EDIT
+	// - no_significant_change -> PERFECT_MATCH
+	// - context_shift -> EXCL_WORKFLOW_SHIFT
 	const countClassifications = (records: DetailedStatsRecord[]) => {
+		// Legacy classifications (v3.x) - direct counts
+		const criticalErrors = records.filter(r => r.change_classification === 'critical_error').length
+		const meaningfulImprovements = records.filter(r => r.change_classification === 'meaningful_improvement').length
+		const stylisticPreferences = records.filter(r => r.change_classification === 'stylistic_preference').length
+		const noSignificantChanges = records.filter(r => r.change_classification === 'no_significant_change').length
+		const contextShifts = records.filter(r => r.change_classification === 'context_shift').length
+
+		// New classifications (v4.0) - direct counts
+		const newCriticalFactErrors = records.filter(r => r.change_classification === 'CRITICAL_FACT_ERROR').length
+		const newMajorFunctionalOmissions = records.filter(r => r.change_classification === 'MAJOR_FUNCTIONAL_OMISSION').length
+		const newMinorInfoGaps = records.filter(r => r.change_classification === 'MINOR_INFO_GAP').length
+		const newConfusingVerbosity = records.filter(r => r.change_classification === 'CONFUSING_VERBOSITY').length
+		const newTonalMisalignments = records.filter(r => r.change_classification === 'TONAL_MISALIGNMENT').length
+		const newStructuralFixes = records.filter(r => r.change_classification === 'STRUCTURAL_FIX').length
+		const newStylisticEdits = records.filter(r => r.change_classification === 'STYLISTIC_EDIT').length
+		const newPerfectMatches = records.filter(r => r.change_classification === 'PERFECT_MATCH').length
+		const newExclWorkflowShifts = records.filter(r => r.change_classification === 'EXCL_WORKFLOW_SHIFT').length
+		const newExclDataDiscrepancies = records.filter(r => r.change_classification === 'EXCL_DATA_DISCREPANCY').length
+
 		return {
-			criticalErrors: records.filter(r => r.change_classification === 'critical_error').length,
-			meaningfulImprovements: records.filter(r => r.change_classification === 'meaningful_improvement').length,
-			stylisticPreferences: records.filter(r => r.change_classification === 'stylistic_preference').length,
-			noSignificantChanges: records.filter(r => r.change_classification === 'no_significant_change').length,
-			contextShifts: records.filter(r => r.change_classification === 'context_shift').length,
+			// Legacy classifications - direct counts for legacy mode
+			criticalErrors,
+			meaningfulImprovements,
+			stylisticPreferences,
+			noSignificantChanges,
+			contextShifts,
+			// New classifications - combine direct + mapped legacy for unified view
+			// critical_error -> CRITICAL_FACT_ERROR
+			criticalFactErrors: newCriticalFactErrors + criticalErrors,
+			// (no legacy maps to MAJOR_FUNCTIONAL_OMISSION)
+			majorFunctionalOmissions: newMajorFunctionalOmissions,
+			// meaningful_improvement -> MINOR_INFO_GAP
+			minorInfoGaps: newMinorInfoGaps + meaningfulImprovements,
+			// (no legacy maps to these)
+			confusingVerbosity: newConfusingVerbosity,
+			tonalMisalignments: newTonalMisalignments,
+			structuralFixes: newStructuralFixes,
+			// stylistic_preference -> STYLISTIC_EDIT
+			stylisticEdits: newStylisticEdits + stylisticPreferences,
+			// no_significant_change -> PERFECT_MATCH
+			perfectMatches: newPerfectMatches + noSignificantChanges,
+			// context_shift -> EXCL_WORKFLOW_SHIFT
+			exclWorkflowShifts: newExclWorkflowShifts + contextShifts,
+			// (no legacy maps to EXCL_DATA_DISCREPANCY)
+			exclDataDiscrepancies: newExclDataDiscrepancies,
+			// Average score (calculated later)
+			averageScore: null as number | null,
 		}
 	}
 
@@ -747,6 +794,26 @@ export async function getDetailedStatsPaginated(
 	// @ts-expect-error - data.map exists but type is inferred as never
 	const rows: DetailedStatsRow[] = data.map((row: unknown) => {
 		const r = row as Record<string, unknown>
+
+		// Legacy classification counts
+		const criticalErrors = Number(r.out_critical_errors || 0)
+		const meaningfulImprovements = Number(r.out_meaningful_improvements || 0)
+		const stylisticPreferences = Number(r.out_stylistic_preferences || 0)
+		const noSignificantChanges = Number(r.out_no_significant_changes || 0)
+		const contextShifts = Number(r.out_context_shifts || 0)
+
+		// New classification counts (from SQL if available, otherwise 0)
+		const newCriticalFactErrors = Number(r.out_critical_fact_errors || 0)
+		const newMajorFunctionalOmissions = Number(r.out_major_functional_omissions || 0)
+		const newMinorInfoGaps = Number(r.out_minor_info_gaps || 0)
+		const newConfusingVerbosity = Number(r.out_confusing_verbosity || 0)
+		const newTonalMisalignments = Number(r.out_tonal_misalignments || 0)
+		const newStructuralFixes = Number(r.out_structural_fixes || 0)
+		const newStylisticEdits = Number(r.out_stylistic_edits || 0)
+		const newPerfectMatches = Number(r.out_perfect_matches || 0)
+		const newExclWorkflowShifts = Number(r.out_excl_workflow_shifts || 0)
+		const newExclDataDiscrepancies = Number(r.out_excl_data_discrepancies || 0)
+
 		return {
 			category: (r.out_category as string) || 'unknown',
 			version: (r.out_version as string) || 'unknown',
@@ -756,11 +823,33 @@ export async function getDetailedStatsPaginated(
 			reviewedRecords: Number(r.out_reviewed_records || 0),
 			aiErrors: Number(r.out_ai_errors || 0),
 			aiQuality: Number(r.out_ai_quality || 0),
-			criticalErrors: Number(r.out_critical_errors || 0),
-			meaningfulImprovements: Number(r.out_meaningful_improvements || 0),
-			stylisticPreferences: Number(r.out_stylistic_preferences || 0),
-			noSignificantChanges: Number(r.out_no_significant_changes || 0),
-			contextShifts: Number(r.out_context_shifts || 0),
+			// Legacy classifications
+			criticalErrors,
+			meaningfulImprovements,
+			stylisticPreferences,
+			noSignificantChanges,
+			contextShifts,
+			// New classifications - combine direct + mapped legacy for unified view
+			// critical_error -> CRITICAL_FACT_ERROR
+			criticalFactErrors: newCriticalFactErrors + criticalErrors,
+			// (no legacy maps to MAJOR_FUNCTIONAL_OMISSION)
+			majorFunctionalOmissions: newMajorFunctionalOmissions,
+			// meaningful_improvement -> MINOR_INFO_GAP
+			minorInfoGaps: newMinorInfoGaps + meaningfulImprovements,
+			// (no legacy maps to these)
+			confusingVerbosity: newConfusingVerbosity,
+			tonalMisalignments: newTonalMisalignments,
+			structuralFixes: newStructuralFixes,
+			// stylistic_preference -> STYLISTIC_EDIT
+			stylisticEdits: newStylisticEdits + stylisticPreferences,
+			// no_significant_change -> PERFECT_MATCH
+			perfectMatches: newPerfectMatches + noSignificantChanges,
+			// context_shift -> EXCL_WORKFLOW_SHIFT
+			exclWorkflowShifts: newExclWorkflowShifts + contextShifts,
+			// (no legacy maps to EXCL_DATA_DISCREPANCY)
+			exclDataDiscrepancies: newExclDataDiscrepancies,
+			// Average score (not calculated in SQL yet)
+			averageScore: null,
 		}
 	})
 
