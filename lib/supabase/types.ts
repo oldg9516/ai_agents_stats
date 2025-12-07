@@ -548,4 +548,5 @@ export interface TicketsReviewFilters {
 	classifications: string[] // change_classification - [] = all
 	agents: string[] // email - [] = all agents
 	reviewStatuses: string[] // review_status - [] = all (processed/unprocessed)
+	reviewerNames: string[] // reviewer_name - [] = all reviewers
 }

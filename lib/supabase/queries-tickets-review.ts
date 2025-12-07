@@ -26,6 +26,7 @@ export async function fetchTicketsReview(
 		classifications,
 		agents,
 		reviewStatuses,
+		reviewerNames,
 	} = filters
 	const { limit = 100, offset = 0 } = options || {}
 
@@ -86,6 +87,9 @@ export async function fetchTicketsReview(
 	}
 	if (reviewStatuses.length > 0) {
 		query = query.in('review_status', reviewStatuses)
+	}
+	if (reviewerNames?.length > 0) {
+		query = query.in('reviewer_name', reviewerNames)
 	}
 
 	const { data: tickets, error: ticketsError } = await query
@@ -310,4 +314,51 @@ export async function fetchTicketsReviewMinCreatedDate(): Promise<Date> {
 	// This function will be implemented in server action
 	// For now, return a default date
 	return new Date('2024-01-01')
+}
+
+/**
+ * Fetch adjacent ticket IDs for navigation
+ * Returns prev and next ticket IDs based on created_at order (desc)
+ */
+export async function fetchAdjacentTicketIds(
+	supabase: SupabaseClient,
+	ticketId: number
+): Promise<{ prevId: number | null; nextId: number | null }> {
+	// First, get the current ticket's created_at
+	const { data: currentTicket, error: currentError } = await supabase
+		.from('ai_human_comparison')
+		.select('created_at')
+		.eq('id', ticketId)
+		.single()
+
+	if (currentError || !currentTicket) {
+		return { prevId: null, nextId: null }
+	}
+
+	const currentCreatedAt = currentTicket.created_at
+
+	// Get previous ticket (newer, so created_at > current, order asc, limit 1)
+	const { data: prevTicket } = await supabase
+		.from('ai_human_comparison')
+		.select('id')
+		.not('change_classification', 'is', null)
+		.gt('created_at', currentCreatedAt)
+		.order('created_at', { ascending: true })
+		.limit(1)
+		.single()
+
+	// Get next ticket (older, so created_at < current, order desc, limit 1)
+	const { data: nextTicket } = await supabase
+		.from('ai_human_comparison')
+		.select('id')
+		.not('change_classification', 'is', null)
+		.lt('created_at', currentCreatedAt)
+		.order('created_at', { ascending: false })
+		.limit(1)
+		.single()
+
+	return {
+		prevId: prevTicket?.id ?? null,
+		nextId: nextTicket?.id ?? null,
+	}
 }

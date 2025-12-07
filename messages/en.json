@@ -942,7 +942,9 @@
 			"searchVersions": "Search versions...",
 			"searchClassifications": "Search classifications...",
 			"searchAgents": "Search agents...",
-			"searchStatuses": "Search statuses..."
+			"searchStatuses": "Search statuses...",
+			"reviewer": "Reviewer",
+			"searchReviewers": "Search reviewers..."
 		},
 		"statuses": {
 			"processed": "Processed",
@@ -1003,7 +1005,9 @@
 			"processedHint": "Clicking 'Mark as Processed' will save comment and AI approval",
 			"saving": "Saving...",
 			"saved": "Saved!",
-			"saveFailed": "Failed to save"
+			"saveFailed": "Failed to save",
+			"prevTicket": "Previous",
+			"nextTicket": "Next"
 		},
 		"changes": {
 			"title": "Edit Suggestions",

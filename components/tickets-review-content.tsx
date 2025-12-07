@@ -29,6 +29,7 @@ export function TicketsReviewContent() {
 		setClassifications,
 		setAgents,
 		setStatuses,
+		setReviewerNames,
 		resetFilters,
 	} = useTicketsReviewFilters()
 
@@ -45,11 +46,12 @@ export function TicketsReviewContent() {
 	const getActiveFilterCount = () => {
 		let count = 0
 
-		if (filters.categories.length > 0) count++
-		if (filters.versions.length > 0) count++
-		if (filters.classifications.length > 0) count++
-		if (filters.agents.length > 0) count++
-		if (filters.reviewStatuses.length > 0) count++
+		if (filters.categories?.length > 0) count++
+		if (filters.versions?.length > 0) count++
+		if (filters.classifications?.length > 0) count++
+		if (filters.agents?.length > 0) count++
+		if (filters.reviewStatuses?.length > 0) count++
+		if (filters.reviewerNames?.length > 0) count++
 
 		return count
 	}
@@ -77,6 +79,7 @@ export function TicketsReviewContent() {
 							onClassificationsChange={setClassifications}
 							onAgentsChange={setAgents}
 							onStatusesChange={setStatuses}
+							onReviewerNamesChange={setReviewerNames}
 							onReset={resetFilters}
 						/>
 					</FilterSheet>

@@ -13,6 +13,9 @@ export function useTicketsReviewFilters() {
 	)
 	const setAgents = useStore(state => state.setTicketsReviewAgents)
 	const setStatuses = useStore(state => state.setTicketsReviewStatuses)
+	const setReviewerNames = useStore(
+		state => state.setTicketsReviewReviewerNames
+	)
 	const resetFilters = useStore(state => state.resetTicketsReviewFilters)
 	const updateFilters = useStore(state => state.updateTicketsReviewFilters)
 
@@ -24,6 +27,7 @@ export function useTicketsReviewFilters() {
 		setClassifications,
 		setAgents,
 		setStatuses,
+		setReviewerNames,
 		resetFilters,
 		updateFilters,
 	}

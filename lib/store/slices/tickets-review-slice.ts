@@ -20,6 +20,7 @@ function getDefaultTicketsReviewFilters(): TicketsReviewFilters {
 		classifications: [],
 		agents: [],
 		reviewStatuses: [],
+		reviewerNames: [],
 	}
 }
 
@@ -34,6 +35,7 @@ export interface TicketsReviewSlice {
 	setTicketsReviewClassifications: (classifications: string[]) => void
 	setTicketsReviewAgents: (agents: string[]) => void
 	setTicketsReviewStatuses: (statuses: string[]) => void
+	setTicketsReviewReviewerNames: (reviewerNames: string[]) => void
 	resetTicketsReviewFilters: () => void
 	updateTicketsReviewFilters: (filters: Partial<TicketsReviewFilters>) => void
 }
@@ -93,6 +95,14 @@ export const createTicketsReviewSlice: StateCreator<
 			ticketsReviewFilters: {
 				...state.ticketsReviewFilters,
 				reviewStatuses,
+			},
+		})),
+
+	setTicketsReviewReviewerNames: reviewerNames =>
+		set(state => ({
+			ticketsReviewFilters: {
+				...state.ticketsReviewFilters,
+				reviewerNames,
 			},
 		})),
 

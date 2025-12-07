@@ -41,8 +41,9 @@ import {
 } from '@/constants/classification-types'
 import { REVIEWER_AGENTS } from '@/constants/qualified-agents'
 import { updateTicketReview } from '@/lib/actions/ticket-update-actions'
+import { triggerTicketsRefresh } from '@/lib/hooks/use-paginated-tickets'
 import type { TicketReviewRecord } from '@/lib/supabase/types'
-import { IconCheck, IconExternalLink } from '@tabler/icons-react'
+import { IconCheck, IconExternalLink, IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
 import { format } from 'date-fns'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
@@ -52,9 +53,15 @@ import { toast } from 'sonner'
 
 interface TicketDetailModalProps {
 	ticket: TicketReviewRecord
+	prevTicketId?: number | null
+	nextTicketId?: number | null
 }
 
-export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
+export function TicketDetailModal({
+	ticket,
+	prevTicketId,
+	nextTicketId,
+}: TicketDetailModalProps) {
 	const router = useRouter()
 	const t = useTranslations('ticketsReview')
 
@@ -76,6 +83,20 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 		router.back()
 	}
 
+	// Navigate to previous ticket
+	const handlePrevTicket = () => {
+		if (prevTicketId) {
+			router.replace(`/tickets-review/ticket/${prevTicketId}`)
+		}
+	}
+
+	// Navigate to next ticket
+	const handleNextTicket = () => {
+		if (nextTicketId) {
+			router.replace(`/tickets-review/ticket/${nextTicketId}`)
+		}
+	}
+
 	// Handle AI approval checkbox change (local state only, no API call)
 	const handleAiApprovalChange = (checked: boolean) => {
 		setAiApproved(checked)
@@ -95,8 +116,8 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 
 		if (result.success) {
 			toast.success(t('modal.saved'))
-			// Refresh to update the table
-			router.refresh()
+			// Trigger table refresh via custom event
+			triggerTicketsRefresh()
 		} else {
 			// Revert on error
 			setReviewStatus(ticket.review_status || 'unprocessed')
@@ -117,8 +138,8 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 
 		if (result.success) {
 			toast.success(t('modal.saved'))
-			// Refresh to update the table
-			router.refresh()
+			// Trigger table refresh via custom event
+			triggerTicketsRefresh()
 		} else {
 			// Revert on error
 			setReviewStatus(ticket.review_status || 'unprocessed')
@@ -138,9 +159,23 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 				<DialogHeader className='px-4 py-4 sm:px-6 sm:py-6 border-b shrink-0'>
 					<div className='flex items-start justify-between gap-4'>
 						<div className='flex-1 min-w-0'>
-							<DialogTitle className='text-lg sm:text-xl'>
-								{t('modal.title')}
-							</DialogTitle>
+							<div className='flex items-center gap-3 flex-wrap'>
+								<DialogTitle className='text-lg sm:text-xl'>
+									{t('modal.title')}
+								</DialogTitle>
+								{/* Classification Badge */}
+								{ticket.change_classification && (
+									<span
+										className={`inline-block px-3 py-1 rounded-md text-sm font-medium ${getClassificationColor(
+											ticket.change_classification
+										)}`}
+									>
+										{t(
+											`classifications.${ticket.change_classification}` as unknown as 'classifications.critical_error'
+										)}
+									</span>
+								)}
+							</div>
 							<DialogDescription className='font-mono text-xs sm:text-sm break-all'>
 								ID: {ticket.id}
 							</DialogDescription>
@@ -162,6 +197,30 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 								</span>
 								<span className='sm:hidden'>{t('modal.open')}</span>
 							</Link>
+						</Button>
+					</div>
+
+					{/* Navigation Buttons */}
+					<div className='flex items-center justify-center gap-3 mt-3'>
+						<Button
+							variant='outline'
+							size='sm'
+							onClick={handlePrevTicket}
+							disabled={!prevTicketId}
+							className='h-9 px-6 border-blue-300 text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-950 dark:hover:text-blue-300 disabled:opacity-40'
+						>
+							<IconChevronLeft className='h-4 w-4 mr-1' />
+							{t('modal.prevTicket')}
+						</Button>
+						<Button
+							variant='outline'
+							size='sm'
+							onClick={handleNextTicket}
+							disabled={!nextTicketId}
+							className='h-9 px-6 border-green-300 text-green-600 hover:bg-green-50 hover:text-green-700 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-950 dark:hover:text-green-300 disabled:opacity-40'
+						>
+							{t('modal.nextTicket')}
+							<IconChevronRight className='h-4 w-4 ml-1' />
 						</Button>
 					</div>
 				</DialogHeader>

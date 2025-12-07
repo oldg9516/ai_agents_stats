@@ -8,6 +8,7 @@ import type { TicketsReviewFilters } from '@/lib/supabase/types'
 import { fetchTicketsReviewFilterOptionsAction } from '@/lib/actions/tickets-review-actions'
 import { MultiSelectFilter } from './multi-select-filter'
 import { CLASSIFICATION_TYPES } from '@/constants/classification-types'
+import { REVIEWER_AGENTS } from '@/constants/qualified-agents'
 
 interface TicketsReviewFilterBarProps {
 	filters: TicketsReviewFilters
@@ -16,6 +17,7 @@ interface TicketsReviewFilterBarProps {
 	onClassificationsChange: (classifications: string[]) => void
 	onAgentsChange: (agents: string[]) => void
 	onStatusesChange: (statuses: string[]) => void
+	onReviewerNamesChange: (reviewerNames: string[]) => void
 	onReset: () => void
 }
 
@@ -30,6 +32,7 @@ export function TicketsReviewFilterBar({
 	onClassificationsChange,
 	onAgentsChange,
 	onStatusesChange,
+	onReviewerNamesChange,
 	onReset,
 }: TicketsReviewFilterBarProps) {
 	const t = useTranslations()
@@ -122,6 +125,19 @@ export function TicketsReviewFilterBar({
 						? t('ticketsReview.statuses.processed')
 						: t('ticketsReview.statuses.unprocessed')
 				}
+			/>
+
+			{/* Reviewer Filter */}
+			<MultiSelectFilter
+				label={t('ticketsReview.filters.reviewer')}
+				options={REVIEWER_AGENTS.map(r => r.id)}
+				selected={filters.reviewerNames ?? []}
+				onChange={onReviewerNamesChange}
+				placeholder={t('ticketsReview.filters.searchReviewers')}
+				formatLabel={(reviewerId: string) => {
+					const reviewer = REVIEWER_AGENTS.find(r => r.id === reviewerId)
+					return reviewer?.name || reviewerId
+				}}
 			/>
 
 			{/* Reset Button */}

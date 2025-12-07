@@ -23,6 +23,7 @@ import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { REVIEWER_AGENTS } from '@/constants/qualified-agents'
 import { updateTicketReview } from '@/lib/actions/ticket-update-actions'
+import { triggerTicketsRefresh } from '@/lib/hooks/use-paginated-tickets'
 import { IconCheck } from '@tabler/icons-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -75,7 +76,8 @@ export function TicketReviewActions({
 
 		if (result.success) {
 			toast.success(t('saved'))
-			// Refresh to update the table
+			// Trigger table refresh via custom event
+			triggerTicketsRefresh()
 			router.refresh()
 		} else {
 			// Revert on error
@@ -97,7 +99,8 @@ export function TicketReviewActions({
 
 		if (result.success) {
 			toast.success(t('saved'))
-			// Refresh to update the table
+			// Trigger table refresh via custom event
+			triggerTicketsRefresh()
 			router.refresh()
 		} else {
 			// Revert on error

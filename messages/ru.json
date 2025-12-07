@@ -942,7 +942,9 @@
 			"searchVersions": "Поиск версий...",
 			"searchClassifications": "Поиск классификаций...",
 			"searchAgents": "Поиск агентов...",
-			"searchStatuses": "Поиск статусов..."
+			"searchStatuses": "Поиск статусов...",
+			"reviewer": "Проверяющий",
+			"searchReviewers": "Поиск проверяющих..."
 		},
 		"statuses": {
 			"processed": "Обработано",
@@ -1003,7 +1005,9 @@
 			"processedHint": "Нажатие 'Отметить как обработано' сохранит комментарий и одобрение AI",
 			"saving": "Сохранение...",
 			"saved": "Сохранено!",
-			"saveFailed": "Ошибка сохранения"
+			"saveFailed": "Ошибка сохранения",
+			"prevTicket": "Предыдущий",
+			"nextTicket": "Следующий"
 		},
 		"changes": {
 			"title": "Предложения по правкам",
