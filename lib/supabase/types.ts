@@ -104,6 +104,7 @@ export interface AIHumanComparisonRow {
 		| null // Classification of changes (legacy or new format)
 	review_status: 'processed' | 'unprocessed' | null // Review status for tickets review
 	ai_approved: boolean | null // Whether AI answer was approved
+	reviewer_name: string | null // Name of the reviewer who processed the ticket
 }
 
 /**

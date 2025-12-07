@@ -15,7 +15,6 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { TicketChangesAccordion } from '@/components/ticket-changes-accordion'
-import { TicketCommentEditor } from '@/components/ticket-comment-editor'
 import { TicketReviewActions } from '@/components/ticket-review-actions'
 import { getTranslations } from 'next-intl/server'
 import {
@@ -276,17 +275,13 @@ export default async function TicketDetailPage({
 			{/* Changes/Suggestions Accordion */}
 			<TicketChangesAccordion changes={ticket.changes} />
 
-			{/* Manual Comment Editor */}
-			<TicketCommentEditor
-				ticketId={ticket.id}
-				initialComment={ticket.manual_comment}
-			/>
-
-			{/* Review Actions */}
+			{/* Review Actions (includes comment, AI approval, and status) */}
 			<TicketReviewActions
 				ticketId={ticket.id}
 				initialReviewStatus={ticket.review_status}
 				initialAiApproved={ticket.ai_approved}
+				initialComment={ticket.manual_comment}
+				initialReviewerName={ticket.reviewer_name}
 			/>
 		</div>
 	)

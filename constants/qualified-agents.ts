@@ -36,3 +36,16 @@ export function getAgentName(email: QualifiedAgent): string {
 	}
 	return names[email] || email
 }
+
+/**
+ * Reviewer Agents - agents who can leave review comments
+ * Each agent has a unique color from our chart palette
+ */
+export const REVIEWER_AGENTS = [
+	{ id: 'sofia', name: 'Sofia', color: 'bg-[oklch(0.65_0.25_270)] text-white' }, // Blue (chart-1)
+	{ id: 'irina', name: 'Irina', color: 'bg-[oklch(0.65_0.25_150)] text-white' }, // Green (chart-2)
+	{ id: 'gleb', name: 'Gleb', color: 'bg-[oklch(0.70_0.25_50)] text-white' }, // Orange (chart-3)
+	{ id: 'denis', name: 'Denis', color: 'bg-[oklch(0.65_0.25_330)] text-white' }, // Pink (chart-4)
+] as const
+
+export type ReviewerAgent = (typeof REVIEWER_AGENTS)[number]

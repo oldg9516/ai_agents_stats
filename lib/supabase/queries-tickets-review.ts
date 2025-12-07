@@ -61,7 +61,8 @@ export async function fetchTicketsReview(
 			prompt_version,
 			change_classification,
 			review_status,
-			ai_approved
+			ai_approved,
+			reviewer_name
 		`
 		)
 		.gte('created_at', dateRange.from.toISOString())
@@ -199,7 +200,8 @@ export async function fetchTicketDetail(
 			prompt_version,
 			change_classification,
 			review_status,
-			ai_approved
+			ai_approved,
+			reviewer_name
 		`)
 		.eq('id', ticketId)
 		.single()

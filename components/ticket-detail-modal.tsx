@@ -14,6 +14,7 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 } from '@/components/ui/accordion'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
 	Card,
@@ -38,6 +39,7 @@ import {
 	getClassificationColor,
 	getScoreGroup,
 } from '@/constants/classification-types'
+import { REVIEWER_AGENTS } from '@/constants/qualified-agents'
 import { updateTicketReview } from '@/lib/actions/ticket-update-actions'
 import type { TicketReviewRecord } from '@/lib/supabase/types'
 import { IconCheck, IconExternalLink } from '@tabler/icons-react'
@@ -64,6 +66,9 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 	const [manualComment, setManualComment] = useState(
 		ticket.manual_comment || ''
 	)
+	const [selectedReviewer, setSelectedReviewer] = useState<string | null>(
+		ticket.reviewer_name || null
+	)
 	const [isSaving, setIsSaving] = useState(false)
 
 	// Close modal by navigating back
@@ -71,58 +76,53 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 		router.back()
 	}
 
-	// Update review status
-	const handleStatusChange = async (newStatus: 'processed' | 'unprocessed') => {
+	// Handle AI approval checkbox change (local state only, no API call)
+	const handleAiApprovalChange = (checked: boolean) => {
+		setAiApproved(checked)
+	}
+
+	// Mark as processed - saves comment, AI approval, reviewer name, and status
+	const handleMarkAsProcessed = async () => {
 		setIsSaving(true)
-		setReviewStatus(newStatus) // Optimistic update
+		setReviewStatus('processed') // Optimistic update
 
 		const result = await updateTicketReview(ticket.id, {
-			reviewStatus: newStatus,
+			reviewStatus: 'processed',
+			aiApproved: aiApproved,
+			manualComment: manualComment,
+			reviewerName: selectedReviewer || undefined,
 		})
 
 		if (result.success) {
 			toast.success(t('modal.saved'))
+			// Refresh to update the table
+			router.refresh()
 		} else {
 			// Revert on error
 			setReviewStatus(ticket.review_status || 'unprocessed')
-			toast.error(result.error || 'Failed to update status')
+			toast.error(result.error || t('modal.saveFailed'))
 		}
 
 		setIsSaving(false)
 	}
 
-	// Update AI approval
-	const handleAiApprovalChange = async (checked: boolean) => {
+	// Mark as unprocessed
+	const handleMarkAsUnprocessed = async () => {
 		setIsSaving(true)
-		setAiApproved(checked) // Optimistic update
+		setReviewStatus('unprocessed') // Optimistic update
 
 		const result = await updateTicketReview(ticket.id, {
-			aiApproved: checked,
+			reviewStatus: 'unprocessed',
 		})
 
 		if (result.success) {
 			toast.success(t('modal.saved'))
+			// Refresh to update the table
+			router.refresh()
 		} else {
 			// Revert on error
-			setAiApproved(ticket.ai_approved || false)
-			toast.error(result.error || 'Failed to update AI approval')
-		}
-
-		setIsSaving(false)
-	}
-
-	// Update manual comment
-	const handleSaveComment = async () => {
-		setIsSaving(true)
-
-		const result = await updateTicketReview(ticket.id, {
-			manualComment: manualComment,
-		})
-
-		if (result.success) {
-			toast.success(t('modal.saved'))
-		} else {
-			toast.error(result.error || 'Failed to save comment')
+			setReviewStatus(ticket.review_status || 'unprocessed')
+			toast.error(result.error || t('modal.saveFailed'))
 		}
 
 		setIsSaving(false)
@@ -393,46 +393,62 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 						{/* Changes/Suggestions Accordion */}
 						<TicketChangesAccordion changes={ticket.changes} />
 
-						{/* Manual Comment */}
+						{/* Review Actions - Comment + AI Approval + Status */}
 						<Card>
 							<CardHeader>
 								<CardTitle className='text-base sm:text-lg'>
-									{t('modal.comment')}
+									{t('modal.reviewActions')}
 								</CardTitle>
 								<CardDescription className='text-xs sm:text-sm'>
-									{t('modal.commentDesc')}
-								</CardDescription>
-							</CardHeader>
-							<CardContent className='space-y-3'>
-								<Textarea
-									placeholder={t('modal.commentPlaceholder')}
-									value={manualComment}
-									onChange={e => setManualComment(e.target.value)}
-									className='min-h-[120px] resize-none'
-									disabled={isSaving}
-								/>
-								<Button
-									onClick={handleSaveComment}
-									disabled={isSaving}
-									className='w-full sm:w-auto'
-									size='sm'
-								>
-									{isSaving ? t('modal.saving') : t('modal.saveComment')}
-								</Button>
-							</CardContent>
-						</Card>
-
-						{/* Review Actions */}
-						<Card>
-							<CardHeader>
-								<CardTitle className='text-base sm:text-lg'>
-									Review Actions
-								</CardTitle>
-								<CardDescription className='text-xs sm:text-sm'>
-									Mark ticket status and approve AI answer
+									{t('modal.reviewActionsDesc')}
 								</CardDescription>
 							</CardHeader>
 							<CardContent className='space-y-4'>
+								{/* Reviewer Selection */}
+								<div className='space-y-2'>
+									<Label className='text-sm font-medium'>
+										{t('modal.reviewer')}
+									</Label>
+									<div className='flex flex-wrap gap-3'>
+										{REVIEWER_AGENTS.map(agent => (
+											<Badge
+												key={agent.id}
+												variant='outline'
+												className={`cursor-pointer transition-all text-sm px-4 py-2 ${
+													selectedReviewer === agent.name
+														? `${agent.color} border-transparent ring-2 ring-white/50 ring-offset-2 ring-offset-background`
+														: 'opacity-60 hover:opacity-100'
+												}`}
+												onClick={() =>
+													setSelectedReviewer(
+														selectedReviewer === agent.name ? null : agent.name
+													)
+												}
+											>
+												{agent.name}
+											</Badge>
+										))}
+									</div>
+								</div>
+
+								<Separator />
+
+								{/* Manual Comment */}
+								<div className='space-y-2'>
+									<Label className='text-sm font-medium'>
+										{t('modal.comment')}
+									</Label>
+									<Textarea
+										placeholder={t('modal.commentPlaceholder')}
+										value={manualComment}
+										onChange={e => setManualComment(e.target.value)}
+										className='min-h-[100px] resize-none'
+										disabled={isSaving}
+									/>
+								</div>
+
+								<Separator />
+
 								{/* AI Approval Checkbox */}
 								<div className='flex items-center space-x-3 p-3 rounded-lg border bg-muted/30'>
 									<Checkbox
@@ -457,9 +473,11 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 
 								<Separator />
 
-								{/* Status Toggle Buttons */}
+								{/* Status Buttons */}
 								<div className='space-y-2'>
-									<Label className='text-sm font-medium'>Review Status</Label>
+									<Label className='text-sm font-medium'>
+										{t('modal.reviewStatus')}
+									</Label>
 									<div className='flex gap-2'>
 										<Button
 											variant={
@@ -467,8 +485,8 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 											}
 											size='sm'
 											className='flex-1'
-											onClick={() => handleStatusChange('processed')}
-											disabled={isSaving || reviewStatus === 'processed'}
+											onClick={handleMarkAsProcessed}
+											disabled={isSaving}
 										>
 											{isSaving && reviewStatus === 'processed' ? (
 												<span>{t('modal.saving')}</span>
@@ -482,7 +500,7 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 											}
 											size='sm'
 											className='flex-1'
-											onClick={() => handleStatusChange('unprocessed')}
+											onClick={handleMarkAsUnprocessed}
 											disabled={isSaving || reviewStatus === 'unprocessed'}
 										>
 											{isSaving && reviewStatus === 'unprocessed' ? (
@@ -492,6 +510,9 @@ export function TicketDetailModal({ ticket }: TicketDetailModalProps) {
 											)}
 										</Button>
 									</div>
+									<p className='text-xs text-muted-foreground'>
+										{t('modal.processedHint')}
+									</p>
 								</div>
 							</CardContent>
 						</Card>
