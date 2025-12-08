@@ -2,7 +2,6 @@ import { endOfDay, startOfDay, subDays } from 'date-fns'
 import { supabaseServer } from './server'
 import type {
 	AIHumanComparisonRow,
-	CategoryDistributionData,
 	CategoryDistributionResult,
 	DashboardFilters,
 	DetailedStatsRow,
@@ -116,7 +115,10 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 	}
 	if (categories.length > 0) {
 		currentChangedQuery = currentChangedQuery.in('request_subtype', categories)
-		previousChangedQuery = previousChangedQuery.in('request_subtype', categories)
+		previousChangedQuery = previousChangedQuery.in(
+			'request_subtype',
+			categories
+		)
 	}
 
 	const [
@@ -124,7 +126,12 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 		{ data: previousData, count: previousCount },
 		{ count: currentChangedCount },
 		{ count: previousChangedCount },
-	] = await Promise.all([currentQuery, previousQuery, currentChangedQuery, previousChangedQuery])
+	] = await Promise.all([
+		currentQuery,
+		previousQuery,
+		currentChangedQuery,
+		previousChangedQuery,
+	])
 
 	if (!currentData || !previousData) {
 		throw new Error('Failed to fetch KPI data')
@@ -145,12 +152,20 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 	const previousTotal = previousCount || 0
 
 	// Count reviewed records (change_classification IS NOT NULL)
-	const currentReviewed = currentRecords.filter(r => r.change_classification !== null).length
-	const previousReviewed = previousRecords.filter(r => r.change_classification !== null).length
+	const currentReviewed = currentRecords.filter(
+		r => r.change_classification !== null
+	).length
+	const previousReviewed = previousRecords.filter(
+		r => r.change_classification !== null
+	).length
 
 	// Count context_shift records to exclude from quality calculations
-	const currentContextShift = currentRecords.filter(r => r.change_classification === 'context_shift').length
-	const previousContextShift = previousRecords.filter(r => r.change_classification === 'context_shift').length
+	const currentContextShift = currentRecords.filter(
+		r => r.change_classification === 'context_shift'
+	).length
+	const previousContextShift = previousRecords.filter(
+		r => r.change_classification === 'context_shift'
+	).length
 
 	// Evaluable records (reviewed records excluding context_shift)
 	const currentEvaluable = currentReviewed - currentContextShift
@@ -163,12 +178,14 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 
 	// Unchanged records (no_significant_change or stylistic_preference - both are good quality)
 	const currentUnchanged = currentRecords.filter(
-		r => r.change_classification === 'no_significant_change' ||
-		     r.change_classification === 'stylistic_preference'
+		r =>
+			r.change_classification === 'no_significant_change' ||
+			r.change_classification === 'stylistic_preference'
 	).length
 	const previousUnchanged = previousRecords.filter(
-		r => r.change_classification === 'no_significant_change' ||
-		     r.change_classification === 'stylistic_preference'
+		r =>
+			r.change_classification === 'no_significant_change' ||
+			r.change_classification === 'stylistic_preference'
 	).length
 
 	// Quality calculated from evaluable records
@@ -180,7 +197,11 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 	// Calculate best category (only reviewed records, excluding context_shift)
 	const categoryStats = currentRecords.reduce((acc, record) => {
 		// Skip non-reviewed and context_shift records
-		if (record.change_classification === null || record.change_classification === 'context_shift') return acc
+		if (
+			record.change_classification === null ||
+			record.change_classification === 'context_shift'
+		)
+			return acc
 
 		const cat = record.request_subtype ?? 'unknown'
 		if (!acc[cat]) {
@@ -188,8 +209,10 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 		}
 		acc[cat].total++
 		// Count no_significant_change and stylistic_preference as unchanged (good quality)
-		if (record.change_classification === 'no_significant_change' ||
-		    record.change_classification === 'stylistic_preference') {
+		if (
+			record.change_classification === 'no_significant_change' ||
+			record.change_classification === 'stylistic_preference'
+		) {
 			acc[cat].unchanged++
 		}
 		return acc
@@ -197,7 +220,8 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 
 	const bestCategory = Object.entries(categoryStats).reduce(
 		(best, [cat, stats]) => {
-			const percentage = stats.total > 0 ? (stats.unchanged / stats.total) * 100 : 0
+			const percentage =
+				stats.total > 0 ? (stats.unchanged / stats.total) * 100 : 0
 			if (percentage > best.percentage) {
 				return { category: cat, percentage }
 			}
@@ -208,14 +232,16 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 
 	// Calculate previous percentage for best category (only reviewed records, excluding context_shift)
 	const previousCategoryData = previousRecords.filter(
-		r => r.request_subtype === bestCategory.category &&
-		     r.change_classification !== null &&
-		     r.change_classification !== 'context_shift'
+		r =>
+			r.request_subtype === bestCategory.category &&
+			r.change_classification !== null &&
+			r.change_classification !== 'context_shift'
 	)
 	const previousCategoryTotal = previousCategoryData.length
 	const previousCategoryUnchanged = previousCategoryData.filter(
-		r => r.change_classification === 'no_significant_change' ||
-		     r.change_classification === 'stylistic_preference'
+		r =>
+			r.change_classification === 'no_significant_change' ||
+			r.change_classification === 'stylistic_preference'
 	).length
 	const previousCategoryPercentage =
 		previousCategoryTotal > 0
@@ -285,7 +311,9 @@ export async function getQualityTrends(
 	const records = data as unknown as AIHumanComparisonRow[]
 
 	// Filter out context_shift records before calculations
-	const evaluableRecords = records.filter(r => r.change_classification !== 'context_shift')
+	const evaluableRecords = records.filter(
+		r => r.change_classification !== 'context_shift'
+	)
 
 	// Calculate date range in days
 	const diffMs = dateRange.to.getTime() - dateRange.from.getTime()
@@ -347,7 +375,9 @@ export async function getCategoryDistribution(
 
 	let query = supabase
 		.from('ai_human_comparison')
-		.select('request_subtype, changed, change_classification', { count: 'exact' })
+		.select('request_subtype, changed, change_classification', {
+			count: 'exact',
+		})
 		.gte('created_at', dateRange.from.toISOString())
 		.lte('created_at', dateRange.to.toISOString())
 
@@ -371,7 +401,9 @@ export async function getCategoryDistribution(
 	const totalCount = count || 0
 
 	// Filter out context_shift records
-	const evaluableRecords = records.filter(r => r.change_classification !== 'context_shift')
+	const evaluableRecords = records.filter(
+		r => r.change_classification !== 'context_shift'
+	)
 
 	console.log('🥧 Category Distribution Results:', {
 		recordsReturned: records.length,
@@ -435,7 +467,9 @@ export async function getVersionComparison(
 	const records = data as unknown as AIHumanComparisonRow[]
 
 	// Filter out context_shift records
-	const evaluableRecords = records.filter(r => r.change_classification !== 'context_shift')
+	const evaluableRecords = records.filter(
+		r => r.change_classification !== 'context_shift'
+	)
 
 	// Group by version (only evaluable records)
 	const grouped = evaluableRecords.reduce((acc, record) => {
@@ -452,9 +486,13 @@ export async function getVersionComparison(
 		.map(([version, stats]) => ({
 			version,
 			totalRecords: stats.total,
-			goodPercentage: stats.total > 0 ? (stats.unchanged / stats.total) * 100 : 0,
+			goodPercentage:
+				stats.total > 0 ? (stats.unchanged / stats.total) * 100 : 0,
 		}))
-		.sort((a, b) => extractVersionNumber(b.version) - extractVersionNumber(a.version))
+		.sort(
+			(a, b) =>
+				extractVersionNumber(b.version) - extractVersionNumber(a.version)
+		)
 }
 
 /**
@@ -520,59 +558,96 @@ export async function getDetailedStats(
 	}, {} as Record<string, { category: string; version: string; records: DetailedStatsRecord[] }>)
 
 	// Helper function to count change classifications (legacy and new)
-	// Legacy classifications are mapped to new ones for unified counting:
-	// - critical_error -> CRITICAL_FACT_ERROR
-	// - meaningful_improvement -> MINOR_INFO_GAP
-	// - stylistic_preference -> STYLISTIC_EDIT
-	// - no_significant_change -> PERFECT_MATCH
-	// - context_shift -> EXCL_WORKFLOW_SHIFT
+	// Bidirectional mapping for compatibility:
+	// Legacy -> New: critical_error -> CRITICAL_FACT_ERROR, etc.
+	// New -> Legacy: CRITICAL_FACT_ERROR -> critical_error, MAJOR_FUNCTIONAL_OMISSION -> critical_error, etc.
 	const countClassifications = (records: DetailedStatsRecord[]) => {
-		// Legacy classifications (v3.x) - direct counts
-		const criticalErrors = records.filter(r => r.change_classification === 'critical_error').length
-		const meaningfulImprovements = records.filter(r => r.change_classification === 'meaningful_improvement').length
-		const stylisticPreferences = records.filter(r => r.change_classification === 'stylistic_preference').length
-		const noSignificantChanges = records.filter(r => r.change_classification === 'no_significant_change').length
-		const contextShifts = records.filter(r => r.change_classification === 'context_shift').length
+		// Legacy classifications (v3.x)
+		const legacyCriticalErrors = records.filter(
+			r => r.change_classification === 'critical_error'
+		).length
+		const legacyMeaningfulImprovements = records.filter(
+			r => r.change_classification === 'meaningful_improvement'
+		).length
+		const legacyStylisticPreferences = records.filter(
+			r => r.change_classification === 'stylistic_preference'
+		).length
+		const legacyNoSignificantChanges = records.filter(
+			r => r.change_classification === 'no_significant_change'
+		).length
+		const legacyContextShifts = records.filter(
+			r => r.change_classification === 'context_shift'
+		).length
 
-		// New classifications (v4.0) - direct counts
-		const newCriticalFactErrors = records.filter(r => r.change_classification === 'CRITICAL_FACT_ERROR').length
-		const newMajorFunctionalOmissions = records.filter(r => r.change_classification === 'MAJOR_FUNCTIONAL_OMISSION').length
-		const newMinorInfoGaps = records.filter(r => r.change_classification === 'MINOR_INFO_GAP').length
-		const newConfusingVerbosity = records.filter(r => r.change_classification === 'CONFUSING_VERBOSITY').length
-		const newTonalMisalignments = records.filter(r => r.change_classification === 'TONAL_MISALIGNMENT').length
-		const newStructuralFixes = records.filter(r => r.change_classification === 'STRUCTURAL_FIX').length
-		const newStylisticEdits = records.filter(r => r.change_classification === 'STYLISTIC_EDIT').length
-		const newPerfectMatches = records.filter(r => r.change_classification === 'PERFECT_MATCH').length
-		const newExclWorkflowShifts = records.filter(r => r.change_classification === 'EXCL_WORKFLOW_SHIFT').length
-		const newExclDataDiscrepancies = records.filter(r => r.change_classification === 'EXCL_DATA_DISCREPANCY').length
+		// New classifications (v4.0)
+		const newCriticalFactErrors = records.filter(
+			r => r.change_classification === 'CRITICAL_FACT_ERROR'
+		).length
+		const newMajorFunctionalOmissions = records.filter(
+			r => r.change_classification === 'MAJOR_FUNCTIONAL_OMISSION'
+		).length
+		const newMinorInfoGaps = records.filter(
+			r => r.change_classification === 'MINOR_INFO_GAP'
+		).length
+		const newConfusingVerbosity = records.filter(
+			r => r.change_classification === 'CONFUSING_VERBOSITY'
+		).length
+		const newTonalMisalignments = records.filter(
+			r => r.change_classification === 'TONAL_MISALIGNMENT'
+		).length
+		const newStructuralFixes = records.filter(
+			r => r.change_classification === 'STRUCTURAL_FIX'
+		).length
+		const newStylisticEdits = records.filter(
+			r => r.change_classification === 'STYLISTIC_EDIT'
+		).length
+		const newPerfectMatches = records.filter(
+			r => r.change_classification === 'PERFECT_MATCH'
+		).length
+		const newExclWorkflowShifts = records.filter(
+			r => r.change_classification === 'EXCL_WORKFLOW_SHIFT'
+		).length
+		const newExclDataDiscrepancies = records.filter(
+			r => r.change_classification === 'EXCL_DATA_DISCREPANCY'
+		).length
+
+		// Legacy columns: combine legacy + new classifications
+		// critical_error + CRITICAL_FACT_ERROR + MAJOR_FUNCTIONAL_OMISSION
+		const criticalErrors =
+			legacyCriticalErrors + newCriticalFactErrors + newMajorFunctionalOmissions
+		// meaningful_improvement + MINOR_INFO_GAP + CONFUSING_VERBOSITY + TONAL_MISALIGNMENT
+		const meaningfulImprovements =
+			legacyMeaningfulImprovements +
+			newMinorInfoGaps +
+			newConfusingVerbosity +
+			newTonalMisalignments
+		// stylistic_preference + STRUCTURAL_FIX + STYLISTIC_EDIT
+		const stylisticPreferences =
+			legacyStylisticPreferences + newStructuralFixes + newStylisticEdits
+		// no_significant_change + PERFECT_MATCH
+		const noSignificantChanges = legacyNoSignificantChanges + newPerfectMatches
+		// context_shift + EXCL_WORKFLOW_SHIFT + EXCL_DATA_DISCREPANCY
+		const contextShifts =
+			legacyContextShifts + newExclWorkflowShifts + newExclDataDiscrepancies
 
 		return {
-			// Legacy classifications - direct counts for legacy mode
+			// Legacy classifications - combined legacy + new
 			criticalErrors,
 			meaningfulImprovements,
 			stylisticPreferences,
 			noSignificantChanges,
 			contextShifts,
-			// New classifications - combine direct + mapped legacy for unified view
-			// critical_error -> CRITICAL_FACT_ERROR
-			criticalFactErrors: newCriticalFactErrors + criticalErrors,
-			// (no legacy maps to MAJOR_FUNCTIONAL_OMISSION)
+			// New classifications - combine legacy + new for unified view
+			criticalFactErrors: newCriticalFactErrors + legacyCriticalErrors,
 			majorFunctionalOmissions: newMajorFunctionalOmissions,
-			// meaningful_improvement -> MINOR_INFO_GAP
-			minorInfoGaps: newMinorInfoGaps + meaningfulImprovements,
-			// (no legacy maps to these)
+			minorInfoGaps: newMinorInfoGaps + legacyMeaningfulImprovements,
 			confusingVerbosity: newConfusingVerbosity,
 			tonalMisalignments: newTonalMisalignments,
 			structuralFixes: newStructuralFixes,
-			// stylistic_preference -> STYLISTIC_EDIT
-			stylisticEdits: newStylisticEdits + stylisticPreferences,
-			// no_significant_change -> PERFECT_MATCH
-			perfectMatches: newPerfectMatches + noSignificantChanges,
-			// context_shift -> EXCL_WORKFLOW_SHIFT
-			exclWorkflowShifts: newExclWorkflowShifts + contextShifts,
-			// (no legacy maps to EXCL_DATA_DISCREPANCY)
+			stylisticEdits: newStylisticEdits + legacyStylisticPreferences,
+			perfectMatches: newPerfectMatches + legacyNoSignificantChanges,
+			exclWorkflowShifts: newExclWorkflowShifts + legacyContextShifts,
 			exclDataDiscrepancies: newExclDataDiscrepancies,
-			// Average score (calculated later)
 			averageScore: null as number | null,
 		}
 	}
@@ -584,18 +659,30 @@ export async function getDetailedStats(
 		const classifications = countClassifications(allRecords)
 
 		// Reviewed records = records with classification (not null)
-		const reviewedRecords = allRecords.filter(r => r.change_classification !== null)
+		const reviewedRecords = allRecords.filter(
+			r => r.change_classification !== null
+		)
 
-		// AI Errors = critical_error + meaningful_improvement (from reviewed only)
+		// AI Errors = critical + meaningful (legacy + new)
 		const aiErrors = reviewedRecords.filter(
-			r => r.change_classification === 'critical_error' ||
-			     r.change_classification === 'meaningful_improvement'
+			r =>
+				r.change_classification === 'critical_error' ||
+				r.change_classification === 'meaningful_improvement' ||
+				r.change_classification === 'CRITICAL_FACT_ERROR' ||
+				r.change_classification === 'MAJOR_FUNCTIONAL_OMISSION' ||
+				r.change_classification === 'MINOR_INFO_GAP' ||
+				r.change_classification === 'CONFUSING_VERBOSITY' ||
+				r.change_classification === 'TONAL_MISALIGNMENT'
 		).length
 
-		// AI Quality = no_significant_change + stylistic_preference (from reviewed only)
+		// AI Quality = no_significant_change + stylistic_preference (legacy + new)
 		const aiQuality = reviewedRecords.filter(
-			r => r.change_classification === 'no_significant_change' ||
-			     r.change_classification === 'stylistic_preference'
+			r =>
+				r.change_classification === 'no_significant_change' ||
+				r.change_classification === 'stylistic_preference' ||
+				r.change_classification === 'STRUCTURAL_FIX' ||
+				r.change_classification === 'STYLISTIC_EDIT' ||
+				r.change_classification === 'PERFECT_MATCH'
 		).length
 
 		// Level 1: Version-level row
@@ -626,18 +713,30 @@ export async function getDetailedStats(
 			const weekClassifications = countClassifications(weekRecords)
 
 			// Reviewed records = records with classification (not null)
-			const weekReviewedRecords = weekRecords.filter(r => r.change_classification !== null)
+			const weekReviewedRecords = weekRecords.filter(
+				r => r.change_classification !== null
+			)
 
-			// AI Errors = critical_error + meaningful_improvement (from reviewed only)
+			// AI Errors = critical + meaningful (legacy + new)
 			const weekAiErrors = weekReviewedRecords.filter(
-				r => r.change_classification === 'critical_error' ||
-				     r.change_classification === 'meaningful_improvement'
+				r =>
+					r.change_classification === 'critical_error' ||
+					r.change_classification === 'meaningful_improvement' ||
+					r.change_classification === 'CRITICAL_FACT_ERROR' ||
+					r.change_classification === 'MAJOR_FUNCTIONAL_OMISSION' ||
+					r.change_classification === 'MINOR_INFO_GAP' ||
+					r.change_classification === 'CONFUSING_VERBOSITY' ||
+					r.change_classification === 'TONAL_MISALIGNMENT'
 			).length
 
-			// AI Quality = no_significant_change + stylistic_preference (from reviewed only)
+			// AI Quality = no_significant_change + stylistic_preference (legacy + new)
 			const weekAiQuality = weekReviewedRecords.filter(
-				r => r.change_classification === 'no_significant_change' ||
-				     r.change_classification === 'stylistic_preference'
+				r =>
+					r.change_classification === 'no_significant_change' ||
+					r.change_classification === 'stylistic_preference' ||
+					r.change_classification === 'STRUCTURAL_FIX' ||
+					r.change_classification === 'STYLISTIC_EDIT' ||
+					r.change_classification === 'PERFECT_MATCH'
 			).length
 
 			const weekStartDate = new Date(weekStart)
@@ -762,7 +861,7 @@ export async function getDetailedStatsPaginated(
 	const { dateRange, versions, categories } = filters
 
 	// @ts-expect-error - Supabase RPC types not fully generated yet
-	const { data, error} = await supabase.rpc('get_detailed_stats_paginated', {
+	const { data, error } = await supabase.rpc('get_detailed_stats_paginated', {
 		p_from_date: dateRange.from.toISOString(),
 		p_to_date: dateRange.to.toISOString(),
 		p_versions: versions.length > 0 ? versions : null,
@@ -804,7 +903,9 @@ export async function getDetailedStatsPaginated(
 
 		// New classification counts (from SQL if available, otherwise 0)
 		const newCriticalFactErrors = Number(r.out_critical_fact_errors || 0)
-		const newMajorFunctionalOmissions = Number(r.out_major_functional_omissions || 0)
+		const newMajorFunctionalOmissions = Number(
+			r.out_major_functional_omissions || 0
+		)
 		const newMinorInfoGaps = Number(r.out_minor_info_gaps || 0)
 		const newConfusingVerbosity = Number(r.out_confusing_verbosity || 0)
 		const newTonalMisalignments = Number(r.out_tonal_misalignments || 0)
@@ -813,6 +914,21 @@ export async function getDetailedStatsPaginated(
 		const newPerfectMatches = Number(r.out_perfect_matches || 0)
 		const newExclWorkflowShifts = Number(r.out_excl_workflow_shifts || 0)
 		const newExclDataDiscrepancies = Number(r.out_excl_data_discrepancies || 0)
+
+		// Legacy columns: combine legacy + mapped new classifications (bidirectional)
+		const combinedCriticalErrors =
+			criticalErrors + newCriticalFactErrors + newMajorFunctionalOmissions
+		const combinedMeaningfulImprovements =
+			meaningfulImprovements +
+			newMinorInfoGaps +
+			newConfusingVerbosity +
+			newTonalMisalignments
+		const combinedStylisticPreferences =
+			stylisticPreferences + newStructuralFixes + newStylisticEdits
+		const combinedNoSignificantChanges =
+			noSignificantChanges + newPerfectMatches
+		const combinedContextShifts =
+			contextShifts + newExclWorkflowShifts + newExclDataDiscrepancies
 
 		return {
 			category: (r.out_category as string) || 'unknown',
@@ -823,16 +939,16 @@ export async function getDetailedStatsPaginated(
 			reviewedRecords: Number(r.out_reviewed_records || 0),
 			aiErrors: Number(r.out_ai_errors || 0),
 			aiQuality: Number(r.out_ai_quality || 0),
-			// Legacy classifications
-			criticalErrors,
-			meaningfulImprovements,
-			stylisticPreferences,
-			noSignificantChanges,
-			contextShifts,
-			// New classifications - combine direct + mapped legacy for unified view
+			// Legacy classifications - combined legacy + mapped new
+			criticalErrors: combinedCriticalErrors,
+			meaningfulImprovements: combinedMeaningfulImprovements,
+			stylisticPreferences: combinedStylisticPreferences,
+			noSignificantChanges: combinedNoSignificantChanges,
+			contextShifts: combinedContextShifts,
+			// New classifications - combine legacy + new for unified view
 			// critical_error -> CRITICAL_FACT_ERROR
 			criticalFactErrors: newCriticalFactErrors + criticalErrors,
-			// (no legacy maps to MAJOR_FUNCTIONAL_OMISSION)
+			// MAJOR_FUNCTIONAL_OMISSION (tracked separately)
 			majorFunctionalOmissions: newMajorFunctionalOmissions,
 			// meaningful_improvement -> MINOR_INFO_GAP
 			minorInfoGaps: newMinorInfoGaps + meaningfulImprovements,

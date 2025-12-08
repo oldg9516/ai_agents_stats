@@ -89,6 +89,26 @@ export const LEGACY_TO_NEW_MAP: Record<
 	context_shift: 'EXCL_WORKFLOW_SHIFT',
 }
 
+/**
+ * Map new classifications to legacy ones (for backwards compatibility in UI)
+ * Used when displaying legacy columns with new classification data
+ */
+export const NEW_TO_LEGACY_MAP: Record<
+	NewClassificationType,
+	LegacyClassificationType
+> = {
+	CRITICAL_FACT_ERROR: 'critical_error',
+	MAJOR_FUNCTIONAL_OMISSION: 'critical_error', // Серьезная ошибка -> critical
+	MINOR_INFO_GAP: 'meaningful_improvement',
+	CONFUSING_VERBOSITY: 'meaningful_improvement',
+	TONAL_MISALIGNMENT: 'meaningful_improvement',
+	STRUCTURAL_FIX: 'stylistic_preference',
+	STYLISTIC_EDIT: 'stylistic_preference',
+	PERFECT_MATCH: 'no_significant_change',
+	EXCL_WORKFLOW_SHIFT: 'context_shift',
+	EXCL_DATA_DISCREPANCY: 'context_shift', // Excluded -> context_shift
+}
+
 // =============================================================================
 // SCORE GROUPS (for UI display)
 // =============================================================================

@@ -66,7 +66,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 
 	// Server-side pagination state
 	const [currentPage, setCurrentPage] = useState(0)
-	const pageSize = 50
+	const pageSize = 20
 
 	// Fetch paginated data
 	const {
