@@ -950,73 +950,82 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 					</Table>
 				</div>
 
-				{/* Server-Side Pagination */}
-				<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-4'>
-					<div className='text-xs sm:text-sm text-muted-foreground text-center sm:text-left'>
-						{t('table.showing')} {currentPage * pageSize + 1} {t('table.to')}{' '}
-						{Math.min((currentPage + 1) * pageSize, totalCount)} {t('table.of')}{' '}
-						{totalCount}
-						{isFetching && !isLoading && (
-							<span className='ml-2 inline-flex items-center gap-1'>
-								<IconLoader2 className='h-3 w-3 animate-spin' />
-								<span className='text-xs'>Loading...</span>
-							</span>
-						)}
+				{/* Pagination - only show when no search filter */}
+				{globalFilter ? (
+					<div className='text-xs sm:text-sm text-muted-foreground text-center py-4'>
+						{t('table.showing')} {table.getFilteredRowModel().rows.length}{' '}
+						{t('table.of')} {totalCount} ({t('table.filtered')})
 					</div>
-					<div className='flex flex-col sm:flex-row items-center gap-2'>
-						<div className='flex items-center gap-2'>
-							<Button
-								variant='outline'
-								size='sm'
-								onClick={handlePreviousPage}
-								disabled={!hasPreviousPage || isFetching}
-								className='text-xs sm:text-sm'
-							>
-								<IconChevronLeft className='h-3 w-3 sm:h-4 sm:w-4' />
-								<span className='hidden sm:inline'>{t('table.previous')}</span>
-							</Button>
-							<div className='flex items-center gap-1'>
-								{Array.from({ length: totalPages }, (_, i) => i)
-									.filter(page => {
-										return (
-											page === 0 ||
-											page === totalPages - 1 ||
-											Math.abs(page - currentPage) <= 1
-										)
-									})
-									.map((page, idx, arr) => {
-										const showEllipsis = idx > 0 && page - arr[idx - 1] > 1
-										return (
-											<div key={page} className='flex items-center'>
-												{showEllipsis && (
-													<span className='px-1 text-xs'>...</span>
-												)}
-												<Button
-													variant={currentPage === page ? 'default' : 'outline'}
-													size='sm'
-													onClick={() => handlePageClick(page)}
-													disabled={isFetching}
-													className='w-7 h-7 sm:w-9 sm:h-9 text-xs sm:text-sm'
-												>
-													{page + 1}
-												</Button>
-											</div>
-										)
-									})}
+				) : (
+					<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-4'>
+						<div className='text-xs sm:text-sm text-muted-foreground text-center sm:text-left'>
+							{t('table.showing')} {currentPage * pageSize + 1} {t('table.to')}{' '}
+							{Math.min((currentPage + 1) * pageSize, totalCount)}{' '}
+							{t('table.of')} {totalCount}
+							{isFetching && !isLoading && (
+								<span className='ml-2 inline-flex items-center gap-1'>
+									<IconLoader2 className='h-3 w-3 animate-spin' />
+									<span className='text-xs'>Loading...</span>
+								</span>
+							)}
+						</div>
+						<div className='flex flex-col sm:flex-row items-center gap-2'>
+							<div className='flex items-center gap-2'>
+								<Button
+									variant='outline'
+									size='sm'
+									onClick={handlePreviousPage}
+									disabled={!hasPreviousPage || isFetching}
+									className='text-xs sm:text-sm'
+								>
+									<IconChevronLeft className='h-3 w-3 sm:h-4 sm:w-4' />
+									<span className='hidden sm:inline'>{t('table.previous')}</span>
+								</Button>
+								<div className='flex items-center gap-1'>
+									{Array.from({ length: totalPages }, (_, i) => i)
+										.filter(page => {
+											return (
+												page === 0 ||
+												page === totalPages - 1 ||
+												Math.abs(page - currentPage) <= 1
+											)
+										})
+										.map((page, idx, arr) => {
+											const showEllipsis = idx > 0 && page - arr[idx - 1] > 1
+											return (
+												<div key={page} className='flex items-center'>
+													{showEllipsis && (
+														<span className='px-1 text-xs'>...</span>
+													)}
+													<Button
+														variant={
+															currentPage === page ? 'default' : 'outline'
+														}
+														size='sm'
+														onClick={() => handlePageClick(page)}
+														disabled={isFetching}
+														className='w-7 h-7 sm:w-9 sm:h-9 text-xs sm:text-sm'
+													>
+														{page + 1}
+													</Button>
+												</div>
+											)
+										})}
+								</div>
+								<Button
+									variant='outline'
+									size='sm'
+									onClick={handleNextPage}
+									disabled={!hasNextPage || isFetching}
+									className='text-xs sm:text-sm'
+								>
+									<span className='hidden sm:inline'>{t('table.next')}</span>
+									<IconChevronRight className='h-3 w-3 sm:h-4 sm:w-4' />
+								</Button>
 							</div>
-							<Button
-								variant='outline'
-								size='sm'
-								onClick={handleNextPage}
-								disabled={!hasNextPage || isFetching}
-								className='text-xs sm:text-sm'
-							>
-								<span className='hidden sm:inline'>{t('table.next')}</span>
-								<IconChevronRight className='h-3 w-3 sm:h-4 sm:w-4' />
-							</Button>
 						</div>
 					</div>
-				</div>
+				)}
 			</CardContent>
 		</Card>
 	)
