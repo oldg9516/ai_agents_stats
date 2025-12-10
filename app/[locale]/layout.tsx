@@ -44,7 +44,7 @@ export default async function LocaleLayout({
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 			>
-				<Provider messages={messages}>{children}</Provider>
+				<Provider messages={messages} locale={locale}>{children}</Provider>
 
 				<Analytics />
 			</body>

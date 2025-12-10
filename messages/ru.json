@@ -7,6 +7,7 @@
 		"supportOverview": "Обзор поддержки",
 		"requestCategories": "Категории запросов",
 		"ticketsReview": "Обзор тикетов",
+		"backlogReports": "Отчёты бэклога",
 		"documentation": "Документация",
 		"settings": "Настройки",
 		"search": "Поиск",
@@ -19,7 +20,11 @@
 		"noOptionsFound": "Опции не найдены",
 		"export": "Экспорт CSV",
 		"apply": "Применить",
-		"cancel": "Отмена"
+		"cancel": "Отмена",
+		"retry": "Повторить",
+		"previous": "Предыдущая",
+		"next": "Следующая",
+		"pageOf": "Страница {current} из {total}"
 	},
 	"header": {
 		"title": "Lev Haolam AI"
@@ -330,7 +335,10 @@
 	"errors": {
 		"loadingDashboard": "Ошибка загрузки данных панели",
 		"loadingSupport": "Ошибка загрузки данных поддержки",
-		"loadingTable": "Ошибка загрузки таблицы"
+		"loadingTable": "Ошибка загрузки таблицы",
+		"loadingReports": "Ошибка загрузки отчётов",
+		"reportNotFound": "Отчёт не найден",
+		"reportLoadFailed": "Не удалось загрузить данные отчёта"
 	},
 	"docs": {
 		"title": "Документация",
@@ -1022,6 +1030,77 @@
 				"tone": "Изменение тона",
 				"structure": "Изменение структуры",
 				"accuracy": "Ошибка точности"
+			}
+		}
+	},
+	"backlogReports": {
+		"title": "Отчёты бэклога",
+		"description": "AI-сгенерированные аналитические отчёты по бэклогу тикетов",
+		"generateReport": "Создать отчёт",
+		"noReports": "Отчёты по выбранным фильтрам не найдены",
+		"generateFirst": "Создайте свой первый отчёт",
+		"filters": {
+			"dateRange": "Дата создания",
+			"period": "Период",
+			"allPeriods": "Все периоды",
+			"search": "Поиск",
+			"searchPlaceholder": "Поиск в отчётах..."
+		},
+		"card": {
+			"days": "дней",
+			"tickets": "тикетов",
+			"generated": "Создан",
+			"topCategories": "Топ категории",
+			"patterns": "выявленных паттернов"
+		},
+		"detail": {
+			"back": "К списку отчётов",
+			"totalTickets": "Всего тикетов",
+			"periodCovered": "Период",
+			"categoriesCount": "Категорий",
+			"executiveSummary": "Краткое резюме",
+			"statsByCategory": "Статистика по категориям",
+			"patterns": "Паттерны",
+			"trends": "Тренды",
+			"issues": "Проблемы",
+			"weeklyStats": "По неделям",
+			"recommendations": "Рекомендации",
+			"noPatterns": "Паттерны не выявлены",
+			"noTrends": "Тренды не выявлены",
+			"noIssues": "Проблемы не выявлены",
+			"noWeeklyStats": "Недельная статистика недоступна",
+			"noRecommendations": "Рекомендации отсутствуют",
+			"examples": "Примеры",
+			"businessInsight": "Бизнес-инсайт",
+			"possibleCause": "Возможная причина",
+			"weeklyTrend": "Недельный тренд",
+			"weeklyBreakdown": "Разбивка по неделям",
+			"week": "Неделя",
+			"total": "Всего",
+			"recommendation": "Рекомендация"
+		},
+		"generate": {
+			"title": "Создать новый отчёт",
+			"description": "Создать новый AI-аналитический отчёт по бэклогу тикетов",
+			"selectPeriod": "Выберите период анализа",
+			"customDays": "Другой",
+			"enterDays": "Количество дней",
+			"warning": "Генерация отчёта занимает 5-10 минут. Вы получите уведомление, когда отчёт будет готов.",
+			"generating": "Генерация...",
+			"generate": "Создать",
+			"success": "Генерация отчёта запущена!",
+			"error": "Не удалось запустить генерацию",
+			"inProgress": "Генерация отчёта...",
+			"inProgressDescription": "Отчёт генерируется. Страница обновится автоматически, когда отчёт будет готов."
+		},
+		"generation": {
+			"title": "AI анализирует ваши тикеты...",
+			"cancel": "Отменить отслеживание",
+			"tip": "AI обрабатывает тысячи тикетов, выявляя паттерны, тренды и практические рекомендации.",
+			"steps": {
+				"fetching": "Загрузка данных",
+				"analyzing": "Анализ паттернов",
+				"generating": "Генерация отчёта"
 			}
 		}
 	}

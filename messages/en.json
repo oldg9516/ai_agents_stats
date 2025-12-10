@@ -7,6 +7,7 @@
 		"supportOverview": "Support Overview",
 		"requestCategories": "Request Categories",
 		"ticketsReview": "Tickets Review",
+		"backlogReports": "Backlog Reports",
 		"documentation": "Documentation",
 		"settings": "Settings",
 		"search": "Search",
@@ -19,7 +20,11 @@
 		"noOptionsFound": "No options found",
 		"export": "Export CSV",
 		"apply": "Apply",
-		"cancel": "Cancel"
+		"cancel": "Cancel",
+		"retry": "Retry",
+		"previous": "Previous",
+		"next": "Next",
+		"pageOf": "Page {current} of {total}"
 	},
 	"header": {
 		"title": "Lev Haolam AI"
@@ -330,7 +335,10 @@
 	"errors": {
 		"loadingDashboard": "Error loading dashboard data",
 		"loadingSupport": "Error loading support data",
-		"loadingTable": "Error loading table"
+		"loadingTable": "Error loading table",
+		"loadingReports": "Error loading reports",
+		"reportNotFound": "Report not found",
+		"reportLoadFailed": "Failed to load report data"
 	},
 	"docs": {
 		"title": "Documentation",
@@ -1022,6 +1030,77 @@
 				"tone": "Tone Change",
 				"structure": "Structure Change",
 				"accuracy": "Accuracy Issue"
+			}
+		}
+	},
+	"backlogReports": {
+		"title": "Backlog Reports",
+		"description": "AI-generated analysis reports of support ticket backlogs",
+		"generateReport": "Generate Report",
+		"noReports": "No reports found for the selected filters",
+		"generateFirst": "Generate your first report",
+		"filters": {
+			"dateRange": "Generated Date",
+			"period": "Period",
+			"allPeriods": "All Periods",
+			"search": "Search",
+			"searchPlaceholder": "Search in reports..."
+		},
+		"card": {
+			"days": "days",
+			"tickets": "tickets",
+			"generated": "Generated",
+			"topCategories": "Top Categories",
+			"patterns": "patterns identified"
+		},
+		"detail": {
+			"back": "Back to Reports",
+			"totalTickets": "Total Tickets",
+			"periodCovered": "Period Covered",
+			"categoriesCount": "Categories",
+			"executiveSummary": "Executive Summary",
+			"statsByCategory": "Stats by Category",
+			"patterns": "Patterns",
+			"trends": "Trends",
+			"issues": "Issues",
+			"weeklyStats": "Weekly Stats",
+			"recommendations": "Recommendations",
+			"noPatterns": "No patterns identified",
+			"noTrends": "No trends identified",
+			"noIssues": "No issues identified",
+			"noWeeklyStats": "No weekly stats available",
+			"noRecommendations": "No recommendations available",
+			"examples": "Examples",
+			"businessInsight": "Business Insight",
+			"possibleCause": "Possible Cause",
+			"weeklyTrend": "Weekly Trend",
+			"weeklyBreakdown": "Weekly Breakdown",
+			"week": "Week",
+			"total": "Total",
+			"recommendation": "Recommendation"
+		},
+		"generate": {
+			"title": "Generate New Report",
+			"description": "Create a new AI analysis report for support ticket backlog",
+			"selectPeriod": "Select analysis period",
+			"customDays": "Custom",
+			"enterDays": "Number of days",
+			"warning": "Report generation takes 5-10 minutes. You will be notified when it's ready.",
+			"generating": "Generating...",
+			"generate": "Generate",
+			"success": "Report generation started!",
+			"error": "Failed to start generation",
+			"inProgress": "Generating Report...",
+			"inProgressDescription": "The report is being generated. This page will update automatically when ready."
+		},
+		"generation": {
+			"title": "AI is analyzing your support tickets...",
+			"cancel": "Cancel tracking",
+			"tip": "The AI is processing thousands of tickets to identify patterns, trends, and actionable insights.",
+			"steps": {
+				"fetching": "Fetching data",
+				"analyzing": "Analyzing patterns",
+				"generating": "Generating report"
 			}
 		}
 	}

@@ -7,11 +7,15 @@ import {
 	createTicketsReviewSlice,
 	TicketsReviewSlice,
 } from './slices/tickets-review-slice'
+import {
+	createBacklogReportsSlice,
+	BacklogReportsSlice,
+} from './slices/backlog-reports-slice'
 
 /**
  * Global store combining all slices
  */
-type StoreState = DashboardSlice & SupportSlice & TicketsReviewSlice
+type StoreState = DashboardSlice & SupportSlice & TicketsReviewSlice & BacklogReportsSlice
 
 // Clean up invalid localStorage data on startup
 if (typeof window !== 'undefined') {
@@ -20,7 +24,7 @@ if (typeof window !== 'undefined') {
 		try {
 			const parsed = JSON.parse(stored)
 			// Check if version exists, if not - clear old data
-			if (!parsed.version || parsed.version < 6) {
+			if (!parsed.version || parsed.version < 7) {
 				localStorage.removeItem('ai-stats-storage')
 			}
 		} catch (e) {
@@ -37,20 +41,24 @@ export const useStore = create<StoreState>()(
 				...createDashboardSlice(...a),
 				...createSupportSlice(...a),
 				...createTicketsReviewSlice(...a),
+				...createBacklogReportsSlice(...a),
 			}),
 			{
 				name: 'ai-stats-storage',
-				version: 6, // Changed from 5 to 6 to add review status filter
+				version: 7, // Changed from 6 to 7 to add backlog reports slice
 				partialize: state => ({
 					// Persist only filter states
 					dashboardFilters: state.dashboardFilters,
 					supportFilters: state.supportFilters,
 					ticketsReviewFilters: state.ticketsReviewFilters,
+					backlogReportsFilters: state.backlogReportsFilters,
+					isGeneratingReport: state.isGeneratingReport,
+					generationStartedAt: state.generationStartedAt,
 				}),
 				// Migration function for version changes
 				migrate: (persistedState: any, version: number) => {
 					// Force reset on version change
-					if (version !== 5) {
+					if (version !== 7) {
 						return null
 					}
 
@@ -76,6 +84,16 @@ export const useStore = create<StoreState>()(
 					if (persistedState?.ticketsReviewFilters?.dateRange) {
 						const from = new Date(
 							persistedState.ticketsReviewFilters.dateRange.from
+						)
+						const now = new Date()
+						if (from > now) {
+							return null
+						}
+					}
+
+					if (persistedState?.backlogReportsFilters?.dateRange) {
+						const from = new Date(
+							persistedState.backlogReportsFilters.dateRange.from
 						)
 						const now = new Date()
 						if (from > now) {
@@ -175,6 +193,35 @@ export const useStore = create<StoreState>()(
 						} else {
 							state.ticketsReviewFilters.dateRange.from = from
 							state.ticketsReviewFilters.dateRange.to = to
+						}
+					}
+
+					// Validate and fix backlog reports dates
+					if (state.backlogReportsFilters?.dateRange) {
+						const from = new Date(state.backlogReportsFilters.dateRange.from)
+						const to = new Date(state.backlogReportsFilters.dateRange.to)
+
+						// Check if dates are valid and not in future
+						const now = new Date()
+						if (
+							isNaN(from.getTime()) ||
+							isNaN(to.getTime()) ||
+							from > now ||
+							to > now
+						) {
+							// Reset to default (last 90 days)
+							const defaultTo = new Date()
+							defaultTo.setHours(23, 59, 59, 999)
+							const defaultFrom = new Date()
+							defaultFrom.setDate(defaultFrom.getDate() - 90)
+							defaultFrom.setHours(0, 0, 0, 0)
+							state.backlogReportsFilters.dateRange = {
+								from: defaultFrom,
+								to: defaultTo,
+							}
+						} else {
+							state.backlogReportsFilters.dateRange.from = from
+							state.backlogReportsFilters.dateRange.to = to
 						}
 					}
 				},

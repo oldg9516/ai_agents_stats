@@ -7,6 +7,7 @@ import {
 	IconDashboard,
 	IconDatabase,
 	IconFileAi,
+	IconFileAnalytics,
 	IconFileDescription,
 	IconFileWord,
 	IconHeadset,
@@ -70,7 +71,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				url: '/support-overview',
 				icon: IconHeadset,
 			},
-
+			{
+				title: t('backlogReports'),
+				url: '/backlog-reports',
+				icon: IconFileAnalytics,
+			},
 			{
 				title: t('documentation'),
 				url: '/docs',

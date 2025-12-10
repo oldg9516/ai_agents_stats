@@ -552,3 +552,85 @@ export interface TicketsReviewFilters {
 	reviewStatuses: string[] // review_status - [] = all (processed/unprocessed)
 	reviewerNames: string[] // reviewer_name - [] = all reviewers
 }
+
+// ============================================================================
+// Backlog Reports Types
+// ============================================================================
+
+/**
+ * Category statistics mapping (category name -> ticket count)
+ */
+export interface CategoryStats {
+	[category: string]: number
+}
+
+/**
+ * Weekly statistics breakdown
+ */
+export interface WeeklyStats {
+	week: string // Week identifier (e.g., "Dec 2-8")
+	total: number
+	[category: string]: number | string // Dynamic category columns
+}
+
+/**
+ * Main pattern identified in the backlog
+ */
+export interface MainPattern {
+	rank: number
+	pattern_name: string
+	description: string
+	volume: number
+	examples: string[]
+	business_insight: string
+}
+
+/**
+ * Temporal trend observation
+ */
+export interface TemporalTrend {
+	observation: string
+	timeframe: string
+	possible_cause: string
+}
+
+/**
+ * Specific issue identified in the backlog
+ */
+export interface SpecificIssue {
+	issue: string
+	details: string
+	affected_period: string
+}
+
+/**
+ * Backlog Report - AI-generated analysis of support tickets
+ */
+export interface BacklogReport {
+	id: string
+	created_at: string
+	period_days: number
+	date_from: string
+	date_to: string
+	total_tickets: number
+	stats: CategoryStats
+	weekly_stats: WeeklyStats[]
+	executive_summary: string
+	main_patterns: MainPattern[]
+	temporal_trends: TemporalTrend[]
+	specific_issues: SpecificIssue[]
+	recommendations: string[]
+}
+
+/**
+ * Backlog Reports Filters
+ */
+export interface BacklogReportsFilters {
+	dateRange: {
+		from: Date
+		to: Date
+	}
+	periodDays: number | null // 7, 14, 30 or null for all
+	minTickets: number | null
+	searchQuery: string
+}
