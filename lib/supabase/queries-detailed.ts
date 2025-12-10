@@ -1,0 +1,419 @@
+import { supabaseServer } from './server'
+import type { DashboardFilters, DetailedStatsRow } from './types'
+import { extractVersionNumber, formatDate, getWeekStart } from './helpers'
+
+// Use server-side Supabase client for all queries
+const supabase = supabaseServer
+
+// Type for records fetched from database
+type DetailedStatsRecord = {
+	created_at: string | null
+	email: string | null
+	changed: boolean
+	request_subtype: string | null
+	prompt_version: string | null
+	change_classification: string | null
+}
+
+/**
+ * Helper function to count change classifications (legacy and new)
+ * Bidirectional mapping for compatibility
+ */
+function countClassifications(records: DetailedStatsRecord[]) {
+	// Legacy classifications (v3.x)
+	const legacyCriticalErrors = records.filter(
+		r => r.change_classification === 'critical_error'
+	).length
+	const legacyMeaningfulImprovements = records.filter(
+		r => r.change_classification === 'meaningful_improvement'
+	).length
+	const legacyStylisticPreferences = records.filter(
+		r => r.change_classification === 'stylistic_preference'
+	).length
+	const legacyNoSignificantChanges = records.filter(
+		r => r.change_classification === 'no_significant_change'
+	).length
+	const legacyContextShifts = records.filter(
+		r => r.change_classification === 'context_shift'
+	).length
+
+	// New classifications (v4.0)
+	const newCriticalFactErrors = records.filter(
+		r => r.change_classification === 'CRITICAL_FACT_ERROR'
+	).length
+	const newMajorFunctionalOmissions = records.filter(
+		r => r.change_classification === 'MAJOR_FUNCTIONAL_OMISSION'
+	).length
+	const newMinorInfoGaps = records.filter(
+		r => r.change_classification === 'MINOR_INFO_GAP'
+	).length
+	const newConfusingVerbosity = records.filter(
+		r => r.change_classification === 'CONFUSING_VERBOSITY'
+	).length
+	const newTonalMisalignments = records.filter(
+		r => r.change_classification === 'TONAL_MISALIGNMENT'
+	).length
+	const newStructuralFixes = records.filter(
+		r => r.change_classification === 'STRUCTURAL_FIX'
+	).length
+	const newStylisticEdits = records.filter(
+		r => r.change_classification === 'STYLISTIC_EDIT'
+	).length
+	const newPerfectMatches = records.filter(
+		r => r.change_classification === 'PERFECT_MATCH'
+	).length
+	const newExclWorkflowShifts = records.filter(
+		r => r.change_classification === 'EXCL_WORKFLOW_SHIFT'
+	).length
+	const newExclDataDiscrepancies = records.filter(
+		r => r.change_classification === 'EXCL_DATA_DISCREPANCY'
+	).length
+
+	// Legacy columns: combine legacy + new classifications
+	const criticalErrors =
+		legacyCriticalErrors + newCriticalFactErrors + newMajorFunctionalOmissions
+	const meaningfulImprovements =
+		legacyMeaningfulImprovements +
+		newMinorInfoGaps +
+		newConfusingVerbosity +
+		newTonalMisalignments
+	const stylisticPreferences =
+		legacyStylisticPreferences + newStructuralFixes + newStylisticEdits
+	const noSignificantChanges = legacyNoSignificantChanges + newPerfectMatches
+	const contextShifts =
+		legacyContextShifts + newExclWorkflowShifts + newExclDataDiscrepancies
+
+	return {
+		// Legacy classifications - combined legacy + new
+		criticalErrors,
+		meaningfulImprovements,
+		stylisticPreferences,
+		noSignificantChanges,
+		contextShifts,
+		// New classifications - combine legacy + new for unified view
+		criticalFactErrors: newCriticalFactErrors + legacyCriticalErrors,
+		majorFunctionalOmissions: newMajorFunctionalOmissions,
+		minorInfoGaps: newMinorInfoGaps + legacyMeaningfulImprovements,
+		confusingVerbosity: newConfusingVerbosity,
+		tonalMisalignments: newTonalMisalignments,
+		structuralFixes: newStructuralFixes,
+		stylisticEdits: newStylisticEdits + legacyStylisticPreferences,
+		perfectMatches: newPerfectMatches + legacyNoSignificantChanges,
+		exclWorkflowShifts: newExclWorkflowShifts + legacyContextShifts,
+		exclDataDiscrepancies: newExclDataDiscrepancies,
+		averageScore: null as number | null,
+	}
+}
+
+/**
+ * Check if classification is an AI error
+ */
+function isAIError(classification: string | null): boolean {
+	return (
+		classification === 'critical_error' ||
+		classification === 'meaningful_improvement' ||
+		classification === 'CRITICAL_FACT_ERROR' ||
+		classification === 'MAJOR_FUNCTIONAL_OMISSION' ||
+		classification === 'MINOR_INFO_GAP' ||
+		classification === 'CONFUSING_VERBOSITY' ||
+		classification === 'TONAL_MISALIGNMENT'
+	)
+}
+
+/**
+ * Check if classification is AI quality (good)
+ */
+function isAIQuality(classification: string | null): boolean {
+	return (
+		classification === 'no_significant_change' ||
+		classification === 'stylistic_preference' ||
+		classification === 'STRUCTURAL_FIX' ||
+		classification === 'STYLISTIC_EDIT' ||
+		classification === 'PERFECT_MATCH'
+	)
+}
+
+/**
+ * Fetch Detailed Stats (for table)
+ */
+export async function getDetailedStats(
+	filters: DashboardFilters
+): Promise<DetailedStatsRow[]> {
+	const { dateRange, versions, categories } = filters
+
+	// OPTIMIZATION: Select only fields needed for detailed stats calculation
+	const selectFields =
+		'created_at, email, changed, request_subtype, prompt_version, change_classification'
+
+	let query = supabase
+		.from('ai_human_comparison')
+		.select(selectFields)
+		.gte('created_at', dateRange.from.toISOString())
+		.lte('created_at', dateRange.to.toISOString())
+
+	if (versions.length > 0) {
+		query = query.in('prompt_version', versions)
+	}
+	if (categories.length > 0) {
+		query = query.in('request_subtype', categories)
+	}
+
+	// Increase limit to handle more records
+	query = query.limit(50000)
+
+	const { data, error } = await query
+
+	if (error) throw error
+	if (!data) return []
+
+	const records = data as unknown as DetailedStatsRecord[]
+	const rows: DetailedStatsRow[] = []
+
+	// Group by category and version first (Level 1)
+	const versionGroups = records.reduce(
+		(acc, record) => {
+			const category = record.request_subtype ?? 'unknown'
+			const version = record.prompt_version ?? 'unknown'
+			const key = `${category}|${version}`
+			if (!acc[key]) {
+				acc[key] = {
+					category,
+					version,
+					records: [],
+				}
+			}
+			acc[key].records.push(record)
+			return acc
+		},
+		{} as Record<
+			string,
+			{ category: string; version: string; records: DetailedStatsRecord[] }
+		>
+	)
+
+	// Process each version group
+	Object.values(versionGroups).forEach(group => {
+		const allRecords = group.records
+		const classifications = countClassifications(allRecords)
+
+		// Reviewed records = records with classification (not null)
+		const reviewedRecords = allRecords.filter(
+			r => r.change_classification !== null
+		)
+
+		const aiErrors = reviewedRecords.filter(r =>
+			isAIError(r.change_classification)
+		).length
+		const aiQuality = reviewedRecords.filter(r =>
+			isAIQuality(r.change_classification)
+		).length
+
+		// Level 1: Version-level row
+		rows.push({
+			category: group.category,
+			version: group.version,
+			dates: null,
+			sortOrder: 1,
+			totalRecords: allRecords.length,
+			reviewedRecords: reviewedRecords.length,
+			aiErrors,
+			aiQuality,
+			...classifications,
+		})
+
+		// Level 2: Week-level rows
+		const weekGroups = group.records.reduce(
+			(acc, record) => {
+				const weekStart = getWeekStart(
+					new Date(record.created_at ?? new Date())
+				)
+				if (!acc[weekStart]) {
+					acc[weekStart] = []
+				}
+				acc[weekStart].push(record)
+				return acc
+			},
+			{} as Record<string, DetailedStatsRecord[]>
+		)
+
+		Object.entries(weekGroups).forEach(([weekStart, weekRecords]) => {
+			const weekClassifications = countClassifications(weekRecords)
+
+			const weekReviewedRecords = weekRecords.filter(
+				r => r.change_classification !== null
+			)
+
+			const weekAiErrors = weekReviewedRecords.filter(r =>
+				isAIError(r.change_classification)
+			).length
+			const weekAiQuality = weekReviewedRecords.filter(r =>
+				isAIQuality(r.change_classification)
+			).length
+
+			const weekStartDate = new Date(weekStart)
+			const weekEndDate = new Date(weekStartDate)
+			weekEndDate.setDate(weekEndDate.getDate() + 6)
+
+			const dateRangeStr = `${formatDate(weekStartDate)} — ${formatDate(weekEndDate)}`
+
+			rows.push({
+				category: group.category,
+				version: group.version,
+				dates: dateRangeStr,
+				sortOrder: 2,
+				totalRecords: weekRecords.length,
+				reviewedRecords: weekReviewedRecords.length,
+				aiErrors: weekAiErrors,
+				aiQuality: weekAiQuality,
+				...weekClassifications,
+			})
+		})
+	})
+
+	// Sort: category ASC, sortOrder ASC, version DESC (newest first), dates DESC (newest first)
+	return rows.sort((a, b) => {
+		if (a.category !== b.category) return a.category.localeCompare(b.category)
+		if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder
+		if (a.version !== b.version) {
+			return extractVersionNumber(b.version) - extractVersionNumber(a.version)
+		}
+
+		// For dates, parse DD.MM.YYYY format and compare as actual dates (newest first)
+		if (a.dates && b.dates) {
+			const dateStrA = a.dates.split(' — ')[0]
+			const dateStrB = b.dates.split(' — ')[0]
+
+			const [dayA, monthA, yearA] = dateStrA.split('.')
+			const [dayB, monthB, yearB] = dateStrB.split('.')
+			const dateA = new Date(`${yearA}-${monthA}-${dayA}`)
+			const dateB = new Date(`${yearB}-${monthB}-${dayB}`)
+
+			return dateB.getTime() - dateA.getTime()
+		}
+
+		return 0
+	})
+}
+
+/**
+ * Fetch Detailed Stats with server-side PAGINATION (using SQL RPC)
+ * Returns paginated table data (50 rows per page by default)
+ */
+export async function getDetailedStatsPaginated(
+	filters: DashboardFilters,
+	page: number = 0,
+	pageSize: number = 50
+): Promise<{
+	data: DetailedStatsRow[]
+	totalCount: number
+	totalPages: number
+	currentPage: number
+	hasNextPage: boolean
+	hasPreviousPage: boolean
+}> {
+	const { dateRange, versions, categories } = filters
+
+	// @ts-expect-error - Supabase RPC types not fully generated yet
+	const { data, error } = await supabase.rpc('get_detailed_stats_paginated', {
+		p_from_date: dateRange.from.toISOString(),
+		p_to_date: dateRange.to.toISOString(),
+		p_versions: versions.length > 0 ? versions : null,
+		p_categories: categories.length > 0 ? categories : null,
+		p_page: page,
+		p_page_size: pageSize,
+	})
+
+	if (error) throw error
+	// @ts-expect-error - data type inferred as never but we know it's an array
+	if (!data || data.length === 0) {
+		return {
+			data: [],
+			totalCount: 0,
+			totalPages: 0,
+			currentPage: page,
+			hasNextPage: false,
+			hasPreviousPage: false,
+		}
+	}
+
+	// @ts-expect-error - accessing dynamic SQL result fields
+	const totalCount = data[0].out_total_count || 0
+	const totalPages = Math.ceil(totalCount / pageSize)
+
+	// @ts-expect-error - data.map exists but type is inferred as never
+	const rows: DetailedStatsRow[] = data.map((row: unknown) => {
+		const r = row as Record<string, unknown>
+
+		// Legacy classification counts
+		const criticalErrors = Number(r.out_critical_errors || 0)
+		const meaningfulImprovements = Number(r.out_meaningful_improvements || 0)
+		const stylisticPreferences = Number(r.out_stylistic_preferences || 0)
+		const noSignificantChanges = Number(r.out_no_significant_changes || 0)
+		const contextShifts = Number(r.out_context_shifts || 0)
+
+		// New classification counts
+		const newCriticalFactErrors = Number(r.out_critical_fact_errors || 0)
+		const newMajorFunctionalOmissions = Number(
+			r.out_major_functional_omissions || 0
+		)
+		const newMinorInfoGaps = Number(r.out_minor_info_gaps || 0)
+		const newConfusingVerbosity = Number(r.out_confusing_verbosity || 0)
+		const newTonalMisalignments = Number(r.out_tonal_misalignments || 0)
+		const newStructuralFixes = Number(r.out_structural_fixes || 0)
+		const newStylisticEdits = Number(r.out_stylistic_edits || 0)
+		const newPerfectMatches = Number(r.out_perfect_matches || 0)
+		const newExclWorkflowShifts = Number(r.out_excl_workflow_shifts || 0)
+		const newExclDataDiscrepancies = Number(r.out_excl_data_discrepancies || 0)
+
+		// Legacy columns: combine legacy + mapped new classifications
+		const combinedCriticalErrors =
+			criticalErrors + newCriticalFactErrors + newMajorFunctionalOmissions
+		const combinedMeaningfulImprovements =
+			meaningfulImprovements +
+			newMinorInfoGaps +
+			newConfusingVerbosity +
+			newTonalMisalignments
+		const combinedStylisticPreferences =
+			stylisticPreferences + newStructuralFixes + newStylisticEdits
+		const combinedNoSignificantChanges =
+			noSignificantChanges + newPerfectMatches
+		const combinedContextShifts =
+			contextShifts + newExclWorkflowShifts + newExclDataDiscrepancies
+
+		return {
+			category: (r.out_category as string) || 'unknown',
+			version: (r.out_version as string) || 'unknown',
+			dates: r.out_dates as string | null,
+			sortOrder: r.out_sort_order as number,
+			totalRecords: Number(r.out_total_records),
+			reviewedRecords: Number(r.out_reviewed_records || 0),
+			aiErrors: Number(r.out_ai_errors || 0),
+			aiQuality: Number(r.out_ai_quality || 0),
+			criticalErrors: combinedCriticalErrors,
+			meaningfulImprovements: combinedMeaningfulImprovements,
+			stylisticPreferences: combinedStylisticPreferences,
+			noSignificantChanges: combinedNoSignificantChanges,
+			contextShifts: combinedContextShifts,
+			criticalFactErrors: newCriticalFactErrors + criticalErrors,
+			majorFunctionalOmissions: newMajorFunctionalOmissions,
+			minorInfoGaps: newMinorInfoGaps + meaningfulImprovements,
+			confusingVerbosity: newConfusingVerbosity,
+			tonalMisalignments: newTonalMisalignments,
+			structuralFixes: newStructuralFixes,
+			stylisticEdits: newStylisticEdits + stylisticPreferences,
+			perfectMatches: newPerfectMatches + noSignificantChanges,
+			exclWorkflowShifts: newExclWorkflowShifts + contextShifts,
+			exclDataDiscrepancies: newExclDataDiscrepancies,
+			averageScore: null,
+		}
+	})
+
+	return {
+		data: rows,
+		totalCount,
+		totalPages,
+		currentPage: page,
+		hasNextPage: page < totalPages - 1,
+		hasPreviousPage: page > 0,
+	}
+}
