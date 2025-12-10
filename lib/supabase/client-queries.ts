@@ -26,10 +26,10 @@ export async function getFilterOptions(): Promise<FilterOptions> {
 
 	if (error) {
 		console.error('Error fetching filter options:', error)
-		return { versions: [], categories: [] }
+		return { versions: [], categories: [], agents: [] }
 	}
 
-	if (!data) return { versions: [], categories: [] }
+	if (!data) return { versions: [], categories: [], agents: [] }
 
 	const records = data as unknown as AIHumanComparisonRow[]
 
@@ -45,5 +45,11 @@ export async function getFilterOptions(): Promise<FilterOptions> {
 		),
 	].sort()
 
-	return { versions, categories }
+	const agents = [
+		...new Set(
+			records.map(r => r.email).filter((e): e is string => e !== null)
+		),
+	].sort()
+
+	return { versions, categories, agents }
 }

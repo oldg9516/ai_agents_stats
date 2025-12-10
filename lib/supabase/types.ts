@@ -254,6 +254,7 @@ export interface DashboardFilters {
 	}
 	versions: string[] // [] = all versions
 	categories: string[] // [] = all categories
+	agents: string[] // [] = all agents (filter by email)
 }
 
 /**
@@ -262,6 +263,7 @@ export interface DashboardFilters {
 export interface FilterOptions {
 	versions: string[]
 	categories: string[]
+	agents: string[]
 }
 
 /**

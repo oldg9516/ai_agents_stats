@@ -89,6 +89,7 @@ export function DetailedStatsContent() {
 							onReset={resetFilters}
 							availableVersions={[]}
 							availableCategories={[]}
+							availableAgents={[]}
 						/>
 					</FilterSheet>
 				</div>
@@ -113,6 +114,7 @@ export function DetailedStatsContent() {
 							onReset={resetFilters}
 							availableVersions={filterOptions.versions}
 							availableCategories={filterOptions.categories}
+							availableAgents={filterOptions.agents}
 						/>
 					</FilterSheet>
 				</div>

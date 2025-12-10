@@ -19,6 +19,7 @@ function getDefaultDashboardFilters(): DashboardFilters {
 		},
 		versions: [], // Empty = all versions
 		categories: [], // Empty = all categories
+		agents: [], // Empty = all agents
 	}
 }
 
@@ -31,6 +32,7 @@ export interface DashboardSlice {
 	setDashboardDateRange: (from: Date, to: Date) => void
 	setDashboardVersions: (versions: string[]) => void
 	setDashboardCategories: (categories: string[]) => void
+	setDashboardAgents: (agents: string[]) => void
 	resetDashboardFilters: () => void
 	updateDashboardFilters: (filters: Partial<DashboardFilters>) => void
 	setScoringMode: (mode: ScoringMode) => void
@@ -68,6 +70,14 @@ export const createDashboardSlice: StateCreator<
 			dashboardFilters: {
 				...state.dashboardFilters,
 				categories,
+			},
+		})),
+
+	setDashboardAgents: agents =>
+		set(state => ({
+			dashboardFilters: {
+				...state.dashboardFilters,
+				agents,
 			},
 		})),
 

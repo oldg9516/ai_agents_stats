@@ -31,6 +31,7 @@ export function DashboardContent() {
 		setDateRange,
 		setVersions,
 		setCategories,
+		setAgents,
 		resetFilters,
 	} = useFilters()
 
@@ -59,6 +60,9 @@ export function DashboardContent() {
 		if (updates.categories !== undefined) {
 			setCategories(updates.categories)
 		}
+		if (updates.agents !== undefined) {
+			setAgents(updates.agents)
+		}
 
 		// Invalidate all dashboard queries to force refetch with new filters
 		queryClient.invalidateQueries({ queryKey: ['dashboard'] })
@@ -83,6 +87,15 @@ export function DashboardContent() {
 			filterOptions &&
 			filters.categories.length > 0 &&
 			filters.categories.length < filterOptions.categories.length
+		) {
+			count++
+		}
+
+		// Check if agents are filtered
+		if (
+			filterOptions &&
+			(filters.agents?.length ?? 0) > 0 &&
+			(filters.agents?.length ?? 0) < filterOptions.agents.length
 		) {
 			count++
 		}
@@ -124,6 +137,7 @@ export function DashboardContent() {
 							onReset={resetFilters}
 							availableVersions={filterOptions.versions}
 							availableCategories={filterOptions.categories}
+							availableAgents={filterOptions.agents}
 						/>
 					</FilterSheet>
 				</div>

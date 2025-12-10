@@ -15,6 +15,7 @@ export function getDefaultFilters(): DashboardFilters {
 		},
 		versions: [], // Empty = all versions
 		categories: [], // Empty = all categories
+		agents: [], // Empty = all agents
 	}
 }
 
@@ -68,10 +69,18 @@ export function parseFiltersFromSearchParams(
 			? categoriesParam.split(',').filter(Boolean)
 			: defaults.categories
 
+	// Parse agents
+	const agentsParam = searchParams.agents
+	const agents =
+		typeof agentsParam === 'string'
+			? agentsParam.split(',').filter(Boolean)
+			: defaults.agents
+
 	return {
 		dateRange,
 		versions,
 		categories,
+		agents,
 	}
 }
 

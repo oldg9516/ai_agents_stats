@@ -14,6 +14,7 @@ interface FilterBarProps {
 	onReset: () => void
 	availableVersions: string[]
 	availableCategories: string[]
+	availableAgents: string[]
 }
 
 /**
@@ -22,6 +23,7 @@ interface FilterBarProps {
  * Features:
  * - Version multi-select
  * - Category multi-select
+ * - Agent multi-select (by email)
  * - Reset button
  *
  * Note: Date range filter moved to page level (DateRangeSelector component)
@@ -32,6 +34,7 @@ export function FilterBar({
 	onReset,
 	availableVersions,
 	availableCategories,
+	availableAgents,
 }: FilterBarProps) {
 	const t = useTranslations()
 
@@ -80,6 +83,16 @@ export function FilterBar({
 					selected={filters.categories}
 					onChange={categories => onFiltersChange({ categories })}
 					placeholder={t('filters.searchCategories')}
+					allowEmpty={true}
+				/>
+
+				{/* Agent Filter */}
+				<MultiSelectFilter
+					label={t('filters.agents')}
+					options={availableAgents}
+					selected={filters.agents ?? []}
+					onChange={agents => onFiltersChange({ agents })}
+					placeholder={t('filters.searchAgents')}
 					allowEmpty={true}
 				/>
 			</div>
