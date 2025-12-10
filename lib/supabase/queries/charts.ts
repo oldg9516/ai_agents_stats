@@ -104,6 +104,7 @@ export async function getCategoryDistribution(
 	})
 
 	if (error) throw error
+
 	// @ts-expect-error - data type inferred as never but we know it's an array
 	if (!data || data.length === 0) {
 		return { categories: [], totalCount: 0 }
@@ -128,12 +129,6 @@ export async function getCategoryDistribution(
 				? (item.unchanged_records / item.total_records) * 100
 				: 0,
 	}))
-
-	console.log('Category Distribution Results (RPC):', {
-		categoriesCount: categoriesData.length,
-		totalCount: totalCount,
-		dateRange: `${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`,
-	})
 
 	return {
 		categories: categoriesData,
