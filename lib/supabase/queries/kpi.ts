@@ -9,7 +9,7 @@ const supabase = supabaseServer
  * Fetch KPI Data with trends
  */
 export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
-	const { dateRange, versions, categories } = filters
+	const { dateRange, versions, categories, agents } = filters
 	const previousPeriod = getPreviousPeriod(dateRange.from, dateRange.to)
 
 	// OPTIMIZATION: Select only fields needed for KPI calculation (not SELECT *)
@@ -36,6 +36,10 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 	if (categories.length > 0) {
 		currentQuery = currentQuery.in('request_subtype', categories)
 		previousQuery = previousQuery.in('request_subtype', categories)
+	}
+	if (agents && agents.length > 0) {
+		currentQuery = currentQuery.in('email', agents)
+		previousQuery = previousQuery.in('email', agents)
 	}
 
 	// Separate queries for "Records Changed" - only status = 'compared'
@@ -68,6 +72,10 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 			'request_subtype',
 			categories
 		)
+	}
+	if (agents && agents.length > 0) {
+		currentChangedQuery = currentChangedQuery.in('email', agents)
+		previousChangedQuery = previousChangedQuery.in('email', agents)
 	}
 
 	const [

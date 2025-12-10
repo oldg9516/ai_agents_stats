@@ -30,7 +30,7 @@ type DetailedStatsRecord = {
 export async function getDetailedStats(
 	filters: DashboardFilters
 ): Promise<DetailedStatsRow[]> {
-	const { dateRange, versions, categories } = filters
+	const { dateRange, versions, categories, agents } = filters
 
 	// OPTIMIZATION: Select only fields needed for detailed stats calculation
 	// This reduces data transfer significantly (6 fields instead of all)
@@ -48,6 +48,9 @@ export async function getDetailedStats(
 	}
 	if (categories.length > 0) {
 		query = query.in('request_subtype', categories)
+	}
+	if (agents && agents.length > 0) {
+		query = query.in('email', agents)
 	}
 
 	// Increase limit to handle more records
@@ -206,7 +209,7 @@ export async function getDetailedStatsPaginated(
 	hasNextPage: boolean
 	hasPreviousPage: boolean
 }> {
-	const { dateRange, versions, categories } = filters
+	const { dateRange, versions, categories, agents } = filters
 
 	// @ts-expect-error - Supabase RPC types not fully generated yet
 	const { data, error } = await supabase.rpc('get_detailed_stats_paginated', {
@@ -214,6 +217,7 @@ export async function getDetailedStatsPaginated(
 		p_to_date: dateRange.to.toISOString(),
 		p_versions: versions.length > 0 ? versions : null,
 		p_categories: categories.length > 0 ? categories : null,
+		p_agents: agents && agents.length > 0 ? agents : null,
 		p_page: page,
 		p_page_size: pageSize,
 	})

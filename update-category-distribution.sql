@@ -4,12 +4,14 @@
 -- Excludes context_shift records from calculations
 
 DROP FUNCTION IF EXISTS get_category_distribution(timestamp with time zone, timestamp with time zone, text[], text[]);
+DROP FUNCTION IF EXISTS get_category_distribution(timestamp with time zone, timestamp with time zone, text[], text[], text[]);
 
 CREATE OR REPLACE FUNCTION get_category_distribution(
   p_from_date timestamp with time zone,
   p_to_date timestamp with time zone,
   p_versions text[] DEFAULT NULL,
-  p_categories text[] DEFAULT NULL
+  p_categories text[] DEFAULT NULL,
+  p_agents text[] DEFAULT NULL
 )
 RETURNS TABLE (
   category text,
@@ -31,6 +33,7 @@ BEGIN
     AND change_classification != 'context_shift'
     AND (p_versions IS NULL OR prompt_version = ANY(p_versions))
     AND (p_categories IS NULL OR request_subtype = ANY(p_categories))
+    AND (p_agents IS NULL OR email = ANY(p_agents))
   GROUP BY request_subtype
   ORDER BY total_records DESC;
 END;

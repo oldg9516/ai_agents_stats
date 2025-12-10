@@ -1,7 +1,8 @@
--- Step 1: Drop the old function
+-- Step 1: Drop the old function (both signatures)
 DROP FUNCTION IF EXISTS get_detailed_stats_paginated(timestamp with time zone,timestamp with time zone,text[],text[],integer,integer);
+DROP FUNCTION IF EXISTS get_detailed_stats_paginated(timestamp with time zone,timestamp with time zone,text[],text[],text[],integer,integer);
 
--- Step 2: Create the new function with new classification columns
+-- Step 2: Create the new function with new classification columns and agent filter
 -- NOTE: This function returns ALL rows without pagination (LIMIT/OFFSET removed)
 -- Pagination is handled client-side to ensure all categories are visible
 CREATE OR REPLACE FUNCTION get_detailed_stats_paginated(
@@ -9,6 +10,7 @@ CREATE OR REPLACE FUNCTION get_detailed_stats_paginated(
   p_to_date timestamp with time zone,
   p_versions text[] DEFAULT NULL,
   p_categories text[] DEFAULT NULL,
+  p_agents text[] DEFAULT NULL,
   p_page integer DEFAULT 0,
   p_page_size integer DEFAULT 50
 )
@@ -53,6 +55,7 @@ BEGIN
     WHERE created_at >= p_from_date AND created_at <= p_to_date
       AND (p_versions IS NULL OR prompt_version = ANY(p_versions))
       AND (p_categories IS NULL OR request_subtype = ANY(p_categories))
+      AND (p_agents IS NULL OR email = ANY(p_agents))
   ),
   version_aggregations AS (
     SELECT

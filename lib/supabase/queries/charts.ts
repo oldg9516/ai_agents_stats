@@ -18,7 +18,7 @@ const supabase = supabaseServer
 export async function getQualityTrends(
 	filters: DashboardFilters
 ): Promise<QualityTrendData[]> {
-	const { dateRange, versions, categories } = filters
+	const { dateRange, versions, categories, agents } = filters
 
 	let query = supabase
 		.from('ai_human_comparison')
@@ -32,6 +32,9 @@ export async function getQualityTrends(
 	}
 	if (categories.length > 0) {
 		query = query.in('request_subtype', categories)
+	}
+	if (agents && agents.length > 0) {
+		query = query.in('email', agents)
 	}
 
 	// Increase limit from default 1000 to handle more records
@@ -87,7 +90,7 @@ export async function getQualityTrends(
 export async function getCategoryDistribution(
 	filters: DashboardFilters
 ): Promise<CategoryDistributionResult> {
-	const { dateRange, versions, categories } = filters
+	const { dateRange, versions, categories, agents } = filters
 
 	// Use RPC function for server-side aggregation
 	// This avoids Supabase's default 1000 row limit
@@ -97,6 +100,7 @@ export async function getCategoryDistribution(
 		p_to_date: dateRange.to.toISOString(),
 		p_versions: versions.length > 0 ? versions : null,
 		p_categories: categories.length > 0 ? categories : null,
+		p_agents: agents && agents.length > 0 ? agents : null,
 	})
 
 	if (error) throw error
@@ -143,7 +147,7 @@ export async function getCategoryDistribution(
 export async function getVersionComparison(
 	filters: DashboardFilters
 ): Promise<VersionComparisonData[]> {
-	const { dateRange, versions, categories } = filters
+	const { dateRange, versions, categories, agents } = filters
 
 	let query = supabase
 		.from('ai_human_comparison')
@@ -156,6 +160,9 @@ export async function getVersionComparison(
 	}
 	if (categories.length > 0) {
 		query = query.in('request_subtype', categories)
+	}
+	if (agents && agents.length > 0) {
+		query = query.in('email', agents)
 	}
 
 	// Increase limit to handle more records
