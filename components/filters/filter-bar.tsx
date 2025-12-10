@@ -86,7 +86,7 @@ export function FilterBar({
 					allowEmpty={true}
 				/>
 
-				{/* Agent Filter */}
+				{/* Agent Filter - with deferred apply */}
 				<MultiSelectFilter
 					label={t('filters.agents')}
 					options={availableAgents}
@@ -94,6 +94,7 @@ export function FilterBar({
 					onChange={agents => onFiltersChange({ agents })}
 					placeholder={t('filters.searchAgents')}
 					allowEmpty={true}
+					deferredApply={true}
 				/>
 			</div>
 

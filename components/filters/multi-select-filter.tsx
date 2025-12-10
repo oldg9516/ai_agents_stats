@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -11,6 +11,7 @@ import {
 	IconChevronUp,
 	IconSearch,
 	IconX,
+	IconCheck,
 } from '@tabler/icons-react'
 
 interface MultiSelectFilterProps {
@@ -22,6 +23,8 @@ interface MultiSelectFilterProps {
 	searchable?: boolean
 	allowEmpty?: boolean
 	formatLabel?: (value: string) => string
+	/** If true, changes are not applied immediately - requires clicking Apply button */
+	deferredApply?: boolean
 }
 
 /**
@@ -31,6 +34,7 @@ interface MultiSelectFilterProps {
  * - Select all / Deselect all
  * - Optional search
  * - Collapsible dropdown
+ * - Optional deferred apply mode (changes require clicking Apply button)
  */
 export function MultiSelectFilter({
 	label,
@@ -41,10 +45,27 @@ export function MultiSelectFilter({
 	searchable = true,
 	allowEmpty = true,
 	formatLabel,
+	deferredApply = false,
 }: MultiSelectFilterProps) {
 	const t = useTranslations()
 	const [isOpen, setIsOpen] = useState(false)
 	const [searchQuery, setSearchQuery] = useState('')
+
+	// Local state for deferred apply mode
+	const [localSelected, setLocalSelected] = useState<string[]>(selected)
+
+	// Sync local state when external selected changes (e.g., reset filters)
+	useEffect(() => {
+		setLocalSelected(selected)
+	}, [selected])
+
+	// Use local state in deferred mode, otherwise use prop directly
+	const currentSelected = deferredApply ? localSelected : selected
+
+	// Check if there are pending changes (deferred mode only)
+	const hasPendingChanges = deferredApply &&
+		(localSelected.length !== selected.length ||
+		 !localSelected.every(item => selected.includes(item)))
 
 	// Filter options based on search
 	const filteredOptions = searchable
@@ -52,36 +73,69 @@ export function MultiSelectFilter({
 		: options
 
 	// Check if all options are selected
-	const allSelected = selected.length === options.length
+	const allSelected = currentSelected.length === options.length
+
+	// Handle changes - either immediate or deferred
+	const handleChange = (newSelected: string[]) => {
+		if (deferredApply) {
+			setLocalSelected(newSelected)
+		} else {
+			onChange(newSelected)
+		}
+	}
 
 	// Handle select all / deselect all
 	const handleSelectAll = () => {
 		if (allSelected) {
 			if (allowEmpty) {
-				onChange([])
+				handleChange([])
 			}
 		} else {
-			onChange(options)
+			handleChange(options)
 		}
 	}
 
 	// Handle individual checkbox toggle
 	const handleToggle = (option: string) => {
-		if (selected.includes(option)) {
+		if (currentSelected.includes(option)) {
 			// Don't allow deselecting if it's the last one and allowEmpty is false
-			if (!allowEmpty && selected.length === 1) return
+			if (!allowEmpty && currentSelected.length === 1) return
 
-			onChange(selected.filter((item) => item !== option))
+			handleChange(currentSelected.filter((item) => item !== option))
 		} else {
-			onChange([...selected, option])
+			handleChange([...currentSelected, option])
 		}
 	}
 
 	// Clear all selections
 	const handleClear = () => {
 		if (allowEmpty) {
-			onChange([])
+			handleChange([])
 		}
+	}
+
+	// Apply changes (deferred mode only)
+	const handleApply = () => {
+		onChange(localSelected)
+		setIsOpen(false)
+	}
+
+	// Cancel changes (deferred mode only)
+	const handleCancel = () => {
+		setLocalSelected(selected)
+		setIsOpen(false)
+	}
+
+	// Display text for the button
+	const getButtonText = () => {
+		const count = deferredApply ? localSelected.length : selected.length
+		if (count === 0) {
+			return `${t('common.all')} ${label}`
+		}
+		if (count === options.length) {
+			return `${t('common.all')} ${label} (${options.length})`
+		}
+		return `${count} ${t('common.selected')}`
 	}
 
 	return (
@@ -91,16 +145,13 @@ export function MultiSelectFilter({
 			{/* Dropdown Trigger */}
 			<Button
 				variant="outline"
-				className="w-full justify-between"
+				className={`w-full justify-between ${hasPendingChanges ? 'border-primary ring-1 ring-primary' : ''}`}
 				onClick={() => setIsOpen(!isOpen)}
 				type="button"
 			>
 				<span className="truncate">
-					{selected.length === 0
-						? `${t('common.all')} ${label}`
-						: selected.length === options.length
-							? `${t('common.all')} ${label} (${options.length})`
-							: `${selected.length} ${t('common.selected')}`}
+					{getButtonText()}
+					{hasPendingChanges && ' *'}
 				</span>
 				{isOpen ? (
 					<IconChevronUp className="ml-2 h-4 w-4 shrink-0" />
@@ -139,7 +190,7 @@ export function MultiSelectFilter({
 							<Label htmlFor="select-all" className="flex-1 cursor-pointer font-medium">
 								{allSelected ? t('filters.deselectAll') : t('filters.selectAll')}
 							</Label>
-							{selected.length > 0 && allowEmpty && (
+							{currentSelected.length > 0 && allowEmpty && (
 								<Button
 									variant="ghost"
 									size="sm"
@@ -164,7 +215,7 @@ export function MultiSelectFilter({
 								>
 									<Checkbox
 										id={`option-${option}`}
-										checked={selected.includes(option)}
+										checked={currentSelected.includes(option)}
 										onCheckedChange={() => handleToggle(option)}
 									/>
 									<Label
@@ -177,6 +228,29 @@ export function MultiSelectFilter({
 							))
 						)}
 					</div>
+
+					{/* Apply/Cancel buttons for deferred mode */}
+					{deferredApply && (
+						<div className="flex gap-2 p-2 border-t">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={handleCancel}
+								className="flex-1"
+							>
+								{t('common.cancel')}
+							</Button>
+							<Button
+								size="sm"
+								onClick={handleApply}
+								className="flex-1"
+								disabled={!hasPendingChanges}
+							>
+								<IconCheck className="mr-1 h-4 w-4" />
+								{t('filters.apply')}
+							</Button>
+						</div>
+					)}
 				</div>
 			)}
 		</div>

@@ -61,6 +61,7 @@
 		"resetFilters": "Reset Filters",
 		"selectAll": "Select All",
 		"deselectAll": "Deselect All",
+		"apply": "Apply",
 		"searchVersions": "Search versions...",
 		"searchCategories": "Search subcategories...",
 		"searchAgents": "Search agents...",
