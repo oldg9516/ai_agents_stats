@@ -1,6 +1,8 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
 	getAllRequestTypes,
 	getRequestTypeLabel,
@@ -18,6 +20,7 @@ interface SupportFilterBarProps {
 	onRequestTypesChange: (types: string[]) => void
 	onRequirementsChange: (requirements: string[]) => void
 	onVersionsChange: (versions: string[]) => void
+	onPendingDraftsOnlyChange: (enabled: boolean) => void
 	onReset: () => void
 	availableVersions: string[]
 }
@@ -40,6 +43,7 @@ export function SupportFilterBar({
 	onRequestTypesChange,
 	onRequirementsChange,
 	onVersionsChange,
+	onPendingDraftsOnlyChange,
 	onReset,
 	availableVersions,
 }: SupportFilterBarProps) {
@@ -72,6 +76,26 @@ export function SupportFilterBar({
 	return (
 		<div className='space-y-4'>
 			<div className='grid gap-4 sm:gap-6 grid-cols-1'>
+				{/* Pending AI Drafts Toggle */}
+				<div className='flex items-center justify-between rounded-lg border p-3 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'>
+					<div className='space-y-0.5'>
+						<Label
+							htmlFor='pending-drafts'
+							className='text-sm font-medium cursor-pointer'
+						>
+							{t('filters.pendingDraftsOnly')}
+						</Label>
+						<p className='text-xs text-muted-foreground'>
+							{t('filters.pendingDraftsDescription')}
+						</p>
+					</div>
+					<Switch
+						id='pending-drafts'
+						checked={filters.pendingDraftsOnly}
+						onCheckedChange={onPendingDraftsOnlyChange}
+					/>
+				</div>
+
 				{/* Status */}
 				<MultiSelectFilter
 					label={t('filters.status')}

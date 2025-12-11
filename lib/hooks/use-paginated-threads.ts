@@ -39,6 +39,7 @@ function getBatchQueryKey(
 	requestTypes: string[],
 	requirements: string[],
 	versions: string[],
+	pendingDraftsOnly: boolean,
 	batchIndex: number
 ) {
 	return [
@@ -50,6 +51,7 @@ function getBatchQueryKey(
 			requestTypes: requestTypes.sort(),
 			requirements: requirements.sort(),
 			versions: versions.sort(),
+			pendingDraftsOnly,
 			batch: batchIndex,
 		},
 	] as const
@@ -80,6 +82,7 @@ export function usePaginatedThreads(): PaginatedThreadsReturn {
 			supportFilters.requestTypes,
 			supportFilters.requirements,
 			supportFilters.versions,
+			supportFilters.pendingDraftsOnly,
 			currentBatch
 		),
 		queryFn: async () => {
@@ -121,6 +124,7 @@ export function usePaginatedThreads(): PaginatedThreadsReturn {
 					supportFilters.requestTypes,
 					supportFilters.requirements,
 					supportFilters.versions,
+					supportFilters.pendingDraftsOnly,
 					i
 				)
 			)
@@ -144,6 +148,7 @@ export function usePaginatedThreads(): PaginatedThreadsReturn {
 		supportFilters.requestTypes,
 		supportFilters.requirements,
 		supportFilters.versions,
+		supportFilters.pendingDraftsOnly,
 		maxBatchReached,
 		currentBatch,
 		batchData, // IMPORTANT: Re-compute when new batch arrives

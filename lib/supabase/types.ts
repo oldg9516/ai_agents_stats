@@ -317,6 +317,8 @@ export interface SupportThread extends SupportThreadRow {
 	// Fields from support_dialogs (via JOIN)
 	direction: string | null // Thread direction (incoming/outgoing)
 	customer_request_text: string | null // Customer's request text from support_dialogs.text
+	// Fields from support_threads_data.user JSON
+	customer_email: string | null // Customer email parsed from user JSON field
 }
 
 /**
@@ -409,6 +411,7 @@ export interface SupportFilters {
 	requestTypes: string[] // [] = all request types
 	requirements: string[] // [] = all, else filter by active requirements
 	versions: string[] // [] = all versions
+	pendingDraftsOnly: boolean // true = show only threads with AI draft but no agent response
 }
 
 /**

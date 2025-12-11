@@ -19,6 +19,7 @@ export function useSupportFilters() {
 		setSupportRequestTypes,
 		setSupportRequirements,
 		setSupportVersions,
+		setSupportPendingDraftsOnly,
 		resetSupportFilters,
 	} = useStore()
 
@@ -29,6 +30,7 @@ export function useSupportFilters() {
 		setRequestTypes: setSupportRequestTypes,
 		setRequirements: setSupportRequirements,
 		setVersions: setSupportVersions,
+		setPendingDraftsOnly: setSupportPendingDraftsOnly,
 		resetFilters: resetSupportFilters,
 	}
 }

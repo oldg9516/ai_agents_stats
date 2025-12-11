@@ -5,13 +5,11 @@ import { useSupportData } from '@/lib/hooks/use-support-data'
 import { useSupportFilters } from '@/lib/hooks/use-support-filters'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
-import { AIDraftFlowSankey } from './charts/ai-draft-flow-sankey'
-import { RequirementsCorrelationHeatmap } from './charts/requirements-correlation-heatmap'
 import { ResolutionTimeChart } from './charts/resolution-time-chart'
 import { StatusDistributionChart } from './charts/status-distribution-chart'
 import { FilterSheet } from './filters/filter-sheet'
-import { SupportFilterBar } from './filters/support-filter-bar'
 import { SupportDateRangeSelector } from './filters/support-date-range-selector'
+import { SupportFilterBar } from './filters/support-filter-bar'
 import { AgentResponseRateCard } from './kpi/agent-response-rate-card'
 import { AvgRequirementsCard } from './kpi/avg-requirements-card'
 import { DataCollectionRateCard } from './kpi/data-collection-rate-card'
@@ -39,6 +37,7 @@ export function SupportOverviewContent() {
 		setRequestTypes,
 		setRequirements,
 		setVersions,
+		setPendingDraftsOnly,
 		resetFilters,
 	} = useSupportFilters()
 
@@ -65,6 +64,9 @@ export function SupportOverviewContent() {
 	// Count active filters (excluding date range, which has its own selector)
 	const getActiveFilterCount = () => {
 		let count = 0
+
+		// Check if pending drafts only is enabled
+		if (filters.pendingDraftsOnly) count++
 
 		// Check if statuses are filtered
 		if (filters.statuses.length > 0) count++
@@ -120,6 +122,7 @@ export function SupportOverviewContent() {
 							onRequestTypesChange={setRequestTypes}
 							onRequirementsChange={setRequirements}
 							onVersionsChange={setVersions}
+							onPendingDraftsOnlyChange={setPendingDraftsOnly}
 							onReset={resetFilters}
 							availableVersions={availableVersions}
 						/>
@@ -148,13 +151,14 @@ export function SupportOverviewContent() {
 			<div className='grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2 overflow-hidden'>
 				<StatusDistributionChart data={data.statusDistribution} />
 				<ResolutionTimeChart data={data.resolutionTime} />
-				<AIDraftFlowSankey data={data.sankeyData} />
-				<RequirementsCorrelationHeatmap data={data.correlationMatrix} />
+				{/* <AIDraftFlowSankey data={data.sankeyData} /> */}
+				{/* <RequirementsCorrelationHeatmap data={data.correlationMatrix} /> */}
 			</div>
 
 			{/* Support Threads Table with Pagination */}
 			<SupportThreadsTable
 				data={allLoadedThreads}
+				filters={filters}
 				hasMore={hasMore}
 				isFetchingMore={isFetchingMore}
 				onLoadMore={loadNextBatch}

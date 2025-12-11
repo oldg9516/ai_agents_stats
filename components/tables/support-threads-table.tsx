@@ -33,9 +33,11 @@ import {
 	IconCheck,
 	IconX,
 } from '@tabler/icons-react'
-import type { SupportThread } from '@/lib/supabase/types'
+import type { SupportThread, SupportFilters } from '@/lib/supabase/types'
 import { downloadSupportThreadsCSV } from '@/lib/utils/export-support'
+import { fetchAllSupportThreadsForExport } from '@/lib/actions/support-actions'
 import { getStatusLabel } from '@/constants/support-statuses'
+import { toast } from 'sonner'
 import { getRequestTypeLabel } from '@/constants/request-types'
 import { getActiveRequirementsWithColors } from '@/constants/requirement-types'
 import { isQualifiedAgent } from '@/constants/qualified-agents'
@@ -43,6 +45,7 @@ import { format } from 'date-fns'
 
 interface SupportThreadsTableProps {
 	data: SupportThread[]
+	filters: SupportFilters // Current filters for full export
 	hasMore?: boolean // Whether there are more records on server
 	isFetchingMore?: boolean // Loading more records
 	onLoadMore?: () => void // Callback to load next batch
@@ -62,6 +65,7 @@ interface SupportThreadsTableProps {
  */
 export function SupportThreadsTable({
 	data,
+	filters,
 	hasMore = false,
 	isFetchingMore = false,
 	onLoadMore,
@@ -76,6 +80,7 @@ export function SupportThreadsTable({
 		pageIndex: 0,
 		pageSize: 20,
 	})
+	const [isExporting, setIsExporting] = useState(false)
 
 	// Memoize data to prevent unnecessary re-renders of React Table
 	// Only recreate when data array reference changes
@@ -279,10 +284,27 @@ export function SupportThreadsTable({
 		},
 	})
 
-	// Handle CSV export
-	const handleExport = () => {
-		const filename = `support-threads-${format(new Date(), 'yyyy-MM-dd')}.csv`
-		downloadSupportThreadsCSV(memoizedData, filename)
+	// Handle CSV export - fetches ALL data matching filters, not just loaded data
+	const handleExport = async () => {
+		setIsExporting(true)
+		try {
+			// Fetch ALL threads matching current filters (no pagination limit)
+			const result = await fetchAllSupportThreadsForExport(filters)
+
+			if (!result.success || !result.data) {
+				toast.error(t('table.exportError'))
+				return
+			}
+
+			const filename = `support-threads-${format(new Date(), 'yyyy-MM-dd')}.csv`
+			downloadSupportThreadsCSV(result.data, filename)
+			toast.success(t('table.exportSuccess', { count: result.count }))
+		} catch (error) {
+			console.error('Export error:', error)
+			toast.error(t('table.exportError'))
+		} finally {
+			setIsExporting(false)
+		}
 	}
 
 	// Handle row click - navigates to thread detail (intercepted by parallel route modal)
@@ -300,9 +322,13 @@ export function SupportThreadsTable({
 							{t('table.supportThreadsDesc')}
 						</CardDescription>
 					</div>
-					<Button onClick={handleExport} size='sm' variant='outline'>
-						<IconDownload className='mr-2 h-4 w-4' />
-						{t('table.export')}
+					<Button onClick={handleExport} size='sm' variant='outline' disabled={isExporting}>
+						{isExporting ? (
+							<Spinner className='mr-2 h-4 w-4' />
+						) : (
+							<IconDownload className='mr-2 h-4 w-4' />
+						)}
+						{isExporting ? t('table.exporting') : t('table.exportAll')}
 					</Button>
 				</div>
 			</CardHeader>

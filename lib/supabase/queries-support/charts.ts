@@ -1,6 +1,8 @@
 /**
  * Support Chart Queries
  * Status distribution, resolution time, sankey, and correlation matrix
+ *
+ * NOTE: These queries use batched fetching to bypass Supabase's 1000 record limit
  */
 
 import { getAllRequirementKeys } from '@/constants/requirement-types'
@@ -13,45 +15,120 @@ import type {
 	SupportFilters,
 } from '../types'
 
+const BATCH_SIZE = 500
+const MAX_CONCURRENT = 3
+
+/**
+ * Helper to fetch all records in batches (bypasses Supabase 1000 limit)
+ */
+async function fetchAllInBatches<T>(
+	supabase: SupabaseClient,
+	tableName: string,
+	selectFields: string,
+	filters: SupportFilters
+): Promise<T[]> {
+	const { dateRange, statuses, requestTypes, requirements, versions } = filters
+
+	// First, get total count
+	let countQuery = supabase
+		.from(tableName)
+		.select('*', { count: 'exact', head: true })
+		.gte('created_at', dateRange.from.toISOString())
+		.lt('created_at', dateRange.to.toISOString())
+
+	if (statuses.length > 0) {
+		countQuery = countQuery.in('status', statuses)
+	}
+	if (requestTypes.length > 0) {
+		countQuery = countQuery.in('request_type', requestTypes)
+	}
+	if (versions.length > 0) {
+		countQuery = countQuery.in('prompt_version', versions)
+	}
+	if (requirements.length > 0) {
+		requirements.forEach(req => {
+			countQuery = countQuery.eq(req, true)
+		})
+	}
+
+	const { count, error: countError } = await countQuery
+	if (countError) throw countError
+
+	const totalRecords = count || 0
+	if (totalRecords === 0) return []
+
+	// Fetch in batches with limited concurrency
+	const numBatches = Math.ceil(totalRecords / BATCH_SIZE)
+	const results: T[] = []
+
+	for (let batchStart = 0; batchStart < numBatches; batchStart += MAX_CONCURRENT) {
+		const batchPromises = []
+
+		for (let i = batchStart; i < Math.min(batchStart + MAX_CONCURRENT, numBatches); i++) {
+			const offset = i * BATCH_SIZE
+
+			let query = supabase
+				.from(tableName)
+				.select(selectFields)
+				.gte('created_at', dateRange.from.toISOString())
+				.lt('created_at', dateRange.to.toISOString())
+				.range(offset, offset + BATCH_SIZE - 1)
+
+			if (statuses.length > 0) {
+				query = query.in('status', statuses)
+			}
+			if (requestTypes.length > 0) {
+				query = query.in('request_type', requestTypes)
+			}
+			if (versions.length > 0) {
+				query = query.in('prompt_version', versions)
+			}
+			if (requirements.length > 0) {
+				requirements.forEach(req => {
+					query = query.eq(req, true)
+				})
+			}
+
+			const promise = query.then(({ data, error }) => {
+				if (error) throw error
+				return (data || []) as T[]
+			})
+
+			batchPromises.push(promise)
+		}
+
+		const batchResults = await Promise.all(batchPromises)
+		results.push(...batchResults.flat())
+
+		// Small delay between batch groups
+		if (batchStart + MAX_CONCURRENT < numBatches) {
+			await new Promise(resolve => setTimeout(resolve, 50))
+		}
+	}
+
+	return results
+}
+
 /**
  * Fetch Status Distribution for pie chart
+ * Uses batched fetching to handle >1000 records
  */
 export async function fetchStatusDistribution(
 	supabase: SupabaseClient,
 	filters: SupportFilters
 ): Promise<StatusDistribution[]> {
-	const { dateRange, statuses, requestTypes, requirements, versions } = filters
-
-	let query = supabase
-		.from('support_threads_data')
-		.select('status')
-		.gte('created_at', dateRange.from.toISOString())
-		.lt('created_at', dateRange.to.toISOString())
-
-	if (statuses.length > 0) {
-		query = query.in('status', statuses)
-	}
-	if (requestTypes.length > 0) {
-		query = query.in('request_type', requestTypes)
-	}
-	if (versions.length > 0) {
-		query = query.in('prompt_version', versions)
-	}
-	if (requirements.length > 0) {
-		requirements.forEach(req => {
-			query = query.eq(req, true)
-		})
-	}
-
-	const { data, error } = await query
-
-	if (error) throw error
+	const data = await fetchAllInBatches<{ status: string }>(
+		supabase,
+		'support_threads_data',
+		'status',
+		filters
+	)
 
 	// Count by status
 	const statusCounts = new Map<string, number>()
-	const total = data?.length || 0
+	const total = data.length
 
-	data?.forEach(thread => {
+	data.forEach(thread => {
 		const status = thread.status || 'unknown'
 		statusCounts.set(status, (statusCounts.get(status) || 0) + 1)
 	})
@@ -66,41 +143,30 @@ export async function fetchStatusDistribution(
 /**
  * Fetch Resolution Time data for bar chart
  * Shows average time from created_at to resolved status grouped by week
+ * Uses batched fetching to handle >1000 records
  */
 export async function fetchResolutionTimeData(
 	supabase: SupabaseClient,
 	filters: SupportFilters
 ): Promise<ResolutionTimeData[]> {
-	const { dateRange, requestTypes, requirements, versions } = filters
-
 	// Only get threads with "Reply is ready" status (resolved)
-	let query = supabase
-		.from('support_threads_data')
-		.select('created_at, status')
-		.eq('status', 'Reply is ready')
-		.gte('created_at', dateRange.from.toISOString())
-		.lt('created_at', dateRange.to.toISOString())
-
-	if (requestTypes.length > 0) {
-		query = query.in('request_type', requestTypes)
-	}
-	if (versions.length > 0) {
-		query = query.in('prompt_version', versions)
-	}
-	if (requirements.length > 0) {
-		requirements.forEach(req => {
-			query = query.eq(req, true)
-		})
+	// Override statuses filter to only get resolved threads
+	const resolvedFilters: SupportFilters = {
+		...filters,
+		statuses: ['Reply is ready'],
 	}
 
-	const { data, error } = await query
-
-	if (error) throw error
+	const data = await fetchAllInBatches<{ created_at: string; status: string }>(
+		supabase,
+		'support_threads_data',
+		'created_at, status',
+		resolvedFilters
+	)
 
 	// Group by week
 	const weekData = new Map<string, { totalTime: number; count: number }>()
 
-	data?.forEach(thread => {
+	data.forEach(thread => {
 		if (!thread.created_at) return
 
 		const createdDate = new Date(thread.created_at)
@@ -138,37 +204,22 @@ export async function fetchResolutionTimeData(
 /**
  * Fetch Sankey Data for AI draft flow
  * Shows: AI Draft Created → Used/Edited/Rejected → Outcomes
+ * Uses batched fetching to handle >1000 records
  */
 export async function fetchSankeyData(
 	supabase: SupabaseClient,
 	filters: SupportFilters
 ): Promise<SankeyData> {
-	const { dateRange, statuses, requestTypes, requirements, versions } = filters
-
-	let query = supabase
-		.from('support_threads_data')
-		.select('ai_draft_reply, requires_editing, status')
-		.gte('created_at', dateRange.from.toISOString())
-		.lt('created_at', dateRange.to.toISOString())
-
-	if (statuses.length > 0) {
-		query = query.in('status', statuses)
-	}
-	if (requestTypes.length > 0) {
-		query = query.in('request_type', requestTypes)
-	}
-	if (versions.length > 0) {
-		query = query.in('prompt_version', versions)
-	}
-	if (requirements.length > 0) {
-		requirements.forEach(req => {
-			query = query.eq(req, true)
-		})
-	}
-
-	const { data, error } = await query
-
-	if (error) throw error
+	const data = await fetchAllInBatches<{
+		ai_draft_reply: string | null
+		requires_editing: boolean
+		status: string
+	}>(
+		supabase,
+		'support_threads_data',
+		'ai_draft_reply, requires_editing, status',
+		filters
+	)
 
 	// Count flows
 	const flowCounts = {
@@ -180,7 +231,7 @@ export async function fetchSankeyData(
 		pending: 0,
 	}
 
-	data?.forEach(thread => {
+	data.forEach(thread => {
 		if (thread.ai_draft_reply) {
 			flowCounts.created++
 
@@ -244,34 +295,30 @@ export async function fetchSankeyData(
 /**
  * Fetch Correlation Matrix for requirements heatmap
  * Shows which requirements frequently occur together
+ * Uses batched fetching to handle >1000 records
  */
 export async function fetchCorrelationMatrix(
 	supabase: SupabaseClient,
 	filters: SupportFilters
 ): Promise<CorrelationCell[]> {
-	const { dateRange, statuses, requestTypes, versions } = filters
-
-	let query = supabase
-		.from('support_threads_data')
-		.select(
-			'requires_reply, requires_identification, requires_editing, requires_subscription_info, requires_tracking_info'
-		)
-		.gte('created_at', dateRange.from.toISOString())
-		.lt('created_at', dateRange.to.toISOString())
-
-	if (statuses.length > 0) {
-		query = query.in('status', statuses)
-	}
-	if (requestTypes.length > 0) {
-		query = query.in('request_type', requestTypes)
-	}
-	if (versions.length > 0) {
-		query = query.in('prompt_version', versions)
+	// For correlation matrix, we don't apply requirements filter (we want all combinations)
+	const filtersWithoutRequirements: SupportFilters = {
+		...filters,
+		requirements: [],
 	}
 
-	const { data, error } = await query
-
-	if (error) throw error
+	const data = await fetchAllInBatches<{
+		requires_reply: boolean
+		requires_identification: boolean
+		requires_editing: boolean
+		requires_subscription_info: boolean
+		requires_tracking_info: boolean
+	}>(
+		supabase,
+		'support_threads_data',
+		'requires_reply, requires_identification, requires_editing, requires_subscription_info, requires_tracking_info',
+		filtersWithoutRequirements
+	)
 
 	const requirementKeys = getAllRequirementKeys()
 	const correlations: CorrelationCell[] = []
@@ -279,9 +326,10 @@ export async function fetchCorrelationMatrix(
 	// Calculate correlation for each pair
 	for (const req1 of requirementKeys) {
 		for (const req2 of requirementKeys) {
-			const bothTrue =
-				data?.filter(t => t[req1] === true && t[req2] === true).length || 0
-			const total = data?.length || 0
+			const bothTrue = data.filter(
+				t => t[req1 as keyof typeof t] === true && t[req2 as keyof typeof t] === true
+			).length
+			const total = data.length
 
 			const correlation = total > 0 ? bothTrue / total : 0
 

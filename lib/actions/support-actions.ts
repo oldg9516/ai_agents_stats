@@ -159,6 +159,39 @@ export async function fetchSupportThreadsAction(
 }
 
 /**
+ * Fetch ALL support threads for CSV export (no pagination limit)
+ * This fetches all records matching the filters for export purposes
+ */
+export async function fetchAllSupportThreadsForExport(filters: SupportFilters) {
+	try {
+		// Fetch all threads in batches (fetchAll: true bypasses Supabase 1000 limit)
+		const threads = await fetchSupportThreads(supabaseServer, filters, {
+			fetchAll: true,
+		})
+
+		return {
+			success: true,
+			data: threads,
+			count: threads.length,
+		}
+	} catch (error) {
+		console.error(
+			'❌ [Server Action] Error fetching all support threads for export:',
+			error
+		)
+		return {
+			success: false,
+			error:
+				error instanceof Error
+					? error.message
+					: 'Failed to fetch threads for export',
+			data: null,
+			count: 0,
+		}
+	}
+}
+
+/**
  * Fetch minimum created_at date from support_threads_data
  * Used for "All Time" filter
  */

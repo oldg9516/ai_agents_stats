@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Support KPI Queries
+ * Uses batched fetching to bypass Supabase's 1000 record limit
  */
 
 import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
@@ -9,15 +10,110 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { SupportFilters, SupportKPIs } from '../types'
 import { calculateTrend } from './utils'
 
+const BATCH_SIZE = 500
+const MAX_CONCURRENT = 3
+
+/**
+ * Helper to fetch all records in batches for KPI calculation
+ */
+async function fetchAllForKPIs<T>(
+	supabase: SupabaseClient,
+	selectFields: string,
+	dateFrom: Date,
+	dateTo: Date,
+	filters: SupportFilters
+): Promise<T[]> {
+	const { statuses, requestTypes, requirements, versions } = filters
+
+	// First, get total count
+	let countQuery = supabase
+		.from('support_threads_data')
+		.select('*', { count: 'exact', head: true })
+		.gte('created_at', dateFrom.toISOString())
+		.lt('created_at', dateTo.toISOString())
+
+	if (statuses.length > 0) {
+		countQuery = countQuery.in('status', statuses)
+	}
+	if (requestTypes.length > 0) {
+		countQuery = countQuery.in('request_type', requestTypes)
+	}
+	if (versions.length > 0) {
+		countQuery = countQuery.in('prompt_version', versions)
+	}
+	if (requirements.length > 0) {
+		requirements.forEach(req => {
+			countQuery = countQuery.eq(req, true)
+		})
+	}
+
+	const { count, error: countError } = await countQuery
+	if (countError) throw countError
+
+	const totalRecords = count || 0
+	if (totalRecords === 0) return []
+
+	// Fetch in batches with limited concurrency
+	const numBatches = Math.ceil(totalRecords / BATCH_SIZE)
+	const results: T[] = []
+
+	for (let batchStart = 0; batchStart < numBatches; batchStart += MAX_CONCURRENT) {
+		const batchPromises = []
+
+		for (let i = batchStart; i < Math.min(batchStart + MAX_CONCURRENT, numBatches); i++) {
+			const offset = i * BATCH_SIZE
+
+			let query = supabase
+				.from('support_threads_data')
+				.select(selectFields)
+				.gte('created_at', dateFrom.toISOString())
+				.lt('created_at', dateTo.toISOString())
+				.range(offset, offset + BATCH_SIZE - 1)
+
+			if (statuses.length > 0) {
+				query = query.in('status', statuses)
+			}
+			if (requestTypes.length > 0) {
+				query = query.in('request_type', requestTypes)
+			}
+			if (versions.length > 0) {
+				query = query.in('prompt_version', versions)
+			}
+			if (requirements.length > 0) {
+				requirements.forEach(req => {
+					query = query.eq(req, true)
+				})
+			}
+
+			const promise = query.then(({ data, error }) => {
+				if (error) throw error
+				return (data || []) as T[]
+			})
+
+			batchPromises.push(promise)
+		}
+
+		const batchResults = await Promise.all(batchPromises)
+		results.push(...batchResults.flat())
+
+		// Small delay between batch groups
+		if (batchStart + MAX_CONCURRENT < numBatches) {
+			await new Promise(resolve => setTimeout(resolve, 50))
+		}
+	}
+
+	return results
+}
+
 /**
  * Fetch Support KPIs with trend data
- * OPTIMIZED: Uses minimal field selection instead of SELECT *
+ * Uses batched fetching to handle >1000 records
  */
 export async function fetchSupportKPIs(
 	supabase: SupabaseClient,
 	filters: SupportFilters
 ): Promise<SupportKPIs> {
-	const { dateRange, statuses, requestTypes, requirements, versions } = filters
+	const { dateRange } = filters
 
 	// Calculate previous period
 	const daysDiff = Math.ceil(
@@ -26,36 +122,7 @@ export async function fetchSupportKPIs(
 	const previousFrom = new Date(dateRange.from)
 	previousFrom.setDate(previousFrom.getDate() - daysDiff)
 
-	// Build filters
-	const buildQuery = (query: any, isPrevious: boolean) => {
-		const from = isPrevious ? previousFrom : dateRange.from
-		const to = isPrevious ? dateRange.from : dateRange.to
-
-		query = query
-			.gte('created_at', from.toISOString())
-			.lt('created_at', to.toISOString())
-
-		if (statuses.length > 0) {
-			query = query.in('status', statuses)
-		}
-		if (requestTypes.length > 0) {
-			query = query.in('request_type', requestTypes)
-		}
-		if (versions.length > 0) {
-			query = query.in('prompt_version', versions)
-		}
-		if (requirements.length > 0) {
-			// Filter threads that have at least one of the selected requirements
-			requirements.forEach(req => {
-				query = query.eq(req, true)
-			})
-		}
-
-		return query
-	}
-
 	// OPTIMIZATION: Select only fields needed for KPI calculation (not SELECT *)
-	// This dramatically reduces data transfer, especially avoiding large text fields
 	const reqKeys = getAllRequirementKeys()
 	const selectFields = [
 		'ai_draft_reply',
@@ -65,79 +132,64 @@ export async function fetchSupportKPIs(
 		...reqKeys,
 	].join(',')
 
-	// Fetch current period data
-	let currentQuery = supabase
-		.from('support_threads_data')
-		.select(selectFields, { count: 'exact' })
-	currentQuery = buildQuery(currentQuery, false)
-	const {
-		data: currentData,
-		count: currentCount,
-		error: currentError,
-	} = await currentQuery
-
-	if (currentError) throw currentError
-
-	// Fetch previous period data
-	let previousQuery = supabase
-		.from('support_threads_data')
-		.select(selectFields, { count: 'exact' })
-	previousQuery = buildQuery(previousQuery, true)
-	const {
-		data: previousData,
-		count: previousCount,
-		error: previousError,
-	} = await previousQuery
-
-	if (previousError) throw previousError
-
-	// Fetch agent response data for current period
-	const currentVersions = Array.from(
-		new Set(
-			(currentData || []).map((t: any) => t.prompt_version).filter(Boolean)
-		)
-	) as string[]
-
-	let currentAgentResponseCount = 0
-	if (currentVersions.length > 0) {
-		const { count: agentCount } = await supabase
-			.from('ai_human_comparison')
-			.select('*', { count: 'exact', head: true })
-			.in('prompt_version', currentVersions)
-			.in('email', QUALIFIED_AGENTS)
-		currentAgentResponseCount = agentCount || 0
-	}
-
-	// Fetch agent response data for previous period
-	const previousVersions = Array.from(
-		new Set(
-			(previousData || []).map((t: any) => t.prompt_version).filter(Boolean)
-		)
-	) as string[]
-
-	let previousAgentResponseCount = 0
-	if (previousVersions.length > 0) {
-		const { count: agentCount } = await supabase
-			.from('ai_human_comparison')
-			.select('*', { count: 'exact', head: true })
-			.in('prompt_version', previousVersions)
-			.in('email', QUALIFIED_AGENTS)
-		previousAgentResponseCount = agentCount || 0
-	}
-
-	// Type assertion for data - we know the structure from our select
+	// Type for KPI records
 	type KPIRecord = {
 		ai_draft_reply: string | null
 		requires_reply: boolean
 		status: string
+		prompt_version: string | null
 		[key: string]: any // For requirement fields
 	}
 
-	const currentRecords = (currentData || []) as unknown as KPIRecord[]
-	const previousRecords = (previousData || []) as unknown as KPIRecord[]
+	// Fetch current and previous period data in parallel
+	const [currentRecords, previousRecords] = await Promise.all([
+		fetchAllForKPIs<KPIRecord>(
+			supabase,
+			selectFields,
+			dateRange.from,
+			dateRange.to,
+			filters
+		),
+		fetchAllForKPIs<KPIRecord>(
+			supabase,
+			selectFields,
+			previousFrom,
+			dateRange.from,
+			filters
+		),
+	])
+
+	// Get unique versions for agent response queries
+	const currentVersions = Array.from(
+		new Set(currentRecords.map(t => t.prompt_version).filter(Boolean))
+	) as string[]
+
+	const previousVersions = Array.from(
+		new Set(previousRecords.map(t => t.prompt_version).filter(Boolean))
+	) as string[]
+
+	// Fetch agent response counts in parallel
+	const [currentAgentResponseCount, previousAgentResponseCount] = await Promise.all([
+		currentVersions.length > 0
+			? supabase
+					.from('ai_human_comparison')
+					.select('*', { count: 'exact', head: true })
+					.in('prompt_version', currentVersions)
+					.in('email', QUALIFIED_AGENTS)
+					.then(({ count }) => count || 0)
+			: Promise.resolve(0),
+		previousVersions.length > 0
+			? supabase
+					.from('ai_human_comparison')
+					.select('*', { count: 'exact', head: true })
+					.in('prompt_version', previousVersions)
+					.in('email', QUALIFIED_AGENTS)
+					.then(({ count }) => count || 0)
+			: Promise.resolve(0),
+	])
 
 	// Calculate KPIs for current period
-	const currentTotal = currentCount || 0
+	const currentTotal = currentRecords.length
 	const currentRequiresReply = currentRecords.filter(
 		t => t.requires_reply === true
 	).length
@@ -150,7 +202,7 @@ export async function fetchSupportKPIs(
 	}, 0)
 
 	// Calculate KPIs for previous period
-	const previousTotal = previousCount || 0
+	const previousTotal = previousRecords.length
 	const previousRequiresReply = previousRecords.filter(
 		t => t.requires_reply === true
 	).length

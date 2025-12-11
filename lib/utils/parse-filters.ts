@@ -36,6 +36,7 @@ export function getDefaultSupportFilters(): SupportFilters {
 		requestTypes: [],
 		requirements: [],
 		versions: [],
+		pendingDraftsOnly: false,
 	}
 }
 
@@ -128,11 +129,19 @@ export function parseSupportFiltersFromSearchParams(
 			? versionsParam.split(',').filter(Boolean)
 			: defaults.versions
 
+	// Parse pendingDraftsOnly
+	const pendingDraftsParam = searchParams.pendingDraftsOnly
+	const pendingDraftsOnly =
+		typeof pendingDraftsParam === 'string'
+			? pendingDraftsParam === 'true'
+			: defaults.pendingDraftsOnly
+
 	return {
 		dateRange,
 		statuses,
 		requestTypes,
 		requirements,
 		versions,
+		pendingDraftsOnly,
 	}
 }
