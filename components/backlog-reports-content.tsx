@@ -4,6 +4,7 @@ import { useStore } from '@/lib/store'
 import { useBacklogReports, useLatestReportTimestamp } from '@/lib/queries/backlog-reports-queries'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Button } from './ui/button'
 import { IconPlus, IconLoader2, IconAlertCircle } from '@tabler/icons-react'
 import { ReportCard } from './backlog/report-card'
@@ -24,6 +25,7 @@ import { SupportOverviewSkeleton } from './loading/support-overview-skeleton'
  */
 export function BacklogReportsContent() {
 	const t = useTranslations()
+	const queryClient = useQueryClient()
 	const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false)
 
 	// Get filter state from Zustand store
@@ -53,12 +55,12 @@ export function BacklogReportsContent() {
 			const latest = new Date(latestTimestamp)
 
 			if (latest > startedAt) {
-				// New report appeared - stop polling and refetch
+				// New report appeared - stop polling and invalidate all reports queries
 				setIsGeneratingReport(false)
-				refetch()
+				queryClient.invalidateQueries({ queryKey: ['backlog-reports'] })
 			}
 		}
-	}, [latestTimestamp, isGeneratingReport, generationStartedAt, setIsGeneratingReport, refetch])
+	}, [latestTimestamp, isGeneratingReport, generationStartedAt, setIsGeneratingReport, queryClient])
 
 	// Auto-stop generating indicator after 15 minutes (safety timeout)
 	useEffect(() => {
