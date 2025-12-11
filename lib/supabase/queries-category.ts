@@ -8,11 +8,121 @@ import type {
   CategoryFilters,
   TrendData,
 } from './types'
-import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
-import { startOfWeek, endOfWeek, format, subWeeks } from 'date-fns'
+import { startOfWeek, endOfWeek, format } from 'date-fns'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Use server-side Supabase client for all queries
 const supabase = supabaseServer
+
+// Batch settings for fetching large datasets
+const BATCH_SIZE = 500
+const MAX_CONCURRENT = 3
+
+/**
+ * Helper to fetch all records in batches to bypass Supabase's 1000 record limit
+ * When emailFilter is empty, no email filtering is applied (matches all agents)
+ */
+async function fetchAllForCategory<T>(
+  supabaseClient: SupabaseClient,
+  selectFields: string,
+  categories: string[],
+  dateFrom: Date,
+  dateTo: Date,
+  emailFilter: string[],
+  versions: string[]
+): Promise<T[]> {
+  // First, get total count
+  let countQuery = supabaseClient
+    .from('ai_human_comparison')
+    .select('*', { count: 'exact', head: true })
+    .in('request_subtype', categories)
+    .gte('created_at', dateFrom.toISOString())
+    .lte('created_at', dateTo.toISOString())
+
+  // Only filter by email if specific agents are provided
+  if (emailFilter.length > 0) {
+    countQuery = countQuery.in('email', emailFilter)
+  }
+
+  if (versions.length > 0) {
+    countQuery = countQuery.in('prompt_version', versions)
+  }
+
+  const { count, error: countError } = await countQuery
+  if (countError) throw countError
+
+  const totalRecords = count || 0
+  if (totalRecords === 0) return []
+
+  // If under 1000, fetch in one request
+  if (totalRecords <= 1000) {
+    let query = supabaseClient
+      .from('ai_human_comparison')
+      .select(selectFields)
+      .in('request_subtype', categories)
+      .gte('created_at', dateFrom.toISOString())
+      .lte('created_at', dateTo.toISOString())
+
+    // Only filter by email if specific agents are provided
+    if (emailFilter.length > 0) {
+      query = query.in('email', emailFilter)
+    }
+
+    if (versions.length > 0) {
+      query = query.in('prompt_version', versions)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return (data || []) as T[]
+  }
+
+  // Fetch in batches with limited concurrency
+  const numBatches = Math.ceil(totalRecords / BATCH_SIZE)
+  const results: T[] = []
+
+  for (let batchStart = 0; batchStart < numBatches; batchStart += MAX_CONCURRENT) {
+    const batchPromises = []
+
+    for (let i = batchStart; i < Math.min(batchStart + MAX_CONCURRENT, numBatches); i++) {
+      const offset = i * BATCH_SIZE
+
+      let query = supabaseClient
+        .from('ai_human_comparison')
+        .select(selectFields)
+        .in('request_subtype', categories)
+        .gte('created_at', dateFrom.toISOString())
+        .lte('created_at', dateTo.toISOString())
+        .range(offset, offset + BATCH_SIZE - 1)
+
+      // Only filter by email if specific agents are provided
+      if (emailFilter.length > 0) {
+        query = query.in('email', emailFilter)
+      }
+
+      if (versions.length > 0) {
+        query = query.in('prompt_version', versions)
+      }
+
+      const promise = query.then(({ data, error }) => {
+        if (error) throw error
+        return (data || []) as T[]
+      })
+
+      batchPromises.push(promise)
+    }
+
+    const batchResults = await Promise.all(batchPromises)
+    results.push(...batchResults.flat())
+
+    // Small delay between batch groups to avoid rate limiting
+    if (batchStart + MAX_CONCURRENT < numBatches) {
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
+  }
+
+  return results
+}
 
 /**
  * Calculate trend data from current and previous values
@@ -48,6 +158,7 @@ function getPreviousPeriod(from: Date, to: Date): { from: Date; to: Date } {
 
 /**
  * Get KPI data for one or more categories
+ * Uses batched fetching to bypass Supabase's 1000 record limit
  */
 export async function getCategoryKPIData(
   categories: string[],
@@ -56,52 +167,37 @@ export async function getCategoryKPIData(
   const { dateRange, versions, agents } = filters
   const previousPeriod = getPreviousPeriod(dateRange.from, dateRange.to)
 
-  // Build email filter
-  const emailFilter = agents.length > 0 ? agents : [...QUALIFIED_AGENTS]
-
   // Select only necessary fields
   const selectFields = 'changed'
 
-  // Build base query for current period
-  let currentQuery = supabase
-    .from('ai_human_comparison')
-    .select(selectFields, { count: 'exact' })
-    .in('request_subtype', categories)
-    .gte('created_at', dateRange.from.toISOString())
-    .lte('created_at', dateRange.to.toISOString())
-    .in('email', emailFilter)
-
-  // Build base query for previous period
-  let previousQuery = supabase
-    .from('ai_human_comparison')
-    .select(selectFields, { count: 'exact' })
-    .in('request_subtype', categories)
-    .gte('created_at', previousPeriod.from.toISOString())
-    .lte('created_at', previousPeriod.to.toISOString())
-    .in('email', emailFilter)
-
-  // Apply version filter if specified
-  if (versions.length > 0) {
-    currentQuery = currentQuery.in('prompt_version', versions)
-    previousQuery = previousQuery.in('prompt_version', versions)
-  }
-
-  const [
-    { data: currentData, count: currentCount },
-    { data: previousData, count: previousCount },
-  ] = await Promise.all([currentQuery, previousQuery])
-
-  if (!currentData || !previousData) {
-    throw new Error('Failed to fetch category KPI data')
-  }
-
   type KPIRecord = { changed: boolean }
-  const currentRecords = currentData as unknown as KPIRecord[]
-  const previousRecords = previousData as unknown as KPIRecord[]
 
-  // Calculate metrics
-  const currentTotal = currentCount || 0
-  const previousTotal = previousCount || 0
+  // Fetch all records using batched approach
+  // Pass agents directly - empty array means no email filter (all agents)
+  const [currentRecords, previousRecords] = await Promise.all([
+    fetchAllForCategory<KPIRecord>(
+      supabase,
+      selectFields,
+      categories,
+      dateRange.from,
+      dateRange.to,
+      agents,
+      versions
+    ),
+    fetchAllForCategory<KPIRecord>(
+      supabase,
+      selectFields,
+      categories,
+      previousPeriod.from,
+      previousPeriod.to,
+      agents,
+      versions
+    ),
+  ])
+
+  // Calculate metrics from all records
+  const currentTotal = currentRecords.length
+  const previousTotal = previousRecords.length
 
   const currentChanged = currentRecords.filter((r) => r.changed).length
   const previousChanged = previousRecords.filter((r) => r.changed).length
@@ -133,36 +229,27 @@ export async function getCategoryKPIData(
 
 /**
  * Get weekly trend data for category (last 12 weeks)
+ * Uses batched fetching to bypass Supabase's 1000 record limit
  */
 export async function getCategoryWeeklyTrends(
   categories: string[],
   filters: CategoryFilters
 ): Promise<CategoryWeeklyTrend[]> {
   const { dateRange, versions, agents } = filters
-  const emailFilter = agents.length > 0 ? agents : [...QUALIFIED_AGENTS]
-
-  // Fetch all records for the date range
-  let query = supabase
-    .from('ai_human_comparison')
-    .select('created_at, changed')
-    .in('request_subtype', categories)
-    .gte('created_at', dateRange.from.toISOString())
-    .lte('created_at', dateRange.to.toISOString())
-    .in('email', emailFilter)
-    .order('created_at', { ascending: true })
-
-  if (versions.length > 0) {
-    query = query.in('prompt_version', versions)
-  }
-
-  const { data, error } = await query
-
-  if (error || !data) {
-    throw new Error('Failed to fetch category weekly trends')
-  }
 
   type WeekRecord = { created_at: string; changed: boolean }
-  const records = data as unknown as WeekRecord[]
+
+  // Fetch all records using batched approach
+  // Pass agents directly - empty array means no email filter (all agents)
+  const records = await fetchAllForCategory<WeekRecord>(
+    supabase,
+    'created_at, changed',
+    categories,
+    dateRange.from,
+    dateRange.to,
+    agents,
+    versions
+  )
 
   // Group by week
   const weekMap = new Map<string, { total: number; good: number; changed: number }>()
@@ -204,35 +291,27 @@ export async function getCategoryWeeklyTrends(
 
 /**
  * Get version breakdown stats for category
+ * Uses batched fetching to bypass Supabase's 1000 record limit
  */
 export async function getCategoryVersionStats(
   categories: string[],
   filters: CategoryFilters
 ): Promise<CategoryVersionStats[]> {
   const { dateRange, versions, agents } = filters
-  const emailFilter = agents.length > 0 ? agents : [...QUALIFIED_AGENTS]
-
-  // Fetch records grouped by version
-  let query = supabase
-    .from('ai_human_comparison')
-    .select('prompt_version, changed')
-    .in('request_subtype', categories)
-    .gte('created_at', dateRange.from.toISOString())
-    .lte('created_at', dateRange.to.toISOString())
-    .in('email', emailFilter)
-
-  if (versions.length > 0) {
-    query = query.in('prompt_version', versions)
-  }
-
-  const { data, error } = await query
-
-  if (error || !data) {
-    throw new Error('Failed to fetch category version stats')
-  }
 
   type VersionRecord = { prompt_version: string | null; changed: boolean }
-  const records = data as unknown as VersionRecord[]
+
+  // Fetch all records using batched approach
+  // Pass agents directly - empty array means no email filter (all agents)
+  const records = await fetchAllForCategory<VersionRecord>(
+    supabase,
+    'prompt_version, changed',
+    categories,
+    dateRange.from,
+    dateRange.to,
+    agents,
+    versions
+  )
 
   // Group by version
   const versionMap = new Map<string, { total: number; good: number; changed: number }>()
@@ -266,41 +345,36 @@ export async function getCategoryVersionStats(
 
 /**
  * Get agent breakdown stats for category
+ * Uses batched fetching to bypass Supabase's 1000 record limit
  */
 export async function getCategoryAgentStats(
   categories: string[],
   filters: CategoryFilters
 ): Promise<CategoryAgentStats[]> {
   const { dateRange, versions, agents } = filters
-  const emailFilter = agents.length > 0 ? agents : [...QUALIFIED_AGENTS]
-
-  // Fetch records grouped by agent
-  let query = supabase
-    .from('ai_human_comparison')
-    .select('email, changed')
-    .in('request_subtype', categories)
-    .gte('created_at', dateRange.from.toISOString())
-    .lte('created_at', dateRange.to.toISOString())
-    .in('email', emailFilter)
-
-  if (versions.length > 0) {
-    query = query.in('prompt_version', versions)
-  }
-
-  const { data, error } = await query
-
-  if (error || !data) {
-    throw new Error('Failed to fetch category agent stats')
-  }
 
   type AgentRecord = { email: string | null; changed: boolean }
-  const records = data as unknown as AgentRecord[]
+
+  // Fetch all records using batched approach
+  // Pass agents directly - empty array means no email filter (all agents)
+  const records = await fetchAllForCategory<AgentRecord>(
+    supabase,
+    'email, changed',
+    categories,
+    dateRange.from,
+    dateRange.to,
+    agents,
+    versions
+  )
 
   // Group by agent
   const agentMap = new Map<string, { total: number; good: number; changed: number }>()
 
   records.forEach((record) => {
-    const agent = record.email || 'unknown'
+    // Skip records without email - they don't have agent attribution
+    if (!record.email) return
+
+    const agent = record.email
 
     if (!agentMap.has(agent)) {
       agentMap.set(agent, { total: 0, good: 0, changed: 0 })
@@ -336,7 +410,6 @@ export async function getCategoryRecords(
 ): Promise<{ data: CategoryRecord[]; total: number }> {
   const { dateRange, versions, agents } = filters
   const { page, pageSize } = pagination
-  const emailFilter = agents.length > 0 ? agents : [...QUALIFIED_AGENTS]
 
   // Build query
   let query = supabase
@@ -345,9 +418,13 @@ export async function getCategoryRecords(
     .in('request_subtype', categories)
     .gte('created_at', dateRange.from.toISOString())
     .lte('created_at', dateRange.to.toISOString())
-    .in('email', emailFilter)
     .order('created_at', { ascending: false })
     .range(page * pageSize, (page + 1) * pageSize - 1)
+
+  // Only filter by agents if specific agents are provided
+  if (agents.length > 0) {
+    query = query.in('email', agents)
+  }
 
   if (versions.length > 0) {
     query = query.in('prompt_version', versions)
@@ -370,16 +447,13 @@ export async function getCategoryRecords(
   const records = (data as unknown as RecordRow[]).map((record) => {
     const date = new Date(record.created_at)
     const weekStart = startOfWeek(date, { weekStartsOn: 1 })
-    const weekNumber = Math.floor(
-      (date.getTime() - weekStart.getTime()) / (7 * 24 * 60 * 60 * 1000)
-    )
 
     return {
       id: record.id,
       version: record.prompt_version || 'unknown',
-      week: `Week ${format(weekStart, 'w')}`,
+      week: format(weekStart, 'MMM dd'), // e.g., "Dec 09" instead of "Week 50"
       weekStart: weekStart.toISOString(),
-      agent: record.email || 'unknown',
+      agent: record.email || '-', // Show dash instead of "unknown" for missing email
       changed: record.changed,
       createdAt: record.created_at,
     }
