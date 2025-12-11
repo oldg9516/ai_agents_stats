@@ -14,6 +14,7 @@ import {
 	IconTicket,
 	IconCalendar,
 	IconClock,
+	IconDownload,
 } from '@tabler/icons-react'
 import { format, parseISO } from 'date-fns'
 import { PatternsList } from './backlog/patterns-list'
@@ -22,7 +23,8 @@ import { SpecificIssues } from './backlog/specific-issues'
 import { WeeklyStatsSection } from './backlog/weekly-stats-section'
 import { RecommendationsList } from './backlog/recommendations-list'
 import { StatsByCategory } from './backlog/stats-by-category'
-import { useMemo } from 'react'
+import { useMemo, useCallback } from 'react'
+import { exportBacklogReportToXLSX } from '@/lib/utils/export-backlog-report'
 
 interface BacklogReportDetailProps {
 	reportId: string
@@ -91,6 +93,13 @@ export function BacklogReportDetail({ reportId }: BacklogReportDetailProps) {
 		router.push(`/${locale}/backlog-reports`)
 	}
 
+	// Handle download
+	const handleDownload = useCallback(() => {
+		if (report) {
+			exportBacklogReportToXLSX(report)
+		}
+	}, [report])
+
 	// Loading state
 	if (isLoading) {
 		return <SupportOverviewSkeleton />
@@ -123,15 +132,25 @@ export function BacklogReportDetail({ reportId }: BacklogReportDetailProps) {
 
 	return (
 		<div className='flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6'>
-			{/* Back Button */}
-			<Button
-				variant='ghost'
-				className='w-fit -ml-2'
-				onClick={handleBack}
-			>
-				<IconArrowLeft className='mr-2 h-4 w-4' />
-				{t('backlogReports.detail.back')}
-			</Button>
+			{/* Top Bar: Back Button + Download Button */}
+			<div className='flex items-center justify-between'>
+				<Button
+					variant='ghost'
+					className='w-fit -ml-2'
+					onClick={handleBack}
+				>
+					<IconArrowLeft className='mr-2 h-4 w-4' />
+					{t('backlogReports.detail.back')}
+				</Button>
+				<Button
+					variant='outline'
+					size='sm'
+					onClick={handleDownload}
+				>
+					<IconDownload className='mr-2 h-4 w-4' />
+					{t('backlogReports.card.download')}
+				</Button>
+			</div>
 
 			{/* Header */}
 			<div className='space-y-1'>

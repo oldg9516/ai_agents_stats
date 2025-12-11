@@ -74,6 +74,8 @@
 		"searchAgents": "Поиск агентов...",
 		"searchStatuses": "Поиск статусов...",
 		"searchRequestTypes": "Поиск типов запросов...",
+		"pendingDraftsOnly": "Ожидающие AI драфты",
+		"pendingDraftsDescription": "Показать только тикеты с AI драфтом без ответа агента",
 		"quickOptions": {
 			"7d": "7 дней",
 			"30d": "30 дней",
@@ -1051,7 +1053,8 @@
 			"tickets": "тикетов",
 			"generated": "Создан",
 			"topCategories": "Топ категории",
-			"patterns": "выявленных паттернов"
+			"patterns": "выявленных паттернов",
+			"download": "Скачать XLSX"
 		},
 		"detail": {
 			"back": "К списку отчётов",

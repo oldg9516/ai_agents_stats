@@ -5,9 +5,11 @@ import { useTranslations } from 'next-intl'
 import { useRouter, useParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
-import { IconCalendar, IconTicket, IconChartBar } from '@tabler/icons-react'
+import { Button } from '../ui/button'
+import { IconCalendar, IconTicket, IconChartBar, IconDownload } from '@tabler/icons-react'
 import { format, parseISO } from 'date-fns'
-import { useMemo } from 'react'
+import { useMemo, useCallback } from 'react'
+import { exportBacklogReportToXLSX } from '@/lib/utils/export-backlog-report'
 
 interface ReportCardProps {
 	report: BacklogReport
@@ -70,6 +72,12 @@ export function ReportCard({ report }: ReportCardProps) {
 		router.push(`/${locale}/backlog-reports/${report.id}`)
 	}
 
+	// Handle download click
+	const handleDownload = useCallback((e: React.MouseEvent) => {
+		e.stopPropagation() // Prevent card click navigation
+		exportBacklogReportToXLSX(report)
+	}, [report])
+
 	return (
 		<Card
 			className='cursor-pointer transition-all hover:shadow-md hover:border-primary/50'
@@ -80,9 +88,20 @@ export function ReportCard({ report }: ReportCardProps) {
 					<CardTitle className='text-base font-semibold line-clamp-1'>
 						{dateRange}
 					</CardTitle>
-					<Badge variant='secondary' className='shrink-0'>
-						{report.period_days} {t('backlogReports.card.days')}
-					</Badge>
+					<div className='flex items-center gap-1.5 shrink-0'>
+						<Button
+							variant='ghost'
+							size='icon'
+							className='h-7 w-7'
+							onClick={handleDownload}
+							title={t('backlogReports.card.download')}
+						>
+							<IconDownload className='h-4 w-4' />
+						</Button>
+						<Badge variant='secondary'>
+							{report.period_days} {t('backlogReports.card.days')}
+						</Badge>
+					</div>
 				</div>
 				<CardDescription className='flex items-center gap-1 text-xs'>
 					<IconCalendar className='h-3 w-3' />

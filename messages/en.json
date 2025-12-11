@@ -74,6 +74,8 @@
 		"searchRequestTypes": "Search request types...",
 		"qualifiedOnly": "Qualified Only",
 		"allAgents": "All Agents",
+		"pendingDraftsOnly": "Pending AI Drafts",
+		"pendingDraftsDescription": "Show only tickets with AI draft awaiting agent review",
 		"quickOptions": {
 			"7d": "7 days",
 			"30d": "30 days",
@@ -1051,7 +1053,8 @@
 			"tickets": "tickets",
 			"generated": "Generated",
 			"topCategories": "Top Categories",
-			"patterns": "patterns identified"
+			"patterns": "patterns identified",
+			"download": "Download XLSX"
 		},
 		"detail": {
 			"back": "Back to Reports",
