@@ -4,7 +4,6 @@
  * Uses batched fetching to bypass Supabase's 1000 record limit
  */
 
-import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 import { getAllRequirementKeys } from '@/constants/requirement-types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { SupportFilters, SupportKPIs } from '../types'
@@ -168,14 +167,13 @@ export async function fetchSupportKPIs(
 		new Set(previousRecords.map(t => t.prompt_version).filter(Boolean))
 	) as string[]
 
-	// Fetch agent response counts in parallel
+	// Fetch agent response counts in parallel (all agents, not just qualified)
 	const [currentAgentResponseCount, previousAgentResponseCount] = await Promise.all([
 		currentVersions.length > 0
 			? supabase
 					.from('ai_human_comparison')
 					.select('*', { count: 'exact', head: true })
 					.in('prompt_version', currentVersions)
-					.in('email', QUALIFIED_AGENTS)
 					.then(({ count }) => count || 0)
 			: Promise.resolve(0),
 		previousVersions.length > 0
@@ -183,7 +181,6 @@ export async function fetchSupportKPIs(
 					.from('ai_human_comparison')
 					.select('*', { count: 'exact', head: true })
 					.in('prompt_version', previousVersions)
-					.in('email', QUALIFIED_AGENTS)
 					.then(({ count }) => count || 0)
 			: Promise.resolve(0),
 	])

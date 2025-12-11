@@ -1,0 +1,611 @@
+{
+	"nodes": [
+		{
+			"parameters": {
+				"jsonSchemaExample": "{\n  \"themes\": [\n    {\n      \"theme\": \"Theme name\",\n      \"description\": \"What customers are asking about\",\n      \"approximate_count\": 5,\n      \"examples\": [\"example 1\", \"example 2\"],\n      \"notable_details\": \"Any specific patterns\"\n    }\n  ],\n  \"emerging_patterns\": [\n    {\n      \"pattern\": \"Description\",\n      \"evidence\": \"What you noticed\"\n    }\n  ],\n  \"date_specific_mentions\": [\"November\", \"December\"]\n}"
+			},
+			"type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+			"typeVersion": 1.3,
+			"position": [
+				-240,
+				4176
+			],
+			"id": "6e1eea25-5d86-43a4-a023-a77041889143",
+			"name": "Structured Output Parser"
+		},
+		{
+			"parameters": {
+				"assignments": {
+					"assignments": [
+						{
+							"id": "eeb859f7-005f-47dc-b551-0c12f58a8649",
+							"name": "period_days",
+							"value": "={{ $json.body.period_days }}",
+							"type": "string"
+						},
+						{
+							"id": "49d2b174-cc10-476c-873f-49283995b4af",
+							"name": "batch_size",
+							"value": 50,
+							"type": "number"
+						}
+					]
+				},
+				"options": {}
+			},
+			"type": "n8n-nodes-base.set",
+			"typeVersion": 3.4,
+			"position": [
+				-1792,
+				3952
+			],
+			"id": "381b23ed-c67a-4b7a-94b8-909b6481b8dc",
+			"name": "Set Parameters1"
+		},
+		{
+			"parameters": {
+				"operation": "executeQuery",
+				"query": "WITH target_subtypes AS (\n  SELECT unnest(ARRAY[\n    'gratitude', \n    'customization_request', \n    'damaged_or_leaking_item_report', \n    'frequency_change_request', \n    'skip_or_pause_request',\n    'shipping_or_delivery_question', \n    'payment_question', \n    'recipient_or_address_change'\n  ]) as subtype\n),\nbacklog AS (\n  SELECT std.*\n  FROM support_threads_data std\n  WHERE std.requires_reply = true \n  AND std.created_at >= NOW() - INTERVAL '1 day' * $1\n  AND (\n    -- Точное совпадение с одной из категорий\n    std.request_subtype IN (SELECT subtype FROM target_subtypes)\n    -- Или содержит любую из категорий (для комбинированных)\n    OR std.request_subtype LIKE '%gratitude%'\n    OR std.request_subtype LIKE '%customization_request%'\n    OR std.request_subtype LIKE '%damaged_or_leaking_item_report%'\n    OR std.request_subtype LIKE '%frequency_change_request%'\n    OR std.request_subtype LIKE '%skip_or_pause_request%'\n    OR std.request_subtype LIKE '%shipping_or_delivery_question%'\n    OR std.request_subtype LIKE '%payment_question%'\n    OR std.request_subtype LIKE '%recipient_or_address_change%'\n  )\n)\nSELECT \n  COUNT(*) as total_tickets,\n  COUNT(DISTINCT DATE_TRUNC('day', created_at)) as days_covered,\n  MIN(created_at)::date as earliest_date,\n  MAX(created_at)::date as latest_date,\n  -- По категориям (включая комбинированные)\n  COUNT(*) FILTER (WHERE request_subtype LIKE '%shipping_or_delivery_question%') as shipping_delivery,\n  COUNT(*) FILTER (WHERE request_subtype LIKE '%payment_question%') as payment,\n  COUNT(*) FILTER (WHERE request_subtype LIKE '%customization_request%') as customization,\n  COUNT(*) FILTER (WHERE request_subtype LIKE '%frequency_change_request%') as frequency_change,\n  COUNT(*) FILTER (WHERE request_subtype LIKE '%skip_or_pause_request%') as skip_pause,\n  COUNT(*) FILTER (WHERE request_subtype LIKE '%recipient_or_address_change%') as address_change,\n  COUNT(*) FILTER (WHERE request_subtype LIKE '%damaged_or_leaking_item_report%') as damaged_items,\n  COUNT(*) FILTER (WHERE request_subtype LIKE '%gratitude%') as gratitude,\n  -- Комбинированные (несколько категорий)\n  COUNT(*) FILTER (WHERE request_subtype LIKE '%,%') as multi_category\nFROM backlog;",
+				"options": {
+					"queryReplacement": "={{ [$json.period_days] }}"
+				}
+			},
+			"type": "n8n-nodes-base.postgres",
+			"typeVersion": 2.6,
+			"position": [
+				-1568,
+				3952
+			],
+			"id": "9f772db3-b6af-4a2b-8fc0-20a987707c7f",
+			"name": "Get Backlog Stats1",
+			"alwaysOutputData": false,
+			"credentials": {
+				"postgres": {
+					"id": "ztQj9bms8liGHay8",
+					"name": "Postgres Support"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"operation": "executeQuery",
+				"query": "SELECT \n  DATE_TRUNC('week', created_at)::date as week_start,\n  COUNT(*) as total,\n  COUNT(*) FILTER (WHERE request_subtype LIKE '%shipping_or_delivery_question%') as shipping_delivery,\n  COUNT(*) FILTER (WHERE request_subtype LIKE '%payment_question%') as payment,\n  COUNT(*) FILTER (WHERE request_subtype LIKE '%customization_request%') as customization,\n  COUNT(*) FILTER (WHERE request_subtype LIKE '%frequency_change_request%') as frequency_change,\n  COUNT(*) FILTER (WHERE request_subtype LIKE '%skip_or_pause_request%') as skip_pause,\n  COUNT(*) FILTER (WHERE request_subtype LIKE '%recipient_or_address_change%') as address_change,\n  COUNT(*) FILTER (WHERE request_subtype LIKE '%damaged_or_leaking_item_report%') as damaged_items,\n  COUNT(*) FILTER (WHERE request_subtype LIKE '%gratitude%') as gratitude\nFROM support_threads_data\nWHERE requires_reply = true \nAND created_at >= NOW() - INTERVAL '1 day' * $1\nAND (\n  request_subtype LIKE '%gratitude%'\n  OR request_subtype LIKE '%customization_request%'\n  OR request_subtype LIKE '%damaged_or_leaking_item_report%'\n  OR request_subtype LIKE '%frequency_change_request%'\n  OR request_subtype LIKE '%skip_or_pause_request%'\n  OR request_subtype LIKE '%shipping_or_delivery_question%'\n  OR request_subtype LIKE '%payment_question%'\n  OR request_subtype LIKE '%recipient_or_address_change%'\n)\nGROUP BY DATE_TRUNC('week', created_at)\nORDER BY week_start DESC;",
+				"options": {
+					"queryReplacement": "={{ [$('Set Parameters1').item.json.period_days] }}"
+				}
+			},
+			"type": "n8n-nodes-base.postgres",
+			"typeVersion": 2.6,
+			"position": [
+				-1344,
+				3744
+			],
+			"id": "b7198229-c1f6-45f7-83cd-469b9b6e951d",
+			"name": "Get Weekly Breakdown1",
+			"credentials": {
+				"postgres": {
+					"id": "ztQj9bms8liGHay8",
+					"name": "Postgres Support"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"operation": "executeQuery",
+				"query": "SELECT \n  std.thread_id,\n  std.ticket_id,\n  std.full_request,\n  std.request_subtype,\n  std.status,\n  std.created_at::date as created_date,\n  DATE_TRUNC('week', std.created_at)::date as week_start\nFROM support_threads_data std\nWHERE std.requires_reply = true \nAND std.created_at >= NOW() - INTERVAL '1 day' * $1\nAND std.full_request IS NOT NULL\nAND std.full_request != ''\nAND (\n  std.request_subtype LIKE '%gratitude%'\n  OR std.request_subtype LIKE '%customization_request%'\n  OR std.request_subtype LIKE '%damaged_or_leaking_item_report%'\n  OR std.request_subtype LIKE '%frequency_change_request%'\n  OR std.request_subtype LIKE '%skip_or_pause_request%'\n  OR std.request_subtype LIKE '%shipping_or_delivery_question%'\n  OR std.request_subtype LIKE '%payment_question%'\n  OR std.request_subtype LIKE '%recipient_or_address_change%'\n)\nORDER BY std.created_at DESC;",
+				"options": {
+					"queryReplacement": "={{ [$('Set Parameters1').item.json.period_days] }}"
+				}
+			},
+			"type": "n8n-nodes-base.postgres",
+			"typeVersion": 2.6,
+			"position": [
+				-1344,
+				3952
+			],
+			"id": "0186d96b-3c37-4c72-b06f-65a2d4ab26fb",
+			"name": "Get All Ticket Texts1",
+			"credentials": {
+				"postgres": {
+					"id": "ztQj9bms8liGHay8",
+					"name": "Postgres Support"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"batchSize": 30,
+				"options": {}
+			},
+			"type": "n8n-nodes-base.splitInBatches",
+			"typeVersion": 3,
+			"position": [
+				-944,
+				3952
+			],
+			"id": "04a1e922-1716-426d-b0fa-674d093d96a8",
+			"name": "Loop Over Items1"
+		},
+		{
+			"parameters": {
+				"jsCode": "const items = $input.all();\n\nconst texts = items.map((item, idx) => {\n  const date = item.json.created_date || 'unknown';\n  const type = item.json.request_type || 'unknown';\n  const subtype = item.json.request_subtype || 'none';\n  const text = (item.json.full_request || '').substring(0, 500); // лимит на текст\n  \n  return `[${idx + 1}] Date: ${date} | Type: ${type} | Subtype: ${subtype}\nText: ${text}`;\n}).join('\\n\\n---\\n\\n');\n\nconst batchNumber = $('Loop Over Items1').context.currentRunIndex + 1;\n\nreturn [{\n  json: {\n    batch_number: batchNumber,\n    ticket_count: items.length,\n    batch_text: texts\n  }\n}];"
+			},
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [
+				-672,
+				3968
+			],
+			"id": "733e3f0b-8b0a-4c33-95fb-c64ca2a899b0",
+			"name": "Prepare Batch for AI1"
+		},
+		{
+			"parameters": {
+				"aggregate": "aggregateAllItemData",
+				"options": {}
+			},
+			"type": "n8n-nodes-base.aggregate",
+			"typeVersion": 1,
+			"position": [
+				-704,
+				3776
+			],
+			"id": "09dc889f-ce81-4f3b-9c7f-ac424731d3f4",
+			"name": "Aggregate1"
+		},
+		{
+			"parameters": {
+				"jsCode": "const aggregatedData = $input.first();\nconst allThemes = [];\nconst allPatterns = [];\nconst allDateMentions = [];\n\nconst batchesArray = aggregatedData.json.data || [];\n\nfor (const item of batchesArray) {\n  try {\n    let batchData = item.output;\n    \n    if (typeof batchData === 'string') {\n      batchData = JSON.parse(batchData.replace(/```json\\n?|\\n?```/g, ''));\n    }\n    \n    if (batchData.themes) {\n      allThemes.push(...batchData.themes);\n    }\n    if (batchData.emerging_patterns) {\n      allPatterns.push(...batchData.emerging_patterns);\n    }\n    if (batchData.date_specific_mentions) {\n      allDateMentions.push(...batchData.date_specific_mentions);\n    }\n  } catch (e) {\n    console.error('Parse error:', e);\n  }\n}\n\n// Получаем статистику из предыдущих нод\nconst stats = $('Get Backlog Stats1').first().json;\nconst weeklyData = $('Get Weekly Breakdown1').all().map(i => i.json);\n\nreturn [{\n  json: {\n    all_themes: allThemes,\n    all_patterns: allPatterns,\n    date_mentions: [...new Set(allDateMentions)],\n    total_batches: batchesArray.length,\n    stats: stats,\n    weekly_breakdown: weeklyData\n  }\n}];"
+			},
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [
+				-496,
+				3776
+			],
+			"id": "19d215fa-4bee-4e9d-b894-3d3b11b56391",
+			"name": "Prepare for Final Analysis1"
+		},
+		{
+			"parameters": {
+				"jsonSchemaExample": "{\n  \"executive_summary\": \"Overview text\",\n  \"main_patterns\": [\n    {\n      \"pattern_name\": \"Name\",\n      \"description\": \"Description\",\n      \"estimated_percentage\": \"~20%\",\n      \"volume\": \"approximately 500 tickets\",\n      \"examples\": [\"example 1\", \"example 2\"],\n      \"business_insight\": \"What this means\"\n    }\n  ],\n  \"temporal_trends\": [\n    {\n      \"observation\": \"What changed\",\n      \"timeframe\": \"When\",\n      \"possible_cause\": \"Why\"\n    }\n  ],\n  \"specific_issues\": [\n    {\n      \"issue\": \"Problem\",\n      \"details\": \"What customers report\",\n      \"affected_period\": \"November 2024\"\n    }\n  ],\n  \"recommendations\": [\"Recommendation 1\", \"Recommendation 2\"]\n}"
+			},
+			"type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+			"typeVersion": 1.3,
+			"position": [
+				256,
+				3728
+			],
+			"id": "f651063b-2f8c-46ef-b4ba-84d2f60621fe",
+			"name": "Structured Output Parser4"
+		},
+		{
+			"parameters": {
+				"jsCode": "const input = $input.first();\nlet result;\n\ntry {\n  result = typeof input.json.output === 'string' \n    ? JSON.parse(input.json.output.replace(/```json\\n?|\\n?```/g, ''))\n    : input.json.output;\n} catch (e) {\n  return [{ json: { error: e.message, raw: input.json.output }}];\n}\n\nconst stats = $('Get Backlog Stats1').first().json;\nconst weeklyData = $('Get Weekly Breakdown1').all().map(i => i.json);\nconst periodDays = $('Set Parameters1').first().json.period_days;\n\n// Формируем одну запись для Supabase\nreturn [{\n  json: {\n    period_days: periodDays,\n    date_from: stats.earliest_date,\n    date_to: stats.latest_date,\n    total_tickets: stats.total_tickets,\n    \n    stats: {\n      shipping_delivery: stats.shipping_delivery,\n      payment: stats.payment,\n      customization: stats.customization,\n      frequency_change: stats.frequency_change,\n      skip_pause: stats.skip_pause,\n      address_change: stats.address_change,\n      damaged_items: stats.damaged_items,\n      gratitude: stats.gratitude,\n      multi_category: stats.multi_category\n    },\n    \n    weekly_stats: weeklyData.map(w => ({\n      week: w.week_start,\n      total: w.total,\n      shipping_delivery: w.shipping_delivery,\n      payment: w.payment,\n      customization: w.customization,\n      frequency_change: w.frequency_change,\n      skip_pause: w.skip_pause,\n      address_change: w.address_change,\n      damaged_items: w.damaged_items,\n      gratitude: w.gratitude\n    })),\n    \n    executive_summary: result.executive_summary,\n    main_patterns: result.main_patterns,\n    temporal_trends: result.temporal_trends,\n    specific_issues: result.specific_issues,\n    recommendations: result.recommendations\n  }\n}];"
+			},
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [
+				400,
+				3536
+			],
+			"id": "3008d806-6ac7-41ea-898e-081ca5a3c31a",
+			"name": "Parse Final Results1"
+		},
+		{
+			"parameters": {
+				"promptType": "define",
+				"text": "=Analyze these {{ $json.ticket_count }} customer support tickets (batch {{ $json.batch_number }}):\n\n{{ $json.batch_text }}",
+				"hasOutputParser": true,
+				"options": {
+					"systemMessage": "=You are a customer support analyst. Analyze the batch of tickets and identify PATTERNS and THEMES.\n\nDO NOT create a rigid ranking. Instead, provide a DESCRIPTIVE analysis:\n\n1. MAIN THEMES - What are customers asking about? Group similar requests.\n\n2. SPECIFIC PATTERNS - Look for:\n   - Tracking/shipping issues (invalid tracking, no updates, lost packages)\n   - Missing boxes (specific months mentioned, multiple boxes missing)\n   - Payment issues (charges, refunds, billing questions)\n   - Subscription changes (pause, cancel, frequency)\n   - Address/recipient changes\n   - Any unusual or emerging patterns\n\n3. NOTABLE DETAILS - Specific mentions of:\n   - Specific dates or months (\"no box for November\")\n   - Specific countries or regions with issues\n   - Technical problems (website, tracking system)\n   - Emotional tone (frustrated, urgent, grateful)\n\nReturn JSON:\n{\n  \"themes\": [\n    {\n      \"theme\": \"Theme name\",\n      \"description\": \"What customers are asking about\",\n      \"approximate_count\": number,\n      \"examples\": [\"example 1\", \"example 2\"],\n      \"notable_details\": \"Any specific patterns within this theme\"\n    }\n  ],\n  \"emerging_patterns\": [\n    {\n      \"pattern\": \"Description of pattern\",\n      \"evidence\": \"What you noticed\"\n    }\n  ],\n  \"date_specific_mentions\": [\"any specific dates/months mentioned in tickets\"]\n}"
+				}
+			},
+			"type": "@n8n/n8n-nodes-langchain.agent",
+			"typeVersion": 3,
+			"position": [
+				-416,
+				3968
+			],
+			"id": "9edf928b-b682-4b51-b3e1-f3d14a8f2096",
+			"name": "Analyze Batch1"
+		},
+		{
+			"parameters": {
+				"promptType": "define",
+				"text": "=Synthesize the analysis of {{ $json.stats.total_tickets }} customer support tickets.\n\nBACKLOG STATISTICS:\n- Total tickets: {{ $json.stats.total_tickets }}\n- Period: {{ $json.stats.earliest_date }} to {{ $json.stats.latest_date }}\n- Days covered: {{ $json.stats.days_covered }}\n\nBY CATEGORY:\n- Shipping/Delivery: {{ $json.stats.shipping_delivery }}\n- Payment: {{ $json.stats.payment }}\n- Customization: {{ $json.stats.customization }}\n- Frequency Change: {{ $json.stats.frequency_change }}\n- Skip/Pause: {{ $json.stats.skip_pause }}\n- Address Change: {{ $json.stats.address_change }}\n- Damaged Items: {{ $json.stats.damaged_items }}\n- Gratitude: {{ $json.stats.gratitude }}\n\nWEEKLY BREAKDOWN:\n{{ JSON.stringify($json.weekly_breakdown, null, 2) }}\n\nTOP THEMES ({{ $json.themes_summary.length }} grouped from {{ $json.total_themes_before_compression }} raw):\n{{ JSON.stringify($json.themes_summary, null, 2) }}\n\nKEY PATTERNS ({{ $json.patterns_summary.length }} unique):\n{{ JSON.stringify($json.patterns_summary, null, 2) }}\n\nDATE-SPECIFIC MENTIONS:\n{{ $json.date_mentions.join(', ') }}\n\nCreate a final synthesis report.",
+				"hasOutputParser": true,
+				"options": {
+					"systemMessage": "=You are a senior customer support analyst creating an EXECUTIVE SUMMARY of the support backlog.\n\nYour task is to synthesize all batch analyses into a coherent report that answers:\n\"What is our backlog made of? Why are customers contacting us?\"\n\nOUTPUT STRUCTURE (JSON):\n\n{\n  \"executive_summary\": \"2-3 paragraph overview of the backlog composition and key findings\",\n  \n  \"main_patterns\": [\n    {\n      \"pattern_name\": \"Clear name\",\n      \"description\": \"Detailed description of what customers are asking\",\n      \"estimated_percentage\": \"~X%\",\n      \"volume\": \"approximately X tickets\",\n      \"examples\": [\"example request 1\", \"example request 2\"],\n      \"business_insight\": \"What this means for the business\"\n    }\n  ],\n  \n  \"temporal_trends\": [\n    {\n      \"observation\": \"What changed and when\",\n      \"timeframe\": \"When this was noticed\",\n      \"possible_cause\": \"Hypothesis about why\"\n    }\n  ],\n  \n  \"specific_issues\": [\n    {\n      \"issue\": \"Specific problem\",\n      \"details\": \"What customers report\",\n      \"affected_period\": \"Dates/months mentioned\"\n    }\n  ],\n  \n  \"recommendations\": [\n    \"Actionable recommendation based on findings\"\n  ]\n}\n\nIMPORTANT:\n- Be DESCRIPTIVE, not just categorical\n- Highlight ANOMALIES and TRENDS\n- Include SPECIFIC examples and date mentions\n- Focus on ACTIONABLE INSIGHTS\n- Write in English"
+				}
+			},
+			"type": "@n8n/n8n-nodes-langchain.agent",
+			"typeVersion": 3,
+			"position": [
+				80,
+				3536
+			],
+			"id": "48e73c57-489c-4d87-82a4-c483c51ac9fc",
+			"name": "AI Agent Final1"
+		},
+		{
+			"parameters": {
+				"jsCode": "const input = $input.first().json;\n\n// Группируем темы по названию и суммируем counts\nconst themeMap = new Map();\n\nfor (const theme of input.all_themes) {\n  const key = theme.theme.toLowerCase().substring(0, 50); // нормализуем\n  \n  if (themeMap.has(key)) {\n    const existing = themeMap.get(key);\n    existing.count += theme.approximate_count || 1;\n    if (theme.examples) {\n      existing.examples.push(...theme.examples.slice(0, 2));\n    }\n    if (theme.notable_details) {\n      existing.details.push(theme.notable_details);\n    }\n  } else {\n    themeMap.set(key, {\n      theme: theme.theme,\n      count: theme.approximate_count || 1,\n      examples: theme.examples ? theme.examples.slice(0, 2) : [],\n      details: theme.notable_details ? [theme.notable_details] : []\n    });\n  }\n}\n\n// Сортируем по count и берём топ-25\nconst topThemes = Array.from(themeMap.values())\n  .sort((a, b) => b.count - a.count)\n  .slice(0, 25)\n  .map(t => ({\n    theme: t.theme,\n    count: t.count,\n    examples: [...new Set(t.examples)].slice(0, 3),\n    notable_details: [...new Set(t.details)].slice(0, 2).join(' | ')\n  }));\n\n// Группируем паттерны (убираем дубли)\nconst uniquePatterns = [];\nconst seenPatterns = new Set();\n\nfor (const p of input.all_patterns) {\n  const key = p.pattern.toLowerCase().substring(0, 30);\n  if (!seenPatterns.has(key)) {\n    seenPatterns.add(key);\n    uniquePatterns.push(p);\n  }\n}\n\n// Берём топ-15 уникальных паттернов\nconst topPatterns = uniquePatterns.slice(0, 15);\n\n// Уникальные даты\nconst uniqueDates = [...new Set(input.date_mentions)].slice(0, 20);\n\nreturn [{\n  json: {\n    themes_summary: topThemes,\n    patterns_summary: topPatterns,\n    date_mentions: uniqueDates,\n    stats: input.stats,\n    weekly_breakdown: input.weekly_breakdown,\n    total_themes_before_compression: input.all_themes.length,\n    total_patterns_before_compression: input.all_patterns.length\n  }\n}];"
+			},
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [
+				-288,
+				3776
+			],
+			"id": "b1a6e8da-80e4-4be0-a71e-46ba356b1ee6",
+			"name": "Compress for Final AI1"
+		},
+		{
+			"parameters": {
+				"httpMethod": "POST",
+				"path": "85aae365-d889-4ed5-8c86-5bfebe37b85d",
+				"authentication": "headerAuth",
+				"responseMode": "lastNode",
+				"options": {}
+			},
+			"type": "n8n-nodes-base.webhook",
+			"typeVersion": 2.1,
+			"position": [
+				-1984,
+				3952
+			],
+			"id": "72fe73d6-bc17-4564-b269-acb539cc1dca",
+			"name": "Webhook1",
+			"webhookId": "85aae365-d889-4ed5-8c86-5bfebe37b85d",
+			"credentials": {
+				"httpHeaderAuth": {
+					"id": "vdALzfeN7a0gYG0V",
+					"name": "Dashboard Credentials"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"tableId": "backlog_reports",
+				"fieldsUi": {
+					"fieldValues": [
+						{
+							"fieldId": "period_days",
+							"fieldValue": "={{ $json.period_days }}"
+						},
+						{
+							"fieldId": "date_from",
+							"fieldValue": "={{ $json.date_from }}"
+						},
+						{
+							"fieldId": "date_to",
+							"fieldValue": "={{ $json.date_to }}"
+						},
+						{
+							"fieldId": "total_tickets",
+							"fieldValue": "={{ $json.total_tickets }}"
+						},
+						{
+							"fieldId": "stats",
+							"fieldValue": "={{ JSON.stringify($json.stats) }}"
+						},
+						{
+							"fieldId": "weekly_stats",
+							"fieldValue": "={{ JSON.stringify($json.weekly_stats) }}"
+						},
+						{
+							"fieldId": "executive_summary",
+							"fieldValue": "={{ $json.executive_summary }}"
+						},
+						{
+							"fieldId": "main_patterns",
+							"fieldValue": "={{ JSON.stringify($json.main_patterns) }}"
+						},
+						{
+							"fieldId": "temporal_trends",
+							"fieldValue": "={{ JSON.stringify($json.temporal_trends) }}"
+						},
+						{
+							"fieldId": "specific_issues",
+							"fieldValue": "={{ JSON.stringify($json.specific_issues) }}"
+						},
+						{
+							"fieldId": "recommendations",
+							"fieldValue": "={{ JSON.stringify($json.recommendations) }}"
+						}
+					]
+				}
+			},
+			"type": "n8n-nodes-base.supabase",
+			"typeVersion": 1,
+			"position": [
+				608,
+				3536
+			],
+			"id": "53992a17-6b4a-419c-97eb-be3a0e6774d8",
+			"name": "Create a row",
+			"credentials": {
+				"supabaseApi": {
+					"id": "xxWOc97Po8VYcqJY",
+					"name": "Supabase Support"
+				}
+			}
+		},
+		{
+			"parameters": {},
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				-1984,
+				4160
+			],
+			"id": "61063733-acfe-4882-8078-109cde035884",
+			"name": "When clicking ‘Execute workflow’"
+		},
+		{
+			"parameters": {
+				"model": {
+					"__rl": true,
+					"value": "gpt-5-mini-2025-08-07",
+					"mode": "list",
+					"cachedResultName": "gpt-5-mini-2025-08-07"
+				},
+				"options": {
+					"responseFormat": "json_object",
+					"reasoningEffort": "low",
+					"timeout": 120000
+				}
+			},
+			"type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+			"typeVersion": 1.2,
+			"position": [
+				-432,
+				4176
+			],
+			"id": "e673e729-d007-47d4-b38e-1d38302a9a30",
+			"name": "GPT 5 mini",
+			"credentials": {
+				"openAiApi": {
+					"id": "Yb4ChvF9m95BTqxi",
+					"name": "OpenAi"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"model": {
+					"__rl": true,
+					"value": "gpt-5.1-2025-11-13",
+					"mode": "list",
+					"cachedResultName": "gpt-5.1-2025-11-13"
+				},
+				"options": {
+					"responseFormat": "json_object",
+					"reasoningEffort": "low",
+					"timeout": 120000
+				}
+			},
+			"type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+			"typeVersion": 1.2,
+			"position": [
+				64,
+				3728
+			],
+			"id": "49238576-c08b-4ed1-bde4-ee73ad14e317",
+			"name": "GPT 5.1",
+			"credentials": {
+				"openAiApi": {
+					"id": "Yb4ChvF9m95BTqxi",
+					"name": "OpenAi"
+				}
+			}
+		}
+	],
+	"connections": {
+		"Structured Output Parser": {
+			"ai_outputParser": [
+				[
+					{
+						"node": "Analyze Batch1",
+						"type": "ai_outputParser",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Set Parameters1": {
+			"main": [
+				[
+					{
+						"node": "Get Backlog Stats1",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Get Backlog Stats1": {
+			"main": [
+				[
+					{
+						"node": "Get Weekly Breakdown1",
+						"type": "main",
+						"index": 0
+					},
+					{
+						"node": "Get All Ticket Texts1",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Get All Ticket Texts1": {
+			"main": [
+				[
+					{
+						"node": "Loop Over Items1",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Loop Over Items1": {
+			"main": [
+				[
+					{
+						"node": "Aggregate1",
+						"type": "main",
+						"index": 0
+					}
+				],
+				[
+					{
+						"node": "Prepare Batch for AI1",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Prepare Batch for AI1": {
+			"main": [
+				[
+					{
+						"node": "Analyze Batch1",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Aggregate1": {
+			"main": [
+				[
+					{
+						"node": "Prepare for Final Analysis1",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Prepare for Final Analysis1": {
+			"main": [
+				[
+					{
+						"node": "Compress for Final AI1",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Structured Output Parser4": {
+			"ai_outputParser": [
+				[
+					{
+						"node": "AI Agent Final1",
+						"type": "ai_outputParser",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Parse Final Results1": {
+			"main": [
+				[
+					{
+						"node": "Create a row",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Analyze Batch1": {
+			"main": [
+				[
+					{
+						"node": "Loop Over Items1",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"AI Agent Final1": {
+			"main": [
+				[
+					{
+						"node": "Parse Final Results1",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Compress for Final AI1": {
+			"main": [
+				[
+					{
+						"node": "AI Agent Final1",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Webhook1": {
+			"main": [
+				[
+					{
+						"node": "Set Parameters1",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"When clicking ‘Execute workflow’": {
+			"main": [
+				[
+					{
+						"node": "Set Parameters1",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"GPT 5 mini": {
+			"ai_languageModel": [
+				[
+					{
+						"node": "Analyze Batch1",
+						"type": "ai_languageModel",
+						"index": 0
+					}
+				]
+			]
+		},
+		"GPT 5.1": {
+			"ai_languageModel": [
+				[
+					{
+						"node": "AI Agent Final1",
+						"type": "ai_languageModel",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {},
+	"meta": {
+		"templateCredsSetupCompleted": true,
+		"instanceId": "35ca5c0385fda3cc46a5ee5f4633d62ab3133f711465d82ee7110bf6e6ca69a3"
+	}
+}
