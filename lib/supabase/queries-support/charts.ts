@@ -141,35 +141,104 @@ export async function fetchStatusDistribution(
 }
 
 /**
+ * Helper to fetch all records in batches from ai_human_comparison
+ * Uses the same batching approach but for ai_human_comparison table
+ */
+async function fetchAllComparisonInBatches<T>(
+	supabase: SupabaseClient,
+	selectFields: string,
+	dateFrom: Date,
+	dateTo: Date
+): Promise<T[]> {
+	// First, get total count
+	const { count, error: countError } = await supabase
+		.from('ai_human_comparison')
+		.select('*', { count: 'exact', head: true })
+		.gte('created_at', dateFrom.toISOString())
+		.lt('created_at', dateTo.toISOString())
+		.not('human_reply_date', 'is', null)
+
+	if (countError) throw countError
+
+	const totalRecords = count || 0
+	if (totalRecords === 0) return []
+
+	// Fetch in batches with limited concurrency
+	const numBatches = Math.ceil(totalRecords / BATCH_SIZE)
+	const results: T[] = []
+
+	for (let batchStart = 0; batchStart < numBatches; batchStart += MAX_CONCURRENT) {
+		const batchPromises = []
+
+		for (let i = batchStart; i < Math.min(batchStart + MAX_CONCURRENT, numBatches); i++) {
+			const offset = i * BATCH_SIZE
+
+			const promise = supabase
+				.from('ai_human_comparison')
+				.select(selectFields)
+				.gte('created_at', dateFrom.toISOString())
+				.lt('created_at', dateTo.toISOString())
+				.not('human_reply_date', 'is', null)
+				.range(offset, offset + BATCH_SIZE - 1)
+				.then(({ data, error }) => {
+					if (error) throw error
+					return (data || []) as T[]
+				})
+
+			batchPromises.push(promise)
+		}
+
+		const batchResults = await Promise.all(batchPromises)
+		results.push(...batchResults.flat())
+
+		// Small delay between batch groups
+		if (batchStart + MAX_CONCURRENT < numBatches) {
+			await new Promise(resolve => setTimeout(resolve, 50))
+		}
+	}
+
+	return results
+}
+
+/**
  * Fetch Resolution Time data for bar chart
- * Shows average time from created_at to resolved status grouped by week
+ * Shows average agent response time (human_reply_date - created_at) grouped by week
+ * Data comes from ai_human_comparison table where actual response times are recorded
  * Uses batched fetching to handle >1000 records
  */
 export async function fetchResolutionTimeData(
 	supabase: SupabaseClient,
 	filters: SupportFilters
 ): Promise<ResolutionTimeData[]> {
-	// Only get threads with "Reply is ready" status (resolved)
-	// Override statuses filter to only get resolved threads
-	const resolvedFilters: SupportFilters = {
-		...filters,
-		statuses: ['Reply is ready'],
-	}
+	const { dateRange } = filters
 
-	const data = await fetchAllInBatches<{ created_at: string; status: string }>(
+	// Fetch data from ai_human_comparison with actual response timestamps
+	const data = await fetchAllComparisonInBatches<{
+		created_at: string
+		human_reply_date: string
+	}>(
 		supabase,
-		'support_threads_data',
-		'created_at, status',
-		resolvedFilters
+		'created_at, human_reply_date',
+		dateRange.from,
+		dateRange.to
 	)
 
-	// Group by week
+	// Group by week and calculate average response time
 	const weekData = new Map<string, { totalTime: number; count: number }>()
 
-	data.forEach(thread => {
-		if (!thread.created_at) return
+	data.forEach(record => {
+		if (!record.created_at || !record.human_reply_date) return
 
-		const createdDate = new Date(thread.created_at)
+		const createdDate = new Date(record.created_at)
+		const replyDate = new Date(record.human_reply_date)
+
+		// Calculate response time in hours
+		const responseTimeHours = (replyDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60)
+
+		// Skip negative or unrealistic values (data quality issue)
+		if (responseTimeHours < 0 || responseTimeHours > 720) return // Max 30 days
+
+		// Get week start (Monday)
 		const weekStart = new Date(createdDate)
 		weekStart.setDate(
 			weekStart.getDate() -
@@ -179,13 +248,9 @@ export async function fetchResolutionTimeData(
 		weekStart.setHours(0, 0, 0, 0)
 		const weekKey = weekStart.toISOString().split('T')[0]
 
-		// For now, assume resolved time is ~24 hours (placeholder logic)
-		// In real app, you'd need a resolved_at timestamp
-		const resolutionTime = 24
-
 		const existing = weekData.get(weekKey) || { totalTime: 0, count: 0 }
 		weekData.set(weekKey, {
-			totalTime: existing.totalTime + resolutionTime,
+			totalTime: existing.totalTime + responseTimeHours,
 			count: existing.count + 1,
 		})
 	})
@@ -193,7 +258,7 @@ export async function fetchResolutionTimeData(
 	const result = Array.from(weekData.entries())
 		.map(([weekStart, { totalTime, count }]) => ({
 			weekStart,
-			avgResolutionTime: count > 0 ? totalTime / count : 0,
+			avgResolutionTime: count > 0 ? Math.round((totalTime / count) * 10) / 10 : 0, // Round to 1 decimal
 			threadCount: count,
 		}))
 		.sort((a, b) => a.weekStart.localeCompare(b.weekStart))
