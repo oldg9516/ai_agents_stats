@@ -32,18 +32,16 @@ export function SpecificIssues({ issues }: SpecificIssuesProps) {
 			{issuesArray.map((issue, index) => (
 				<Card key={index}>
 					<CardHeader className='pb-2'>
-						<div className='flex items-start gap-2'>
-							<IconAlertTriangle className='h-5 w-5 text-yellow-500 mt-0.5 shrink-0' />
-							<div className='flex-1'>
-								<div className='flex items-start justify-between gap-2'>
-									<CardTitle className='text-base'>{issue.issue}</CardTitle>
-									{issue.affected_period && (
-										<Badge variant='outline' className='shrink-0'>
-											{issue.affected_period}
-										</Badge>
-									)}
-								</div>
+						<div className='space-y-2'>
+							<div className='flex items-start gap-2'>
+								<IconAlertTriangle className='h-5 w-5 text-yellow-500 mt-0.5 shrink-0' />
+								<CardTitle className='text-base'>{issue.issue}</CardTitle>
 							</div>
+							{issue.affected_period && (
+								<p className='ml-7 text-xs text-muted-foreground italic'>
+									{issue.affected_period}
+								</p>
+							)}
 						</div>
 					</CardHeader>
 					<CardContent>

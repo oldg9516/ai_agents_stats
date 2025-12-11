@@ -37,19 +37,17 @@ export function PatternsList({ patterns }: PatternsListProps) {
 			{patternsArray.map((pattern, index) => (
 				<Card key={index}>
 					<CardHeader className='pb-2'>
-						<div className='flex items-start justify-between gap-2'>
-							<div className='space-y-1'>
-								<div className='flex items-center gap-2'>
-									<Badge variant='outline'>#{pattern.rank}</Badge>
-									<CardTitle className='text-lg'>{pattern.pattern_name}</CardTitle>
-								</div>
-								<CardDescription className='text-sm'>
-									{pattern.description}
-								</CardDescription>
+						<div className='space-y-2'>
+							<div className='flex items-center gap-2 flex-wrap'>
+								<Badge variant='outline'>#{pattern.rank}</Badge>
+								<CardTitle className='text-lg'>{pattern.pattern_name}</CardTitle>
 							</div>
-							<Badge className='shrink-0'>
+							<Badge className='w-fit'>
 								{pattern.volume} {t('backlogReports.card.tickets')}
 							</Badge>
+							<CardDescription className='text-sm'>
+								{pattern.description}
+							</CardDescription>
 						</div>
 					</CardHeader>
 					<CardContent>
