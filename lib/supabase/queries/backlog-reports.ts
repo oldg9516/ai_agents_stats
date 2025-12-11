@@ -72,7 +72,7 @@ export async function triggerReportGeneration(
 ): Promise<{ success: boolean; error?: string }> {
 	try {
 		const webhookUrl = process.env.N8N_WEBHOOK_URL
-		const apiKey = process.env['N8N_X-API-KEY']
+		const apiKey = process.env.N8N_X_API_KEY
 
 		console.log('📤 [Webhook] Starting report generation request')
 		console.log('📤 [Webhook] URL:', webhookUrl ? `${webhookUrl.substring(0, 50)}...` : 'NOT SET')
