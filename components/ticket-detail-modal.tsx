@@ -176,8 +176,13 @@ export function TicketDetailModal({
 									</span>
 								)}
 							</div>
-							<DialogDescription className='font-mono text-xs sm:text-sm break-all'>
-								ID: {ticket.id}
+							<DialogDescription className='font-mono text-xs sm:text-sm break-all flex items-center gap-2 flex-wrap'>
+								<span>ID: {ticket.id}</span>
+								{ticket.request_subtype && (
+									<span className='inline-block px-2 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'>
+										{ticket.request_subtype}
+									</span>
+								)}
 							</DialogDescription>
 						</div>
 						<Button
