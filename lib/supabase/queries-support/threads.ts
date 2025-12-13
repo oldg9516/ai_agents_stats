@@ -14,6 +14,79 @@ import type {
 const SUPABASE_BATCH_SIZE = 300
 
 /**
+ * Check if there's a human response (direction='out') AFTER the AI thread
+ * in support_dialogs table for each thread
+ */
+async function fetchHumanResponsesInBatches(
+	supabase: SupabaseClient,
+	threads: { thread_id: string; ticket_id: string }[]
+): Promise<Map<string, boolean>> {
+	const result = new Map<string, boolean>()
+	if (threads.length === 0) return result
+
+	// Group threads by ticket_id for efficient querying
+	const ticketToThreads = new Map<string, { thread_id: string; ticket_id: string }[]>()
+	threads.forEach(t => {
+		if (!t.ticket_id) return
+		const existing = ticketToThreads.get(t.ticket_id) || []
+		existing.push(t)
+		ticketToThreads.set(t.ticket_id, existing)
+	})
+
+	const ticketIds = [...ticketToThreads.keys()]
+	const BATCH_SIZE = 50 // Smaller batches for complex queries
+	const MAX_CONCURRENT = 3
+
+	// Fetch all outgoing messages for these tickets
+	for (let i = 0; i < ticketIds.length; i += BATCH_SIZE * MAX_CONCURRENT) {
+		const batchPromises: Promise<void>[] = []
+
+		for (let j = 0; j < MAX_CONCURRENT && i + j * BATCH_SIZE < ticketIds.length; j++) {
+			const start = i + j * BATCH_SIZE
+			const batchTicketIds = ticketIds.slice(start, start + BATCH_SIZE)
+
+			const promise = (async () => {
+				const { data, error } = await supabase
+					.from('support_dialogs')
+					.select('ticket_id, thread_id')
+					.in('ticket_id', batchTicketIds)
+					.eq('direction', 'out')
+
+				if (error) {
+					console.error('Error fetching human responses:', error)
+					return
+				}
+
+				// For each thread, check if there's an outgoing message with higher thread_id
+				data?.forEach(dialog => {
+					const dialogThreadId = BigInt(dialog.thread_id)
+					const threadsForTicket = ticketToThreads.get(dialog.ticket_id) || []
+
+					threadsForTicket.forEach(t => {
+						const aiThreadId = BigInt(t.thread_id)
+						// If there's an outgoing message AFTER the AI thread, mark it as having human response
+						if (dialogThreadId > aiThreadId) {
+							result.set(t.thread_id, true)
+						}
+					})
+				})
+			})()
+
+			batchPromises.push(promise)
+		}
+
+		await Promise.all(batchPromises)
+
+		// Small delay between batch groups
+		if (i + BATCH_SIZE * MAX_CONCURRENT < ticketIds.length) {
+			await new Promise(resolve => setTimeout(resolve, 50))
+		}
+	}
+
+	return result
+}
+
+/**
  * Build base query with filters (without pagination)
  */
 function buildThreadsQuery(
@@ -180,8 +253,11 @@ export async function fetchSupportThreads(
 		return results
 	}
 
-	// Fetch comparison and dialog data in batches
-	const [comparisonData, dialogData] = await Promise.all([
+	// Get ticket_ids for checking human responses in support_dialogs
+	const ticketIds = [...new Set(threads.map(t => t.ticket_id as string).filter(Boolean))]
+
+	// Fetch comparison, dialog data, and human responses in batches
+	const [comparisonData, dialogData, humanResponseData] = await Promise.all([
 		fetchInBatches<{
 			thread_id: string
 			changed: boolean | null
@@ -193,6 +269,9 @@ export async function fetchSupportThreads(
 			direction: string | null
 			text: string | null
 		}>('support_dialogs', 'thread_id, direction, text', threadIds),
+		// Fetch outgoing messages (human responses) from support_dialogs for each ticket
+		// This checks if there's any 'out' direction message AFTER the AI thread
+		fetchHumanResponsesInBatches(supabase, threads as { thread_id: string; ticket_id: string }[]),
 	])
 
 	// Create a map of thread_id -> comparison data
@@ -249,6 +328,8 @@ export async function fetchSupportThreads(
 		const threadId = thread.thread_id as string
 		const comparison = comparisonMap.get(threadId)
 		const dialog = dialogMap.get(threadId)
+		// Check if there's a human response AFTER this AI thread in support_dialogs
+		const hasHumanResponseInDialogs = humanResponseData.get(threadId) ?? false
 
 		return {
 			...(thread as unknown as SupportThread),
@@ -264,16 +345,20 @@ export async function fetchSupportThreads(
 					: comparison?.changed === true
 					? 0
 					: null,
+			// Add flag for human response check from support_dialogs
+			hasHumanResponseAfterAI: hasHumanResponseInDialogs,
 		}
 	})
 
-	// If pendingDraftsOnly is enabled, filter out threads that have agent response
-	// A thread is "pending" if it has AI draft but no agent has processed it yet
+	// If pendingDraftsOnly is enabled, filter out threads that have human response
+	// A thread is "pending" if:
+	// 1. It has AI draft
+	// 2. There's NO outgoing message (direction='out') in support_dialogs AFTER the AI thread
 	if (pendingDraftsOnly) {
 		enrichedThreads = enrichedThreads.filter(
 			thread =>
 				thread.ai_draft_reply !== null &&
-				(thread.email === null || thread.human_reply === null)
+				!thread.hasHumanResponseAfterAI
 		)
 	}
 

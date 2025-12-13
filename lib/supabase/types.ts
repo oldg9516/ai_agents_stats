@@ -319,6 +319,8 @@ export interface SupportThread extends SupportThreadRow {
 	customer_request_text: string | null // Customer's request text from support_dialogs.text
 	// Fields from support_threads_data.user JSON
 	customer_email: string | null // Customer email parsed from user JSON field
+	// Computed field: true if there's an outgoing message in support_dialogs AFTER this AI thread
+	hasHumanResponseAfterAI?: boolean
 }
 
 /**
