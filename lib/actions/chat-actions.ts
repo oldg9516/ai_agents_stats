@@ -183,6 +183,72 @@ export async function saveChatMessage(
 	}
 }
 
+// Polling response type
+export interface PollingResponse {
+	status: 'processing' | 'completed' | 'error'
+	message: ChatMessage | null
+}
+
+// Poll for message by message_id (for long-running requests)
+export async function pollMessageByMessageId(messageId: string): Promise<PollingResponse> {
+	const supabase = getSupabaseAdmin()
+
+	const { data, error } = await supabase
+		.from('dashboard_chat_messages')
+		.select('*')
+		.eq('message_id', messageId)
+		.single()
+
+	if (error) {
+		// Not found yet - still processing
+		if (error.code === 'PGRST116') {
+			return { status: 'processing', message: null }
+		}
+		console.error('Error polling message:', error)
+		return { status: 'error', message: null }
+	}
+
+	// Check status field
+	const status = data.status as string
+
+	if (status === 'completed') {
+		return {
+			status: 'completed',
+			message: {
+				id: data.id,
+				session_id: data.session_id,
+				role: data.role,
+				content: data.content,
+				content_type: data.content_type || 'text',
+				metadata: data.metadata || {},
+				agent_name: data.agent_name,
+				parent_message_id: data.parent_message_id,
+				created_at: data.created_at,
+			}
+		}
+	}
+
+	if (status === 'error') {
+		return {
+			status: 'error',
+			message: {
+				id: data.id,
+				session_id: data.session_id,
+				role: data.role,
+				content: data.content || 'Произошла ошибка при обработке запроса',
+				content_type: 'text',
+				metadata: { error: data.content || 'Unknown error' },
+				agent_name: data.agent_name,
+				parent_message_id: data.parent_message_id,
+				created_at: data.created_at,
+			}
+		}
+	}
+
+	// status === 'processing' or other
+	return { status: 'processing', message: null }
+}
+
 export async function deleteMessagesFromId(
 	sessionId: string,
 	messageId: string

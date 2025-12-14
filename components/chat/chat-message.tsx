@@ -30,6 +30,14 @@ import { useTranslations, useLocale } from 'next-intl'
 
 // === Chart Display Component ===
 
+// Format field names: snake_case/camelCase → readable text
+function formatFieldName(name: string): string {
+	return name
+		.replace(/_/g, ' ')
+		.replace(/([a-z])([A-Z])/g, '$1 $2')
+		.replace(/\b\w/g, c => c.toUpperCase())
+}
+
 interface ChartDisplayProps {
 	data: Record<string, unknown>[]
 	chartType: string
@@ -44,6 +52,11 @@ export function ChartDisplay({ data, chartType, config }: ChartDisplayProps) {
 	const xKey = config?.xKey || Object.keys(data[0] || {})[0] || 'name'
 	const yKey = config?.yKey || Object.keys(data[0] || {})[1] || 'value'
 	const yKeys = Array.isArray(yKey) ? yKey : [yKey]
+
+	// Custom tooltip formatter
+	const tooltipFormatter = (value: number, name: string) => {
+		return [formatNumber(value), formatFieldName(name)]
+	}
 
 	const chartContent = useMemo(() => {
 		switch (chartType) {
@@ -73,12 +86,14 @@ export function ChartDisplay({ data, chartType, config }: ChartDisplayProps) {
 								borderRadius: '8px',
 							}}
 							labelStyle={{ color: 'hsl(var(--popover-foreground))' }}
+							formatter={tooltipFormatter}
 						/>
-						{yKeys.length > 1 && <Legend />}
+						{yKeys.length > 1 && <Legend formatter={formatFieldName} />}
 						{yKeys.map((key, index) => (
 							<Bar
 								key={key}
 								dataKey={key}
+								name={formatFieldName(key)}
 								fill={CHART_COLORS[index % CHART_COLORS.length]}
 								radius={[4, 4, 0, 0]}
 							/>
@@ -112,13 +127,15 @@ export function ChartDisplay({ data, chartType, config }: ChartDisplayProps) {
 								borderRadius: '8px',
 							}}
 							labelStyle={{ color: 'hsl(var(--popover-foreground))' }}
+							formatter={tooltipFormatter}
 						/>
-						{yKeys.length > 1 && <Legend />}
+						{yKeys.length > 1 && <Legend formatter={formatFieldName} />}
 						{yKeys.map((key, index) => (
 							<Line
 								key={key}
 								type='monotone'
 								dataKey={key}
+								name={formatFieldName(key)}
 								stroke={CHART_COLORS[index % CHART_COLORS.length]}
 								strokeWidth={2}
 								dot={{
@@ -160,6 +177,7 @@ export function ChartDisplay({ data, chartType, config }: ChartDisplayProps) {
 								border: '1px solid hsl(var(--border))',
 								borderRadius: '8px',
 							}}
+							formatter={tooltipFormatter}
 						/>
 						<Legend />
 					</PieChart>
@@ -168,7 +186,7 @@ export function ChartDisplay({ data, chartType, config }: ChartDisplayProps) {
 			default:
 				return null
 		}
-	}, [data, chartType, xKey, yKeys])
+	}, [data, chartType, xKey, yKeys, tooltipFormatter])
 
 	return (
 		<div className='w-full bg-card rounded-lg p-4 my-2 border'>
@@ -214,7 +232,7 @@ export function TableDisplay({ data, columns, title }: TableDisplayProps) {
 					<tr>
 						{displayColumns.map(col => (
 							<th key={col} className='px-4 py-3 font-medium'>
-								{col.replace(/_/g, ' ')}
+								{formatFieldName(col)}
 							</th>
 						))}
 					</tr>
@@ -278,6 +296,10 @@ export function CodeDisplay({ code, language = 'sql' }: CodeDisplayProps) {
 // === Parse Plain Text Tables ===
 
 function parseTextTable(content: string): { before: string; tableData: string[][] | null; after: string } {
+	// Guard against null/undefined content
+	if (!content) {
+		return { before: '', tableData: null, after: '' }
+	}
 	// Try to detect table-like structure in plain text
 	const lines = content.split('\n')
 	let tableStart = -1
@@ -559,7 +581,7 @@ export function ChatMessageDisplay({
 		return (
 			<>
 				<div className='prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-2 prose-strong:text-inherit [&_table]:w-full [&_table]:my-3 [&_table]:border-collapse [&_table]:border [&_table]:border-border [&_table]:rounded-lg [&_table]:overflow-hidden [&_th]:px-4 [&_th]:py-2.5 [&_th]:text-left [&_th]:font-semibold [&_th]:bg-muted [&_th]:border [&_th]:border-border [&_td]:px-4 [&_td]:py-2 [&_td]:border [&_td]:border-border [&_tr:hover]:bg-muted/50'>
-					<ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+					<ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content || ''}</ReactMarkdown>
 				</div>
 				{metadata.sql_executed && (
 					<details className='mt-3'>

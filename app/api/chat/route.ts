@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Timeout for n8n webhook (25 seconds - leave buffer before Vercel/browser timeout)
+const WEBHOOK_TIMEOUT = 25000
+
 export async function POST(request: NextRequest) {
 	try {
 		const body = await request.json()
@@ -22,11 +25,32 @@ export async function POST(request: NextRequest) {
 			headers['X-API-Key'] = apiKey
 		}
 
-		const response = await fetch(webhookUrl, {
-			method: 'POST',
-			headers,
-			body: JSON.stringify(body),
-		})
+		// Create AbortController with timeout
+		const controller = new AbortController()
+		const timeoutId = setTimeout(() => controller.abort(), WEBHOOK_TIMEOUT)
+
+		let response: Response
+		try {
+			response = await fetch(webhookUrl, {
+				method: 'POST',
+				headers,
+				body: JSON.stringify(body),
+				signal: controller.signal,
+			})
+		} catch (err) {
+			clearTimeout(timeoutId)
+			// If timeout, return polling signal so client starts polling DB
+			if (err instanceof Error && err.name === 'AbortError') {
+				return NextResponse.json({
+					success: true,
+					polling: true,
+					message: 'Request is being processed. Response will be saved to database.'
+				})
+			}
+			throw err
+		} finally {
+			clearTimeout(timeoutId)
+		}
 
 		if (!response.ok) {
 			return NextResponse.json(
