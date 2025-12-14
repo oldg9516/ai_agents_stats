@@ -8,6 +8,7 @@
 		"requestCategories": "Request Categories",
 		"ticketsReview": "Tickets Review",
 		"backlogReports": "Backlog Reports",
+		"aiChat": "AI Chat",
 		"documentation": "Documentation",
 		"settings": "Settings",
 		"search": "Search",
@@ -1037,6 +1038,43 @@
 				"structure": "Structure Change",
 				"accuracy": "Accuracy Issue"
 			}
+		}
+	},
+	"chat": {
+		"title": "AI Analytics Assistant",
+		"subtitle": "Ask questions about your support data",
+		"newChat": "New Chat",
+		"emptyTitle": "Ask anything about your data",
+		"emptyDescription": "I can help you analyze support tickets, generate reports, build charts, and answer questions about your statistics.",
+		"placeholder": "Type your question...",
+		"hint": "Press Enter to send, Shift+Enter for new line",
+		"history": "Chat History",
+		"rename": "Rename",
+		"delete": "Delete",
+		"suggestions": {
+			"ticketsLastWeek": "How many tickets last week?",
+			"topRequestTypes": "Top request types",
+			"avgSimilarity": "Average AI quality",
+			"ticketsDynamic": "Ticket volume trend"
+		},
+		"message": {
+			"yes": "Yes",
+			"no": "No",
+			"showingRecords": "Showing {count} records",
+			"copy": "Copy",
+			"cancel": "Cancel",
+			"send": "Send",
+			"showSql": "Show SQL query",
+			"edit": "Edit",
+			"resend": "Resend",
+			"retry": "Retry",
+			"analyzing": "Analyzing..."
+		},
+		"deleteDialog": {
+			"title": "Delete Chat",
+			"description": "Are you sure you want to delete \"{title}\"? This action cannot be undone.",
+			"cancel": "Cancel",
+			"confirm": "Delete"
 		}
 	},
 	"backlogReports": {

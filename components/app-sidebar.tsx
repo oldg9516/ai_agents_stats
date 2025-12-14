@@ -14,6 +14,7 @@ import {
 	IconHeartBroken,
 	IconHelp,
 	IconListDetails,
+	IconMessageChatbot,
 	IconReport,
 	IconSearch,
 	IconSettings,
@@ -75,6 +76,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				title: t('backlogReports'),
 				url: '/backlog-reports',
 				icon: IconFileAnalytics,
+			},
+			{
+				title: t('aiChat'),
+				url: '/ai-chat',
+				icon: IconMessageChatbot,
 			},
 			{
 				title: t('documentation'),
