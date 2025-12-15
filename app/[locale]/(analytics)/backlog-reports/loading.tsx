@@ -1,5 +1,5 @@
-import { TicketsReviewSkeleton } from '@/components/loading/tickets-review-skeleton'
+import SpinnerComponent from '@/components/SpinnerComponent'
 
 export default function Loading() {
-	return <TicketsReviewSkeleton />
+	return <SpinnerComponent />
 }
