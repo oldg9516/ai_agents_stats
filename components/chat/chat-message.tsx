@@ -23,11 +23,14 @@ import {
 	ResponsiveContainer,
 } from 'recharts'
 import { ChatMessage, CHART_COLORS, formatNumber, formatDateTime } from '@/types/chat'
-import { IconCopy, IconRefresh, IconPencil, IconCheck, IconX } from '@tabler/icons-react'
+import { IconCopy, IconRefresh, IconPencil, IconCheck, IconX, IconDownload, IconChevronDown, IconChevronUp } from '@tabler/icons-react'
 import { ReportCard } from './report-card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useTranslations, useLocale } from 'next-intl'
+
+// Constants
+const MAX_MESSAGE_LENGTH = 300 // Characters before truncating
 
 // === Chart Display Component ===
 
@@ -50,6 +53,8 @@ interface ChartDisplayProps {
 }
 
 export function ChartDisplay({ data, chartType, config }: ChartDisplayProps) {
+	const t = useTranslations('chat.chart')
+	const [showDataSource, setShowDataSource] = useState(false)
 	const xKey = config?.xKey || Object.keys(data[0] || {})[0] || 'name'
 	const yKey = config?.yKey || Object.keys(data[0] || {})[1] || 'value'
 	const yKeys = Array.isArray(yKey) ? yKey : [yKey]
@@ -57,6 +62,34 @@ export function ChartDisplay({ data, chartType, config }: ChartDisplayProps) {
 	// Custom tooltip formatter
 	const tooltipFormatter = (value: number, name: string) => {
 		return [formatNumber(value), formatFieldName(name)]
+	}
+
+	// Download CSV function
+	const downloadCSV = () => {
+		if (!data || data.length === 0) return
+
+		const headers = Object.keys(data[0])
+		const csvContent = [
+			headers.join(','),
+			...data.map(row =>
+				headers.map(h => {
+					const val = row[h]
+					// Escape quotes and wrap in quotes if contains comma
+					const strVal = String(val ?? '')
+					if (strVal.includes(',') || strVal.includes('"')) {
+						return `"${strVal.replace(/"/g, '""')}"`
+					}
+					return strVal
+				}).join(',')
+			)
+		].join('\n')
+
+		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+		const link = document.createElement('a')
+		link.href = URL.createObjectURL(blob)
+		link.download = `data_${new Date().toISOString().split('T')[0]}.csv`
+		link.click()
+		URL.revokeObjectURL(link.href)
 	}
 
 	const chartContent = useMemo(() => {
@@ -156,11 +189,13 @@ export function ChartDisplay({ data, chartType, config }: ChartDisplayProps) {
 							data={data}
 							cx='50%'
 							cy='50%'
-							labelLine={false}
-							label={({ name, percent }) =>
-								`${name}: ${(percent * 100).toFixed(1)}%`
-							}
-							outerRadius={120}
+							labelLine={true}
+							label={({ name, percent }) => {
+								// Only show label if segment is large enough (> 5%)
+								if (percent < 0.05) return null
+								return `${name}: ${(percent * 100).toFixed(1)}%`
+							}}
+							outerRadius={140}
 							fill='#8884d8'
 							dataKey={yKeys[0]}
 							nameKey={xKey}
@@ -180,7 +215,12 @@ export function ChartDisplay({ data, chartType, config }: ChartDisplayProps) {
 							}}
 							formatter={tooltipFormatter}
 						/>
-						<Legend />
+						<Legend
+							layout='horizontal'
+							verticalAlign='bottom'
+							align='center'
+							wrapperStyle={{ paddingTop: 20 }}
+						/>
 					</PieChart>
 				)
 
@@ -189,16 +229,91 @@ export function ChartDisplay({ data, chartType, config }: ChartDisplayProps) {
 		}
 	}, [data, chartType, xKey, yKeys, tooltipFormatter])
 
+	// Dynamic height based on chart type and data size
+	const getChartHeight = () => {
+		if (chartType === 'pie_chart') {
+			// More height for pie charts with many segments + legend
+			const legendRows = Math.ceil(data.length / 3) // ~3 items per row in legend
+			return 400 + legendRows * 25
+		}
+		return 350
+	}
+
 	return (
-		<div className='w-full bg-card rounded-lg p-4 my-2 border'>
-			{config?.title && (
-				<h3 className='text-lg font-semibold text-foreground mb-4 text-center'>
-					{config.title}
-				</h3>
-			)}
-			<ResponsiveContainer width='100%' height={350}>
-				{chartContent || <div>Unsupported chart type</div>}
-			</ResponsiveContainer>
+		<div className='w-full rounded-lg my-2'>
+			{/* Chart with title bar */}
+			<div className='border rounded-lg overflow-hidden'>
+				{/* Title bar */}
+				{config?.title && (
+					<div className='flex items-center gap-2 px-4 py-3 border-b bg-muted/30'>
+						<div className='w-1 h-5 bg-primary rounded-full' />
+						<h3 className='text-base font-semibold text-foreground'>
+							{config.title}
+						</h3>
+					</div>
+				)}
+
+				{/* Chart area */}
+				<div className='p-4 bg-background'>
+					<ResponsiveContainer width='100%' height={getChartHeight()}>
+						{chartContent || <div>Unsupported chart type</div>}
+					</ResponsiveContainer>
+				</div>
+			</div>
+
+			{/* Data Source Accordion */}
+			<div className='mt-2 border rounded-lg overflow-hidden'>
+				<button
+					onClick={() => setShowDataSource(!showDataSource)}
+					className='w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors'
+				>
+					<span className='flex items-center gap-2'>
+						{showDataSource ? (
+							<IconChevronUp className='w-4 h-4' />
+						) : (
+							<IconChevronDown className='w-4 h-4' />
+						)}
+						{t('dataSource')} ({data.length} {t('rows')})
+					</span>
+					<button
+						onClick={(e) => {
+							e.stopPropagation()
+							downloadCSV()
+						}}
+						className='flex items-center gap-1 px-2 py-1 text-xs rounded hover:bg-accent transition-colors cursor-pointer'
+					>
+						<IconDownload className='w-3.5 h-3.5' />
+						CSV
+					</button>
+				</button>
+
+				{showDataSource && (
+					<div className='border-t max-h-64 overflow-auto'>
+						<table className='w-full text-xs'>
+							<thead className='bg-muted/50 sticky top-0'>
+								<tr>
+									{Object.keys(data[0] || {}).map(col => (
+										<th key={col} className='px-3 py-2 text-left font-medium'>
+											{formatFieldName(col)}
+										</th>
+									))}
+								</tr>
+							</thead>
+							<tbody>
+								{data.map((row, i) => (
+									<tr key={i} className='border-t hover:bg-muted/30'>
+										{Object.keys(data[0] || {}).map(col => (
+											<td key={col} className='px-3 py-2'>
+												{formatNumber(row[col] as number) || String(row[col] ?? '—')}
+											</td>
+										))}
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				)}
+			</div>
 		</div>
 	)
 }
@@ -422,6 +537,13 @@ export function ChatMessageDisplay({
 	const locale = useLocale()
 	const isUser = message.role === 'user'
 	const metadata = message.metadata || {}
+	const [isExpanded, setIsExpanded] = useState(false)
+
+	// Check if message is long and should be truncated
+	const isLongMessage = message.content.length > MAX_MESSAGE_LENGTH
+	const displayContent = isLongMessage && !isExpanded
+		? message.content.slice(0, MAX_MESSAGE_LENGTH) + '...'
+		: message.content
 	const hasError = !!metadata.error
 	const [isEditing, setIsEditing] = useState(false)
 	const [editContent, setEditContent] = useState(message.content)
@@ -448,7 +570,31 @@ export function ChatMessageDisplay({
 	const renderContent = () => {
 		// User messages - dark text on orange background
 		if (isUser && !isEditing) {
-			return <div className='text-orange-950 dark:text-orange-100 whitespace-pre-wrap'>{message.content}</div>
+			return (
+				<div>
+					<div className='text-orange-950 dark:text-orange-100 whitespace-pre-wrap break-words'>
+						{displayContent}
+					</div>
+					{isLongMessage && (
+						<button
+							onClick={() => setIsExpanded(!isExpanded)}
+							className='mt-2 text-xs text-orange-600 dark:text-orange-400 hover:underline flex items-center gap-1'
+						>
+							{isExpanded ? (
+								<>
+									<IconChevronUp className='w-3 h-3' />
+									{t('showLess')}
+								</>
+							) : (
+								<>
+									<IconChevronDown className='w-3 h-3' />
+									{t('showMore')}
+								</>
+							)}
+						</button>
+					)}
+				</div>
+			)
 		}
 
 		// Editing mode

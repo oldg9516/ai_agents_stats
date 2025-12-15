@@ -1068,7 +1068,13 @@
 			"edit": "Edit",
 			"resend": "Resend",
 			"retry": "Retry",
-			"analyzing": "Analyzing..."
+			"analyzing": "Analyzing...",
+			"showMore": "Show more",
+			"showLess": "Show less"
+		},
+		"chart": {
+			"dataSource": "Data Source",
+			"rows": "rows"
 		},
 		"deleteDialog": {
 			"title": "Delete Chat",
