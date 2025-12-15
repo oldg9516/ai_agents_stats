@@ -24,6 +24,7 @@ import {
 } from 'recharts'
 import { ChatMessage, CHART_COLORS, formatNumber, formatDateTime } from '@/types/chat'
 import { IconCopy, IconRefresh, IconPencil, IconCheck, IconX } from '@tabler/icons-react'
+import { ReportCard } from './report-card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useTranslations, useLocale } from 'next-intl'
@@ -481,6 +482,22 @@ export function ChatMessageDisplay({
 						</Button>
 					</div>
 				</div>
+			)
+		}
+
+		// Report link content
+		if (message.content_type === 'report_link' && metadata.report_id && metadata.report_url && metadata.preview) {
+			return (
+				<>
+					<div className='prose prose-sm dark:prose-invert max-w-none mb-2 prose-p:my-1 prose-strong:text-inherit'>
+						<ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+					</div>
+					<ReportCard
+						reportId={metadata.report_id}
+						reportUrl={metadata.report_url}
+						preview={metadata.preview}
+					/>
+				</>
 			)
 		}
 

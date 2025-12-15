@@ -4,23 +4,7 @@
  * AI Chat System - Main Chat Component
  */
 
-import React, { useState, useRef, useEffect, FormEvent } from 'react'
-import { useChat } from '@/lib/hooks/use-chat'
-import { ChatMessageDisplay, LoadingMessage } from './chat-message'
-import {
-	IconSend,
-	IconPlus,
-	IconMessage,
-	IconSparkles,
-	IconDatabase,
-	IconHistory,
-	IconX,
-	IconPencil,
-	IconTrash,
-	IconCheck,
-} from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
 import {
 	Dialog,
 	DialogContent,
@@ -29,7 +13,24 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog'
+import { Spinner } from '@/components/ui/spinner'
+import { Textarea } from '@/components/ui/textarea'
+import { useChat } from '@/lib/hooks/use-chat'
+import {
+	IconCheck,
+	IconDatabase,
+	IconMessage,
+	IconMessages,
+	IconPencil,
+	IconPlus,
+	IconSend,
+	IconSparkles,
+	IconTrash,
+	IconX,
+} from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'
+import React, { FormEvent, useEffect, useRef, useState } from 'react'
+import { ChatMessageDisplay, LoadingMessage } from './chat-message'
 
 interface AIChatProps {
 	webhookUrl: string
@@ -48,6 +49,7 @@ export function AIChat({ webhookUrl, className = '' }: AIChatProps) {
 		sessions,
 		currentSessionId,
 		isLoading,
+		isInitializing,
 		sendMessage,
 		resendMessage,
 		editAndResendMessage,
@@ -67,7 +69,10 @@ export function AIChat({ webhookUrl, className = '' }: AIChatProps) {
 
 	// State for delete confirmation dialog
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-	const [sessionToDelete, setSessionToDelete] = useState<{ id: string; title: string | null } | null>(null)
+	const [sessionToDelete, setSessionToDelete] = useState<{
+		id: string
+		title: string | null
+	} | null>(null)
 
 	// Auto-scroll to bottom
 	useEffect(() => {
@@ -161,14 +166,27 @@ export function AIChat({ webhookUrl, className = '' }: AIChatProps) {
 		setSessionToDelete(null)
 	}
 
+	// Show spinner while initializing
+	if (isInitializing) {
+		return (
+			<div className='flex justify-center items-center w-full h-full'>
+				<Spinner className='size-8 text-orange-500' />
+			</div>
+		)
+	}
+
 	return (
 		<div className={`flex h-full ${className}`}>
 			{/* History Sidebar */}
-			{showHistory && (
-				<div className='w-72 bg-card border-r flex flex-col shrink-0'>
+			<div
+				className={`bg-card border-r flex flex-col shrink-0 overflow-hidden transition-all duration-300 ease-in-out ${
+					showHistory ? 'w-72' : 'w-0 border-r-0'
+				}`}
+			>
+				<div className='w-72 flex flex-col h-full'>
 					{/* Sidebar Header */}
-					<div className='flex items-center justify-between p-4 border-b'>
-						<h3 className='font-semibold'>{t('history')}</h3>
+					<div className='flex items-center justify-between px-6 py-4 border-b'>
+						<h3 className='text-lg font-semibold'>{t('history')}</h3>
 						<Button
 							variant='ghost'
 							size='icon'
@@ -280,12 +298,12 @@ export function AIChat({ webhookUrl, className = '' }: AIChatProps) {
 						)}
 					</div>
 				</div>
-			)}
+			</div>
 
 			{/* Main Chat Area */}
 			<div className='flex-1 flex flex-col min-w-0'>
 				{/* Header */}
-				<div className='flex items-center justify-between px-6 py-4 border-b'>
+				<div className='flex items-center justify-between px-6 py-4 border-b h-[65pxl]'>
 					<div className='flex items-center space-x-3'>
 						<Button
 							variant='ghost'
@@ -294,7 +312,7 @@ export function AIChat({ webhookUrl, className = '' }: AIChatProps) {
 							className='h-9 w-9'
 							title={t('history')}
 						>
-							<IconHistory className='w-5 h-5' />
+							<IconMessages className='w-6 h-6' />
 						</Button>
 						<div className='p-2 bg-orange-500 rounded-lg'>
 							<IconSparkles className='w-5 h-5 text-white' />
@@ -315,7 +333,7 @@ export function AIChat({ webhookUrl, className = '' }: AIChatProps) {
 					</Button>
 				</div>
 
-					{/* Messages Area */}
+				{/* Messages Area */}
 				<div className='flex-1 overflow-y-auto px-6 py-4'>
 					{messages.length === 0 ? (
 						// Empty state
@@ -413,7 +431,9 @@ export function AIChat({ webhookUrl, className = '' }: AIChatProps) {
 					<DialogHeader>
 						<DialogTitle>{t('deleteDialog.title')}</DialogTitle>
 						<DialogDescription>
-							{t('deleteDialog.description', { title: sessionToDelete?.title || t('newChat') })}
+							{t('deleteDialog.description', {
+								title: sessionToDelete?.title || t('newChat'),
+							})}
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter className='gap-3'>

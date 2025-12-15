@@ -1075,6 +1075,14 @@
 			"description": "Вы уверены, что хотите удалить \"{title}\"? Это действие нельзя отменить.",
 			"cancel": "Отмена",
 			"confirm": "Удалить"
+		},
+		"reportCard": {
+			"days": "дней",
+			"tickets": "тикетов",
+			"patterns": "паттернов",
+			"topCategories": "Топ категории",
+			"openFullReport": "Открыть полный отчёт",
+			"reportId": "ID отчёта"
 		}
 	},
 	"backlogReports": {

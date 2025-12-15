@@ -14,6 +14,7 @@ const PAGE_TITLE_KEYS: Record<string, string> = {
 	'/request-categories': 'common.requestCategories',
 	'/tickets-review': 'common.ticketsReview',
 	'/backlog-reports': 'common.backlogReports',
+	'/ai-chat': 'common.aiChat',
 	'/docs': 'common.documentation',
 	'/settings': 'common.settings',
 }

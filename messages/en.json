@@ -1075,6 +1075,14 @@
 			"description": "Are you sure you want to delete \"{title}\"? This action cannot be undone.",
 			"cancel": "Cancel",
 			"confirm": "Delete"
+		},
+		"reportCard": {
+			"days": "days",
+			"tickets": "tickets",
+			"patterns": "patterns",
+			"topCategories": "Top Categories",
+			"openFullReport": "Open Full Report",
+			"reportId": "Report ID"
 		}
 	},
 	"backlogReports": {

@@ -27,8 +27,8 @@ import {
 } from '@/lib/actions/chat-actions'
 
 // Valid content types for database
-type ValidContentType = 'text' | 'chart' | 'table' | 'code' | 'mixed'
-const VALID_CONTENT_TYPES: ValidContentType[] = ['text', 'chart', 'table', 'code', 'mixed']
+type ValidContentType = 'text' | 'chart' | 'table' | 'code' | 'mixed' | 'report_link'
+const VALID_CONTENT_TYPES: ValidContentType[] = ['text', 'chart', 'table', 'code', 'mixed', 'report_link']
 
 // Configuration
 const INITIAL_TIMEOUT = 30000 // 30 seconds - wait for quick responses
@@ -54,6 +54,7 @@ interface UseChatReturn {
 	sessions: ChatSession[]
 	currentSessionId: string | null
 	isLoading: boolean
+	isInitializing: boolean
 	error: string | null
 	sendMessage: (content: string) => Promise<void>
 	resendMessage: (messageId: string) => Promise<void>
@@ -72,6 +73,7 @@ export function useChat({ webhookUrl, onError }: UseChatOptions): UseChatReturn 
 	const [sessions, setSessions] = useState<ChatSession[]>([])
 	const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
 	const [isLoading, setIsLoading] = useState(false)
+	const [isInitializing, setIsInitializing] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
 	const visitorIdRef = useRef<string>('')
@@ -94,22 +96,26 @@ export function useChat({ webhookUrl, onError }: UseChatOptions): UseChatReturn 
 		isInitializedRef.current = true
 
 		const init = async () => {
-			visitorIdRef.current = getOrCreateVisitorId()
-			if (!visitorIdRef.current) return
+			try {
+				visitorIdRef.current = getOrCreateVisitorId()
+				if (!visitorIdRef.current) return
 
-			// Load sessions from database
-			const dbSessions = await getChatSessions(visitorIdRef.current)
-			setSessions(dbSessions)
+				// Load sessions from database
+				const dbSessions = await getChatSessions(visitorIdRef.current)
+				setSessions(dbSessions)
 
-			// Restore last session
-			const savedSession = getCurrentSession()
-			if (savedSession) {
-				const sessionExists = dbSessions.some(s => s.id === savedSession)
-				if (sessionExists) {
-					setCurrentSessionId(savedSession)
-					const dbMessages = await getChatMessages(savedSession)
-					setMessages(dbMessages)
+				// Restore last session
+				const savedSession = getCurrentSession()
+				if (savedSession) {
+					const sessionExists = dbSessions.some(s => s.id === savedSession)
+					if (sessionExists) {
+						setCurrentSessionId(savedSession)
+						const dbMessages = await getChatMessages(savedSession)
+						setMessages(dbMessages)
+					}
 				}
+			} finally {
+				setIsInitializing(false)
 			}
 		}
 
@@ -262,7 +268,7 @@ export function useChat({ webhookUrl, onError }: UseChatOptions): UseChatReturn 
 
 			let responseContent = ''
 			let finalMetadata: ChatMessageMetadata = {}
-			let finalContentType: 'text' | 'chart' | 'table' | 'code' | 'mixed' = 'text'
+			let finalContentType: ValidContentType = 'text'
 			let gotResponseFromWebhook = false
 
 			// Generate message_id for polling (n8n will use this to save response)
@@ -571,6 +577,7 @@ export function useChat({ webhookUrl, onError }: UseChatOptions): UseChatReturn 
 		sessions,
 		currentSessionId,
 		isLoading,
+		isInitializing,
 		error,
 		sendMessage,
 		resendMessage,

@@ -16,7 +16,7 @@ export interface ChatSession {
 
 export type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
 
-export type ContentType = 'text' | 'chart' | 'table' | 'code' | 'mixed'
+export type ContentType = 'text' | 'chart' | 'table' | 'code' | 'mixed' | 'report_link'
 
 export type ChartType = 'bar_chart' | 'line_chart' | 'pie_chart' | 'area_chart'
 
@@ -42,10 +42,33 @@ export interface VisualizationMetadata {
 	title?: string
 }
 
+// Report Preview for AI Chat
+export interface ReportPreviewCategory {
+	name: string
+	count: number
+	percent: number
+}
+
+export interface ReportPreview {
+	period: string
+	period_days: number
+	total_tickets: number
+	top_categories: ReportPreviewCategory[]
+	patterns_count: number
+	executive_summary?: string
+	generated_at: string
+}
+
+export interface ReportLinkMetadata {
+	report_id: number | string
+	report_url: string
+	preview: ReportPreview
+}
+
 export interface ChatMessageMetadata {
 	action?: 'SQL_QUERY' | 'ANALYTICS' | 'REPORT' | 'CONVERSATION'
 	visualization?: {
-		type: 'none' | ChartType | 'table' | 'number'
+		type: 'none' | ChartType | 'table' | 'number' | 'report_card'
 		title?: string
 		description?: string
 	} | string
@@ -58,6 +81,10 @@ export interface ChatMessageMetadata {
 	clarification_question?: string
 	tool?: string
 	error?: string
+	// Report link metadata
+	report_id?: number | string
+	report_url?: string
+	preview?: ReportPreview
 }
 
 export interface ChatMessage {
