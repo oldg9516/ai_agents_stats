@@ -263,29 +263,30 @@ export function ChartDisplay({ data, chartType, config }: ChartDisplayProps) {
 
 			{/* Data Source Accordion */}
 			<div className='mt-2 border rounded-lg overflow-hidden'>
-				<button
-					onClick={() => setShowDataSource(!showDataSource)}
-					className='w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors'
-				>
-					<span className='flex items-center gap-2'>
+				<div className='flex items-center justify-between px-4 py-3 text-sm font-medium text-muted-foreground'>
+					<Button
+						variant='ghost'
+						size='sm'
+						onClick={() => setShowDataSource(!showDataSource)}
+						className='flex items-center gap-2 p-0 h-auto hover:bg-transparent'
+					>
 						{showDataSource ? (
 							<IconChevronUp className='w-4 h-4' />
 						) : (
 							<IconChevronDown className='w-4 h-4' />
 						)}
 						{t('dataSource')} ({data.length} {t('rows')})
-					</span>
-					<button
-						onClick={(e) => {
-							e.stopPropagation()
-							downloadCSV()
-						}}
-						className='flex items-center gap-1 px-2 py-1 text-xs rounded hover:bg-accent transition-colors cursor-pointer'
+					</Button>
+					<Button
+						variant='ghost'
+						size='sm'
+						onClick={downloadCSV}
+						className='flex items-center gap-1 px-2 py-1 text-xs h-auto'
 					>
 						<IconDownload className='w-3.5 h-3.5' />
 						CSV
-					</button>
-				</button>
+					</Button>
+				</div>
 
 				{showDataSource && (
 					<div className='border-t max-h-64 overflow-auto'>
@@ -812,21 +813,21 @@ export function ChatMessageDisplay({
 							<div className='flex items-center gap-1'>
 								<button
 									onClick={handleCopy}
-									className='h-6 w-6 p-0 flex items-center justify-center text-orange-500 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 rounded transition-colors'
+									className='h-6 w-6 p-0 flex items-center justify-center text-orange-500 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 rounded transition-colors cursor-pointer'
 									title={t('copy')}
 								>
 									{copied ? <IconCheck className='w-3.5 h-3.5' /> : <IconCopy className='w-3.5 h-3.5' />}
 								</button>
 								<button
 									onClick={() => setIsEditing(true)}
-									className='h-6 w-6 p-0 flex items-center justify-center text-orange-500 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 rounded transition-colors'
+									className='h-6 w-6 p-0 flex items-center justify-center text-orange-500 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 rounded transition-colors cursor-pointer'
 									title={t('edit')}
 								>
 									<IconPencil className='w-3.5 h-3.5' />
 								</button>
 								<button
 									onClick={() => onResend?.(message.id)}
-									className='h-6 w-6 p-0 flex items-center justify-center text-orange-500 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 rounded transition-colors'
+									className='h-6 w-6 p-0 flex items-center justify-center text-orange-500 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 rounded transition-colors cursor-pointer'
 									title={t('resend')}
 								>
 									<IconRefresh className='w-3.5 h-3.5' />
