@@ -65,6 +65,90 @@ export interface ReportLinkMetadata {
 	preview: ReportPreview
 }
 
+// === Report Chat Types ===
+
+/**
+ * Session metadata for report-specific chat
+ */
+export interface ReportChatSessionMetadata {
+	type: 'report_chat'
+	report_id: string
+	report_period: string // e.g., "Dec 3-9, 2024"
+	report_total_tickets: number
+	[key: string]: unknown // Allow additional properties for Record<string, unknown> compatibility
+}
+
+/**
+ * Source ticket reference in AI response
+ */
+export interface TicketSource {
+	thread_id: string
+	ticket_id: string
+	category: string
+	snippet: string // Brief excerpt from ticket
+	relevance_score: number // 0-1
+	date: string
+}
+
+/**
+ * Extended metadata for report chat responses
+ * Note: Uses Omit to override action type with additional values
+ */
+export interface ReportChatMessageMetadata extends Omit<ChatMessageMetadata, 'action'> {
+	action?: 'SQL_QUERY' | 'ANALYTICS' | 'REPORT' | 'CONVERSATION' | 'REPORT_ANALYSIS' | 'REPORT_OVERVIEW'
+	// Sources from Pinecone search
+	sources?: TicketSource[]
+	// Flag to suggest user go to report page for deeper analysis
+	suggest_deep_dive?: boolean
+}
+
+/**
+ * Context passed when redirecting from main chat to report chat
+ */
+export interface ReportChatRedirectContext {
+	report_id: string
+	initial_question?: string
+	initial_answer?: string
+	from_main_chat: boolean
+}
+
+/**
+ * Get/set report chat redirect context in sessionStorage
+ */
+export const getReportChatContext = (): ReportChatRedirectContext | null => {
+	if (typeof window === 'undefined') return null
+	const ctx = sessionStorage.getItem('report_chat_context')
+	if (!ctx) return null
+	try {
+		return JSON.parse(ctx)
+	} catch {
+		return null
+	}
+}
+
+export const setReportChatContext = (context: ReportChatRedirectContext): void => {
+	if (typeof window === 'undefined') return
+	sessionStorage.setItem('report_chat_context', JSON.stringify(context))
+}
+
+export const clearReportChatContext = (): void => {
+	if (typeof window === 'undefined') return
+	sessionStorage.removeItem('report_chat_context')
+}
+
+/**
+ * Get/set current report chat session
+ */
+export const getReportChatSession = (reportId: string): string | null => {
+	if (typeof window === 'undefined') return null
+	return localStorage.getItem(`report_chat_session_${reportId}`)
+}
+
+export const setReportChatSession = (reportId: string, sessionId: string): void => {
+	if (typeof window === 'undefined') return
+	localStorage.setItem(`report_chat_session_${reportId}`, sessionId)
+}
+
 export interface ChatMessageMetadata {
 	action?: 'SQL_QUERY' | 'ANALYTICS' | 'REPORT' | 'CONVERSATION'
 	visualization?: {
@@ -85,6 +169,8 @@ export interface ChatMessageMetadata {
 	report_id?: number | string
 	report_url?: string
 	preview?: ReportPreview
+	// Flag to suggest user go to report page for deeper analysis
+	suggest_deep_dive?: boolean
 }
 
 export interface ChatMessage {

@@ -12,15 +12,19 @@ function getSupabaseAdmin() {
 
 // === Session Actions ===
 
-export async function createChatSession(visitorId: string): Promise<ChatSession | null> {
+export async function createChatSession(
+	visitorId: string,
+	title?: string | null,
+	metadata?: Record<string, unknown>
+): Promise<ChatSession | null> {
 	const supabase = getSupabaseAdmin()
 
 	const { data, error } = await supabase
 		.from('dashboard_chat_sessions')
 		.insert({
 			visitor_id: visitorId,
-			title: null,
-			metadata: {},
+			title: title ?? null,
+			metadata: metadata ?? {},
 			is_archived: false,
 		})
 		.select()

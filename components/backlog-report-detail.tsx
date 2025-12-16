@@ -15,6 +15,7 @@ import {
 	IconCalendar,
 	IconClock,
 	IconDownload,
+	IconSparkles,
 } from '@tabler/icons-react'
 import { format, parseISO } from 'date-fns'
 import { PatternsList } from './backlog/patterns-list'
@@ -23,8 +24,10 @@ import { SpecificIssues } from './backlog/specific-issues'
 import { WeeklyStatsSection } from './backlog/weekly-stats-section'
 import { RecommendationsList } from './backlog/recommendations-list'
 import { StatsByCategory } from './backlog/stats-by-category'
-import { useMemo, useCallback } from 'react'
+import { ReportChatPanel } from './chat/report-chat-panel'
+import { useMemo, useCallback, useState, useEffect } from 'react'
 import { exportBacklogReportToXLSX } from '@/lib/utils/export-backlog-report'
+import { getReportChatContext } from '@/types/chat'
 
 interface BacklogReportDetailProps {
 	reportId: string
@@ -61,6 +64,18 @@ export function BacklogReportDetail({ reportId }: BacklogReportDetailProps) {
 	const router = useRouter()
 	const params = useParams()
 	const locale = params.locale as string
+
+	// Chat panel state
+	const [isChatOpen, setIsChatOpen] = useState(false)
+	const [chatWidth, setChatWidth] = useState(450) // Default width matching report-chat-panel
+
+	// Auto-open chat if there's redirect context from main chat
+	useEffect(() => {
+		const context = getReportChatContext()
+		if (context && context.report_id === reportId && context.from_main_chat) {
+			setIsChatOpen(true)
+		}
+	}, [reportId])
 
 	// Fetch report data
 	const { data: report, isLoading, error } = useBacklogReportDetail(reportId)
@@ -131,26 +146,42 @@ export function BacklogReportDetail({ reportId }: BacklogReportDetailProps) {
 	const generatedDate = format(generatedAt, 'MMM d, yyyy HH:mm')
 
 	return (
-		<div className='flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6'>
-			{/* Top Bar: Back Button + Download Button */}
-			<div className='flex items-center justify-between'>
-				<Button
-					variant='ghost'
-					className='w-fit -ml-2'
-					onClick={handleBack}
-				>
-					<IconArrowLeft className='mr-2 h-4 w-4' />
-					{t('backlogReports.detail.back')}
-				</Button>
-				<Button
-					variant='outline'
-					size='sm'
-					onClick={handleDownload}
-				>
-					<IconDownload className='mr-2 h-4 w-4' />
-					{t('backlogReports.card.download')}
-				</Button>
-			</div>
+		<div className='flex h-full'>
+			{/* Main Content */}
+			<div
+				className='flex-1 flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6 overflow-y-auto transition-all duration-300'
+				style={{ marginRight: isChatOpen ? `${chatWidth}px` : 0 }}
+			>
+				{/* Top Bar: Back Button + Chat Button + Download Button */}
+				<div className='flex items-center justify-between'>
+					<Button
+						variant='ghost'
+						className='w-fit -ml-2'
+						onClick={handleBack}
+					>
+						<IconArrowLeft className='mr-2 h-4 w-4' />
+						{t('backlogReports.detail.back')}
+					</Button>
+					<div className='flex items-center gap-2'>
+						<Button
+							variant={isChatOpen ? 'secondary' : 'default'}
+							size='sm'
+							onClick={() => setIsChatOpen(!isChatOpen)}
+							className={isChatOpen ? '' : 'bg-orange-500 hover:bg-orange-600 text-white'}
+						>
+							<IconSparkles className='mr-2 h-4 w-4' />
+							{t('backlogReports.detail.discussWithAI')}
+						</Button>
+						<Button
+							variant='outline'
+							size='sm'
+							onClick={handleDownload}
+						>
+							<IconDownload className='mr-2 h-4 w-4' />
+							{t('backlogReports.card.download')}
+						</Button>
+					</div>
+				</div>
 
 			{/* Header */}
 			<div className='space-y-1'>
@@ -263,6 +294,28 @@ export function BacklogReportDetail({ reportId }: BacklogReportDetailProps) {
 					<RecommendationsList recommendations={parsedData.recommendations} />
 				</TabsContent>
 			</Tabs>
+			</div>
+
+			{/* Chat Panel - Fixed right sidebar */}
+			{isChatOpen && (
+				<div className='fixed top-0 right-0 h-full z-40'>
+					<ReportChatPanel
+						report={report}
+						isOpen={isChatOpen}
+						onToggle={() => setIsChatOpen(false)}
+						onWidthChange={setChatWidth}
+					/>
+				</div>
+			)}
+
+			{/* Chat toggle button when closed */}
+			{!isChatOpen && (
+				<ReportChatPanel
+					report={report}
+					isOpen={false}
+					onToggle={() => setIsChatOpen(true)}
+				/>
+			)}
 		</div>
 	)
 }

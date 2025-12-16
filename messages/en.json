@@ -1136,7 +1136,8 @@
 			"weeklyBreakdown": "Weekly Breakdown",
 			"week": "Week",
 			"total": "Total",
-			"recommendation": "Recommendation"
+			"recommendation": "Recommendation",
+			"discussWithAI": "Discuss with AI"
 		},
 		"generate": {
 			"title": "Generate New Report",
@@ -1162,5 +1163,28 @@
 				"generating": "Generating report"
 			}
 		}
+	},
+	"reportChat": {
+		"title": "Report Discussion",
+		"tickets": "tickets",
+		"openChat": "Discuss with AI",
+		"placeholder": "Ask a question about this report...",
+		"emptyTitle": "Ask a Question",
+		"emptyDescription": "Ask me anything about this report — I can show you specific tickets and provide detailed analysis.",
+		"trySuggestions": "Try asking:",
+		"suggestions": {
+			"whyPattern": "Why did \"{pattern}\" become the main issue?",
+			"explainTrend": "Tell me more about the trend: {trend}",
+			"ticketsForIssue": "Show me tickets related to \"{issue}\"",
+			"urgentCategories": "Which categories require immediate attention?",
+			"showExamples": "Show me examples of typical complaints from this period"
+		},
+		"sources": {
+			"title": "Sources",
+			"relevance": "Relevance"
+		},
+		"goToReport": "Go to report discussion",
+		"deepDiveHint": "For detailed analysis with ticket examples, go to the report page",
+		"resizeHandle": "Drag to resize"
 	}
 }

@@ -25,6 +25,7 @@ import {
 import { ChatMessage, CHART_COLORS, formatNumber, formatDateTime } from '@/types/chat'
 import { IconCopy, IconRefresh, IconPencil, IconCheck, IconX, IconDownload, IconChevronDown, IconChevronUp } from '@tabler/icons-react'
 import { ReportCard } from './report-card'
+import { DeepDiveHint } from './report-discuss-button'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useTranslations, useLocale } from 'next-intl'
@@ -525,6 +526,8 @@ interface ChatMessageDisplayProps {
 	onEdit?: (messageId: string, newContent: string) => void
 	isLoading?: boolean
 	previousUserMessageId?: string
+	/** For report cards: the user question that led to this response */
+	userQuestion?: string
 }
 
 export function ChatMessageDisplay({
@@ -533,6 +536,7 @@ export function ChatMessageDisplay({
 	onEdit,
 	isLoading,
 	previousUserMessageId,
+	userQuestion,
 }: ChatMessageDisplayProps) {
 	const t = useTranslations('chat.message')
 	const locale = useLocale()
@@ -643,6 +647,8 @@ export function ChatMessageDisplay({
 						reportId={metadata.report_id}
 						reportUrl={metadata.report_url}
 						preview={metadata.preview}
+						initialQuestion={userQuestion}
+						initialAnswer={message.content}
 					/>
 				</>
 			)
@@ -778,6 +784,14 @@ export function ChatMessageDisplay({
 				}`}
 			>
 				{renderContent()}
+
+				{/* Deep dive hint for report discussions */}
+				{!isUser && metadata.suggest_deep_dive && metadata.report_id && metadata.report_url && (
+					<DeepDiveHint
+						reportId={String(metadata.report_id)}
+						reportUrl={metadata.report_url}
+					/>
+				)}
 
 				{/* Metadata footer */}
 				<div

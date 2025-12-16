@@ -368,14 +368,16 @@ export function AIChat({ webhookUrl, className = '' }: AIChatProps) {
 						// Messages list
 						<>
 							{messages.map((message, index) => {
-								// Find previous user message for error retry
+								// Find previous user message for error retry and context
 								let previousUserMessageId: string | undefined
-								if (message.metadata?.error) {
-									for (let i = index - 1; i >= 0; i--) {
-										if (messages[i].role === 'user') {
+								let userQuestion: string | undefined
+								for (let i = index - 1; i >= 0; i--) {
+									if (messages[i].role === 'user') {
+										if (message.metadata?.error) {
 											previousUserMessageId = messages[i].id
-											break
 										}
+										userQuestion = messages[i].content
+										break
 									}
 								}
 								return (
@@ -386,6 +388,7 @@ export function AIChat({ webhookUrl, className = '' }: AIChatProps) {
 										onEdit={editAndResendMessage}
 										isLoading={isLoading}
 										previousUserMessageId={previousUserMessageId}
+										userQuestion={userQuestion}
 									/>
 								)
 							})}

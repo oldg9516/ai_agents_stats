@@ -292,6 +292,7 @@ export function useChat({ webhookUrl, onError }: UseChatOptions): UseChatReturn 
 							visitor_id: visitorIdRef.current,
 							user_message_id: savedUserMessage.id,
 							message_id: generatedMessageId, // ID for n8n to use when saving response
+							chat_type: 'general', // Main chat - for orchestrator routing
 						}),
 						signal: timeoutController.signal,
 					})

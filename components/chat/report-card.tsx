@@ -5,19 +5,42 @@
  */
 
 import { Button } from '@/components/ui/button'
-import { ReportPreview } from '@/types/chat'
+import { ReportPreview, setReportChatContext } from '@/types/chat'
 import { IconFileText, IconChartBar, IconListDetails } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 
 interface ReportCardProps {
 	reportId: number | string
 	reportUrl: string
 	preview: ReportPreview
+	/** The user question that led to this report */
+	initialQuestion?: string
+	/** The AI answer about this report */
+	initialAnswer?: string
 }
 
-export function ReportCard({ reportId, reportUrl, preview }: ReportCardProps) {
+export function ReportCard({ reportId, reportUrl, preview, initialQuestion, initialAnswer }: ReportCardProps) {
 	const t = useTranslations('chat.reportCard')
+	const router = useRouter()
+	const params = useParams()
+	const locale = params.locale as string
+
+	const handleOpenReport = () => {
+		// Save context for report chat to pick up
+		setReportChatContext({
+			report_id: String(reportId),
+			initial_question: initialQuestion,
+			initial_answer: initialAnswer,
+			from_main_chat: true,
+		})
+		// Navigate to report page (ensure locale prefix)
+		const url = reportUrl.startsWith(`/${locale}`)
+			? reportUrl
+			: `/${locale}${reportUrl}`
+		router.push(url)
+	}
 
 	return (
 		<div className='border rounded-lg p-4 bg-card my-2'>
@@ -67,17 +90,13 @@ export function ReportCard({ reportId, reportUrl, preview }: ReportCardProps) {
 			)}
 
 			{/* CTA Button */}
-			<Link href={reportUrl}>
-				<Button className='w-full bg-orange-500 hover:bg-orange-600 text-white'>
-					<IconFileText className='w-4 h-4 mr-2' />
-					{t('openFullReport')}
-				</Button>
-			</Link>
-
-			{/* Report ID */}
-			<p className='text-xs text-muted-foreground mt-2 text-center'>
-				{t('reportId')}: {reportId}
-			</p>
+			<Button
+				onClick={handleOpenReport}
+				className='w-full bg-orange-500 hover:bg-orange-600 text-white'
+			>
+				<IconFileText className='w-4 h-4 mr-2' />
+				{t('openFullReport')}
+			</Button>
 		</div>
 	)
 }
