@@ -86,6 +86,26 @@ async function fetchHumanResponsesInBatches(
 	return result
 }
 
+// Fields to select from support_threads_data (avoid SELECT *)
+// This reduces Disk IO significantly
+const SUPPORT_THREAD_FIELDS = [
+	'thread_id',
+	'ticket_id',
+	'request_type',
+	'request_subtype',
+	'requires_reply',
+	'requires_identification',
+	'requires_editing',
+	'requires_subscription_info',
+	'requires_tracking_info',
+	'requires_box_contents_info',
+	'ai_draft_reply',
+	'status',
+	'prompt_version',
+	'created_at',
+	'user', // For customer_email parsing
+].join(',')
+
 /**
  * Build base query with filters (without pagination)
  */
@@ -97,6 +117,7 @@ function buildThreadsQuery(
 		dateRange,
 		statuses,
 		requestTypes,
+		categories,
 		requirements,
 		versions,
 		pendingDraftsOnly,
@@ -104,21 +125,24 @@ function buildThreadsQuery(
 
 	let query = supabase
 		.from('support_threads_data')
-		.select('*', { count: 'exact' })
+		.select(SUPPORT_THREAD_FIELDS, { count: 'exact' })
 		.gte('created_at', dateRange.from.toISOString())
 		.lt('created_at', dateRange.to.toISOString())
 		.order('created_at', { ascending: false })
 
-	if (statuses.length > 0) {
+	if (statuses && statuses.length > 0) {
 		query = query.in('status', statuses)
 	}
-	if (requestTypes.length > 0) {
+	if (requestTypes && requestTypes.length > 0) {
 		query = query.in('request_type', requestTypes)
 	}
-	if (versions.length > 0) {
+	if (categories && categories.length > 0) {
+		query = query.in('request_subtype', categories)
+	}
+	if (versions && versions.length > 0) {
 		query = query.in('prompt_version', versions)
 	}
-	if (requirements.length > 0) {
+	if (requirements && requirements.length > 0) {
 		requirements.forEach(req => {
 			query = query.eq(req, true)
 		})
@@ -374,7 +398,7 @@ export async function fetchThreadDetail(
 ): Promise<SupportThread | null> {
 	const { data: thread, error: threadError } = await supabase
 		.from('support_threads_data')
-		.select('*')
+		.select(SUPPORT_THREAD_FIELDS)
 		.eq('thread_id', threadId)
 		.single()
 
@@ -434,4 +458,42 @@ export async function fetchRequestCategoryStats(
 	}
 
 	return (data || []) as RequestCategoryStats[]
+}
+
+/**
+ * Fetch all unique categories (request_subtype) for filter dropdown
+ * Sorted: single categories (without comma) first, then multi-categories
+ */
+export async function fetchAvailableCategories(
+	supabase: SupabaseClient,
+	dateRange: { from: Date; to: Date }
+): Promise<string[]> {
+	const { data, error } = await supabase
+		.from('support_threads_data')
+		.select('request_subtype')
+		.gte('created_at', dateRange.from.toISOString())
+		.lt('created_at', dateRange.to.toISOString())
+		.not('request_subtype', 'is', null)
+
+	if (error) {
+		console.error('[Available Categories] Error:', error)
+		return []
+	}
+
+	// Get unique values
+	const uniqueCategories = Array.from(
+		new Set((data || []).map(d => d.request_subtype).filter(Boolean))
+	) as string[]
+
+	// Sort: single categories (without comma) first, then multi-categories
+	// Within each group, sort alphabetically
+	const singleCategories = uniqueCategories
+		.filter(cat => !cat.includes(','))
+		.sort((a, b) => a.localeCompare(b))
+
+	const multiCategories = uniqueCategories
+		.filter(cat => cat.includes(','))
+		.sort((a, b) => a.localeCompare(b))
+
+	return [...singleCategories, ...multiCategories]
 }
