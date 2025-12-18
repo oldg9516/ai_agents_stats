@@ -414,7 +414,7 @@ export async function getCategoryRecords(
   // Build query
   let query = supabase
     .from('ai_human_comparison')
-    .select('id, prompt_version, created_at, email, changed', { count: 'exact' })
+    .select('id, ticket_id, prompt_version, created_at, email, changed, change_classification', { count: 'exact' })
     .in('request_subtype', categories)
     .gte('created_at', dateRange.from.toISOString())
     .lte('created_at', dateRange.to.toISOString())
@@ -438,10 +438,12 @@ export async function getCategoryRecords(
 
   type RecordRow = {
     id: number
+    ticket_id: string | null
     prompt_version: string | null
     created_at: string
     email: string | null
     changed: boolean
+    change_classification: string | null
   }
 
   const records = (data as unknown as RecordRow[]).map((record) => {
@@ -450,11 +452,13 @@ export async function getCategoryRecords(
 
     return {
       id: record.id,
+      ticketId: record.ticket_id,
       version: record.prompt_version || 'unknown',
       week: format(weekStart, 'MMM dd'), // e.g., "Dec 09" instead of "Week 50"
       weekStart: weekStart.toISOString(),
       agent: record.email || '-', // Show dash instead of "unknown" for missing email
       changed: record.changed,
+      changeClassification: record.change_classification,
       createdAt: record.created_at,
     }
   })

@@ -882,6 +882,7 @@
 			"version": "Version",
 			"week": "Week",
 			"agent": "Agent",
+			"status": "Status",
 			"changed": "Changed",
 			"date": "Date",
 			"yes": "Yes",

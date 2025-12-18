@@ -506,11 +506,13 @@ export interface CategoryAgentStats {
  */
 export interface CategoryRecord {
 	id: number
+	ticketId: string | null // Zoho ticket ID for direct link
 	version: string
 	week: string // Week label (e.g., "Week 12")
 	weekStart: string // ISO date
 	agent: string // Email
 	changed: boolean
+	changeClassification: string | null // Classification type from ai_human_comparison
 	createdAt: string // ISO timestamp
 }
 

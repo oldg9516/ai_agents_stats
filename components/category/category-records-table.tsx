@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import type { CategoryRecord } from '@/lib/supabase/types'
+import { getClassificationColor } from '@/constants/classification-types'
 import { useTranslations } from 'next-intl'
 import { format } from 'date-fns'
 import {
@@ -22,8 +23,27 @@ import {
 	IconChevronsLeft,
 	IconChevronsRight,
 	IconDownload,
+	IconExternalLink,
 	IconSearch,
 } from '@tabler/icons-react'
+
+const ZOHO_TICKET_URL = 'https://support.levhaolam.com/agent/levh/support/tickets/details/'
+
+/**
+ * Format classification name for display
+ * Converts snake_case and UPPER_CASE to readable format
+ */
+function formatClassification(classification: string | null): string {
+	if (!classification) return '-'
+
+	// Convert UPPER_CASE to Title Case
+	// e.g., "CRITICAL_FACT_ERROR" -> "Critical Fact Error"
+	return classification
+		.toLowerCase()
+		.split('_')
+		.map(word => word.charAt(0).toUpperCase() + word.slice(1))
+		.join(' ')
+}
 
 interface CategoryRecordsTableProps {
 	data: CategoryRecord[]
@@ -70,6 +90,13 @@ export function CategoryRecordsTable({
 	const totalPages = Math.ceil(total / pageSize)
 	const canPreviousPage = page > 0
 	const canNextPage = page < totalPages - 1
+
+	// Open Zoho ticket in new tab
+	const handleRowClick = (ticketId: string | null) => {
+		if (ticketId) {
+			window.open(`${ZOHO_TICKET_URL}${ticketId}`, '_blank', 'noopener,noreferrer')
+		}
+	}
 
 	return (
 		<Card>
@@ -119,7 +146,7 @@ export function CategoryRecordsTable({
 								<TableHead className='hidden md:table-cell'>
 									{t('agent')}
 								</TableHead>
-								<TableHead className='w-[100px]'>{t('changed')}</TableHead>
+								<TableHead>{t('status')}</TableHead>
 								<TableHead className='hidden lg:table-cell'>
 									{t('date')}
 								</TableHead>
@@ -137,9 +164,18 @@ export function CategoryRecordsTable({
 								</TableRow>
 							) : (
 								filteredData.map((record) => (
-									<TableRow key={record.id}>
+									<TableRow
+										key={record.id}
+										className={record.ticketId ? 'cursor-pointer hover:bg-muted/50' : ''}
+										onClick={() => handleRowClick(record.ticketId)}
+									>
 										<TableCell className='font-mono text-xs'>
-											{record.id}
+											<div className='flex items-center gap-1'>
+												{record.id}
+												{record.ticketId && (
+													<IconExternalLink className='h-3 w-3 text-muted-foreground' />
+												)}
+											</div>
 										</TableCell>
 										<TableCell>
 											<Badge variant='outline'>{record.version}</Badge>
@@ -151,12 +187,15 @@ export function CategoryRecordsTable({
 											{record.agent}
 										</TableCell>
 										<TableCell>
-											<Badge
-												variant={record.changed ? 'destructive' : 'default'}
-												className='text-xs'
-											>
-												{record.changed ? t('yes') : t('no')}
-											</Badge>
+											{record.changeClassification ? (
+												<span
+													className={`inline-block px-2 py-1 text-xs rounded ${getClassificationColor(record.changeClassification)}`}
+												>
+													{formatClassification(record.changeClassification)}
+												</span>
+											) : (
+												<span className='text-xs text-muted-foreground'>-</span>
+											)}
 										</TableCell>
 										<TableCell className='hidden lg:table-cell text-sm text-muted-foreground'>
 											{format(
