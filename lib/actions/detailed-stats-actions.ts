@@ -1,0 +1,461 @@
+'use server'
+
+/**
+ * Detailed Stats Server Actions (TypeScript Aggregation)
+ *
+ * This is the TypeScript-based implementation that replaces the SQL RPC function
+ * `get_detailed_stats_paginated`. It fetches raw data and performs aggregation
+ * in TypeScript for better maintainability and testability.
+ *
+ * Migration from SQL RPC: See MIGRATION-PLAN.md for details
+ */
+
+import { supabaseServer } from '@/lib/supabase/server'
+import type { DashboardFilters, DetailedStatsRow } from '@/lib/supabase/types'
+import {
+	isAiErrorClassification,
+	isAiQualityClassification,
+	LEGACY_CLASSIFICATION_TYPES,
+	NEW_CLASSIFICATION_TYPES,
+	type LegacyClassificationType,
+	type NewClassificationType,
+} from '@/constants/classification-types'
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+type RawRecord = {
+	created_at: string | null
+	request_subtype: string | null
+	prompt_version: string | null
+	change_classification: string | null
+}
+
+type PaginatedResult = {
+	data: DetailedStatsRow[]
+	totalCount: number
+	totalPages: number
+	currentPage: number
+	hasNextPage: boolean
+	hasPreviousPage: boolean
+}
+
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
+const BATCH_SIZE = 1000
+const MAX_CONCURRENT_BATCHES = 3
+
+// =============================================================================
+// MAIN FUNCTION
+// =============================================================================
+
+/**
+ * Fetch detailed stats with TypeScript aggregation
+ * Replaces SQL function: get_detailed_stats_paginated
+ */
+export async function fetchDetailedStatsTS(
+	filters: DashboardFilters
+): Promise<PaginatedResult> {
+	const startTime = performance.now()
+
+	try {
+		// Step 1: Get total count
+		const totalRecords = await getTotalCount(filters)
+		console.log(
+			`[DetailedStats TS] Total records to fetch: ${totalRecords}`
+		)
+
+		if (totalRecords === 0) {
+			return emptyResult()
+		}
+
+		// Step 2: Fetch in batches
+		const records = await fetchInBatches(filters, totalRecords)
+		console.log(
+			`[DetailedStats TS] Fetched ${records.length} records in ${(performance.now() - startTime).toFixed(0)}ms`
+		)
+
+		// Step 3: Aggregate in TypeScript
+		const aggregateStart = performance.now()
+		const rows = aggregateDetailedStats(records)
+		console.log(
+			`[DetailedStats TS] Aggregated to ${rows.length} rows in ${(performance.now() - aggregateStart).toFixed(0)}ms`
+		)
+
+		// Step 4: Sort results
+		const sortedRows = sortDetailedStats(rows)
+
+		console.log(
+			`[DetailedStats TS] Total time: ${(performance.now() - startTime).toFixed(0)}ms`
+		)
+
+		return {
+			data: sortedRows,
+			totalCount: sortedRows.length,
+			totalPages: 1, // All data returned, pagination is client-side
+			currentPage: 0,
+			hasNextPage: false,
+			hasPreviousPage: false,
+		}
+	} catch (error) {
+		console.error('[DetailedStats TS] Error:', error)
+		throw error
+	}
+}
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+function emptyResult(): PaginatedResult {
+	return {
+		data: [],
+		totalCount: 0,
+		totalPages: 0,
+		currentPage: 0,
+		hasNextPage: false,
+		hasPreviousPage: false,
+	}
+}
+
+/**
+ * Get total count of records matching filters
+ */
+async function getTotalCount(filters: DashboardFilters): Promise<number> {
+	const { dateRange, versions, categories, agents } = filters
+
+	let query = supabaseServer
+		.from('ai_human_comparison')
+		.select('*', { count: 'exact', head: true })
+		.gte('created_at', dateRange.from.toISOString())
+		.lte('created_at', dateRange.to.toISOString())
+
+	if (versions.length > 0) query = query.in('prompt_version', versions)
+	if (categories.length > 0) query = query.in('request_subtype', categories)
+	if (agents.length > 0) query = query.in('email', agents)
+
+	const { count, error } = await query
+
+	if (error) throw new Error(`Count query failed: ${error.message}`)
+	return count || 0
+}
+
+/**
+ * Fetch records in batches to bypass Supabase limits
+ */
+async function fetchInBatches(
+	filters: DashboardFilters,
+	totalRecords: number
+): Promise<RawRecord[]> {
+	const { dateRange, versions, categories, agents } = filters
+	const batches = Math.ceil(totalRecords / BATCH_SIZE)
+	const allRecords: RawRecord[] = []
+
+	// Process batches in groups of MAX_CONCURRENT_BATCHES
+	for (let i = 0; i < batches; i += MAX_CONCURRENT_BATCHES) {
+		const batchPromises = []
+
+		for (let j = i; j < Math.min(i + MAX_CONCURRENT_BATCHES, batches); j++) {
+			const offset = j * BATCH_SIZE
+
+			let query = supabaseServer
+				.from('ai_human_comparison')
+				.select(
+					'created_at, request_subtype, prompt_version, change_classification'
+				)
+				.gte('created_at', dateRange.from.toISOString())
+				.lte('created_at', dateRange.to.toISOString())
+				.range(offset, offset + BATCH_SIZE - 1)
+
+			if (versions.length > 0) query = query.in('prompt_version', versions)
+			if (categories.length > 0) query = query.in('request_subtype', categories)
+			if (agents.length > 0) query = query.in('email', agents)
+
+			batchPromises.push(query)
+		}
+
+		const results = await Promise.all(batchPromises)
+
+		for (const { data, error } of results) {
+			if (error) throw new Error(`Batch fetch failed: ${error.message}`)
+			if (data) allRecords.push(...(data as RawRecord[]))
+		}
+	}
+
+	return allRecords
+}
+
+/**
+ * Aggregate records into detailed stats rows
+ * This replaces the SQL CTE logic
+ */
+function aggregateDetailedStats(records: RawRecord[]): DetailedStatsRow[] {
+	const rows: DetailedStatsRow[] = []
+
+	// Group by category + version (Level 1)
+	const versionGroups = new Map<
+		string,
+		{
+			category: string
+			version: string
+			records: RawRecord[]
+		}
+	>()
+
+	for (const record of records) {
+		const category = record.request_subtype ?? 'unknown'
+		const version = record.prompt_version ?? 'unknown'
+		const key = `${category}|${version}`
+
+		if (!versionGroups.has(key)) {
+			versionGroups.set(key, { category, version, records: [] })
+		}
+		versionGroups.get(key)!.records.push(record)
+	}
+
+	// Process each version group
+	for (const group of versionGroups.values()) {
+		const classifications = countAllClassifications(group.records)
+		const reviewedRecords = group.records.filter(
+			r => r.change_classification !== null
+		)
+
+		// Level 1: Version-level row
+		rows.push({
+			category: group.category,
+			version: group.version,
+			dates: null,
+			sortOrder: 1,
+			totalRecords: group.records.length,
+			reviewedRecords: reviewedRecords.length,
+			aiErrors: countAiErrors(reviewedRecords),
+			aiQuality: countAiQuality(reviewedRecords),
+			...classifications,
+		})
+
+		// Level 2: Week-level rows
+		const weekGroups = new Map<string, RawRecord[]>()
+
+		for (const record of group.records) {
+			const weekStart = getWeekStart(
+				new Date(record.created_at ?? new Date())
+			)
+			if (!weekGroups.has(weekStart)) {
+				weekGroups.set(weekStart, [])
+			}
+			weekGroups.get(weekStart)!.push(record)
+		}
+
+		for (const [weekStart, weekRecords] of weekGroups) {
+			const weekClassifications = countAllClassifications(weekRecords)
+			const weekReviewedRecords = weekRecords.filter(
+				r => r.change_classification !== null
+			)
+
+			const weekStartDate = new Date(weekStart)
+			const weekEndDate = new Date(weekStartDate)
+			weekEndDate.setDate(weekEndDate.getDate() + 6)
+
+			rows.push({
+				category: group.category,
+				version: group.version,
+				dates: `${formatDate(weekStartDate)} — ${formatDate(weekEndDate)}`,
+				sortOrder: 2,
+				totalRecords: weekRecords.length,
+				reviewedRecords: weekReviewedRecords.length,
+				aiErrors: countAiErrors(weekReviewedRecords),
+				aiQuality: countAiQuality(weekReviewedRecords),
+				...weekClassifications,
+			})
+		}
+	}
+
+	return rows
+}
+
+/**
+ * Count AI errors
+ */
+function countAiErrors(records: RawRecord[]): number {
+	return records.filter(r =>
+		isAiErrorClassification(r.change_classification)
+	).length
+}
+
+/**
+ * Count AI quality (good performance)
+ */
+function countAiQuality(records: RawRecord[]): number {
+	return records.filter(r =>
+		isAiQualityClassification(r.change_classification)
+	).length
+}
+
+/**
+ * Count all classification types (legacy + new with bidirectional mapping)
+ */
+function countAllClassifications(records: RawRecord[]): Omit<
+	DetailedStatsRow,
+	| 'category'
+	| 'version'
+	| 'dates'
+	| 'sortOrder'
+	| 'totalRecords'
+	| 'reviewedRecords'
+	| 'aiErrors'
+	| 'aiQuality'
+> {
+	// Legacy classifications
+	const legacyCounts: Record<LegacyClassificationType, number> = {
+		critical_error: 0,
+		meaningful_improvement: 0,
+		stylistic_preference: 0,
+		no_significant_change: 0,
+		context_shift: 0,
+	}
+
+	// New classifications
+	const newCounts: Record<NewClassificationType, number> = {
+		CRITICAL_FACT_ERROR: 0,
+		MAJOR_FUNCTIONAL_OMISSION: 0,
+		MINOR_INFO_GAP: 0,
+		CONFUSING_VERBOSITY: 0,
+		TONAL_MISALIGNMENT: 0,
+		STRUCTURAL_FIX: 0,
+		STYLISTIC_EDIT: 0,
+		PERFECT_MATCH: 0,
+		EXCL_WORKFLOW_SHIFT: 0,
+		EXCL_DATA_DISCREPANCY: 0,
+	}
+
+	// Count each classification
+	for (const record of records) {
+		const c = record.change_classification
+		if (!c) continue
+
+		if (LEGACY_CLASSIFICATION_TYPES.includes(c as LegacyClassificationType)) {
+			legacyCounts[c as LegacyClassificationType]++
+		}
+		if (NEW_CLASSIFICATION_TYPES.includes(c as NewClassificationType)) {
+			newCounts[c as NewClassificationType]++
+		}
+	}
+
+	// Combine legacy + new for display (bidirectional mapping)
+	return {
+		// Legacy columns: combine legacy + mapped new
+		criticalErrors:
+			legacyCounts.critical_error +
+			newCounts.CRITICAL_FACT_ERROR +
+			newCounts.MAJOR_FUNCTIONAL_OMISSION,
+		meaningfulImprovements:
+			legacyCounts.meaningful_improvement +
+			newCounts.MINOR_INFO_GAP +
+			newCounts.CONFUSING_VERBOSITY +
+			newCounts.TONAL_MISALIGNMENT,
+		stylisticPreferences:
+			legacyCounts.stylistic_preference +
+			newCounts.STRUCTURAL_FIX +
+			newCounts.STYLISTIC_EDIT,
+		noSignificantChanges:
+			legacyCounts.no_significant_change + newCounts.PERFECT_MATCH,
+		contextShifts:
+			legacyCounts.context_shift +
+			newCounts.EXCL_WORKFLOW_SHIFT +
+			newCounts.EXCL_DATA_DISCREPANCY,
+
+		// New columns: combine new + mapped legacy
+		criticalFactErrors:
+			newCounts.CRITICAL_FACT_ERROR + legacyCounts.critical_error,
+		majorFunctionalOmissions: newCounts.MAJOR_FUNCTIONAL_OMISSION,
+		minorInfoGaps:
+			newCounts.MINOR_INFO_GAP + legacyCounts.meaningful_improvement,
+		confusingVerbosity: newCounts.CONFUSING_VERBOSITY,
+		tonalMisalignments: newCounts.TONAL_MISALIGNMENT,
+		structuralFixes: newCounts.STRUCTURAL_FIX,
+		stylisticEdits:
+			newCounts.STYLISTIC_EDIT + legacyCounts.stylistic_preference,
+		perfectMatches:
+			newCounts.PERFECT_MATCH + legacyCounts.no_significant_change,
+		exclWorkflowShifts:
+			newCounts.EXCL_WORKFLOW_SHIFT + legacyCounts.context_shift,
+		exclDataDiscrepancies: newCounts.EXCL_DATA_DISCREPANCY,
+
+		// Average score (not calculated yet)
+		averageScore: null,
+	}
+}
+
+/**
+ * Sort detailed stats rows
+ * Order: category ASC, version DESC (newest first), sortOrder ASC, dates DESC
+ */
+function sortDetailedStats(rows: DetailedStatsRow[]): DetailedStatsRow[] {
+	return rows.sort((a, b) => {
+		// 1. Category ascending
+		if (a.category !== b.category) {
+			return a.category.localeCompare(b.category)
+		}
+
+		// 2. Version descending (newest first)
+		if (a.version !== b.version) {
+			return extractVersionNumber(b.version) - extractVersionNumber(a.version)
+		}
+
+		// 3. Sort order (1 = version-level first, 2 = week-level)
+		if (a.sortOrder !== b.sortOrder) {
+			return a.sortOrder - b.sortOrder
+		}
+
+		// 4. Dates descending (newest first)
+		if (a.dates && b.dates) {
+			return compareDates(b.dates, a.dates)
+		}
+
+		return 0
+	})
+}
+
+/**
+ * Extract numeric version from version string (e.g., "v1" -> 1, "v2" -> 2)
+ */
+function extractVersionNumber(version: string): number {
+	const match = version.match(/\d+/)
+	return match ? parseInt(match[0]) : 0
+}
+
+/**
+ * Compare date strings in DD.MM.YYYY — DD.MM.YYYY format
+ */
+function compareDates(dateStrA: string, dateStrB: string): number {
+	const parseDate = (str: string): Date => {
+		const [day, month, year] = str.split(' — ')[0].split('.')
+		return new Date(`${year}-${month}-${day}`)
+	}
+	return parseDate(dateStrA).getTime() - parseDate(dateStrB).getTime()
+}
+
+/**
+ * Get week start date (Monday) in ISO format
+ */
+function getWeekStart(date: Date): string {
+	const d = new Date(date)
+	const day = d.getDay()
+	const diff = d.getDate() - day + (day === 0 ? -6 : 1) // Adjust to Monday
+	const monday = new Date(d.setDate(diff))
+	monday.setHours(0, 0, 0, 0)
+	return monday.toISOString()
+}
+
+/**
+ * Format date as DD.MM.YYYY
+ */
+function formatDate(date: Date): string {
+	const day = String(date.getDate()).padStart(2, '0')
+	const month = String(date.getMonth() + 1).padStart(2, '0')
+	const year = date.getFullYear()
+	return `${day}.${month}.${year}`
+}

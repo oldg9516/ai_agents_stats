@@ -7,10 +7,8 @@
  * for better caching, refetching, and state management
  */
 
-import {
-	fetchDashboardData,
-	fetchDetailedStatsPaginated,
-} from '@/lib/actions/dashboard-actions'
+import { fetchDashboardData } from '@/lib/actions/dashboard-actions'
+import { fetchDetailedStatsTS } from '@/lib/actions/detailed-stats-actions'
 import { supabase } from '@/lib/supabase/client'
 import type {
 	CategoryDistributionResult,
@@ -206,7 +204,7 @@ type PaginatedStatsData = {
  * Hook for paginated detailed stats (table data)
  *
  * Features:
- * - Server-side pagination via SQL RPC
+ * - TypeScript aggregation with client-side pagination
  * - Automatic caching (2 min stale time)
  * - Timeout protection (30 seconds)
  * - Retry logic (2 attempts)
@@ -235,18 +233,22 @@ export function useDetailedStatsPaginated(
 			const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
 
 			try {
-				const result = await fetchDetailedStatsPaginated(
-					filters,
-					page,
-					pageSize
-				)
+				const result = await fetchDetailedStatsTS(filters)
 				clearTimeout(timeoutId)
 
-				if (!result.success || !result.data) {
-					throw new Error(result.error || 'Failed to fetch paginated stats')
-				}
+				// Client-side pagination
+				const startIndex = page * pageSize
+				const endIndex = startIndex + pageSize
+				const paginatedData = result.data.slice(startIndex, endIndex)
 
-				return result.data
+				return {
+					data: paginatedData,
+					totalCount: result.totalCount,
+					totalPages: Math.ceil(result.totalCount / pageSize),
+					currentPage: page,
+					hasNextPage: endIndex < result.totalCount,
+					hasPreviousPage: page > 0,
+				}
 			} catch (error) {
 				clearTimeout(timeoutId)
 				if (error instanceof Error && error.name === 'AbortError') {

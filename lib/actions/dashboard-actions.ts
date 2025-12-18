@@ -10,14 +10,13 @@
 import {
 	getCategoryDistribution,
 	getDefaultFilters,
-	getDetailedStats,
-	getDetailedStatsPaginated,
 	getFilterOptions,
 	getKPIData,
 	getMinCreatedDate,
 	getQualityTrends,
 	getVersionComparison,
 } from '@/lib/supabase/queries'
+import { fetchDetailedStatsTS } from './detailed-stats-actions'
 import type {
 	CategoryDistributionResult,
 	DashboardFilters,
@@ -31,6 +30,8 @@ import type {
 /**
  * Fetch all dashboard data in one Server Action
  * Returns all KPI, charts, and table data
+ *
+ * Uses TypeScript aggregation for detailedStats (migrated from SQL RPC)
  */
 export async function fetchDashboardData(filters: DashboardFilters) {
 	try {
@@ -40,7 +41,7 @@ export async function fetchDashboardData(filters: DashboardFilters) {
 			getQualityTrends(filters),
 			getCategoryDistribution(filters),
 			getVersionComparison(filters),
-			getDetailedStats(filters),
+			fetchDetailedStatsTS(filters).then(result => result.data),
 		]
 
 		// Track individual query times
@@ -139,15 +140,6 @@ export async function fetchVersionComparison(
 }
 
 /**
- * Fetch detailed stats for the table
- */
-export async function fetchDetailedStats(
-	filters: DashboardFilters
-): Promise<DetailedStatsRow[]> {
-	return await getDetailedStats(filters)
-}
-
-/**
  * Get available filter options (versions, categories)
  * @param dateRange - Optional date range to filter versions (only show versions with records in this period)
  */
@@ -175,69 +167,9 @@ export async function fetchMinCreatedDate(): Promise<Date> {
 }
 
 /**
- * Fetch paginated detailed stats (for table pagination)
- */
-export async function fetchDetailedStatsPaginated(
-	filters: DashboardFilters,
-	page: number,
-	pageSize: number = 50
-) {
-	try {
-		const result = await getDetailedStatsPaginated(filters, page, pageSize)
-
-		return {
-			success: true,
-			data: result,
-		}
-	} catch (error) {
-		console.error('❌ [DetailedStatsPaginated Server Action] Error:', error)
-		return {
-			success: false,
-			error:
-				error instanceof Error
-					? error.message
-					: 'Failed to fetch paginated stats',
-			data: {
-				data: [],
-				totalCount: 0,
-				totalPages: 0,
-				currentPage: page,
-				hasNextPage: false,
-				hasPreviousPage: false,
-			},
-		}
-	}
-}
-
-/**
  * Get default filters
  * Note: This is a pure function, but exported as Server Action for consistency
  */
 export async function fetchDefaultFilters(): Promise<DashboardFilters> {
 	return getDefaultFilters()
-}
-
-/**
- * Fetch ONLY detailed stats (for /detailed-stats page)
- * This is more efficient than fetching all dashboard data
- */
-export async function fetchDetailedStatsOnly(filters: DashboardFilters) {
-	try {
-		const detailedStats = await getDetailedStats(filters)
-
-		return {
-			success: true,
-			data: detailedStats,
-		}
-	} catch (error) {
-		console.error('❌ [DetailedStats Server Action] Error:', error)
-		return {
-			success: false,
-			error:
-				error instanceof Error
-					? error.message
-					: 'Failed to fetch detailed stats',
-			data: [],
-		}
-	}
 }

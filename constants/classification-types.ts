@@ -233,3 +233,81 @@ export function getClassificationColor(classification: string | null): string {
 	const group = getScoreGroup(score)
 	return SCORE_GROUP_COLORS[group]
 }
+
+// =============================================================================
+// AI ERROR / QUALITY GROUPINGS (for detailed stats aggregation)
+// =============================================================================
+
+/**
+ * Classifications that count as "AI Errors"
+ * Legacy: critical_error, meaningful_improvement
+ * New: CRITICAL_FACT_ERROR, MAJOR_FUNCTIONAL_OMISSION, MINOR_INFO_GAP, CONFUSING_VERBOSITY, TONAL_MISALIGNMENT
+ */
+export const AI_ERROR_CLASSIFICATIONS: ClassificationType[] = [
+	// Legacy
+	'critical_error',
+	'meaningful_improvement',
+	// New
+	'CRITICAL_FACT_ERROR',
+	'MAJOR_FUNCTIONAL_OMISSION',
+	'MINOR_INFO_GAP',
+	'CONFUSING_VERBOSITY',
+	'TONAL_MISALIGNMENT',
+]
+
+/**
+ * Classifications that count as "AI Quality" (good performance)
+ * Legacy: no_significant_change, stylistic_preference
+ * New: STRUCTURAL_FIX, STYLISTIC_EDIT, PERFECT_MATCH
+ */
+export const AI_QUALITY_CLASSIFICATIONS: ClassificationType[] = [
+	// Legacy
+	'no_significant_change',
+	'stylistic_preference',
+	// New
+	'STRUCTURAL_FIX',
+	'STYLISTIC_EDIT',
+	'PERFECT_MATCH',
+]
+
+/**
+ * All classifications that count as "reviewed" (any classification set)
+ * Excludes null/unreviewed records
+ */
+export const ALL_REVIEWED_CLASSIFICATIONS: ClassificationType[] = [
+	...CLASSIFICATION_TYPES,
+]
+
+/**
+ * Check if classification is an AI error type
+ */
+export function isAiErrorClassification(
+	classification: string | null
+): boolean {
+	if (!classification) return false
+	return AI_ERROR_CLASSIFICATIONS.includes(classification as ClassificationType)
+}
+
+/**
+ * Check if classification is an AI quality type
+ */
+export function isAiQualityClassification(
+	classification: string | null
+): boolean {
+	if (!classification) return false
+	return AI_QUALITY_CLASSIFICATIONS.includes(
+		classification as ClassificationType
+	)
+}
+
+/**
+ * Check if classification is reviewed (not null and valid)
+ */
+export function isReviewedClassification(
+	classification: string | null
+): boolean {
+	if (!classification) return false
+	return ALL_REVIEWED_CLASSIFICATIONS.includes(
+		classification as ClassificationType
+	)
+}

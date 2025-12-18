@@ -7,9 +7,11 @@
  * not all dashboard data (KPIs + charts + table).
  *
  * Much more efficient than useDashboardData for the detailed stats page.
+ *
+ * Uses TypeScript aggregation for data processing.
  */
 
-import { fetchDetailedStatsOnly } from '@/lib/actions/dashboard-actions'
+import { fetchDetailedStatsTS } from '@/lib/actions/detailed-stats-actions'
 import { supabase } from '@/lib/supabase/client'
 import type { DashboardFilters } from '@/lib/supabase/types'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -46,13 +48,8 @@ export function useDetailedStats(filters: DashboardFilters) {
 			const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
 
 			try {
-				const result = await fetchDetailedStatsOnly(filters)
+				const result = await fetchDetailedStatsTS(filters)
 				clearTimeout(timeoutId)
-
-				if (!result.success) {
-					throw new Error(result.error || 'Failed to fetch detailed stats')
-				}
-
 				return result.data
 			} catch (error) {
 				clearTimeout(timeoutId)

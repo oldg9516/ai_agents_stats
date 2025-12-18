@@ -11,8 +11,7 @@ export {
 	getVersionComparison,
 } from './charts'
 
-// Detailed stats queries
-export { getDetailedStats, getDetailedStatsPaginated } from './detailed-stats'
+// Detailed stats: now handled by fetchDetailedStatsTS in lib/actions/detailed-stats-actions.ts
 
 // Filter queries
 export {
