@@ -37,6 +37,14 @@ import {
 	IconChevronLeft,
 	IconChevronRight,
 } from '@tabler/icons-react'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select'
+import { PAGE_SIZE_OPTIONS, type PageSize } from './detailed-stats/table-pagination'
 import type { TicketReviewRecord } from '@/lib/supabase/types'
 import { format } from 'date-fns'
 import {
@@ -76,10 +84,17 @@ export function TicketsReviewTable({
 		{ id: 'created_at', desc: true },
 	])
 	const [globalFilter, setGlobalFilter] = useState('')
+	const [pageSize, setPageSize] = useState<PageSize>(20)
 	const [pagination, setPagination] = useState({
 		pageIndex: 0,
 		pageSize: 20,
 	})
+
+	// Handle page size change
+	const handlePageSizeChange = (size: number) => {
+		setPageSize(size as PageSize)
+		setPagination({ pageIndex: 0, pageSize: size })
+	}
 
 	// Memoize data to prevent unnecessary re-renders of React Table
 	const memoizedData = useMemo(() => data, [data])
@@ -346,21 +361,46 @@ export function TicketsReviewTable({
 				</div>
 
 				{/* Pagination */}
-				<div className='flex items-center justify-between pt-4'>
-					<div className='text-sm text-muted-foreground'>
-						{t('ticketsReview.table.showing')}{' '}
-						{table.getState().pagination.pageIndex *
-							table.getState().pagination.pageSize +
-							1}{' '}
-						{t('ticketsReview.table.to')}{' '}
-						{Math.min(
-							(table.getState().pagination.pageIndex + 1) *
-								table.getState().pagination.pageSize,
-							table.getFilteredRowModel().rows.length
-						)}{' '}
-						{t('ticketsReview.table.of')}{' '}
-						{table.getFilteredRowModel().rows.length}{' '}
-						{t('ticketsReview.table.results')}
+				<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4'>
+					<div className='flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4'>
+						{/* Page size selector */}
+						<div className='flex items-center gap-2'>
+							<span className='text-xs sm:text-sm text-muted-foreground'>
+								{t('table.rowsPerPage')}:
+							</span>
+							<Select
+								value={String(pageSize)}
+								onValueChange={value => handlePageSizeChange(Number(value))}
+							>
+								<SelectTrigger className='w-[80px] h-8 text-xs sm:text-sm'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{PAGE_SIZE_OPTIONS.map(size => (
+										<SelectItem key={size} value={String(size)}>
+											{size}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+
+						{/* Results count */}
+						<div className='text-sm text-muted-foreground'>
+							{t('ticketsReview.table.showing')}{' '}
+							{table.getState().pagination.pageIndex *
+								table.getState().pagination.pageSize +
+								1}{' '}
+							{t('ticketsReview.table.to')}{' '}
+							{Math.min(
+								(table.getState().pagination.pageIndex + 1) *
+									table.getState().pagination.pageSize,
+								table.getFilteredRowModel().rows.length
+							)}{' '}
+							{t('ticketsReview.table.of')}{' '}
+							{table.getFilteredRowModel().rows.length}{' '}
+							{t('ticketsReview.table.results')}
+						</div>
 					</div>
 					<div className='flex items-center space-x-2'>
 						<Button

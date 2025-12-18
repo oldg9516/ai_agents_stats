@@ -41,7 +41,7 @@ import { exportToCSV } from '@/lib/utils/export'
 import { createBaseColumns, sortOrderColumn } from './base-columns'
 import { createLegacyColumns } from './legacy-columns'
 import { createNewColumns } from './new-columns'
-import { TablePagination } from './table-pagination'
+import { TablePagination, type PageSize } from './table-pagination'
 import { buildLatestWeeksMap, checkIsLatestWeek, type DetailedStatsTableProps } from './types'
 
 /**
@@ -62,7 +62,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 
 	// Server-side pagination state
 	const [currentPage, setCurrentPage] = useState(0)
-	const pageSize = 20
+	const [pageSize, setPageSize] = useState<PageSize>(20)
 
 	// Fetch paginated data
 	const {
@@ -164,6 +164,11 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 
 	const handlePageClick = (page: number) => {
 		setCurrentPage(page)
+	}
+
+	const handlePageSizeChange = (size: number) => {
+		setPageSize(size as PageSize)
+		setCurrentPage(0) // Reset to first page when changing page size
 	}
 
 	// Show loading skeleton on initial load
@@ -325,6 +330,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 					onPreviousPage={handlePreviousPage}
 					onNextPage={handleNextPage}
 					onPageClick={handlePageClick}
+					onPageSizeChange={handlePageSizeChange}
 				/>
 			</CardContent>
 		</Card>

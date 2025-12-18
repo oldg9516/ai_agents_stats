@@ -1,7 +1,18 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select'
 import { IconChevronLeft, IconChevronRight, IconLoader2 } from '@tabler/icons-react'
+
+// Available page size options
+export const PAGE_SIZE_OPTIONS = [20, 50, 100, 200] as const
+export type PageSize = (typeof PAGE_SIZE_OPTIONS)[number]
 
 interface TablePaginationProps {
 	t: (key: string) => string
@@ -18,6 +29,7 @@ interface TablePaginationProps {
 	onPreviousPage: () => void
 	onNextPage: () => void
 	onPageClick: (page: number) => void
+	onPageSizeChange?: (size: number) => void
 }
 
 /**
@@ -39,6 +51,7 @@ export function TablePagination({
 	onPreviousPage,
 	onNextPage,
 	onPageClick,
+	onPageSizeChange,
 }: TablePaginationProps) {
 	// Show filtered results message when search filter is active
 	if (globalFilter) {
@@ -53,16 +66,44 @@ export function TablePagination({
 	// Show pagination controls
 	return (
 		<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-4">
-			<div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
-				{t('table.showing')} {currentPage * pageSize + 1} {t('table.to')}{' '}
-				{Math.min((currentPage + 1) * pageSize, totalCount)} {t('table.of')}{' '}
-				{totalCount}
-				{isFetching && !isLoading && (
-					<span className="ml-2 inline-flex items-center gap-1">
-						<IconLoader2 className="h-3 w-3 animate-spin" />
-						<span className="text-xs">Loading...</span>
-					</span>
+			<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+				{/* Page size selector */}
+				{onPageSizeChange && (
+					<div className="flex items-center gap-2">
+						<span className="text-xs sm:text-sm text-muted-foreground">
+							{t('table.rowsPerPage')}:
+						</span>
+						<Select
+							value={String(pageSize)}
+							onValueChange={value => onPageSizeChange(Number(value))}
+							disabled={isFetching}
+						>
+							<SelectTrigger className="w-[80px] h-8 text-xs sm:text-sm">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								{PAGE_SIZE_OPTIONS.map(size => (
+									<SelectItem key={size} value={String(size)}>
+										{size}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
 				)}
+
+				{/* Results count */}
+				<div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
+					{t('table.showing')} {currentPage * pageSize + 1} {t('table.to')}{' '}
+					{Math.min((currentPage + 1) * pageSize, totalCount)} {t('table.of')}{' '}
+					{totalCount}
+					{isFetching && !isLoading && (
+						<span className="ml-2 inline-flex items-center gap-1">
+							<IconLoader2 className="h-3 w-3 animate-spin" />
+							<span className="text-xs">Loading...</span>
+						</span>
+					)}
+				</div>
 			</div>
 			<div className="flex flex-col sm:flex-row items-center gap-2">
 				<div className="flex items-center gap-2">
