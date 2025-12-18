@@ -149,7 +149,8 @@
 			"title": "Quality Trends",
 			"description": "Track quality percentage by subcategory",
 			"tooltip": "Time-series visualization showing AI quality trends grouped by week. Each line represents a different request subcategory. Use this to identify quality patterns, seasonal variations, and track improvement over time. Note: Context shift cases are excluded from quality calculations.",
-			"maxThreeCategories": "Maximum 3 subcategories can be displayed at once"
+			"maxThreeCategories": "Maximum 3 subcategories can be displayed at once",
+			"combinedCategories": "Combined categories"
 		},
 		"categoryDistribution": {
 			"title": "Quality by Subcategory",

@@ -9,6 +9,12 @@ import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from '@/components/ui/accordion'
+import {
 	ChartContainer,
 	ChartTooltip,
 	ChartTooltipContent,
@@ -35,7 +41,8 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 	const t = useTranslations()
 
 	// Create chart config dynamically from categories
-	const { chartConfig, categories } = useMemo(() => {
+	// Split into single (no comma) and multi (with comma) categories
+	const { chartConfig, singleCategories, multiCategories, allCategories } = useMemo(() => {
 		const uniqueCategories = Array.from(new Set(data.map((d) => d.category)))
 		const config: ChartConfig = {}
 
@@ -47,23 +54,39 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 			}
 		})
 
-		const cats = uniqueCategories.map((key) => ({
+		const allCats = uniqueCategories.map((key) => ({
 			name: key,
 			label: getCategoryLabel(key),
 		}))
 
-		return { chartConfig: config, categories: cats }
+		// Single categories = no comma (e.g., "Shipping", "Payment")
+		// Multi categories = with comma (e.g., "Payment Question,shipping Or Delivery Question")
+		const single = allCats.filter(c => !c.name.includes(','))
+		const multi = allCats.filter(c => c.name.includes(','))
+
+		return {
+			chartConfig: config,
+			singleCategories: single,
+			multiCategories: multi,
+			allCategories: allCats
+		}
 	}, [data])
 
-	// Hide all categories beyond the first 3 by default
-	// Use useMemo to compute initial hidden categories based on data
+	// Hide all categories beyond the first 3 single categories by default
+	// Also hide all multi categories by default
 	const initialHiddenCategories = useMemo(() => {
-		if (categories.length > 3) {
-			const categoriesToHide = categories.slice(3).map(c => c.name)
-			return new Set(categoriesToHide)
+		const hidden = new Set<string>()
+
+		// Hide single categories beyond the first 3
+		if (singleCategories.length > 3) {
+			singleCategories.slice(3).forEach(c => hidden.add(c.name))
 		}
-		return new Set<string>()
-	}, [categories])
+
+		// Hide all multi categories by default
+		multiCategories.forEach(c => hidden.add(c.name))
+
+		return hidden
+	}, [singleCategories, multiCategories])
 
 	const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(new Set())
 
@@ -99,7 +122,7 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 	const toggleCategory = (categoryName: string) => {
 		setHiddenCategories((prev) => {
 			const newSet = new Set(prev)
-			const visibleCount = categories.length - newSet.size
+			const visibleCount = allCategories.length - newSet.size
 
 			if (newSet.has(categoryName)) {
 				// If category is hidden, try to show it
@@ -147,10 +170,11 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 
 					{/* Interactive Legend with Checkboxes - Max 3 visible */}
 					<div className='flex flex-col gap-2'>
+						{/* Single Categories (main) */}
 						<div className='flex flex-wrap gap-3 sm:gap-4'>
-							{categories.map((category) => {
+							{singleCategories.map((category) => {
 								const isVisible = !hiddenCategories.has(category.name)
-								const visibleCount = categories.length - hiddenCategories.size
+								const visibleCount = allCategories.length - hiddenCategories.size
 								const isDisabled = !isVisible && visibleCount >= 3
 
 								return (
@@ -177,6 +201,50 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 								)
 							})}
 						</div>
+
+						{/* Multi Categories (combined) - in accordion */}
+						{multiCategories.length > 0 && (
+							<Accordion type='single' collapsible className='w-full'>
+								<AccordionItem value='multi-categories' className='border-none'>
+									<AccordionTrigger className='py-2 text-xs text-muted-foreground hover:no-underline'>
+										{t('charts.qualityTrends.combinedCategories')} ({multiCategories.length})
+									</AccordionTrigger>
+									<AccordionContent>
+										<div className='flex flex-wrap gap-3 sm:gap-4 pt-2'>
+											{multiCategories.map((category) => {
+												const isVisible = !hiddenCategories.has(category.name)
+												const visibleCount = allCategories.length - hiddenCategories.size
+												const isDisabled = !isVisible && visibleCount >= 3
+
+												return (
+													<div key={category.name} className='flex items-center gap-2 min-w-0'>
+														<Checkbox
+															id={`category-${category.name}`}
+															checked={isVisible}
+															onCheckedChange={() => toggleCategory(category.name)}
+															disabled={isDisabled}
+														/>
+														<Label
+															htmlFor={`category-${category.name}`}
+															className={`flex items-center gap-2 min-w-0 ${
+																isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+															}`}
+														>
+															<div
+																className='w-3 h-3 rounded-sm shrink-0'
+																style={{ backgroundColor: `var(--color-${category.name})` }}
+															/>
+															<span className='text-xs sm:text-sm truncate'>{category.label}</span>
+														</Label>
+													</div>
+												)
+											})}
+										</div>
+									</AccordionContent>
+								</AccordionItem>
+							</Accordion>
+						)}
+
 						<p className='text-xs text-muted-foreground'>
 							{t('charts.qualityTrends.maxThreeCategories')}
 						</p>
@@ -193,7 +261,7 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 					<ChartContainer config={chartConfig} className='h-[350px] w-full'>
 						<AreaChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
 							<defs>
-								{categories.map((category) => (
+								{allCategories.map((category) => (
 									<linearGradient
 										key={`gradient-${category.name}`}
 										id={`fill-${category.name}`}
@@ -247,7 +315,7 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 									/>
 								}
 							/>
-							{categories.map((category) => (
+							{allCategories.map((category) => (
 								<Area
 									key={category.name}
 									type='natural'
