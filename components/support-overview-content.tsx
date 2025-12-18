@@ -3,6 +3,7 @@
 import { usePaginatedThreads } from '@/lib/hooks/use-paginated-threads'
 import { useSupportData } from '@/lib/hooks/use-support-data'
 import { useSupportFilters } from '@/lib/hooks/use-support-filters'
+import { useAvailableCategories } from '@/lib/queries/support-queries'
 import { useTranslations } from 'next-intl'
 import { useMemo } from 'react'
 import { ResolutionTimeChart } from './charts/resolution-time-chart'
@@ -30,16 +31,17 @@ import { SupportThreadsTable } from './tables/support-threads-table'
 export function SupportOverviewContent() {
 	const t = useTranslations()
 
+	const supportFiltersHook = useSupportFilters()
 	const {
 		filters,
 		setDateRange,
-		setStatuses,
-		setRequestTypes,
-		setRequirements,
-		setVersions,
-		setPendingDraftsOnly,
 		resetFilters,
-	} = useSupportFilters()
+	} = supportFiltersHook
+
+	// applyFilters may be undefined if hook is not ready yet
+	const applyFilters = supportFiltersHook.applyFilters ?? (() => {
+		console.warn('[SupportOverviewContent] applyFilters is not available yet')
+	})
 
 	// Fetch support data with React Query (KPIs and charts)
 	const { data, isLoading, error } = useSupportData(filters)
@@ -52,6 +54,9 @@ export function SupportOverviewContent() {
 		isFetchingMore,
 		loadNextBatch,
 	} = usePaginatedThreads()
+
+	// Fetch all available categories from database (sorted: single first, then multi)
+	const { data: availableCategories } = useAvailableCategories(filters.dateRange)
 
 	// Calculate available versions from paginated threads
 	const availableVersions = useMemo(() => {
@@ -73,6 +78,9 @@ export function SupportOverviewContent() {
 
 		// Check if request types are filtered
 		if (filters.requestTypes.length > 0) count++
+
+		// Check if categories are filtered
+		if (filters.categories.length > 0) count++
 
 		// Check if requirements are filtered
 		if (filters.requirements.length > 0) count++
@@ -116,16 +124,16 @@ export function SupportOverviewContent() {
 						description={t('filterSheet.supportDescription')}
 						activeFilterCount={getActiveFilterCount()}
 					>
-						<SupportFilterBar
-							filters={filters}
-							onStatusesChange={setStatuses}
-							onRequestTypesChange={setRequestTypes}
-							onRequirementsChange={setRequirements}
-							onVersionsChange={setVersions}
-							onPendingDraftsOnlyChange={setPendingDraftsOnly}
-							onReset={resetFilters}
-							availableVersions={availableVersions}
-						/>
+						{({ close }) => (
+							<SupportFilterBar
+								filters={filters}
+								onApplyFilters={applyFilters}
+								onReset={resetFilters}
+								availableVersions={availableVersions}
+								availableCategories={availableCategories}
+								onClose={close}
+							/>
+						)}
 					</FilterSheet>
 				</div>
 

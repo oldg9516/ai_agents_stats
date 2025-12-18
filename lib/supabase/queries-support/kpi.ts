@@ -22,7 +22,7 @@ async function fetchAllForKPIs<T>(
 	dateTo: Date,
 	filters: SupportFilters
 ): Promise<T[]> {
-	const { statuses, requestTypes, requirements, versions } = filters
+	const { statuses, requestTypes, categories, requirements, versions } = filters
 
 	// First, get total count
 	let countQuery = supabase
@@ -31,16 +31,19 @@ async function fetchAllForKPIs<T>(
 		.gte('created_at', dateFrom.toISOString())
 		.lt('created_at', dateTo.toISOString())
 
-	if (statuses.length > 0) {
+	if (statuses && statuses.length > 0) {
 		countQuery = countQuery.in('status', statuses)
 	}
-	if (requestTypes.length > 0) {
+	if (requestTypes && requestTypes.length > 0) {
 		countQuery = countQuery.in('request_type', requestTypes)
 	}
-	if (versions.length > 0) {
+	if (categories && categories.length > 0) {
+		countQuery = countQuery.in('request_subtype', categories)
+	}
+	if (versions && versions.length > 0) {
 		countQuery = countQuery.in('prompt_version', versions)
 	}
-	if (requirements.length > 0) {
+	if (requirements && requirements.length > 0) {
 		requirements.forEach(req => {
 			countQuery = countQuery.eq(req, true)
 		})
@@ -69,16 +72,19 @@ async function fetchAllForKPIs<T>(
 				.lt('created_at', dateTo.toISOString())
 				.range(offset, offset + BATCH_SIZE - 1)
 
-			if (statuses.length > 0) {
+			if (statuses && statuses.length > 0) {
 				query = query.in('status', statuses)
 			}
-			if (requestTypes.length > 0) {
+			if (requestTypes && requestTypes.length > 0) {
 				query = query.in('request_type', requestTypes)
 			}
-			if (versions.length > 0) {
+			if (categories && categories.length > 0) {
+				query = query.in('request_subtype', categories)
+			}
+			if (versions && versions.length > 0) {
 				query = query.in('prompt_version', versions)
 			}
-			if (requirements.length > 0) {
+			if (requirements && requirements.length > 0) {
 				requirements.forEach(req => {
 					query = query.eq(req, true)
 				})

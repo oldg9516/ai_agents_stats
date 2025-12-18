@@ -8,6 +8,7 @@
  */
 
 import {
+	fetchAvailableCategories,
 	fetchCorrelationMatrix,
 	fetchRequestCategoryStats,
 	fetchResolutionTimeData,
@@ -212,5 +213,36 @@ export async function fetchSupportMinCreatedDate(): Promise<Date> {
 		console.error('❌ [Support MinDate] Error:', error)
 		// Fallback to a safe default date
 		return new Date('2024-01-01')
+	}
+}
+
+/**
+ * Fetch all unique categories (request_subtype) for filter dropdown
+ * Returns categories sorted: single categories first, then multi-categories
+ */
+export async function fetchAvailableCategoriesAction(dateRange: {
+	from: Date
+	to: Date
+}) {
+	try {
+		const categories = await fetchAvailableCategories(supabaseServer, dateRange)
+
+		return {
+			success: true,
+			data: categories,
+		}
+	} catch (error) {
+		console.error(
+			'❌ [Server Action] Error fetching available categories:',
+			error
+		)
+		return {
+			success: false,
+			error:
+				error instanceof Error
+					? error.message
+					: 'Failed to fetch available categories',
+			data: [] as string[],
+		}
 	}
 }

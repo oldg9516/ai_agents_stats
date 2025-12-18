@@ -20,8 +20,8 @@ interface FilterSheetProps {
 	description: string
 	/** Number of currently active filters (displayed as a badge) */
 	activeFilterCount: number
-	/** Filter content to display inside the sheet */
-	children: ReactNode
+	/** Filter content to display inside the sheet - can be ReactNode or render function */
+	children: ReactNode | ((props: { close: () => void }) => ReactNode)
 	/** Callback when sheet open state changes */
 	onOpenChange?: (open: boolean) => void
 }
@@ -34,6 +34,7 @@ interface FilterSheetProps {
  * - Shows active filter count badge
  * - Mobile-friendly drawer behavior
  * - Reusable across all dashboard pages
+ * - Supports render props pattern for programmatic close
  *
  * Usage:
  * ```tsx
@@ -42,7 +43,7 @@ interface FilterSheetProps {
  *   description="Customize your dashboard view..."
  *   activeFilterCount={3}
  * >
- *   <YourFiltersContent />
+ *   {({ close }) => <YourFiltersContent onApply={close} />}
  * </FilterSheet>
  * ```
  */
@@ -60,6 +61,14 @@ export function FilterSheet({
 		setOpen(newOpen)
 		onOpenChange?.(newOpen)
 	}
+
+	const close = () => {
+		setOpen(false)
+		onOpenChange?.(false)
+	}
+
+	// Support both render props and regular children
+	const content = typeof children === 'function' ? children({ close }) : children
 
 	return (
 		<Sheet open={open} onOpenChange={handleOpenChange}>
@@ -82,7 +91,7 @@ export function FilterSheet({
 					</SheetTitle>
 					<SheetDescription>{description}</SheetDescription>
 				</SheetHeader>
-				<div className='mt-6'>{children}</div>
+				<div className='mt-6'>{content}</div>
 			</SheetContent>
 		</Sheet>
 	)

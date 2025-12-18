@@ -34,6 +34,7 @@ export function getDefaultSupportFilters(): SupportFilters {
 		},
 		statuses: [],
 		requestTypes: [],
+		categories: [],
 		requirements: [],
 		versions: [],
 		pendingDraftsOnly: false,
@@ -115,6 +116,13 @@ export function parseSupportFiltersFromSearchParams(
 			? requestTypesParam.split(',').filter(Boolean)
 			: defaults.requestTypes
 
+	// Parse categories
+	const categoriesParam = searchParams.categories
+	const categories =
+		typeof categoriesParam === 'string'
+			? categoriesParam.split(',').filter(Boolean)
+			: defaults.categories
+
 	// Parse requirements
 	const requirementsParam = searchParams.requirements
 	const requirements =
@@ -140,6 +148,7 @@ export function parseSupportFiltersFromSearchParams(
 		dateRange,
 		statuses,
 		requestTypes,
+		categories,
 		requirements,
 		versions,
 		pendingDraftsOnly,

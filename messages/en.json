@@ -58,6 +58,7 @@
 		"to": "To",
 		"versions": "Versions",
 		"categories": "Subcategories",
+		"category": "Subcategory",
 		"agents": "Agents",
 		"qualifiedAgents": "Qualified Agents",
 		"status": "Status",

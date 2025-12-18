@@ -411,6 +411,7 @@ export interface SupportFilters {
 	}
 	statuses: string[] // [] = all statuses
 	requestTypes: string[] // [] = all request types
+	categories: string[] // [] = all categories (request_subtype)
 	requirements: string[] // [] = all, else filter by active requirements
 	versions: string[] // [] = all versions
 	pendingDraftsOnly: boolean // true = show only threads with AI draft but no agent response

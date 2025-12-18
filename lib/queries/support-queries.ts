@@ -7,7 +7,11 @@
  * This bypasses RLS restrictions on support_threads_data table
  */
 
-import { fetchRequestCategoryStatsAction, fetchSupportData } from '@/lib/actions/support-actions'
+import {
+	fetchAvailableCategoriesAction,
+	fetchRequestCategoryStatsAction,
+	fetchSupportData,
+} from '@/lib/actions/support-actions'
 import { supabase } from '@/lib/supabase/client'
 import type {
 	CorrelationCell,
@@ -34,8 +38,10 @@ function getSupportQueryKey(filters: SupportFilters) {
 			to: filters.dateRange.to.toISOString(),
 			statuses: filters.statuses.sort(),
 			requestTypes: filters.requestTypes.sort(),
+			categories: filters.categories.sort(),
 			requirements: filters.requirements.sort(),
 			versions: filters.versions.sort(),
+			pendingDraftsOnly: filters.pendingDraftsOnly,
 		},
 	] as const
 }
@@ -184,6 +190,36 @@ export function useRequestCategoryStats(dateRange: { from: Date; to: Date }) {
 			const result = await fetchRequestCategoryStatsAction(dateRange)
 			if (!result.success || !result.data) {
 				throw new Error(result.error || 'Failed to fetch request category stats')
+			}
+			return result.data
+		},
+		staleTime: 5 * 60 * 1000, // 5 minutes (data changes rarely)
+		gcTime: 30 * 60 * 1000, // 30 minutes
+	})
+
+	return {
+		data: query.data || [],
+		isLoading: query.isLoading,
+		error: query.error as Error | null,
+		refetch: query.refetch,
+		isFetching: query.isFetching,
+	}
+}
+
+/**
+ * Hook for fetching all available categories (request_subtype) for filter dropdown
+ * Returns categories sorted: single categories first, then multi-categories
+ */
+export function useAvailableCategories(dateRange: { from: Date; to: Date }) {
+	const query = useQuery({
+		queryKey: ['available-categories', {
+			from: dateRange.from.toISOString(),
+			to: dateRange.to.toISOString(),
+		}],
+		queryFn: async () => {
+			const result = await fetchAvailableCategoriesAction(dateRange)
+			if (!result.success) {
+				throw new Error(result.error || 'Failed to fetch available categories')
 			}
 			return result.data
 		},

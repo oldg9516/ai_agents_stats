@@ -24,6 +24,7 @@ export {
 
 // Thread queries
 export {
+	fetchAvailableCategories,
 	fetchRequestCategoryStats,
 	fetchSupportThreads,
 	fetchThreadDetail,

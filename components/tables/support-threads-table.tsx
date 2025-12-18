@@ -294,8 +294,9 @@ export function SupportThreadsTable({
 		globalFilterFn: (row, columnId, filterValue) => {
 			const threadId = String(row.original.thread_id || '').toLowerCase()
 			const ticketId = String(row.original.ticket_id || '').toLowerCase()
+			const category = String(row.original.request_subtype || '').toLowerCase()
 			const filter = String(filterValue).toLowerCase()
-			return threadId.includes(filter) || ticketId.includes(filter)
+			return threadId.includes(filter) || ticketId.includes(filter) || category.includes(filter)
 		},
 	})
 

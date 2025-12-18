@@ -17,6 +17,7 @@ function getDefaultSupportFilters(): SupportFilters {
 		dateRange: { from, to },
 		statuses: [],
 		requestTypes: [],
+		categories: [],
 		requirements: [],
 		versions: [],
 		pendingDraftsOnly: false,
@@ -36,6 +37,7 @@ export interface SupportSlice {
 	setSupportDateRange: (from: Date, to: Date) => void
 	setSupportStatuses: (statuses: string[]) => void
 	setSupportRequestTypes: (requestTypes: string[]) => void
+	setSupportCategories: (categories: string[]) => void
 	setSupportRequirements: (requirements: string[]) => void
 	setSupportVersions: (versions: string[]) => void
 	setSupportPendingDraftsOnly: (enabled: boolean) => void
@@ -92,6 +94,18 @@ export const createSupportSlice: StateCreator<
 			supportFilters: {
 				...state.supportFilters,
 				requestTypes,
+			},
+			// Reset pagination when filters change
+			currentBatch: 0,
+			maxBatchReached: 0,
+			hasMoreThreads: true,
+		})),
+
+	setSupportCategories: categories =>
+		set(state => ({
+			supportFilters: {
+				...state.supportFilters,
+				categories,
 			},
 			// Reset pagination when filters change
 			currentBatch: 0,

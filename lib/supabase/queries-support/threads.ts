@@ -186,23 +186,23 @@ export async function fetchSupportThreads(
 		const DELAY_BETWEEN_GROUPS = 100 // ms delay between batch groups
 
 		for (let batchStart = 0; batchStart < numBatches; batchStart += MAX_CONCURRENT) {
-			const batchPromises = []
+			const batchPromises: Promise<unknown[]>[] = []
 			for (
 				let i = batchStart;
 				i < Math.min(batchStart + MAX_CONCURRENT, numBatches);
 				i++
 			) {
 				const offset = i * SUPABASE_BATCH_SIZE
-				const promise = buildThreadsQuery(supabase, filters)
-					.range(offset, offset + SUPABASE_BATCH_SIZE - 1)
-					.then(({ data, error }) => {
-						if (error) throw error
-						return data || []
-					})
+				const promise = (async () => {
+					const { data, error } = await buildThreadsQuery(supabase, filters)
+						.range(offset, offset + SUPABASE_BATCH_SIZE - 1)
+					if (error) throw error
+					return (data || []) as unknown[]
+				})()
 				batchPromises.push(promise)
 			}
 			const batchResults = await Promise.all(batchPromises)
-			threads.push(...batchResults.flat())
+			threads.push(...(batchResults.flat() as typeof threads))
 
 			// Small delay between batch groups to reduce DB load
 			if (batchStart + MAX_CONCURRENT < numBatches) {
@@ -223,7 +223,7 @@ export async function fetchSupportThreads(
 		const { data, error } = await query
 
 		if (error) throw error
-		threads = data || []
+		threads = (data || []) as unknown as Record<string, unknown>[]
 	}
 
 	if (threads.length === 0) return []
@@ -396,14 +396,16 @@ export async function fetchThreadDetail(
 	supabase: SupabaseClient,
 	threadId: string
 ): Promise<SupportThread | null> {
-	const { data: thread, error: threadError } = await supabase
+	const { data: threadData, error: threadError } = await supabase
 		.from('support_threads_data')
 		.select(SUPPORT_THREAD_FIELDS)
 		.eq('thread_id', threadId)
 		.single()
 
 	if (threadError) throw threadError
-	if (!thread) return null
+	if (!threadData) return null
+
+	const thread = threadData as unknown as Record<string, unknown>
 
 	// Try to find matching comparison record by thread_id
 	const { data: comparisonData } = await supabase
@@ -434,7 +436,7 @@ export async function fetchThreadDetail(
 				: comparisonData?.changed === true
 				? 0
 				: null,
-	}
+	} as SupportThread
 }
 
 /**
