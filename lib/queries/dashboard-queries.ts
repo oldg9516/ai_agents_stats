@@ -97,36 +97,38 @@ export function useDashboardData(filters: DashboardFilters): {
 				throw error
 			}
 		},
-		staleTime: 2 * 60 * 1000, // 2 minutes (increased cache time)
-		gcTime: 10 * 60 * 1000, // 10 minutes (keep data longer)
+		staleTime: 5 * 60 * 1000, // 5 minutes - data is fresh for 5 min
+		gcTime: 15 * 60 * 1000, // 15 minutes - keep in cache
 		retry: 2, // Retry failed requests twice
 		retryDelay: 1000, // Wait 1 second between retries
+		refetchOnWindowFocus: false, // Don't refetch when user switches tabs
 	})
 
-	// Real-time subscription
-	useEffect(() => {
-		const channel = supabase
-			.channel('ai_human_comparison_changes')
-			.on(
-				'postgres_changes',
-				{
-					event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
-					schema: 'public',
-					table: 'ai_human_comparison',
-				},
-				() => {
-					// Invalidate all dashboard queries to trigger refetch
-					queryClient.invalidateQueries({ queryKey: ['dashboard'] })
-					// Also refresh Server Components
-					router.refresh()
-				}
-			)
-			.subscribe()
-
-		return () => {
-			supabase.removeChannel(channel)
-		}
-	}, [queryClient, router])
+	// Real-time subscription DISABLED to reduce Disk IO
+	// With 5500+ records/day, real-time updates cause excessive database queries
+	// Users can manually refresh or wait for staleTime (2 min) to see updates
+	//
+	// To re-enable: uncomment the code below
+	// useEffect(() => {
+	// 	const channel = supabase
+	// 		.channel('ai_human_comparison_changes')
+	// 		.on(
+	// 			'postgres_changes',
+	// 			{
+	// 				event: '*',
+	// 				schema: 'public',
+	// 				table: 'ai_human_comparison',
+	// 			},
+	// 			() => {
+	// 				queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+	// 				router.refresh()
+	// 			}
+	// 		)
+	// 		.subscribe()
+	// 	return () => {
+	// 		supabase.removeChannel(channel)
+	// 	}
+	// }, [queryClient, router])
 
 	return {
 		data: query.data || {
@@ -259,10 +261,11 @@ export function useDetailedStatsPaginated(
 				throw error
 			}
 		},
-		staleTime: 2 * 60 * 1000, // 2 minutes (increased cache time)
-		gcTime: 10 * 60 * 1000, // 10 minutes (keep data longer)
+		staleTime: 5 * 60 * 1000, // 5 minutes - data is fresh for 5 min
+		gcTime: 15 * 60 * 1000, // 15 minutes - keep in cache
 		retry: 2, // Retry failed requests twice
 		retryDelay: 1000, // Wait 1 second between retries
+		refetchOnWindowFocus: false, // Don't refetch when user switches tabs
 	})
 
 	return {
