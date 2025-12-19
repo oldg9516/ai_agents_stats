@@ -27,7 +27,7 @@ export async function createChatSession(
 			metadata: metadata ?? {},
 			is_archived: false,
 		})
-		.select()
+		.select('id, visitor_id, title, created_at, updated_at, metadata, is_archived')
 		.single()
 
 	if (error) {
@@ -51,7 +51,7 @@ export async function getChatSessions(visitorId: string): Promise<ChatSession[]>
 
 	const { data, error } = await supabase
 		.from('dashboard_chat_sessions')
-		.select('*')
+		.select('id, visitor_id, title, created_at, updated_at, metadata, is_archived')
 		.eq('visitor_id', visitorId)
 		.eq('is_archived', false)
 		.order('updated_at', { ascending: false })
@@ -122,7 +122,7 @@ export async function getChatMessages(sessionId: string): Promise<ChatMessage[]>
 
 	const { data, error } = await supabase
 		.from('dashboard_chat_messages')
-		.select('*')
+		.select('id, session_id, role, content, content_type, metadata, agent_name, parent_message_id, created_at')
 		.eq('session_id', sessionId)
 		.order('created_at', { ascending: true })
 
@@ -160,7 +160,7 @@ export async function saveChatMessage(
 			agent_name: message.agent_name,
 			parent_message_id: message.parent_message_id,
 		})
-		.select()
+		.select('id, session_id, role, content, content_type, metadata, agent_name, parent_message_id, created_at')
 		.single()
 
 	if (error) {
@@ -199,7 +199,7 @@ export async function pollMessageByMessageId(messageId: string): Promise<Polling
 
 	const { data, error } = await supabase
 		.from('dashboard_chat_messages')
-		.select('*')
+		.select('id, session_id, role, content, content_type, metadata, agent_name, parent_message_id, created_at, status')
 		.eq('message_id', messageId)
 		.single()
 
