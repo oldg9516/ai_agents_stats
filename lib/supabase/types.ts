@@ -245,6 +245,13 @@ export interface DetailedStatsRow {
 export type ScoringMode = 'legacy' | 'new'
 
 /**
+ * Category display mode for table
+ * - 'all': Show all categories as-is (including multi-categories with commas)
+ * - 'merged': Merge all multi-categories (containing commas) into single "Multi-category" group
+ */
+export type CategoryDisplayMode = 'all' | 'merged'
+
+/**
  * Dashboard Filters
  */
 export interface DashboardFilters {

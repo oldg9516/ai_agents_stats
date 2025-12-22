@@ -21,6 +21,8 @@ export function useDashboardFilters() {
 		resetDashboardFilters,
 		scoringMode,
 		setScoringMode,
+		categoryDisplayMode,
+		setCategoryDisplayMode,
 	} = useStore()
 
 	return {
@@ -32,5 +34,7 @@ export function useDashboardFilters() {
 		resetFilters: resetDashboardFilters,
 		scoringMode,
 		setScoringMode,
+		categoryDisplayMode,
+		setCategoryDisplayMode,
 	}
 }

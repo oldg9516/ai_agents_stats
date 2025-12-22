@@ -35,6 +35,10 @@
 			"label": "Scoring",
 			"legacy": "Legacy",
 			"new": "New"
+		},
+		"categoryMode": {
+			"all": "All",
+			"merged": "Merged"
 		}
 	},
 	"sidebar": {

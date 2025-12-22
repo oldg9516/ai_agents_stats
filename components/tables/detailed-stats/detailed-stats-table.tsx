@@ -14,6 +14,7 @@ import {
 	type SortingState,
 } from '@tanstack/react-table'
 
+import { CategoryDisplayToggle } from '@/components/category-display-toggle'
 import { TableSkeleton } from '@/components/loading/table-skeleton'
 import { ScoringModeToggle } from '@/components/scoring-mode-toggle'
 import { Button } from '@/components/ui/button'
@@ -58,13 +59,13 @@ import { buildLatestWeeksMap, checkIsLatestWeek, type DetailedStatsTableProps } 
 export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 	const t = useTranslations()
 	const router = useRouter()
-	const { scoringMode } = useDashboardFilters()
+	const { scoringMode, categoryDisplayMode } = useDashboardFilters()
 
 	// Server-side pagination state
 	const [currentPage, setCurrentPage] = useState(0)
 	const [pageSize, setPageSize] = useState<PageSize>(20)
 
-	// Fetch paginated data
+	// Fetch paginated data with category display mode
 	const {
 		data,
 		totalCount,
@@ -74,7 +75,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 		isLoading,
 		error,
 		isFetching,
-	} = useDetailedStatsPaginated(filters, currentPage, pageSize)
+	} = useDetailedStatsPaginated(filters, currentPage, pageSize, categoryDisplayMode)
 
 	// Client-side sorting and filtering (on current page only)
 	const [sorting, setSorting] = useState<SortingState>([])
@@ -216,7 +217,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 						</Button>
 					</div>
 
-					{/* Search Input & Scoring Mode Toggle */}
+					{/* Search Input & Toggles */}
 					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
 						<div className="relative w-full sm:max-w-sm">
 							<IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -227,7 +228,10 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 								className="pl-10 text-sm"
 							/>
 						</div>
-						<ScoringModeToggle />
+						<div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6">
+							<CategoryDisplayToggle />
+							<ScoringModeToggle />
+						</div>
 					</div>
 				</div>
 			</CardHeader>

@@ -55,9 +55,13 @@ const MAX_CONCURRENT_BATCHES = 3
 /**
  * Fetch detailed stats with TypeScript aggregation
  * Replaces SQL function: get_detailed_stats_paginated
+ *
+ * @param filters - Dashboard filters
+ * @param mergeMultiCategories - If true, merge categories containing commas into "Multi-category"
  */
 export async function fetchDetailedStatsTS(
-	filters: DashboardFilters
+	filters: DashboardFilters,
+	mergeMultiCategories: boolean = false
 ): Promise<PaginatedResult> {
 	const startTime = performance.now()
 
@@ -80,7 +84,7 @@ export async function fetchDetailedStatsTS(
 
 		// Step 3: Aggregate in TypeScript
 		const aggregateStart = performance.now()
-		const rows = aggregateDetailedStats(records)
+		const rows = aggregateDetailedStats(records, mergeMultiCategories)
 		console.log(
 			`[DetailedStats TS] Aggregated to ${rows.length} rows in ${(performance.now() - aggregateStart).toFixed(0)}ms`
 		)
@@ -189,10 +193,30 @@ async function fetchInBatches(
 }
 
 /**
+ * Normalize category name based on merge mode
+ * If mergeMultiCategories is true, categories containing commas are grouped as "Multi-category"
+ */
+function normalizeCategory(
+	category: string,
+	mergeMultiCategories: boolean
+): string {
+	if (mergeMultiCategories && category.includes(',')) {
+		return 'Multi-category'
+	}
+	return category
+}
+
+/**
  * Aggregate records into detailed stats rows
  * This replaces the SQL CTE logic
+ *
+ * @param records - Raw records from database
+ * @param mergeMultiCategories - If true, merge categories with commas into "Multi-category"
  */
-function aggregateDetailedStats(records: RawRecord[]): DetailedStatsRow[] {
+function aggregateDetailedStats(
+	records: RawRecord[],
+	mergeMultiCategories: boolean
+): DetailedStatsRow[] {
 	const rows: DetailedStatsRow[] = []
 
 	// Group by category + version (Level 1)
@@ -206,7 +230,8 @@ function aggregateDetailedStats(records: RawRecord[]): DetailedStatsRow[] {
 	>()
 
 	for (const record of records) {
-		const category = record.request_subtype ?? 'unknown'
+		const rawCategory = record.request_subtype ?? 'unknown'
+		const category = normalizeCategory(rawCategory, mergeMultiCategories)
 		const version = record.prompt_version ?? 'unknown'
 		const key = `${category}|${version}`
 

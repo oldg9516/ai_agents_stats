@@ -11,6 +11,7 @@ import { fetchDashboardData } from '@/lib/actions/dashboard-actions'
 import { fetchDetailedStatsTS } from '@/lib/actions/detailed-stats-actions'
 import { supabase } from '@/lib/supabase/client'
 import type {
+	CategoryDisplayMode,
 	CategoryDistributionResult,
 	DashboardFilters,
 	DetailedStatsRow,
@@ -174,7 +175,8 @@ export function usePrefetchDashboardData() {
 function getPaginatedStatsQueryKey(
 	filters: DashboardFilters,
 	page: number,
-	pageSize: number
+	pageSize: number,
+	categoryDisplayMode: CategoryDisplayMode
 ) {
 	return [
 		'detailed-stats-paginated',
@@ -186,6 +188,7 @@ function getPaginatedStatsQueryKey(
 			agents: (filters.agents ?? []).sort(),
 			page,
 			pageSize,
+			categoryDisplayMode,
 		},
 	] as const
 }
@@ -210,11 +213,13 @@ type PaginatedStatsData = {
  * - Automatic caching (2 min stale time)
  * - Timeout protection (30 seconds)
  * - Retry logic (2 attempts)
+ * - Category display mode support (all/merged)
  */
 export function useDetailedStatsPaginated(
 	filters: DashboardFilters,
 	page: number,
-	pageSize: number = 50
+	pageSize: number = 50,
+	categoryDisplayMode: CategoryDisplayMode = 'all'
 ): {
 	data: DetailedStatsRow[]
 	totalCount: number
@@ -227,15 +232,17 @@ export function useDetailedStatsPaginated(
 	refetch: () => void
 	isFetching: boolean
 } {
+	const mergeMultiCategories = categoryDisplayMode === 'merged'
+
 	const query = useQuery<PaginatedStatsData>({
-		queryKey: getPaginatedStatsQueryKey(filters, page, pageSize),
+		queryKey: getPaginatedStatsQueryKey(filters, page, pageSize, categoryDisplayMode),
 		queryFn: async (): Promise<PaginatedStatsData> => {
 			// Add timeout to prevent hanging requests
 			const controller = new AbortController()
 			const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
 
 			try {
-				const result = await fetchDetailedStatsTS(filters)
+				const result = await fetchDetailedStatsTS(filters, mergeMultiCategories)
 				clearTimeout(timeoutId)
 
 				// Client-side pagination
