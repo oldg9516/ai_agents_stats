@@ -5,15 +5,30 @@ import { useDashboardData } from '@/lib/hooks/use-dashboard-data'
 import { useFilters } from '@/lib/hooks/use-filters'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
-import { CategoryPieChart } from './charts/category-pie-chart'
-import { QualityTrendsChart } from './charts/quality-trends-chart'
-import { VersionBarChart } from './charts/version-bar-chart'
+import dynamic from 'next/dynamic'
 import { DateRangeSelector } from './filters/date-range-selector'
 import { FilterBar } from './filters/filter-bar'
 import { FilterSheet } from './filters/filter-sheet'
 import { KPISection } from './kpi/kpi-section'
+import { ChartSkeleton } from './loading/chart-skeleton'
 import { SupportOverviewSkeleton } from './loading/support-overview-skeleton'
 import { DetailedStatsTable } from './tables/detailed-stats-table'
+
+// Dynamic imports for heavy chart components to reduce initial bundle size
+const QualityTrendsChart = dynamic(
+	() => import('./charts/quality-trends-chart').then(mod => ({ default: mod.QualityTrendsChart })),
+	{ loading: () => <ChartSkeleton />, ssr: false }
+)
+
+const CategoryPieChart = dynamic(
+	() => import('./charts/category-pie-chart').then(mod => ({ default: mod.CategoryPieChart })),
+	{ loading: () => <ChartSkeleton />, ssr: false }
+)
+
+const VersionBarChart = dynamic(
+	() => import('./charts/version-bar-chart').then(mod => ({ default: mod.VersionBarChart })),
+	{ loading: () => <ChartSkeleton />, ssr: false }
+)
 
 /**
  * Dashboard Content - Client Component

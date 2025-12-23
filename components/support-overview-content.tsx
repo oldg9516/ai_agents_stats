@@ -5,9 +5,8 @@ import { useSupportData } from '@/lib/hooks/use-support-data'
 import { useSupportFilters } from '@/lib/hooks/use-support-filters'
 import { useAvailableCategories } from '@/lib/queries/support-queries'
 import { useTranslations } from 'next-intl'
+import dynamic from 'next/dynamic'
 import { useMemo } from 'react'
-import { ResolutionTimeChart } from './charts/resolution-time-chart'
-import { StatusDistributionChart } from './charts/status-distribution-chart'
 import { FilterSheet } from './filters/filter-sheet'
 import { SupportDateRangeSelector } from './filters/support-date-range-selector'
 import { SupportFilterBar } from './filters/support-filter-bar'
@@ -15,8 +14,20 @@ import { AgentResponseRateCard } from './kpi/agent-response-rate-card'
 import { AvgRequirementsCard } from './kpi/avg-requirements-card'
 import { DataCollectionRateCard } from './kpi/data-collection-rate-card'
 import { ReplyRequiredCard } from './kpi/reply-required-card'
+import { ChartSkeleton } from './loading/chart-skeleton'
 import { SupportOverviewSkeleton } from './loading/support-overview-skeleton'
 import { SupportThreadsTable } from './tables/support-threads-table'
+
+// Dynamic imports for heavy chart components to reduce initial bundle size
+const ResolutionTimeChart = dynamic(
+	() => import('./charts/resolution-time-chart').then(mod => ({ default: mod.ResolutionTimeChart })),
+	{ loading: () => <ChartSkeleton />, ssr: false }
+)
+
+const StatusDistributionChart = dynamic(
+	() => import('./charts/status-distribution-chart').then(mod => ({ default: mod.StatusDistributionChart })),
+	{ loading: () => <ChartSkeleton />, ssr: false }
+)
 
 /**
  * Support Overview Content - Client Component
