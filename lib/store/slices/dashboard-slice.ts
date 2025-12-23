@@ -1,5 +1,30 @@
 import type { CategoryDisplayMode, DashboardFilters, ScoringMode } from '@/lib/supabase/types'
+import type { ScoreGroup } from '@/constants/classification-types'
 import { StateCreator } from 'zustand'
+
+/**
+ * Score Group Modal state for viewing tickets by classification
+ */
+export interface ScoreGroupModalState {
+	isOpen: boolean
+	category: string | null
+	version: string | null
+	dates: string | null // Week range or null for version-level
+	scoreGroup: ScoreGroup | null
+}
+
+/**
+ * Get default score group modal state
+ */
+function getDefaultScoreGroupModalState(): ScoreGroupModalState {
+	return {
+		isOpen: false,
+		category: null,
+		version: null,
+		dates: null,
+		scoreGroup: null,
+	}
+}
 
 /**
  * Get default dashboard filter values
@@ -28,6 +53,7 @@ export interface DashboardSlice {
 	dashboardFilters: DashboardFilters
 	scoringMode: ScoringMode // 'legacy' or 'new'
 	categoryDisplayMode: CategoryDisplayMode // 'all' or 'merged'
+	scoreGroupModal: ScoreGroupModalState // Modal for viewing tickets by score group
 
 	// Actions
 	setDashboardDateRange: (from: Date, to: Date) => void
@@ -38,6 +64,8 @@ export interface DashboardSlice {
 	updateDashboardFilters: (filters: Partial<DashboardFilters>) => void
 	setScoringMode: (mode: ScoringMode) => void
 	setCategoryDisplayMode: (mode: CategoryDisplayMode) => void
+	openScoreGroupModal: (params: Omit<ScoreGroupModalState, 'isOpen'>) => void
+	closeScoreGroupModal: () => void
 }
 
 export const createDashboardSlice: StateCreator<
@@ -50,6 +78,7 @@ export const createDashboardSlice: StateCreator<
 	dashboardFilters: getDefaultDashboardFilters(),
 	scoringMode: 'new', // Default to new scoring mode
 	categoryDisplayMode: 'merged', // Default to merged categories
+	scoreGroupModal: getDefaultScoreGroupModalState(), // Score group modal state
 
 	// Actions
 	setDashboardDateRange: (from, to) =>
@@ -100,4 +129,17 @@ export const createDashboardSlice: StateCreator<
 	setScoringMode: mode => set({ scoringMode: mode }),
 
 	setCategoryDisplayMode: mode => set({ categoryDisplayMode: mode }),
+
+	openScoreGroupModal: params =>
+		set({
+			scoreGroupModal: {
+				isOpen: true,
+				...params,
+			},
+		}),
+
+	closeScoreGroupModal: () =>
+		set({
+			scoreGroupModal: getDefaultScoreGroupModalState(),
+		}),
 })

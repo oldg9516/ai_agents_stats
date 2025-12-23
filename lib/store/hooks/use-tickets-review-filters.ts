@@ -1,34 +1,27 @@
+'use client'
+
+import { useShallow } from 'zustand/react/shallow'
 import { useStore } from '..'
 
 /**
  * Hook for accessing tickets review filters state
+ *
+ * Optimized with shallow comparison to prevent unnecessary re-renders
  */
 export function useTicketsReviewFilters() {
-	const filters = useStore(state => state.ticketsReviewFilters)
-	const setDateRange = useStore(state => state.setTicketsReviewDateRange)
-	const setCategories = useStore(state => state.setTicketsReviewCategories)
-	const setVersions = useStore(state => state.setTicketsReviewVersions)
-	const setClassifications = useStore(
-		state => state.setTicketsReviewClassifications
+	// Use single shallow selector to prevent re-renders when other slices change
+	return useStore(
+		useShallow(state => ({
+			filters: state.ticketsReviewFilters,
+			setDateRange: state.setTicketsReviewDateRange,
+			setCategories: state.setTicketsReviewCategories,
+			setVersions: state.setTicketsReviewVersions,
+			setClassifications: state.setTicketsReviewClassifications,
+			setAgents: state.setTicketsReviewAgents,
+			setStatuses: state.setTicketsReviewStatuses,
+			setReviewerNames: state.setTicketsReviewReviewerNames,
+			resetFilters: state.resetTicketsReviewFilters,
+			updateFilters: state.updateTicketsReviewFilters,
+		}))
 	)
-	const setAgents = useStore(state => state.setTicketsReviewAgents)
-	const setStatuses = useStore(state => state.setTicketsReviewStatuses)
-	const setReviewerNames = useStore(
-		state => state.setTicketsReviewReviewerNames
-	)
-	const resetFilters = useStore(state => state.resetTicketsReviewFilters)
-	const updateFilters = useStore(state => state.updateTicketsReviewFilters)
-
-	return {
-		filters,
-		setDateRange,
-		setCategories,
-		setVersions,
-		setClassifications,
-		setAgents,
-		setStatuses,
-		setReviewerNames,
-		resetFilters,
-		updateFilters,
-	}
 }
