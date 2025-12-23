@@ -252,6 +252,13 @@ export type ScoringMode = 'legacy' | 'new'
 export type CategoryDisplayMode = 'all' | 'merged'
 
 /**
+ * Date filter mode for dashboard
+ * - 'created': Filter by created_at (when AI generated the response)
+ * - 'human_reply': Filter by human_reply_date (when agent responded)
+ */
+export type DateFilterMode = 'created' | 'human_reply'
+
+/**
  * Dashboard Filters
  */
 export interface DashboardFilters {

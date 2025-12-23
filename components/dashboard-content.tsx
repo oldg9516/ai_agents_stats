@@ -3,9 +3,11 @@
 import { fetchFilterOptions } from '@/lib/actions/dashboard-actions'
 import { useDashboardData } from '@/lib/hooks/use-dashboard-data'
 import { useFilters } from '@/lib/hooks/use-filters'
+import type { DateFilterMode } from '@/lib/supabase/types'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
+import { useState } from 'react'
 import { DateRangeSelector } from './filters/date-range-selector'
 import { FilterBar } from './filters/filter-bar'
 import { FilterSheet } from './filters/filter-sheet'
@@ -40,6 +42,9 @@ export function DashboardContent() {
 	const t = useTranslations()
 	const queryClient = useQueryClient()
 
+	// Date filter mode state (created_at vs human_reply_date)
+	const [dateFilterMode, setDateFilterMode] = useState<DateFilterMode>('created')
+
 	// Filter state from Zustand store
 	const {
 		filters,
@@ -51,7 +56,7 @@ export function DashboardContent() {
 	} = useFilters()
 
 	// Fetch dashboard data with React Query
-	const { data, isLoading, error } = useDashboardData(filters)
+	const { data, isLoading, error } = useDashboardData(filters, dateFilterMode)
 
 	// Fetch filter options based on current date range
 	const { data: filterOptions } = useQuery({
@@ -162,6 +167,8 @@ export function DashboardContent() {
 					<DateRangeSelector
 						filters={filters}
 						onFiltersChange={handleFiltersChange}
+						dateFilterMode={dateFilterMode}
+						onDateFilterModeChange={setDateFilterMode}
 					/>
 				</div>
 			</div>
@@ -186,7 +193,7 @@ export function DashboardContent() {
 			</div>
 
 			{/* Detailed Stats Table */}
-			<DetailedStatsTable filters={filters} />
+			<DetailedStatsTable filters={filters} dateFilterMode={dateFilterMode} />
 		</div>
 	)
 }

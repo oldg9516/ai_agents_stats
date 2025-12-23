@@ -63,7 +63,7 @@ import { buildLatestWeeksMap, checkIsLatestWeek, type DetailedStatsTableProps } 
  * - Quality color coding
  * - Click on category (version-level rows) to view details
  */
-export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
+export function DetailedStatsTable({ filters, dateFilterMode = 'created' }: DetailedStatsTableProps) {
 	const t = useTranslations()
 	const router = useRouter()
 	const { scoringMode, categoryDisplayMode, openScoreGroupModal } = useDashboardFilters()
@@ -72,7 +72,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 	const [currentPage, setCurrentPage] = useState(0)
 	const [pageSize, setPageSize] = useState<PageSize>(20)
 
-	// Fetch paginated data with category display mode
+	// Fetch paginated data with category display mode and date filter mode
 	const {
 		data,
 		totalCount,
@@ -82,7 +82,7 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 		isLoading,
 		error,
 		isFetching,
-	} = useDetailedStatsPaginated(filters, currentPage, pageSize, categoryDisplayMode)
+	} = useDetailedStatsPaginated(filters, currentPage, pageSize, categoryDisplayMode, dateFilterMode)
 
 	// Client-side sorting and filtering (on current page only)
 	const [sorting, setSorting] = useState<SortingState>([])

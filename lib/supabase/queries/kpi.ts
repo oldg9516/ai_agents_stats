@@ -1,5 +1,5 @@
 import { supabaseServer } from '../server'
-import type { DashboardFilters, KPIData } from '../types'
+import type { DashboardFilters, DateFilterMode, KPIData } from '../types'
 import { calculateTrend, getPreviousPeriod } from './utils'
 
 // Use server-side Supabase client for all queries
@@ -7,10 +7,16 @@ const supabase = supabaseServer
 
 /**
  * Fetch KPI Data with trends
+ * @param filters - Dashboard filters
+ * @param dateFilterMode - Date field to filter by ('created' or 'human_reply')
  */
-export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
+export async function getKPIData(
+	filters: DashboardFilters,
+	dateFilterMode: DateFilterMode = 'created'
+): Promise<KPIData> {
 	const { dateRange, versions, categories, agents } = filters
 	const previousPeriod = getPreviousPeriod(dateRange.from, dateRange.to)
+	const dateField = dateFilterMode === 'human_reply' ? 'human_reply_date' : 'created_at'
 
 	// OPTIMIZATION: Select only fields needed for KPI calculation (not SELECT *)
 	// This reduces data transfer significantly (4 fields instead of all)
@@ -19,14 +25,20 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 	let currentQuery = supabase
 		.from('ai_human_comparison')
 		.select(selectFields, { count: 'exact' })
-		.gte('created_at', dateRange.from.toISOString())
-		.lte('created_at', dateRange.to.toISOString())
+		.gte(dateField, dateRange.from.toISOString())
+		.lte(dateField, dateRange.to.toISOString())
 
 	let previousQuery = supabase
 		.from('ai_human_comparison')
 		.select(selectFields, { count: 'exact' })
-		.gte('created_at', previousPeriod.from.toISOString())
-		.lte('created_at', previousPeriod.to.toISOString())
+		.gte(dateField, previousPeriod.from.toISOString())
+		.lte(dateField, previousPeriod.to.toISOString())
+
+	// For human_reply mode, filter out records with no human_reply_date
+	if (dateFilterMode === 'human_reply') {
+		currentQuery = currentQuery.not('human_reply_date', 'is', null)
+		previousQuery = previousQuery.not('human_reply_date', 'is', null)
+	}
 
 	// Apply filters
 	if (versions.length > 0) {
@@ -46,8 +58,8 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 	let currentChangedQuery = supabase
 		.from('ai_human_comparison')
 		.select('change_classification', { count: 'exact' })
-		.gte('created_at', dateRange.from.toISOString())
-		.lte('created_at', dateRange.to.toISOString())
+		.gte(dateField, dateRange.from.toISOString())
+		.lte(dateField, dateRange.to.toISOString())
 		.eq('status', 'compared')
 		.not('change_classification', 'is', null)
 		.not('change_classification', 'eq', 'context_shift')
@@ -55,11 +67,17 @@ export async function getKPIData(filters: DashboardFilters): Promise<KPIData> {
 	let previousChangedQuery = supabase
 		.from('ai_human_comparison')
 		.select('change_classification', { count: 'exact' })
-		.gte('created_at', previousPeriod.from.toISOString())
-		.lte('created_at', previousPeriod.to.toISOString())
+		.gte(dateField, previousPeriod.from.toISOString())
+		.lte(dateField, previousPeriod.to.toISOString())
 		.eq('status', 'compared')
 		.not('change_classification', 'is', null)
 		.not('change_classification', 'eq', 'context_shift')
+
+	// For human_reply mode, filter out records with no human_reply_date
+	if (dateFilterMode === 'human_reply') {
+		currentChangedQuery = currentChangedQuery.not('human_reply_date', 'is', null)
+		previousChangedQuery = previousChangedQuery.not('human_reply_date', 'is', null)
+	}
 
 	// Apply same filters to changed queries
 	if (versions.length > 0) {

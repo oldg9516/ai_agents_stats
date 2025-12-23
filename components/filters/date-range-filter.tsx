@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { fetchMinCreatedDate } from '@/lib/actions/dashboard-actions'
+import type { DateFilterMode } from '@/lib/supabase/types'
 import { IconLoader2 } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -12,6 +13,8 @@ interface DateRangeFilterProps {
 	from: Date
 	to: Date
 	onChange: (from: Date, to: Date) => void
+	dateFilterMode?: DateFilterMode
+	onDateFilterModeChange?: (mode: DateFilterMode) => void
 }
 
 /**
@@ -21,7 +24,13 @@ interface DateRangeFilterProps {
  * - Quick buttons (7d, 30d, 3m, all)
  * - Manual date inputs
  */
-export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
+export function DateRangeFilter({
+	from,
+	to,
+	onChange,
+	dateFilterMode = 'created',
+	onDateFilterModeChange,
+}: DateRangeFilterProps) {
 	const t = useTranslations()
 	const [isClient, setIsClient] = useState(false)
 	const [isLoadingAllTime, setIsLoadingAllTime] = useState(false)
@@ -272,6 +281,46 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
 							className='h-9 text-xs w-auto'
 						/>
 					</div>
+
+					{/* Date Filter Mode Toggle - next to dates */}
+					{onDateFilterModeChange && (
+						<div className='flex items-center gap-2 ml-2'>
+							<span
+								className={`text-xs ${dateFilterMode === 'created' ? 'text-foreground font-medium' : 'text-muted-foreground'}`}
+							>
+								{t('filters.dateMode.created')}
+							</span>
+							<button
+								type='button'
+								role='switch'
+								aria-checked={dateFilterMode === 'human_reply'}
+								onClick={() =>
+									onDateFilterModeChange(
+										dateFilterMode === 'created' ? 'human_reply' : 'created'
+									)
+								}
+								className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+									dateFilterMode === 'human_reply'
+										? 'bg-orange-500'
+										: 'bg-muted'
+								}`}
+							>
+								<span
+									className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${
+										dateFilterMode === 'human_reply'
+											? 'translate-x-5'
+											: 'translate-x-0'
+									}`}
+								/>
+							</button>
+							<span
+								className={`text-xs ${dateFilterMode === 'human_reply' ? 'text-foreground font-medium' : 'text-muted-foreground'}`}
+							>
+								{t('filters.dateMode.humanReply')}
+							</span>
+						</div>
+					)}
+
 					{/* Apply/Cancel buttons - only show when there are changes */}
 					{hasChanges && (
 						<>

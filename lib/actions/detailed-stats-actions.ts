@@ -11,7 +11,7 @@
  */
 
 import { supabaseServer } from '@/lib/supabase/server'
-import type { DashboardFilters, DetailedStatsRow } from '@/lib/supabase/types'
+import type { DashboardFilters, DateFilterMode, DetailedStatsRow } from '@/lib/supabase/types'
 import {
 	isAiErrorClassification,
 	isAiQualityClassification,
@@ -27,6 +27,7 @@ import {
 
 type RawRecord = {
 	created_at: string | null
+	human_reply_date: string | null
 	request_subtype: string | null
 	prompt_version: string | null
 	change_classification: string | null
@@ -58,18 +59,20 @@ const MAX_CONCURRENT_BATCHES = 3
  *
  * @param filters - Dashboard filters
  * @param mergeMultiCategories - If true, merge categories containing commas into "Multi-category"
+ * @param dateFilterMode - Date field to filter by ('created' or 'human_reply')
  */
 export async function fetchDetailedStatsTS(
 	filters: DashboardFilters,
-	mergeMultiCategories: boolean = false
+	mergeMultiCategories: boolean = false,
+	dateFilterMode: DateFilterMode = 'created'
 ): Promise<PaginatedResult> {
 	const startTime = performance.now()
 
 	try {
 		// Step 1: Get total count
-		const totalRecords = await getTotalCount(filters)
+		const totalRecords = await getTotalCount(filters, dateFilterMode)
 		console.log(
-			`[DetailedStats TS] Total records to fetch: ${totalRecords}`
+			`[DetailedStats TS] Total records to fetch: ${totalRecords} (mode: ${dateFilterMode})`
 		)
 
 		if (totalRecords === 0) {
@@ -77,14 +80,14 @@ export async function fetchDetailedStatsTS(
 		}
 
 		// Step 2: Fetch in batches
-		const records = await fetchInBatches(filters, totalRecords)
+		const records = await fetchInBatches(filters, totalRecords, dateFilterMode)
 		console.log(
 			`[DetailedStats TS] Fetched ${records.length} records in ${(performance.now() - startTime).toFixed(0)}ms`
 		)
 
 		// Step 3: Aggregate in TypeScript
 		const aggregateStart = performance.now()
-		const rows = aggregateDetailedStats(records, mergeMultiCategories)
+		const rows = aggregateDetailedStats(records, mergeMultiCategories, dateFilterMode)
 		console.log(
 			`[DetailedStats TS] Aggregated to ${rows.length} rows in ${(performance.now() - aggregateStart).toFixed(0)}ms`
 		)
@@ -128,15 +131,24 @@ function emptyResult(): PaginatedResult {
 /**
  * Get total count of records matching filters
  */
-async function getTotalCount(filters: DashboardFilters): Promise<number> {
+async function getTotalCount(
+	filters: DashboardFilters,
+	dateFilterMode: DateFilterMode
+): Promise<number> {
 	const { dateRange, versions, categories, agents } = filters
+	const dateField = dateFilterMode === 'human_reply' ? 'human_reply_date' : 'created_at'
 
 	// Using 'id' instead of '*' for better performance
 	let query = supabaseServer
 		.from('ai_human_comparison')
 		.select('id', { count: 'exact', head: true })
-		.gte('created_at', dateRange.from.toISOString())
-		.lte('created_at', dateRange.to.toISOString())
+		.gte(dateField, dateRange.from.toISOString())
+		.lte(dateField, dateRange.to.toISOString())
+
+	// For human_reply mode, also filter out records with no human_reply_date
+	if (dateFilterMode === 'human_reply') {
+		query = query.not('human_reply_date', 'is', null)
+	}
 
 	if (versions.length > 0) query = query.in('prompt_version', versions)
 	if (categories.length > 0) query = query.in('request_subtype', categories)
@@ -153,9 +165,11 @@ async function getTotalCount(filters: DashboardFilters): Promise<number> {
  */
 async function fetchInBatches(
 	filters: DashboardFilters,
-	totalRecords: number
+	totalRecords: number,
+	dateFilterMode: DateFilterMode
 ): Promise<RawRecord[]> {
 	const { dateRange, versions, categories, agents } = filters
+	const dateField = dateFilterMode === 'human_reply' ? 'human_reply_date' : 'created_at'
 	const batches = Math.ceil(totalRecords / BATCH_SIZE)
 	const allRecords: RawRecord[] = []
 
@@ -169,11 +183,16 @@ async function fetchInBatches(
 			let query = supabaseServer
 				.from('ai_human_comparison')
 				.select(
-					'created_at, request_subtype, prompt_version, change_classification'
+					'created_at, human_reply_date, request_subtype, prompt_version, change_classification'
 				)
-				.gte('created_at', dateRange.from.toISOString())
-				.lte('created_at', dateRange.to.toISOString())
+				.gte(dateField, dateRange.from.toISOString())
+				.lte(dateField, dateRange.to.toISOString())
 				.range(offset, offset + BATCH_SIZE - 1)
+
+			// For human_reply mode, also filter out records with no human_reply_date
+			if (dateFilterMode === 'human_reply') {
+				query = query.not('human_reply_date', 'is', null)
+			}
 
 			if (versions.length > 0) query = query.in('prompt_version', versions)
 			if (categories.length > 0) query = query.in('request_subtype', categories)
@@ -213,10 +232,12 @@ function normalizeCategory(
  *
  * @param records - Raw records from database
  * @param mergeMultiCategories - If true, merge categories with commas into "Multi-category"
+ * @param dateFilterMode - Date field to use for week grouping
  */
 function aggregateDetailedStats(
 	records: RawRecord[],
-	mergeMultiCategories: boolean
+	mergeMultiCategories: boolean,
+	dateFilterMode: DateFilterMode = 'created'
 ): DetailedStatsRow[] {
 	const rows: DetailedStatsRow[] = []
 
@@ -266,8 +287,12 @@ function aggregateDetailedStats(
 		const weekGroups = new Map<string, RawRecord[]>()
 
 		for (const record of group.records) {
+			// Use appropriate date field based on mode
+			const dateValue = dateFilterMode === 'human_reply'
+				? record.human_reply_date
+				: record.created_at
 			const weekStart = getWeekStart(
-				new Date(record.created_at ?? new Date())
+				new Date(dateValue ?? new Date())
 			)
 			if (!weekGroups.has(weekStart)) {
 				weekGroups.set(weekStart, [])

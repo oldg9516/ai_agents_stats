@@ -87,6 +87,10 @@
 			"30d": "30 days",
 			"3m": "3 months",
 			"all": "All time"
+		},
+		"dateMode": {
+			"created": "Created",
+			"humanReply": "Agent Reply"
 		}
 	},
 	"kpi": {

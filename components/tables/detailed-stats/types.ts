@@ -1,10 +1,11 @@
-import type { DashboardFilters, DetailedStatsRow } from '@/lib/supabase/types'
+import type { DashboardFilters, DateFilterMode, DetailedStatsRow } from '@/lib/supabase/types'
 
 /**
  * Props for DetailedStatsTable component
  */
 export interface DetailedStatsTableProps {
 	filters: DashboardFilters
+	dateFilterMode?: DateFilterMode
 }
 
 /**

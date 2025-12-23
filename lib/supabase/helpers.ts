@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { TrendData } from './types'
+import type { DateFilterMode, TrendData } from './types'
 
 // Batch fetching constants
 const DEFAULT_BATCH_SIZE = 500
@@ -17,6 +17,7 @@ export interface BatchFetchFilters {
 	statuses?: string[]
 	requestTypes?: string[]
 	requirements?: string[]
+	dateFilterMode?: DateFilterMode
 }
 
 /**
@@ -48,10 +49,13 @@ export async function fetchAllInBatchesGeneric<T>(
 	applyFilters?: (query: any, filters: BatchFetchFilters) => any,
 	options?: BatchFetchOptions
 ): Promise<T[]> {
-	const { dateRange } = filters
+	const { dateRange, dateFilterMode } = filters
 	const batchSize = options?.batchSize ?? DEFAULT_BATCH_SIZE
 	const maxConcurrent = options?.maxConcurrent ?? DEFAULT_MAX_CONCURRENT
-	const dateField = options?.dateField ?? 'created_at'
+	// Use dateFilterMode from filters, or fall back to options.dateField, or default to 'created_at'
+	const dateField = dateFilterMode === 'human_reply'
+		? 'human_reply_date'
+		: (options?.dateField ?? 'created_at')
 
 	// First, get total count
 	let countQuery = supabase

@@ -20,6 +20,7 @@ import { fetchDetailedStatsTS } from './detailed-stats-actions'
 import type {
 	CategoryDistributionResult,
 	DashboardFilters,
+	DateFilterMode,
 	DetailedStatsRow,
 	FilterOptions,
 	KPIData,
@@ -48,16 +49,22 @@ function createTimeoutPromise(ms: number, operationName: string): Promise<never>
  *
  * Uses TypeScript aggregation for detailedStats (migrated from SQL RPC)
  * Includes 30s timeout protection to prevent hanging requests
+ *
+ * @param filters - Dashboard filters
+ * @param dateFilterMode - Date field to filter by ('created' or 'human_reply')
  */
-export async function fetchDashboardData(filters: DashboardFilters) {
+export async function fetchDashboardData(
+	filters: DashboardFilters,
+	dateFilterMode: DateFilterMode = 'created'
+) {
 	try {
 		// Fetch all data in parallel for best performance
 		const promises = [
-			getKPIData(filters),
-			getQualityTrends(filters),
-			getCategoryDistribution(filters),
-			getVersionComparison(filters),
-			fetchDetailedStatsTS(filters).then(result => result.data),
+			getKPIData(filters, dateFilterMode),
+			getQualityTrends(filters, dateFilterMode),
+			getCategoryDistribution(filters, dateFilterMode),
+			getVersionComparison(filters, dateFilterMode),
+			fetchDetailedStatsTS(filters, false, dateFilterMode).then(result => result.data),
 		]
 
 		// Track individual query times

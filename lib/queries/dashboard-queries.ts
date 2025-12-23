@@ -14,6 +14,7 @@ import type {
 	CategoryDisplayMode,
 	CategoryDistributionResult,
 	DashboardFilters,
+	DateFilterMode,
 	DetailedStatsRow,
 	KPIData,
 	QualityTrendData,
@@ -25,7 +26,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
  * Generate query key for dashboard data
  * Keys are arrays that uniquely identify queries for caching
  */
-function getDashboardQueryKey(filters: DashboardFilters) {
+function getDashboardQueryKey(
+	filters: DashboardFilters,
+	dateFilterMode: DateFilterMode = 'created'
+) {
 	return [
 		'dashboard',
 		{
@@ -34,6 +38,7 @@ function getDashboardQueryKey(filters: DashboardFilters) {
 			versions: filters.versions.sort(),
 			categories: filters.categories.sort(),
 			agents: (filters.agents ?? []).sort(),
+			dateFilterMode,
 		},
 	] as const
 }
@@ -57,8 +62,12 @@ type DashboardData = {
  * - Background refetching on window focus
  * - Real-time updates via Supabase subscriptions
  * - Smart request deduplication
+ * - Date filter mode support (created_at vs human_reply_date)
  */
-export function useDashboardData(filters: DashboardFilters): {
+export function useDashboardData(
+	filters: DashboardFilters,
+	dateFilterMode: DateFilterMode = 'created'
+): {
 	data: DashboardData
 	isLoading: boolean
 	error: Error | null
@@ -68,14 +77,14 @@ export function useDashboardData(filters: DashboardFilters): {
 } {
 	// Main query with explicit return type
 	const query = useQuery<DashboardData>({
-		queryKey: getDashboardQueryKey(filters),
+		queryKey: getDashboardQueryKey(filters, dateFilterMode),
 		queryFn: async (): Promise<DashboardData> => {
 			// Add timeout to prevent hanging requests
 			const controller = new AbortController()
 			const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
 
 			try {
-				const result = await fetchDashboardData(filters)
+				const result = await fetchDashboardData(filters, dateFilterMode)
 				clearTimeout(timeoutId)
 
 				if (!result.success || !result.data) {
@@ -146,11 +155,11 @@ export function useDashboardData(filters: DashboardFilters): {
 export function usePrefetchDashboardData() {
 	const queryClient = useQueryClient()
 
-	return (filters: DashboardFilters) => {
+	return (filters: DashboardFilters, dateFilterMode: DateFilterMode = 'created') => {
 		queryClient.prefetchQuery({
-			queryKey: getDashboardQueryKey(filters),
+			queryKey: getDashboardQueryKey(filters, dateFilterMode),
 			queryFn: async () => {
-				const result = await fetchDashboardData(filters)
+				const result = await fetchDashboardData(filters, dateFilterMode)
 				if (!result.success || !result.data) {
 					throw new Error(result.error || 'Failed to fetch dashboard data')
 				}
@@ -167,7 +176,8 @@ function getPaginatedStatsQueryKey(
 	filters: DashboardFilters,
 	page: number,
 	pageSize: number,
-	categoryDisplayMode: CategoryDisplayMode
+	categoryDisplayMode: CategoryDisplayMode,
+	dateFilterMode: DateFilterMode = 'created'
 ) {
 	return [
 		'detailed-stats-paginated',
@@ -180,6 +190,7 @@ function getPaginatedStatsQueryKey(
 			page,
 			pageSize,
 			categoryDisplayMode,
+			dateFilterMode,
 		},
 	] as const
 }
@@ -210,7 +221,8 @@ export function useDetailedStatsPaginated(
 	filters: DashboardFilters,
 	page: number,
 	pageSize: number = 50,
-	categoryDisplayMode: CategoryDisplayMode = 'all'
+	categoryDisplayMode: CategoryDisplayMode = 'all',
+	dateFilterMode: DateFilterMode = 'created'
 ): {
 	data: DetailedStatsRow[]
 	totalCount: number
@@ -226,14 +238,14 @@ export function useDetailedStatsPaginated(
 	const mergeMultiCategories = categoryDisplayMode === 'merged'
 
 	const query = useQuery<PaginatedStatsData>({
-		queryKey: getPaginatedStatsQueryKey(filters, page, pageSize, categoryDisplayMode),
+		queryKey: getPaginatedStatsQueryKey(filters, page, pageSize, categoryDisplayMode, dateFilterMode),
 		queryFn: async (): Promise<PaginatedStatsData> => {
 			// Add timeout to prevent hanging requests
 			const controller = new AbortController()
 			const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
 
 			try {
-				const result = await fetchDetailedStatsTS(filters, mergeMultiCategories)
+				const result = await fetchDetailedStatsTS(filters, mergeMultiCategories, dateFilterMode)
 				clearTimeout(timeoutId)
 
 				// Client-side pagination

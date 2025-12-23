@@ -3,6 +3,7 @@ import type {
 	AIHumanComparisonRow,
 	CategoryDistributionResult,
 	DashboardFilters,
+	DateFilterMode,
 	QualityTrendData,
 	VersionComparisonData,
 } from '../types'
@@ -39,9 +40,12 @@ function applyDashboardFilters(
  * Fetch Quality Trends data (for line chart)
  * Uses only reviewed records (change_classification IS NOT NULL)
  * Uses batch fetching to handle large datasets (bypasses 1000 row limit)
+ * @param filters - Dashboard filters
+ * @param dateFilterMode - Date field to filter by ('created' or 'human_reply')
  */
 export async function getQualityTrends(
-	filters: DashboardFilters
+	filters: DashboardFilters,
+	dateFilterMode: DateFilterMode = 'created'
 ): Promise<QualityTrendData[]> {
 	const { dateRange, versions, categories, agents } = filters
 
@@ -49,12 +53,17 @@ export async function getQualityTrends(
 	const records = await fetchAllInBatchesGeneric<AIHumanComparisonRow>(
 		supabase,
 		'ai_human_comparison',
-		'request_subtype, created_at, changed, change_classification',
-		{ dateRange, versions, categories, agents },
+		'request_subtype, created_at, human_reply_date, changed, change_classification',
+		{ dateRange, versions, categories, agents, dateFilterMode },
 		(query, f) => {
 			// Apply dashboard filters + only reviewed records
 			query = applyDashboardFilters(query, f)
-			return query.not('change_classification', 'is', null)
+			query = query.not('change_classification', 'is', null)
+			// For human_reply mode, also filter out records with no human_reply_date
+			if (f.dateFilterMode === 'human_reply') {
+				query = query.not('human_reply_date', 'is', null)
+			}
+			return query
 		}
 	)
 
@@ -73,9 +82,13 @@ export async function getQualityTrends(
 	// Group by category and day/week (only evaluable records)
 	const grouped = evaluableRecords.reduce((acc, record) => {
 		const category = record.request_subtype ?? 'unknown'
+		// Use appropriate date field based on mode
+		const dateValue = dateFilterMode === 'human_reply'
+			? record.human_reply_date
+			: record.created_at
 		const dateKey = groupByDay
-			? getDayStart(new Date(record.created_at ?? new Date()))
-			: getWeekStart(new Date(record.created_at ?? new Date()))
+			? getDayStart(new Date(dateValue ?? new Date()))
+			: getWeekStart(new Date(dateValue ?? new Date()))
 		const key = `${category}|${dateKey}`
 
 		if (!acc[key]) {
@@ -98,9 +111,12 @@ export async function getQualityTrends(
 /**
  * Fetch Category Distribution data (for pie chart)
  * Uses RPC function to aggregate on database side (avoids 1000 row limit)
+ * @param filters - Dashboard filters
+ * @param dateFilterMode - Date field to filter by ('created' or 'human_reply')
  */
 export async function getCategoryDistribution(
-	filters: DashboardFilters
+	filters: DashboardFilters,
+	dateFilterMode: DateFilterMode = 'created'
 ): Promise<CategoryDistributionResult> {
 	const { dateRange, versions, categories, agents } = filters
 
@@ -113,6 +129,7 @@ export async function getCategoryDistribution(
 		p_versions: versions.length > 0 ? versions : null,
 		p_categories: categories.length > 0 ? categories : null,
 		p_agents: agents && agents.length > 0 ? agents : null,
+		p_date_field: dateFilterMode === 'human_reply' ? 'human_reply_date' : 'created_at',
 	})
 
 	if (error) throw error
@@ -151,9 +168,12 @@ export async function getCategoryDistribution(
 /**
  * Fetch Version Comparison data (for bar chart)
  * Uses batch fetching to handle large datasets (bypasses 1000 row limit)
+ * @param filters - Dashboard filters
+ * @param dateFilterMode - Date field to filter by ('created' or 'human_reply')
  */
 export async function getVersionComparison(
-	filters: DashboardFilters
+	filters: DashboardFilters,
+	dateFilterMode: DateFilterMode = 'created'
 ): Promise<VersionComparisonData[]> {
 	const { dateRange, versions, categories, agents } = filters
 
@@ -162,8 +182,15 @@ export async function getVersionComparison(
 		supabase,
 		'ai_human_comparison',
 		'prompt_version, changed, change_classification',
-		{ dateRange, versions, categories, agents },
-		applyDashboardFilters
+		{ dateRange, versions, categories, agents, dateFilterMode },
+		(query, f) => {
+			query = applyDashboardFilters(query, f)
+			// For human_reply mode, filter out records with no human_reply_date
+			if (f.dateFilterMode === 'human_reply') {
+				query = query.not('human_reply_date', 'is', null)
+			}
+			return query
+		}
 	)
 
 	if (!records.length) return []
