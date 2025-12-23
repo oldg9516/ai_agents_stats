@@ -1,6 +1,6 @@
 'use client'
 
-import { useStore } from '@/lib/store'
+import { useBacklogReportsFilters } from '@/lib/store/hooks'
 import { useBacklogReports, useLatestReportTimestamp } from '@/lib/queries/backlog-reports-queries'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -28,15 +28,15 @@ export function BacklogReportsContent() {
 	const queryClient = useQueryClient()
 	const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false)
 
-	// Get filter state from Zustand store
+	// Get filter state from optimized Zustand hook
 	const {
-		backlogReportsFilters,
-		backlogReportsPage,
+		filters: backlogReportsFilters,
+		page: backlogReportsPage,
 		isGeneratingReport,
 		generationStartedAt,
-		setBacklogReportsPage,
+		setPage: setBacklogReportsPage,
 		setIsGeneratingReport,
-	} = useStore()
+	} = useBacklogReportsFilters()
 
 	// Fetch reports with filters
 	const { data, isLoading, error, refetch, isFetching } = useBacklogReports(

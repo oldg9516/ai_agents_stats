@@ -1,6 +1,6 @@
 'use client'
 
-import { useStore } from '@/lib/store'
+import { useBacklogReportsFilters } from '@/lib/store/hooks'
 import { useTranslations } from 'next-intl'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -29,12 +29,12 @@ export function ReportsFilterBar() {
 	const t = useTranslations()
 
 	const {
-		backlogReportsFilters,
-		setBacklogReportsDateRange,
-		setBacklogReportsPeriodDays,
-		setBacklogReportsSearchQuery,
-		resetBacklogReportsFilters,
-	} = useStore()
+		filters: backlogReportsFilters,
+		setDateRange: setBacklogReportsDateRange,
+		setPeriodDays: setBacklogReportsPeriodDays,
+		setSearchQuery: setBacklogReportsSearchQuery,
+		resetFilters: resetBacklogReportsFilters,
+	} = useBacklogReportsFilters()
 
 	// Debounce search to avoid too many queries
 	const debouncedSearch = useDebouncedCallback((query: string) => {

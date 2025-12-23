@@ -1,6 +1,6 @@
 'use client'
 
-import { useStore } from '@/lib/store'
+import { useBacklogReportsFilters } from '@/lib/store/hooks'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { Card, CardContent } from '../ui/card'
@@ -25,7 +25,7 @@ type StepId = typeof GENERATION_STEPS[number]['id']
  */
 export function GenerationIndicator() {
 	const t = useTranslations()
-	const { isGeneratingReport, generationStartedAt, setIsGeneratingReport } = useStore()
+	const { isGeneratingReport, generationStartedAt, setIsGeneratingReport } = useBacklogReportsFilters()
 
 	const [elapsedMs, setElapsedMs] = useState(0)
 	const [currentStep, setCurrentStep] = useState<StepId>('fetching')

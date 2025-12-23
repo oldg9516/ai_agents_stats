@@ -1,6 +1,6 @@
 'use client'
 
-import { useStore } from '@/lib/store'
+import { useBacklogReportsFilters } from '@/lib/store/hooks'
 import { useGenerateReport } from '@/lib/queries/backlog-reports-queries'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -42,7 +42,7 @@ export function GenerateReportDialog({
 	const [selectedPeriod, setSelectedPeriod] = useState<string>('7')
 	const [customDays, setCustomDays] = useState<string>('')
 
-	const { setIsGeneratingReport } = useStore()
+	const { setIsGeneratingReport } = useBacklogReportsFilters()
 	const generateMutation = useGenerateReport()
 
 	// Get the actual period days value
