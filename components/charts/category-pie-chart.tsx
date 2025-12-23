@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/chart'
 import { getCategoryLabel } from '@/constants/category-labels'
 import type { CategoryDistributionResult } from '@/lib/supabase/types'
-import { useMemo, useState, useRef, useEffect } from 'react'
+import { useMemo, useState, useRef, useEffect, memo, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { Label, Pie, PieChart, Cell } from 'recharts'
@@ -48,17 +48,18 @@ interface CategoryPieChartProps {
  * - Shows category name, record count, and quality percentage
  * - Responsive legend
  * - Click on segment to view category details
+ * - Memoized to prevent unnecessary re-renders
  */
-export function CategoryPieChart({ data }: CategoryPieChartProps) {
+export const CategoryPieChart = memo(function CategoryPieChart({ data }: CategoryPieChartProps) {
 	const t = useTranslations()
 	const router = useRouter()
 	const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
 	const legendRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
 
 	// Handle category click
-	const handleCategoryClick = (category: string) => {
+	const handleCategoryClick = useCallback((category: string) => {
 		router.push(`/dashboard/category/${encodeURIComponent(category)}`)
-	}
+	}, [router])
 
 	// Generate unique colors for each category
 	const categoryColors = useMemo(() => {
@@ -264,4 +265,4 @@ export function CategoryPieChart({ data }: CategoryPieChartProps) {
 			</CardContent>
 		</Card>
 	)
-}
+})

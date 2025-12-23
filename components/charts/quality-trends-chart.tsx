@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, memo, useCallback } from 'react'
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { format } from 'date-fns'
 import { useTranslations } from 'next-intl'
@@ -36,8 +36,9 @@ interface QualityTrendsChartProps {
  * - Responsive design
  * - Uses theme colors automatically
  * - Data is filtered by page-level date range filters
+ * - Memoized to prevent unnecessary re-renders
  */
-export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
+export const QualityTrendsChart = memo(function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 	const t = useTranslations()
 
 	// Create chart config dynamically from categories
@@ -119,7 +120,7 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 	}, [data])
 
 	// Toggle category visibility - max 3 categories can be shown at once
-	const toggleCategory = (categoryName: string) => {
+	const toggleCategory = useCallback((categoryName: string) => {
 		setHiddenCategories((prev) => {
 			const newSet = new Set(prev)
 			const visibleCount = allCategories.length - newSet.size
@@ -136,7 +137,7 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 			}
 			return newSet
 		})
-	}
+	}, [allCategories.length])
 
 	// Format week for x-axis - show week end date (Saturday) instead of start
 	const formatWeek = (dateString: string) => {
@@ -333,4 +334,4 @@ export function QualityTrendsChart({ data }: QualityTrendsChartProps) {
 			</CardContent>
 		</Card>
 	)
-}
+})

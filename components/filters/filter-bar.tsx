@@ -5,7 +5,7 @@ import type { DashboardFilters } from '@/lib/supabase/types'
 import { IconRefresh } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'
 import { MultiSelectFilter } from './multi-select-filter'
-import { useEffect } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { toast } from 'sonner'
 
 interface FilterBarProps {
@@ -38,10 +38,21 @@ export function FilterBar({
 }: FilterBarProps) {
 	const t = useTranslations()
 
+	// Refs to track previous values and avoid stale closures
+	const filtersRef = useRef(filters)
+	const onFiltersChangeRef = useRef(onFiltersChange)
+
+	// Keep refs in sync
+	useEffect(() => {
+		filtersRef.current = filters
+		onFiltersChangeRef.current = onFiltersChange
+	}, [filters, onFiltersChange])
+
 	// Check if selected versions are still available when availableVersions changes
 	useEffect(() => {
-		if (filters.versions.length > 0 && availableVersions.length > 0) {
-			const unavailableVersions = filters.versions.filter(
+		const currentFilters = filtersRef.current
+		if (currentFilters.versions.length > 0 && availableVersions.length > 0) {
+			const unavailableVersions = currentFilters.versions.filter(
 				(v) => !availableVersions.includes(v)
 			)
 
@@ -55,10 +66,10 @@ export function FilterBar({
 				)
 
 				// Auto-remove unavailable versions
-				const newVersions = filters.versions.filter((v) =>
+				const newVersions = currentFilters.versions.filter((v) =>
 					availableVersions.includes(v)
 				)
-				onFiltersChange({ versions: newVersions })
+				onFiltersChangeRef.current({ versions: newVersions })
 			}
 		}
 	}, [availableVersions]) // Only run when availableVersions changes

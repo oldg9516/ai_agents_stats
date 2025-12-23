@@ -4,12 +4,13 @@ import { KPICard } from './kpi-card'
 import { IconDatabase } from '@tabler/icons-react'
 import type { KPIData } from '@/lib/supabase/types'
 import { useTranslations } from 'next-intl'
+import { memo } from 'react'
 
 interface TotalRecordsCardProps {
   data: KPIData['totalRecords']
 }
 
-export function TotalRecordsCard({ data }: TotalRecordsCardProps) {
+export const TotalRecordsCard = memo(function TotalRecordsCard({ data }: TotalRecordsCardProps) {
   const t = useTranslations()
 
   return (
@@ -22,4 +23,4 @@ export function TotalRecordsCard({ data }: TotalRecordsCardProps) {
       tooltipContent={t('kpi.totalRecords.tooltip')}
     />
   )
-}
+})

@@ -16,7 +16,7 @@ import {
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import type { VersionComparisonData } from '@/lib/supabase/types'
 import { useTranslations } from 'next-intl'
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from 'recharts'
 
 interface VersionBarChartProps {
@@ -30,8 +30,9 @@ interface VersionBarChartProps {
  * - Bar chart with quality-based colors
  * - Shows version and quality percentage
  * - Color-coded bars (red/yellow/green)
+ * - Memoized to prevent unnecessary re-renders
  */
-export function VersionBarChart({ data }: VersionBarChartProps) {
+export const VersionBarChart = memo(function VersionBarChart({ data }: VersionBarChartProps) {
 	const t = useTranslations()
 
 	// Sort and transform data (newest versions first)
@@ -166,4 +167,4 @@ export function VersionBarChart({ data }: VersionBarChartProps) {
 			</CardContent>
 		</Card>
 	)
-}
+})

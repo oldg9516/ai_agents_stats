@@ -7,12 +7,13 @@ import { cn } from '@/lib/utils'
 import { getCategoryLabel } from '@/constants/category-labels'
 import type { KPIData, TrendData } from '@/lib/supabase/types'
 import { useTranslations } from 'next-intl'
+import { memo } from 'react'
 
 interface BestCategoryCardProps {
 	data: KPIData['bestCategory']
 }
 
-export function BestCategoryCard({ data }: BestCategoryCardProps) {
+export const BestCategoryCard = memo(function BestCategoryCard({ data }: BestCategoryCardProps) {
 	const t = useTranslations()
 
 	return (
@@ -46,12 +47,13 @@ export function BestCategoryCard({ data }: BestCategoryCardProps) {
 			</CardContent>
 		</Card>
 	)
-}
+})
 
 /**
  * Trend Indicator Component
+ * Memoized to prevent unnecessary re-renders
  */
-function TrendIndicator({ trend }: { trend: TrendData }) {
+const TrendIndicator = memo(function TrendIndicator({ trend }: { trend: TrendData }) {
 	const t = useTranslations()
 	const isPositive = trend.direction === 'up'
 	const isNegative = trend.direction === 'down'
@@ -71,4 +73,4 @@ function TrendIndicator({ trend }: { trend: TrendData }) {
 			<span className='text-muted-foreground ml-1'>{t('kpi.vs')} {t('kpi.previous')}</span>
 		</div>
 	)
-}
+})

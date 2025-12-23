@@ -4,12 +4,13 @@ import { KPICard } from './kpi-card'
 import { IconChartBar } from '@tabler/icons-react'
 import type { KPIData } from '@/lib/supabase/types'
 import { useTranslations } from 'next-intl'
+import { memo } from 'react'
 
 interface AverageQualityCardProps {
   data: KPIData['averageQuality']
 }
 
-export function AverageQualityCard({ data }: AverageQualityCardProps) {
+export const AverageQualityCard = memo(function AverageQualityCard({ data }: AverageQualityCardProps) {
   const t = useTranslations()
 
   return (
@@ -22,4 +23,4 @@ export function AverageQualityCard({ data }: AverageQualityCardProps) {
       tooltipContent={t('kpi.averageQuality.tooltip')}
     />
   )
-}
+})

@@ -4,6 +4,7 @@ import type { TrendData } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
 import { IconArrowDown, IconArrowUp, IconMinus } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'
+import { memo } from 'react'
 
 interface KPICardProps {
 	title: string
@@ -19,8 +20,9 @@ interface KPICardProps {
  * Base KPI Card Component
  *
  * Displays a metric with optional trend indicator
+ * Memoized to prevent unnecessary re-renders
  */
-export function KPICard({
+export const KPICard = memo(function KPICard({
 	title,
 	value,
 	trend,
@@ -52,12 +54,13 @@ export function KPICard({
 			</CardContent>
 		</Card>
 	)
-}
+})
 
 /**
  * Trend Indicator Component
+ * Memoized to prevent unnecessary re-renders
  */
-function TrendIndicator({ trend }: { trend: TrendData }) {
+const TrendIndicator = memo(function TrendIndicator({ trend }: { trend: TrendData }) {
 	const t = useTranslations()
 	const isPositive = trend.direction === 'up'
 	const isNegative = trend.direction === 'down'
@@ -81,4 +84,4 @@ function TrendIndicator({ trend }: { trend: TrendData }) {
 			<span className='text-muted-foreground ml-1'>{t('kpi.vs')} {t('kpi.previous')}</span>
 		</div>
 	)
-}
+})
