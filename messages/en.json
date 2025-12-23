@@ -1193,5 +1193,14 @@
 		"goToReport": "Go to report discussion",
 		"deepDiveHint": "For detailed analysis with ticket examples, go to the report page",
 		"resizeHandle": "Drag to resize"
+	},
+	"scoreGroupModal": {
+		"title": "Tickets by Classification",
+		"loading": "Loading tickets...",
+		"noTickets": "No tickets found for this classification group",
+		"actions": "Actions",
+		"pagination": "Showing {from}-{to} of {total}",
+		"previous": "Previous",
+		"next": "Next"
 	}
 }
