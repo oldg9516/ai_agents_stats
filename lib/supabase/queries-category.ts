@@ -31,10 +31,10 @@ async function fetchAllForCategory<T>(
   emailFilter: string[],
   versions: string[]
 ): Promise<T[]> {
-  // First, get total count
+  // First, get total count (using 'id' instead of '*' for better performance)
   let countQuery = supabaseClient
     .from('ai_human_comparison')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
     .in('request_subtype', categories)
     .gte('created_at', dateFrom.toISOString())
     .lte('created_at', dateTo.toISOString())

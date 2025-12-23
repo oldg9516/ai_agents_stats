@@ -24,10 +24,10 @@ async function fetchAllForKPIs<T>(
 ): Promise<T[]> {
 	const { statuses, requestTypes, categories, requirements, versions } = filters
 
-	// First, get total count
+	// First, get total count (using 'id' instead of '*' for better performance)
 	let countQuery = supabase
 		.from('support_threads_data')
-		.select('*', { count: 'exact', head: true })
+		.select('id', { count: 'exact', head: true })
 		.gte('created_at', dateFrom.toISOString())
 		.lt('created_at', dateTo.toISOString())
 
@@ -174,18 +174,19 @@ export async function fetchSupportKPIs(
 	) as string[]
 
 	// Fetch agent response counts in parallel (all agents, not just qualified)
+	// Using 'id' instead of '*' for better performance
 	const [currentAgentResponseCount, previousAgentResponseCount] = await Promise.all([
 		currentVersions.length > 0
 			? supabase
 					.from('ai_human_comparison')
-					.select('*', { count: 'exact', head: true })
+					.select('id', { count: 'exact', head: true })
 					.in('prompt_version', currentVersions)
 					.then(({ count }) => count || 0)
 			: Promise.resolve(0),
 		previousVersions.length > 0
 			? supabase
 					.from('ai_human_comparison')
-					.select('*', { count: 'exact', head: true })
+					.select('id', { count: 'exact', head: true })
 					.in('prompt_version', previousVersions)
 					.then(({ count }) => count || 0)
 			: Promise.resolve(0),

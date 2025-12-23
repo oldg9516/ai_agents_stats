@@ -20,9 +20,25 @@ import {
 import { supabaseServer } from '@/lib/supabase/server'
 import type { SupportFilters } from '@/lib/supabase/types'
 
+// Request timeout constant (30 seconds)
+const REQUEST_TIMEOUT = 30000
+
+/**
+ * Creates a timeout promise that rejects after specified milliseconds
+ */
+function createTimeoutPromise(ms: number, operationName: string): Promise<never> {
+	return new Promise((_, reject) =>
+		setTimeout(
+			() => reject(new Error(`${operationName} timed out after ${ms}ms`)),
+			ms
+		)
+	)
+}
+
 /**
  * Fetch all support overview data in one Server Action
  * Returns all KPIs, charts, and table data
+ * Includes 30s timeout protection to prevent hanging requests
  */
 export async function fetchSupportData(filters: SupportFilters) {
 	try {
@@ -42,7 +58,7 @@ export async function fetchSupportData(filters: SupportFilters) {
 		]
 
 		// Track individual query times
-		const results = await Promise.all(
+		const dataPromise = Promise.all(
 			promises.map(async (promise, index) => {
 				const queryStart = Date.now()
 				const names = [
@@ -66,6 +82,12 @@ export async function fetchSupportData(filters: SupportFilters) {
 				}
 			})
 		)
+
+		// Add timeout protection
+		const results = await Promise.race([
+			dataPromise,
+			createTimeoutPromise(REQUEST_TIMEOUT, 'Support data fetch'),
+		])
 
 		const [
 			kpis,

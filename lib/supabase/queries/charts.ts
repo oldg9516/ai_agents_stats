@@ -6,47 +6,59 @@ import type {
 	QualityTrendData,
 	VersionComparisonData,
 } from '../types'
+import { fetchAllInBatchesGeneric, type BatchFetchFilters } from '../helpers'
 import { extractVersionNumber, getDayStart, getWeekStart } from './utils'
 
 // Use server-side Supabase client for all queries
 const supabase = supabaseServer
 
 /**
- * Fetch Quality Trends data (for line chart)
- * Uses only reviewed records (change_classification IS NOT NULL)
+ * Apply dashboard filters to a Supabase query
+ * Used by batch fetching for quality trends and version comparison
  */
-export async function getQualityTrends(
-	filters: DashboardFilters
-): Promise<QualityTrendData[]> {
-	const { dateRange, versions, categories, agents } = filters
+function applyDashboardFilters(
+	query: ReturnType<typeof supabase.from>['select'],
+	filters: BatchFetchFilters
+) {
+	const { versions, categories, agents } = filters
 
-	let query = supabase
-		.from('ai_human_comparison')
-		.select('request_subtype, created_at, changed, change_classification')
-		.gte('created_at', dateRange.from.toISOString())
-		.lte('created_at', dateRange.to.toISOString())
-		.not('change_classification', 'is', null) // Only reviewed records
-
-	if (versions.length > 0) {
+	if (versions && versions.length > 0) {
 		query = query.in('prompt_version', versions)
 	}
-	if (categories.length > 0) {
+	if (categories && categories.length > 0) {
 		query = query.in('request_subtype', categories)
 	}
 	if (agents && agents.length > 0) {
 		query = query.in('email', agents)
 	}
 
-	// Increase limit from default 1000 to handle more records
-	// For "All Time" filter, we might have many records
-	query = query.limit(50000)
+	return query
+}
 
-	const { data, error } = await query
+/**
+ * Fetch Quality Trends data (for line chart)
+ * Uses only reviewed records (change_classification IS NOT NULL)
+ * Uses batch fetching to handle large datasets (bypasses 1000 row limit)
+ */
+export async function getQualityTrends(
+	filters: DashboardFilters
+): Promise<QualityTrendData[]> {
+	const { dateRange, versions, categories, agents } = filters
 
-	if (error) throw error
-	if (!data) return []
+	// Use batch fetching for unlimited records
+	const records = await fetchAllInBatchesGeneric<AIHumanComparisonRow>(
+		supabase,
+		'ai_human_comparison',
+		'request_subtype, created_at, changed, change_classification',
+		{ dateRange, versions, categories, agents },
+		(query, f) => {
+			// Apply dashboard filters + only reviewed records
+			query = applyDashboardFilters(query, f)
+			return query.not('change_classification', 'is', null)
+		}
+	)
 
-	const records = data as unknown as AIHumanComparisonRow[]
+	if (!records.length) return []
 
 	// Filter out context_shift records before calculations
 	const evaluableRecords = records.filter(
@@ -138,37 +150,23 @@ export async function getCategoryDistribution(
 
 /**
  * Fetch Version Comparison data (for bar chart)
+ * Uses batch fetching to handle large datasets (bypasses 1000 row limit)
  */
 export async function getVersionComparison(
 	filters: DashboardFilters
 ): Promise<VersionComparisonData[]> {
 	const { dateRange, versions, categories, agents } = filters
 
-	let query = supabase
-		.from('ai_human_comparison')
-		.select('prompt_version, changed, change_classification')
-		.gte('created_at', dateRange.from.toISOString())
-		.lte('created_at', dateRange.to.toISOString())
+	// Use batch fetching for unlimited records
+	const records = await fetchAllInBatchesGeneric<AIHumanComparisonRow>(
+		supabase,
+		'ai_human_comparison',
+		'prompt_version, changed, change_classification',
+		{ dateRange, versions, categories, agents },
+		applyDashboardFilters
+	)
 
-	if (versions.length > 0) {
-		query = query.in('prompt_version', versions)
-	}
-	if (categories.length > 0) {
-		query = query.in('request_subtype', categories)
-	}
-	if (agents && agents.length > 0) {
-		query = query.in('email', agents)
-	}
-
-	// Increase limit to handle more records
-	query = query.limit(50000)
-
-	const { data, error } = await query
-
-	if (error) throw error
-	if (!data) return []
-
-	const records = data as unknown as AIHumanComparisonRow[]
+	if (!records.length) return []
 
 	// Filter out context_shift records
 	const evaluableRecords = records.filter(

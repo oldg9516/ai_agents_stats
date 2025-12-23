@@ -131,9 +131,10 @@ function emptyResult(): PaginatedResult {
 async function getTotalCount(filters: DashboardFilters): Promise<number> {
 	const { dateRange, versions, categories, agents } = filters
 
+	// Using 'id' instead of '*' for better performance
 	let query = supabaseServer
 		.from('ai_human_comparison')
-		.select('*', { count: 'exact', head: true })
+		.select('id', { count: 'exact', head: true })
 		.gte('created_at', dateRange.from.toISOString())
 		.lte('created_at', dateRange.to.toISOString())
 

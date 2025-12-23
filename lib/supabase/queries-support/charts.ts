@@ -29,10 +29,10 @@ async function fetchAllInBatches<T>(
 ): Promise<T[]> {
 	const { dateRange, statuses, requestTypes, categories, requirements, versions } = filters
 
-	// First, get total count
+	// First, get total count (using 'id' instead of '*' for better performance)
 	let countQuery = supabase
 		.from(tableName)
-		.select('*', { count: 'exact', head: true })
+		.select('id', { count: 'exact', head: true })
 		.gte('created_at', dateRange.from.toISOString())
 		.lt('created_at', dateRange.to.toISOString())
 
@@ -156,10 +156,10 @@ async function fetchAllComparisonInBatches<T>(
 	dateFrom: Date,
 	dateTo: Date
 ): Promise<T[]> {
-	// First, get total count
+	// First, get total count (using 'id' instead of '*' for better performance)
 	const { count, error: countError } = await supabase
 		.from('ai_human_comparison')
-		.select('*', { count: 'exact', head: true })
+		.select('id', { count: 'exact', head: true })
 		.gte('created_at', dateFrom.toISOString())
 		.lt('created_at', dateTo.toISOString())
 		.not('human_reply_date', 'is', null)

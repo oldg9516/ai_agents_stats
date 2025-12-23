@@ -27,11 +27,27 @@ import type {
 	VersionComparisonData,
 } from '@/lib/supabase/types'
 
+// Request timeout constant (30 seconds)
+const REQUEST_TIMEOUT = 30000
+
+/**
+ * Creates a timeout promise that rejects after specified milliseconds
+ */
+function createTimeoutPromise(ms: number, operationName: string): Promise<never> {
+	return new Promise((_, reject) =>
+		setTimeout(
+			() => reject(new Error(`${operationName} timed out after ${ms}ms`)),
+			ms
+		)
+	)
+}
+
 /**
  * Fetch all dashboard data in one Server Action
  * Returns all KPI, charts, and table data
  *
  * Uses TypeScript aggregation for detailedStats (migrated from SQL RPC)
+ * Includes 30s timeout protection to prevent hanging requests
  */
 export async function fetchDashboardData(filters: DashboardFilters) {
 	try {
@@ -45,7 +61,7 @@ export async function fetchDashboardData(filters: DashboardFilters) {
 		]
 
 		// Track individual query times
-		const results = await Promise.all(
+		const dataPromise = Promise.all(
 			promises.map(async (promise, index) => {
 				const queryStart = Date.now()
 				const names = [
@@ -68,6 +84,12 @@ export async function fetchDashboardData(filters: DashboardFilters) {
 				}
 			})
 		)
+
+		// Add timeout protection
+		const results = await Promise.race([
+			dataPromise,
+			createTimeoutPromise(REQUEST_TIMEOUT, 'Dashboard data fetch'),
+		])
 
 		const [
 			kpi,
