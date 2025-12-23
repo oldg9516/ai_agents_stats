@@ -9,7 +9,7 @@
 
 import { fetchDashboardData } from '@/lib/actions/dashboard-actions'
 import { fetchDetailedStatsTS } from '@/lib/actions/detailed-stats-actions'
-import { supabase } from '@/lib/supabase/client'
+import { QUERY_CACHE_CONFIG, REQUEST_TIMEOUT } from './query-config'
 import type {
 	CategoryDisplayMode,
 	CategoryDistributionResult,
@@ -20,8 +20,6 @@ import type {
 	VersionComparisonData,
 } from '@/lib/supabase/types'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
 
 /**
  * Generate query key for dashboard data
@@ -68,16 +66,13 @@ export function useDashboardData(filters: DashboardFilters): {
 	isFetching: boolean
 	isRefetching: boolean
 } {
-	const queryClient = useQueryClient()
-	const router = useRouter()
-
 	// Main query with explicit return type
 	const query = useQuery<DashboardData>({
 		queryKey: getDashboardQueryKey(filters),
 		queryFn: async (): Promise<DashboardData> => {
 			// Add timeout to prevent hanging requests
 			const controller = new AbortController()
-			const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+			const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
 
 			try {
 				const result = await fetchDashboardData(filters)
@@ -98,11 +93,7 @@ export function useDashboardData(filters: DashboardFilters): {
 				throw error
 			}
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes - data is fresh for 5 min
-		gcTime: 15 * 60 * 1000, // 15 minutes - keep in cache
-		retry: 2, // Retry failed requests twice
-		retryDelay: 1000, // Wait 1 second between retries
-		refetchOnWindowFocus: false, // Don't refetch when user switches tabs
+		...QUERY_CACHE_CONFIG,
 	})
 
 	// Real-time subscription DISABLED to reduce Disk IO
@@ -239,7 +230,7 @@ export function useDetailedStatsPaginated(
 		queryFn: async (): Promise<PaginatedStatsData> => {
 			// Add timeout to prevent hanging requests
 			const controller = new AbortController()
-			const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+			const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
 
 			try {
 				const result = await fetchDetailedStatsTS(filters, mergeMultiCategories)
@@ -268,11 +259,7 @@ export function useDetailedStatsPaginated(
 				throw error
 			}
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes - data is fresh for 5 min
-		gcTime: 15 * 60 * 1000, // 15 minutes - keep in cache
-		retry: 2, // Retry failed requests twice
-		retryDelay: 1000, // Wait 1 second between retries
-		refetchOnWindowFocus: false, // Don't refetch when user switches tabs
+		...QUERY_CACHE_CONFIG,
 	})
 
 	return {

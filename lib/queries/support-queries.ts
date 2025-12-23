@@ -12,10 +12,9 @@ import {
 	fetchRequestCategoryStatsAction,
 	fetchSupportData,
 } from '@/lib/actions/support-actions'
-import { supabase } from '@/lib/supabase/client'
+import { QUERY_CACHE_CONFIG, QUERY_CACHE_CONFIG_EXTENDED, REQUEST_TIMEOUT } from './query-config'
 import type {
 	CorrelationCell,
-	RequestCategoryStats,
 	ResolutionTimeData,
 	SankeyData,
 	StatusDistribution,
@@ -24,8 +23,6 @@ import type {
 	SupportThread,
 } from '@/lib/supabase/types'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
 
 /**
  * Generate query key for support data
@@ -75,16 +72,13 @@ export function useSupportData(filters: SupportFilters): {
 	isFetching: boolean
 	isRefetching: boolean
 } {
-	const queryClient = useQueryClient()
-	const router = useRouter()
-
 	// Main query with explicit return type - calls Server Action to fetch all support data
 	const query = useQuery<SupportData>({
 		queryKey: getSupportQueryKey(filters),
 		queryFn: async (): Promise<SupportData> => {
 			// Add timeout to prevent hanging requests
 			const controller = new AbortController()
-			const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+			const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
 
 			try {
 				const result = await fetchSupportData(filters)
@@ -103,38 +97,8 @@ export function useSupportData(filters: SupportFilters): {
 				throw error
 			}
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes - data is fresh for 5 min
-		gcTime: 15 * 60 * 1000, // 15 minutes - keep in cache
-		retry: 2, // Retry failed requests twice
-		retryDelay: 1000, // Wait 1 second between retries
-		refetchOnWindowFocus: false, // Don't refetch when user switches tabs
+		...QUERY_CACHE_CONFIG,
 	})
-
-	// Real-time subscription DISABLED to reduce Disk IO
-	// With frequent updates, real-time causes excessive database queries
-	// Users can manually refresh or wait for staleTime (5 min) to see updates
-	//
-	// To re-enable: uncomment the code below
-	// useEffect(() => {
-	// 	const channel = supabase
-	// 		.channel('support-threads-changes')
-	// 		.on(
-	// 			'postgres_changes',
-	// 			{
-	// 				event: '*',
-	// 				schema: 'public',
-	// 				table: 'support_threads_data',
-	// 			},
-	// 			() => {
-	// 				queryClient.invalidateQueries({ queryKey: ['support'] })
-	// 				router.refresh()
-	// 			}
-	// 		)
-	// 		.subscribe()
-	// 	return () => {
-	// 		supabase.removeChannel(channel)
-	// 	}
-	// }, [queryClient, router])
 
 	return {
 		data: query.data || {
@@ -192,8 +156,7 @@ export function useRequestCategoryStats(dateRange: { from: Date; to: Date }) {
 			}
 			return result.data
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes (data changes rarely)
-		gcTime: 30 * 60 * 1000, // 30 minutes
+		...QUERY_CACHE_CONFIG_EXTENDED,
 	})
 
 	return {
@@ -222,8 +185,7 @@ export function useAvailableCategories(dateRange: { from: Date; to: Date }) {
 			}
 			return result.data
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes (data changes rarely)
-		gcTime: 30 * 60 * 1000, // 30 minutes
+		...QUERY_CACHE_CONFIG_EXTENDED,
 	})
 
 	return {

@@ -1,4 +1,138 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { TrendData } from './types'
+
+// Batch fetching constants
+const DEFAULT_BATCH_SIZE = 500
+const DEFAULT_MAX_CONCURRENT = 3
+
+/**
+ * Filter configuration for batch fetching
+ */
+export interface BatchFetchFilters {
+	dateRange: { from: Date; to: Date }
+	// Optional filters - each query function can choose which to apply
+	versions?: string[]
+	categories?: string[]
+	agents?: string[]
+	statuses?: string[]
+	requestTypes?: string[]
+	requirements?: string[]
+}
+
+/**
+ * Options for batch fetching
+ */
+export interface BatchFetchOptions {
+	batchSize?: number
+	maxConcurrent?: number
+	dateField?: string // Field name for date filtering (default: 'created_at')
+}
+
+/**
+ * Generic batch fetch utility that bypasses Supabase's 1000 record limit
+ * Works with any table and filter combination
+ *
+ * @param supabase - Supabase client instance
+ * @param tableName - Name of the table to query
+ * @param selectFields - Fields to select (e.g., 'id, name, created_at')
+ * @param filters - Filter configuration
+ * @param applyFilters - Function to apply additional filters to query
+ * @param options - Batch fetching options
+ */
+export async function fetchAllInBatchesGeneric<T>(
+	supabase: SupabaseClient,
+	tableName: string,
+	selectFields: string,
+	filters: BatchFetchFilters,
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	applyFilters?: (query: any, filters: BatchFetchFilters) => any,
+	options?: BatchFetchOptions
+): Promise<T[]> {
+	const { dateRange } = filters
+	const batchSize = options?.batchSize ?? DEFAULT_BATCH_SIZE
+	const maxConcurrent = options?.maxConcurrent ?? DEFAULT_MAX_CONCURRENT
+	const dateField = options?.dateField ?? 'created_at'
+
+	// First, get total count
+	let countQuery = supabase
+		.from(tableName)
+		.select('id', { count: 'exact', head: true })
+		.gte(dateField, dateRange.from.toISOString())
+		.lte(dateField, dateRange.to.toISOString())
+
+	// Apply additional filters if provided
+	if (applyFilters) {
+		countQuery = applyFilters(countQuery, filters)
+	}
+
+	const { count, error: countError } = await countQuery
+
+	if (countError) {
+		console.error(`❌ [BatchFetch] Count error for ${tableName}:`, countError)
+		throw countError
+	}
+
+	const totalRecords = count || 0
+	if (totalRecords === 0) return []
+
+	// Fetch in batches with limited concurrency
+	const numBatches = Math.ceil(totalRecords / batchSize)
+	const results: T[] = []
+	const errors: Error[] = []
+
+	for (let batchStart = 0; batchStart < numBatches; batchStart += maxConcurrent) {
+		const batchPromises: Promise<T[]>[] = []
+
+		for (let i = batchStart; i < Math.min(batchStart + maxConcurrent, numBatches); i++) {
+			const offset = i * batchSize
+
+			const promise = (async () => {
+				let query = supabase
+					.from(tableName)
+					.select(selectFields)
+					.gte(dateField, dateRange.from.toISOString())
+					.lte(dateField, dateRange.to.toISOString())
+					.range(offset, offset + batchSize - 1)
+
+				// Apply additional filters if provided
+				if (applyFilters) {
+					query = applyFilters(query, filters)
+				}
+
+				const { data, error } = await query
+
+				if (error) {
+					console.error(`❌ [BatchFetch] Batch ${i} error for ${tableName}:`, error)
+					throw error
+				}
+
+				return (data || []) as T[]
+			})()
+
+			batchPromises.push(promise)
+		}
+
+		try {
+			const batchResults = await Promise.all(batchPromises)
+			results.push(...batchResults.flat())
+		} catch (error) {
+			errors.push(error as Error)
+			// Continue fetching remaining batches but track errors
+		}
+
+		// Small delay between batch groups to avoid rate limiting
+		if (batchStart + maxConcurrent < numBatches) {
+			await new Promise(resolve => setTimeout(resolve, 50))
+		}
+	}
+
+	// If we had errors but got some data, log warning but return partial results
+	if (errors.length > 0) {
+		console.warn(`⚠️ [BatchFetch] ${errors.length} batch errors for ${tableName}, returning ${results.length} records`)
+	}
+
+	return results
+}
 
 /**
  * Calculate trend data from current and previous values
