@@ -1,15 +1,30 @@
 'use client'
 
 import type { DetailedStatsRow } from '@/lib/supabase/types'
+import type { ScoreGroup } from '@/constants/classification-types'
 import type { ColumnDef } from '@tanstack/react-table'
 import { calcPercentage, getCellClassName } from './types'
 
 /**
+ * Callback type for score group cell clicks
+ */
+export type ScoreGroupClickHandler = (params: {
+	category: string
+	version: string
+	dates: string | null
+	scoreGroup: ScoreGroup
+}) => void
+
+/**
  * Create new mode columns (4 aggregated groups: Critical, Needs Work, Good, Excluded)
  * Used for data after the new scoring system was introduced
+ *
+ * @param t - Translation function
+ * @param onScoreGroupClick - Optional callback when a score group cell is clicked
  */
 export function createNewColumns(
-	t: (key: string) => string
+	t: (key: string) => string,
+	onScoreGroupClick?: ScoreGroupClickHandler
 ): ColumnDef<DetailedStatsRow>[] {
 	return [
 		// Critical (Score 0-50): CRITICAL_FACT_ERROR + MAJOR_FUNCTIONAL_OMISSION
@@ -39,13 +54,36 @@ export function createNewColumns(
 					)
 				}
 
+				// Version level - just display text, no click
+				if (isVersionLevel) {
+					return (
+						<div className={`text-left text-sm ${getCellClassName(true)}`}>
+							{count} ({percent}%)
+						</div>
+					)
+				}
+
+				// Week level - clickable button with colored background
+				const handleClick = onScoreGroupClick
+					? () =>
+							onScoreGroupClick({
+								category: row.original.category,
+								version: row.original.version,
+								dates: row.original.dates,
+								scoreGroup: 'critical',
+							})
+					: undefined
+
 				return (
 					<div className="flex justify-left">
-						<span
-							className={`inline-block rounded ${getCellClassName(isVersionLevel, isVersionLevel ? undefined : 'red')}`}
+						<button
+							type="button"
+							onClick={handleClick}
+							disabled={!onScoreGroupClick || count === 0}
+							className={`inline-block px-2 py-1 rounded cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-red-400 transition-all disabled:cursor-default disabled:hover:ring-0 ${getCellClassName(false, 'red')}`}
 						>
 							{count} ({percent}%)
-						</span>
+						</button>
 					</div>
 				)
 			},
@@ -79,13 +117,36 @@ export function createNewColumns(
 					)
 				}
 
+				// Version level - just display text, no click
+				if (isVersionLevel) {
+					return (
+						<div className={`text-left text-sm ${getCellClassName(true)}`}>
+							{count} ({percent}%)
+						</div>
+					)
+				}
+
+				// Week level - clickable button with colored background
+				const handleClick = onScoreGroupClick
+					? () =>
+							onScoreGroupClick({
+								category: row.original.category,
+								version: row.original.version,
+								dates: row.original.dates,
+								scoreGroup: 'needs_work',
+							})
+					: undefined
+
 				return (
 					<div className="flex justify-left">
-						<span
-							className={`inline-block rounded ${getCellClassName(isVersionLevel, isVersionLevel ? undefined : 'yellow')}`}
+						<button
+							type="button"
+							onClick={handleClick}
+							disabled={!onScoreGroupClick || count === 0}
+							className={`inline-block px-2 py-1 rounded cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-yellow-400 transition-all disabled:cursor-default disabled:hover:ring-0 ${getCellClassName(false, 'yellow')}`}
 						>
 							{count} ({percent}%)
-						</span>
+						</button>
 					</div>
 				)
 			},
@@ -117,13 +178,36 @@ export function createNewColumns(
 					)
 				}
 
+				// Version level - just display text, no click
+				if (isVersionLevel) {
+					return (
+						<div className={`text-left text-sm ${getCellClassName(true)}`}>
+							{count} ({percent}%)
+						</div>
+					)
+				}
+
+				// Week level - clickable button with colored background
+				const handleClick = onScoreGroupClick
+					? () =>
+							onScoreGroupClick({
+								category: row.original.category,
+								version: row.original.version,
+								dates: row.original.dates,
+								scoreGroup: 'good',
+							})
+					: undefined
+
 				return (
 					<div className="flex justify-left">
-						<span
-							className={`inline-block rounded ${getCellClassName(isVersionLevel, isVersionLevel ? undefined : 'green')}`}
+						<button
+							type="button"
+							onClick={handleClick}
+							disabled={!onScoreGroupClick || count === 0}
+							className={`inline-block px-2 py-1 rounded cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-green-400 transition-all disabled:cursor-default disabled:hover:ring-0 ${getCellClassName(false, 'green')}`}
 						>
 							{count} ({percent}%)
-						</span>
+						</button>
 					</div>
 				)
 			},
@@ -150,13 +234,36 @@ export function createNewColumns(
 					)
 				}
 
+				// Version level - just display text, no click
+				if (isVersionLevel) {
+					return (
+						<div className={`text-left text-sm ${getCellClassName(true)}`}>
+							{count} ({percent}%)
+						</div>
+					)
+				}
+
+				// Week level - clickable button with colored background
+				const handleClick = onScoreGroupClick
+					? () =>
+							onScoreGroupClick({
+								category: row.original.category,
+								version: row.original.version,
+								dates: row.original.dates,
+								scoreGroup: 'excluded',
+							})
+					: undefined
+
 				return (
 					<div className="flex justify-left">
-						<span
-							className={`inline-block rounded ${getCellClassName(isVersionLevel, isVersionLevel ? undefined : 'gray')}`}
+						<button
+							type="button"
+							onClick={handleClick}
+							disabled={!onScoreGroupClick || count === 0}
+							className={`inline-block px-2 py-1 rounded cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-gray-400 transition-all disabled:cursor-default disabled:hover:ring-0 ${getCellClassName(false, 'gray')}`}
 						>
 							{count} ({percent}%)
-						</span>
+						</button>
 					</div>
 				)
 			},

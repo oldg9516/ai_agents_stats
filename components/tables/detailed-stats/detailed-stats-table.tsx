@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import dynamic from 'next/dynamic'
 import { IconDownload, IconSearch } from '@tabler/icons-react'
 import {
 	flexRender,
@@ -17,6 +18,12 @@ import {
 import { CategoryDisplayToggle } from '@/components/category-display-toggle'
 import { TableSkeleton } from '@/components/loading/table-skeleton'
 import { ScoringModeToggle } from '@/components/scoring-mode-toggle'
+
+// Dynamic import for modal - reduces initial bundle size
+const ScoreGroupModal = dynamic(
+	() => import('@/components/score-group-modal').then(mod => ({ default: mod.ScoreGroupModal })),
+	{ ssr: false }
+)
 import { Button } from '@/components/ui/button'
 import {
 	Card,
@@ -41,7 +48,7 @@ import { exportToCSV } from '@/lib/utils/export'
 
 import { createBaseColumns, sortOrderColumn } from './base-columns'
 import { createLegacyColumns } from './legacy-columns'
-import { createNewColumns } from './new-columns'
+import { createNewColumns, type ScoreGroupClickHandler } from './new-columns'
 import { TablePagination, type PageSize } from './table-pagination'
 import { buildLatestWeeksMap, checkIsLatestWeek, type DetailedStatsTableProps } from './types'
 
@@ -59,7 +66,7 @@ import { buildLatestWeeksMap, checkIsLatestWeek, type DetailedStatsTableProps } 
 export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 	const t = useTranslations()
 	const router = useRouter()
-	const { scoringMode, categoryDisplayMode } = useDashboardFilters()
+	const { scoringMode, categoryDisplayMode, openScoreGroupModal } = useDashboardFilters()
 
 	// Server-side pagination state
 	const [currentPage, setCurrentPage] = useState(0)
@@ -82,17 +89,25 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 	const [globalFilter, setGlobalFilter] = useState('')
 
 	// Handle category click
-	const handleCategoryClick = (category: string) => {
+	const handleCategoryClick = useCallback((category: string) => {
 		router.push(`/dashboard/category/${encodeURIComponent(category)}`)
-	}
+	}, [router])
+
+	// Handle score group cell click - opens modal with filtered tickets
+	const handleScoreGroupClick: ScoreGroupClickHandler = useCallback((params) => {
+		openScoreGroupModal(params)
+	}, [openScoreGroupModal])
 
 	// Build columns based on scoring mode
 	const baseColumns = useMemo(
 		() => createBaseColumns(t, handleCategoryClick),
-		[t]
+		[t, handleCategoryClick]
 	)
 	const legacyColumns = useMemo(() => createLegacyColumns(t), [t])
-	const newColumns = useMemo(() => createNewColumns(t), [t])
+	const newColumns = useMemo(
+		() => createNewColumns(t, handleScoreGroupClick),
+		[t, handleScoreGroupClick]
+	)
 
 	// Define columns based on scoring mode
 	const columns = useMemo<ColumnDef<DetailedStatsRow>[]>(
@@ -142,35 +157,35 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 	})
 
 	// Handle CSV export (current page only)
-	const handleExport = () => {
+	const handleExport = useCallback(() => {
 		const filteredData = table
 			.getFilteredRowModel()
 			.rows.map(row => row.original)
 		const today = new Date().toISOString().split('T')[0]
 		exportToCSV(filteredData, `ai_stats_page${currentPage + 1}_${today}`)
-	}
+	}, [table, currentPage])
 
 	// Handle page navigation
-	const handlePreviousPage = () => {
+	const handlePreviousPage = useCallback(() => {
 		if (hasPreviousPage) {
 			setCurrentPage(prev => prev - 1)
 		}
-	}
+	}, [hasPreviousPage])
 
-	const handleNextPage = () => {
+	const handleNextPage = useCallback(() => {
 		if (hasNextPage) {
 			setCurrentPage(prev => prev + 1)
 		}
-	}
+	}, [hasNextPage])
 
-	const handlePageClick = (page: number) => {
+	const handlePageClick = useCallback((page: number) => {
 		setCurrentPage(page)
-	}
+	}, [])
 
-	const handlePageSizeChange = (size: number) => {
+	const handlePageSizeChange = useCallback((size: number) => {
 		setPageSize(size as PageSize)
 		setCurrentPage(0) // Reset to first page when changing page size
-	}
+	}, [])
 
 	// Show loading skeleton on initial load
 	if (isLoading) {
@@ -192,8 +207,12 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 	}
 
 	return (
-		<Card>
-			<CardHeader>
+		<>
+			{/* Score Group Modal */}
+			<ScoreGroupModal />
+
+			<Card>
+				<CardHeader>
 				<div className="flex flex-col gap-3 sm:gap-4">
 					<div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
 						<div className="flex-1 min-w-0">
@@ -338,5 +357,6 @@ export function DetailedStatsTable({ filters }: DetailedStatsTableProps) {
 				/>
 			</CardContent>
 		</Card>
+		</>
 	)
 }
