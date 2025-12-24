@@ -31,6 +31,14 @@ type RawRecord = {
 	request_subtype: string | null
 	prompt_version: string | null
 	change_classification: string | null
+	human_reply: string | null
+	ticket_id: string | null
+}
+
+type DialogRecord = {
+	ticket_id: string
+	direction: string
+	date: string
 }
 
 type PaginatedResult = {
@@ -48,6 +56,102 @@ type PaginatedResult = {
 
 const BATCH_SIZE = 1000
 const MAX_CONCURRENT_BATCHES = 3
+const DIALOG_BATCH_SIZE = 300
+
+// =============================================================================
+// SECOND REQUEST DETECTION
+// =============================================================================
+
+/**
+ * Fetch ticket IDs that have "second request" pattern
+ * A second request is when there are >1 incoming messages without outgoing between them
+ *
+ * @param ticketIds - List of ticket IDs to check
+ * @returns Set of ticket IDs that have second request pattern
+ */
+async function fetchSecondRequestTicketIds(
+	ticketIds: string[]
+): Promise<Set<string>> {
+	if (ticketIds.length === 0) return new Set()
+
+	const uniqueTicketIds = [...new Set(ticketIds.filter(Boolean))]
+	if (uniqueTicketIds.length === 0) return new Set()
+
+	// Fetch dialogs in batches
+	const allDialogs: DialogRecord[] = []
+	const batches = Math.ceil(uniqueTicketIds.length / DIALOG_BATCH_SIZE)
+
+	for (let i = 0; i < batches; i += MAX_CONCURRENT_BATCHES) {
+		const batchPromises: Promise<DialogRecord[]>[] = []
+
+		for (let j = i; j < Math.min(i + MAX_CONCURRENT_BATCHES, batches); j++) {
+			const startIdx = j * DIALOG_BATCH_SIZE
+			const batchTicketIds = uniqueTicketIds.slice(startIdx, startIdx + DIALOG_BATCH_SIZE)
+
+			const promise = (async () => {
+				const { data, error } = await supabaseServer
+					.from('support_dialogs')
+					.select('ticket_id, direction, date')
+					.in('ticket_id', batchTicketIds)
+
+				if (error) {
+					console.error('[SecondRequest] Error fetching dialogs:', error)
+					return []
+				}
+
+				return (data || []) as DialogRecord[]
+			})()
+
+			batchPromises.push(promise)
+		}
+
+		const results = await Promise.all(batchPromises)
+		allDialogs.push(...results.flat())
+
+		// Small delay between batch groups
+		if (i + MAX_CONCURRENT_BATCHES < batches) {
+			await new Promise(resolve => setTimeout(resolve, 50))
+		}
+	}
+
+	if (allDialogs.length === 0) return new Set()
+
+	// Group dialogs by ticket_id
+	const dialogsByTicket = new Map<string, DialogRecord[]>()
+	for (const dialog of allDialogs) {
+		if (!dialog.ticket_id) continue
+		const existing = dialogsByTicket.get(dialog.ticket_id) || []
+		existing.push(dialog)
+		dialogsByTicket.set(dialog.ticket_id, existing)
+	}
+
+	// Find tickets with second request pattern
+	const result = new Set<string>()
+
+	for (const [ticketId, ticketDialogs] of dialogsByTicket) {
+		// Sort by date
+		const sorted = ticketDialogs.sort((a, b) =>
+			new Date(a.date).getTime() - new Date(b.date).getTime()
+		)
+
+		let lastIncoming: DialogRecord | null = null
+
+		for (const dialog of sorted) {
+			if (dialog.direction === 'in') {
+				if (lastIncoming !== null) {
+					// Found second incoming without outgoing between them!
+					result.add(ticketId)
+					break
+				}
+				lastIncoming = dialog
+			} else if (dialog.direction === 'out') {
+				lastIncoming = null // Reset - agent responded
+			}
+		}
+	}
+
+	return result
+}
 
 // =============================================================================
 // MAIN FUNCTION
@@ -85,9 +189,17 @@ export async function fetchDetailedStatsTS(
 			`[DetailedStats TS] Fetched ${records.length} records in ${(performance.now() - startTime).toFixed(0)}ms`
 		)
 
+		// Step 2.5: Fetch second request ticket IDs
+		const ticketIds = records.map(r => r.ticket_id).filter(Boolean) as string[]
+		const secondRequestStart = performance.now()
+		const secondRequestTicketIds = await fetchSecondRequestTicketIds(ticketIds)
+		console.log(
+			`[DetailedStats TS] Found ${secondRequestTicketIds.size} second request tickets in ${(performance.now() - secondRequestStart).toFixed(0)}ms`
+		)
+
 		// Step 3: Aggregate in TypeScript
 		const aggregateStart = performance.now()
-		const rows = aggregateDetailedStats(records, mergeMultiCategories, dateFilterMode)
+		const rows = aggregateDetailedStats(records, mergeMultiCategories, dateFilterMode, secondRequestTicketIds)
 		console.log(
 			`[DetailedStats TS] Aggregated to ${rows.length} rows in ${(performance.now() - aggregateStart).toFixed(0)}ms`
 		)
@@ -183,7 +295,7 @@ async function fetchInBatches(
 			let query = supabaseServer
 				.from('ai_human_comparison')
 				.select(
-					'created_at, human_reply_date, request_subtype, prompt_version, change_classification'
+					'created_at, human_reply_date, request_subtype, prompt_version, change_classification, human_reply, ticket_id'
 				)
 				.gte(dateField, dateRange.from.toISOString())
 				.lte(dateField, dateRange.to.toISOString())
@@ -227,17 +339,38 @@ function normalizeCategory(
 }
 
 /**
+ * Count not responded records (human_reply IS NULL)
+ */
+function countNotResponded(records: RawRecord[]): number {
+	return records.filter(r => r.human_reply === null).length
+}
+
+/**
+ * Count second request records (ticket_id is in the secondRequestTicketIds set)
+ */
+function countSecondRequest(
+	records: RawRecord[],
+	secondRequestTicketIds: Set<string>
+): number {
+	return records.filter(r =>
+		r.ticket_id !== null && secondRequestTicketIds.has(r.ticket_id)
+	).length
+}
+
+/**
  * Aggregate records into detailed stats rows
  * This replaces the SQL CTE logic
  *
  * @param records - Raw records from database
  * @param mergeMultiCategories - If true, merge categories with commas into "Multi-category"
  * @param dateFilterMode - Date field to use for week grouping
+ * @param secondRequestTicketIds - Set of ticket IDs that have second request pattern
  */
 function aggregateDetailedStats(
 	records: RawRecord[],
 	mergeMultiCategories: boolean,
-	dateFilterMode: DateFilterMode = 'created'
+	dateFilterMode: DateFilterMode = 'created',
+	secondRequestTicketIds: Set<string> = new Set()
 ): DetailedStatsRow[] {
 	const rows: DetailedStatsRow[] = []
 
@@ -280,6 +413,8 @@ function aggregateDetailedStats(
 			reviewedRecords: reviewedRecords.length,
 			aiErrors: countAiErrors(reviewedRecords),
 			aiQuality: countAiQuality(reviewedRecords),
+			notResponded: countNotResponded(group.records),
+			secondRequest: countSecondRequest(group.records, secondRequestTicketIds),
 			...classifications,
 		})
 
@@ -319,6 +454,8 @@ function aggregateDetailedStats(
 				reviewedRecords: weekReviewedRecords.length,
 				aiErrors: countAiErrors(weekReviewedRecords),
 				aiQuality: countAiQuality(weekReviewedRecords),
+				notResponded: countNotResponded(weekRecords),
+				secondRequest: countSecondRequest(weekRecords, secondRequestTicketIds),
 				...weekClassifications,
 			})
 		}
@@ -358,6 +495,8 @@ function countAllClassifications(records: RawRecord[]): Omit<
 	| 'reviewedRecords'
 	| 'aiErrors'
 	| 'aiQuality'
+	| 'notResponded'
+	| 'secondRequest'
 > {
 	// Legacy classifications
 	const legacyCounts: Record<LegacyClassificationType, number> = {

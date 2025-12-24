@@ -237,6 +237,9 @@ export interface DetailedStatsRow {
 	exclDataDiscrepancies: number
 	// New scoring (v4.0)
 	averageScore: number | null // Average quality score (0-100) for new system
+	// Response status fields
+	notResponded: number // Records with human_reply IS NULL (agent didn't respond)
+	secondRequest: number // Records with repeated customer message before agent response
 }
 
 /**

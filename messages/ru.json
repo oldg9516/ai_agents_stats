@@ -210,6 +210,8 @@
 		"dates": "Даты",
 		"totalRecords": "Всего записей",
 		"reviewedRecords": "Проверено",
+		"notResponded": "Без\nответа",
+		"secondRequest": "Повторное\nобращение",
 		"qualifiedAgents": "Квалифицированные агенты",
 		"aiErrors": "Плохие\nответы AI",
 		"aiQuality": "Хорошие\nответы AI",

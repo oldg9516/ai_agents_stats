@@ -131,6 +131,48 @@ export function createBaseColumns(
 			},
 		},
 		{
+			accessorKey: 'notResponded',
+			header: () => (
+				<div className="text-center whitespace-pre-line">
+					{t('table.notResponded')}
+				</div>
+			),
+			cell: ({ row }) => {
+				const isVersionLevel = row.original.sortOrder === 1
+				const notResponded = row.original.notResponded
+				const total = row.original.totalRecords
+				const percentage = total > 0 ? (notResponded / total) * 100 : 0
+				return (
+					<div
+						className={isVersionLevel ? 'text-left font-semibold' : 'text-left'}
+					>
+						{notResponded} ({percentage.toFixed(1)}%)
+					</div>
+				)
+			},
+		},
+		{
+			accessorKey: 'secondRequest',
+			header: () => (
+				<div className="text-center whitespace-pre-line">
+					{t('table.secondRequest')}
+				</div>
+			),
+			cell: ({ row }) => {
+				const isVersionLevel = row.original.sortOrder === 1
+				const secondRequest = row.original.secondRequest
+				const total = row.original.totalRecords
+				const percentage = total > 0 ? (secondRequest / total) * 100 : 0
+				return (
+					<div
+						className={isVersionLevel ? 'text-left font-semibold' : 'text-left'}
+					>
+						{secondRequest} ({percentage.toFixed(1)}%)
+					</div>
+				)
+			},
+		},
+		{
 			accessorKey: 'aiErrors',
 			header: () => (
 				<div className="text-center whitespace-pre-line">

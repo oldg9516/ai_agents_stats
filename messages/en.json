@@ -210,6 +210,8 @@
 		"dates": "Dates",
 		"totalRecords": "Total Records",
 		"reviewedRecords": "Reviewed",
+		"notResponded": "Not\nResponded",
+		"secondRequest": "Second\nRequest",
 		"qualifiedAgents": "Qualified Agents",
 		"aiErrors": "Bad AI\nResponses",
 		"aiQuality": "Good AI\nResponses",
