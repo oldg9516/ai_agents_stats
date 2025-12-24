@@ -90,9 +90,8 @@ export function RequestCategoriesTable({
 	const { data, isLoading, error } = useRequestCategoryStats(dateRange)
 
 	// Client-side sorting and filtering
-	const [sorting, setSorting] = useState<SortingState>([
-		{ id: 'count', desc: true },
-	])
+	// Default: no sorting - use order from SQL function (custom priority sorting)
+	const [sorting, setSorting] = useState<SortingState>([])
 	const [globalFilter, setGlobalFilter] = useState('')
 	const [pageSize, setPageSize] = useState<PageSize>(50)
 

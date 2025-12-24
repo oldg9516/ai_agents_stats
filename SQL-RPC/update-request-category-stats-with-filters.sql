@@ -1,7 +1,12 @@
--- Update get_request_category_stats function to include response time metrics
--- This update adds:
--- 1. avg_response_time - average time from request creation to agent response (hours)
--- 2. p90_response_time - 90th percentile response time (hours)
+-- Update get_request_category_stats function to use support_dialogs for agent responses
+-- This update changes:
+-- 1. compared_count (Agent Responses) - counts threads that have an outgoing response (direction='out')
+--    in support_dialogs with date > incoming message date (response came AFTER the request)
+-- 2. avg_response_time - time from thread creation to first agent response (hours)
+-- 3. p90_response_time - 90th percentile response time (hours)
+--
+-- Logic: A thread has an agent response if there's a record in support_dialogs
+--        with the same ticket_id, direction='out', and date > original thread date
 
 -- Drop all possible signatures of the function
 DROP FUNCTION IF EXISTS get_request_category_stats(timestamp with time zone, timestamp with time zone);
@@ -28,6 +33,7 @@ BEGIN
     FROM support_threads_data
     WHERE thread_date >= date_from AND thread_date <= date_to
   ),
+  -- Count all threads by category
   category_stats AS (
     SELECT
       std.request_type,
@@ -46,55 +52,82 @@ BEGIN
         ELSE std.request_subtype
       END
   ),
-  compared_stats AS (
+  -- Get the date of the original incoming message for each thread
+  thread_incoming_dates AS (
     SELECT
-      CASE
-        WHEN ahc.request_subtype LIKE '%,%' THEN 'multiply'
-        ELSE ahc.request_subtype
-      END AS request_subtype,
-      COUNT(*)::bigint AS compared_count
-    FROM ai_human_comparison ahc
-    WHERE ahc.status = 'compared'
-      AND ahc.created_at >= date_from
-      AND ahc.created_at <= date_to
-      AND ahc.change_classification IS NOT NULL
-      AND ahc.change_classification != 'context_shift'
-    GROUP BY
-      CASE
-        WHEN ahc.request_subtype LIKE '%,%' THEN 'multiply'
-        ELSE ahc.request_subtype
-      END
+      sd.thread_id,
+      sd.ticket_id,
+      sd.date AS incoming_date
+    FROM support_dialogs sd
+    WHERE sd.direction = 'in'
   ),
-  -- Response time statistics from ai_human_comparison
-  response_time_stats AS (
+  -- Find threads that have agent responses
+  -- A thread has a response if there's an outgoing message (direction='out')
+  -- in support_dialogs with the same ticket_id and date > original incoming date
+  threads_with_responses AS (
+    SELECT DISTINCT
+      std.thread_id,
+      std.ticket_id,
+      std.request_subtype,
+      std.created_at,
+      -- Get the first outgoing response date for this thread
+      (
+        SELECT MIN(sd.date)
+        FROM support_dialogs sd
+        WHERE sd.ticket_id = std.ticket_id
+          AND sd.direction = 'out'
+          AND sd.date > tid.incoming_date
+      ) AS first_response_date
+    FROM support_threads_data std
+    INNER JOIN thread_incoming_dates tid
+      ON std.thread_id = tid.thread_id
+    WHERE std.thread_date >= date_from
+      AND std.thread_date <= date_to
+      AND std.ticket_id IS NOT NULL
+      -- Check if there's an outgoing response after this thread
+      AND EXISTS (
+        SELECT 1
+        FROM support_dialogs sd
+        WHERE sd.ticket_id = std.ticket_id
+          AND sd.direction = 'out'
+          AND sd.date > tid.incoming_date
+      )
+  ),
+  -- Aggregate response stats by category
+  agent_response_stats AS (
     SELECT
       CASE
-        WHEN ahc.request_subtype LIKE '%,%' THEN 'multiply'
-        ELSE ahc.request_subtype
+        WHEN twr.request_subtype LIKE '%,%' THEN 'multiply'
+        ELSE twr.request_subtype
       END AS request_subtype,
-      -- Average response time in hours
+      COUNT(*)::bigint AS responded_count,
+      -- Average response time in hours (from thread creation to first agent response)
       ROUND(
         AVG(
-          EXTRACT(EPOCH FROM (ahc.human_reply_date - ahc.created_at)) / 3600
+          CASE
+            WHEN twr.first_response_date IS NOT NULL AND twr.created_at IS NOT NULL
+            THEN EXTRACT(EPOCH FROM (twr.first_response_date - twr.created_at)) / 3600
+            ELSE NULL
+          END
         )::numeric,
         1
       ) AS avg_response_time,
-      -- P90 response time in hours (90% of tickets answered within this time)
+      -- P90 response time in hours
       ROUND(
         PERCENTILE_CONT(0.9) WITHIN GROUP (
-          ORDER BY EXTRACT(EPOCH FROM (ahc.human_reply_date - ahc.created_at)) / 3600
+          ORDER BY CASE
+            WHEN twr.first_response_date IS NOT NULL AND twr.created_at IS NOT NULL
+            THEN EXTRACT(EPOCH FROM (twr.first_response_date - twr.created_at)) / 3600
+            ELSE NULL
+          END
         )::numeric,
         1
       ) AS p90_response_time
-    FROM ai_human_comparison ahc
-    WHERE ahc.created_at >= date_from
-      AND ahc.created_at <= date_to
-      AND ahc.human_reply_date IS NOT NULL
-      AND ahc.created_at IS NOT NULL
+    FROM threads_with_responses twr
     GROUP BY
       CASE
-        WHEN ahc.request_subtype LIKE '%,%' THEN 'multiply'
-        ELSE ahc.request_subtype
+        WHEN twr.request_subtype LIKE '%,%' THEN 'multiply'
+        ELSE twr.request_subtype
       END
   )
   SELECT
@@ -102,18 +135,40 @@ BEGIN
     cs.request_subtype::text,
     cs.category_count AS count,
     ROUND((cs.category_count::numeric / tr.total::numeric * 100), 1) AS percent,
-    COALESCE(cms.compared_count, 0) AS compared_count,
-    COALESCE(rts.avg_response_time, 0) AS avg_response_time,
-    COALESCE(rts.p90_response_time, 0) AS p90_response_time
+    COALESCE(ars.responded_count, 0) AS compared_count,
+    COALESCE(ars.avg_response_time, 0) AS avg_response_time,
+    COALESCE(ars.p90_response_time, 0) AS p90_response_time
   FROM category_stats cs
   CROSS JOIN total_records tr
-  LEFT JOIN compared_stats cms
-    ON cs.request_subtype = cms.request_subtype
-  LEFT JOIN response_time_stats rts
-    ON cs.request_subtype = rts.request_subtype
-  ORDER BY cs.category_count DESC;
+  LEFT JOIN agent_response_stats ars
+    ON cs.request_subtype = ars.request_subtype
+  ORDER BY
+    -- 1. Request type priority: Lev Haolam Subscription first, then others
+    CASE cs.request_type
+      WHEN 'Lev Haolam Subscription' THEN 1
+      WHEN 'Lev Haolam Shop' THEN 2
+      WHEN 'Lev Haolam Subscription Retention' THEN 3
+      ELSE 4
+    END,
+    -- 2. Within each request_type, sort subtypes: priority subtypes first, 'other' and NULL last
+    CASE cs.request_subtype
+      -- Priority subtypes for Lev Haolam Subscription
+      WHEN 'shipping_or_delivery_question' THEN 1
+      WHEN 'gratitude' THEN 2
+      WHEN 'payment_question' THEN 3
+      WHEN 'customization_request' THEN 4
+      -- Other specific subtypes in alphabetical-ish order
+      WHEN 'other' THEN 96
+      WHEN 'multiply' THEN 97
+      ELSE 50  -- All other subtypes in the middle
+    END,
+    -- 3. NULL subtypes at the very end
+    CASE WHEN cs.request_subtype IS NULL THEN 1 ELSE 0 END,
+    -- 4. Within same priority, sort by count descending
+    cs.category_count DESC;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql
+SET search_path = public;
 
 -- Add comment
-COMMENT ON FUNCTION get_request_category_stats IS 'Returns request category statistics with agent response counts and response time metrics (avg and P90 in hours)';
+COMMENT ON FUNCTION get_request_category_stats IS 'Returns request category statistics with agent response counts (threads with outgoing messages in support_dialogs where date > incoming date) and response time metrics (avg and P90 in hours)';
