@@ -1210,6 +1210,28 @@
 		"previous": "Назад",
 		"next": "Вперед"
 	},
+	"auth": {
+		"login": {
+			"title": "Вход в AI Stats",
+			"description": "Доступ к панели статистики AI-агентов",
+			"button": "Войти",
+			"googleButton": "Продолжить с Google",
+			"domainRestriction": "Доступно только для аккаунтов @{domain}",
+			"errors": {
+				"auth_failed": "Ошибка авторизации. Попробуйте снова."
+			}
+		},
+		"unauthorized": {
+			"title": "Доступ запрещён",
+			"description": "Ваш домен электронной почты не авторизован для доступа к этому приложению.",
+			"message": "Только пользователи с адресами @levhaolam.com могут войти.",
+			"backToHome": "На главную"
+		},
+		"menu": {
+			"settings": "Настройки",
+			"signOut": "Выйти"
+		}
+	},
 	"agentsStats": {
 		"title": "Статистика агентов",
 		"description": "Насколько эффективно агенты используют AI драфты",

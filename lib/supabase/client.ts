@@ -1,4 +1,4 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 import type { Database } from './types'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -11,28 +11,22 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Singleton instance to prevent multiple client instances
-let supabaseInstance: SupabaseClient<Database> | null = null
+let supabaseInstance: ReturnType<typeof createBrowserClient<Database>> | null =
+  null
 
 /**
- * Get or create Supabase client (singleton pattern)
+ * Get or create Supabase browser client (singleton pattern)
  *
  * This client is configured with:
- * - Auto-refresh for auth tokens
- * - Real-time subscriptions enabled
+ * - Cookie-based session persistence via @supabase/ssr
  * - TypeScript types from Database schema
  */
-function getSupabaseClient(): SupabaseClient<Database> {
+export function createClient() {
   if (!supabaseInstance) {
-    supabaseInstance = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: false, // No auth needed for this app
-      },
-      realtime: {
-        params: {
-          eventsPerSecond: 10, // Limit real-time events for performance
-        },
-      },
-    })
+    supabaseInstance = createBrowserClient<Database>(
+      supabaseUrl,
+      supabaseAnonKey
+    )
   }
   return supabaseInstance
 }
@@ -40,14 +34,17 @@ function getSupabaseClient(): SupabaseClient<Database> {
 /**
  * Supabase client for browser-side operations
  */
-export const supabase = getSupabaseClient()
+export const supabase = createClient()
 
 /**
  * Helper to check Supabase connection
  */
 export async function checkConnection(): Promise<boolean> {
   try {
-    const { error } = await supabase.from('ai_human_comparison').select('id').limit(1)
+    const { error } = await supabase
+      .from('ai_human_comparison')
+      .select('id')
+      .limit(1)
     return !error
   } catch (error) {
     console.error('Supabase connection error:', error)

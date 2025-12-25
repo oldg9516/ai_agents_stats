@@ -4,6 +4,7 @@ import { QueryProvider } from '@/lib/providers/query-provider'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from 'next-themes'
 import { NextIntlClientProvider } from 'next-intl'
+import { AuthProvider } from '@/lib/auth/auth-provider'
 
 const Provider = ({
 	children,
@@ -22,7 +23,9 @@ const Provider = ({
 				enableSystem={false}
 				disableTransitionOnChange
 			>
-				<QueryProvider>{children}</QueryProvider>
+				<AuthProvider>
+					<QueryProvider>{children}</QueryProvider>
+				</AuthProvider>
 				<Toaster />
 			</ThemeProvider>
 		</NextIntlClientProvider>

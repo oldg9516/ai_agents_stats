@@ -1210,6 +1210,28 @@
 		"previous": "Previous",
 		"next": "Next"
 	},
+	"auth": {
+		"login": {
+			"title": "Sign in to AI Stats",
+			"description": "Access the AI Agent Statistics Dashboard",
+			"button": "Sign in",
+			"googleButton": "Continue with Google",
+			"domainRestriction": "Only @{domain} accounts are allowed",
+			"errors": {
+				"auth_failed": "Authentication failed. Please try again."
+			}
+		},
+		"unauthorized": {
+			"title": "Access Denied",
+			"description": "Your email domain is not authorized to access this application.",
+			"message": "Only users with @levhaolam.com email addresses can sign in.",
+			"backToHome": "Back to Home"
+		},
+		"menu": {
+			"settings": "Settings",
+			"signOut": "Sign out"
+		}
+	},
 	"agentsStats": {
 		"title": "Agent Statistics",
 		"description": "How efficiently agents use AI drafts",
