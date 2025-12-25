@@ -1224,7 +1224,7 @@
 		"unauthorized": {
 			"title": "Access Denied",
 			"description": "Your email domain is not authorized to access this application.",
-			"message": "Only users with @levhaolam.com email addresses can sign in.",
+			"message": "Only users with from Lev Haolam can sign in.",
 			"backToHome": "Back to Home"
 		},
 		"menu": {

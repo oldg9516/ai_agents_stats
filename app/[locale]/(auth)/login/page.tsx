@@ -83,9 +83,9 @@ export default function LoginPage() {
 					{t('login.googleButton')}
 				</Button>
 
-				{/* <p className="text-center text-sm text-muted-foreground">
-          {t('login.domainRestriction', { domain: 'levhaolam.com' })}
-        </p> */}
+				<p className='text-center text-sm text-muted-foreground'>
+					{t('login.domainRestriction', { domain: 'levhaolam.com' })}
+				</p>
 			</CardContent>
 		</Card>
 	)
