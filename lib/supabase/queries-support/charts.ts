@@ -29,10 +29,10 @@ async function fetchAllInBatches<T>(
 ): Promise<T[]> {
 	const { dateRange, statuses, requestTypes, categories, requirements, versions } = filters
 
-	// First, get total count (using 'id' instead of '*' for better performance)
+	// First, get total count (using 'thread_id' - support_threads_data doesn't have 'id' column)
 	let countQuery = supabase
 		.from(tableName)
-		.select('id', { count: 'exact', head: true })
+		.select('thread_id', { count: 'exact', head: true })
 		.gte('created_at', dateRange.from.toISOString())
 		.lt('created_at', dateRange.to.toISOString())
 
@@ -55,7 +55,10 @@ async function fetchAllInBatches<T>(
 	}
 
 	const { count, error: countError } = await countQuery
-	if (countError) throw countError
+	if (countError) {
+		console.error('[fetchAllInBatches] Count query error:', JSON.stringify(countError, null, 2))
+		throw countError
+	}
 
 	const totalRecords = count || 0
 	if (totalRecords === 0) return []
@@ -96,7 +99,10 @@ async function fetchAllInBatches<T>(
 			}
 
 			const promise = query.then(({ data, error }) => {
-				if (error) throw error
+				if (error) {
+					console.error('[fetchAllInBatches] Batch query error:', JSON.stringify(error, null, 2))
+					throw error
+				}
 				return (data || []) as T[]
 			})
 

@@ -24,10 +24,10 @@ async function fetchAllForKPIs<T>(
 ): Promise<T[]> {
 	const { statuses, requestTypes, categories, requirements, versions } = filters
 
-	// First, get total count (using 'id' instead of '*' for better performance)
+	// First, get total count (using 'thread_id' - this table doesn't have 'id' column)
 	let countQuery = supabase
 		.from('support_threads_data')
-		.select('id', { count: 'exact', head: true })
+		.select('thread_id', { count: 'exact', head: true })
 		.gte('created_at', dateFrom.toISOString())
 		.lt('created_at', dateTo.toISOString())
 
@@ -50,7 +50,10 @@ async function fetchAllForKPIs<T>(
 	}
 
 	const { count, error: countError } = await countQuery
-	if (countError) throw countError
+	if (countError) {
+		console.error('[fetchAllForKPIs] Count query error:', JSON.stringify(countError, null, 2))
+		throw countError
+	}
 
 	const totalRecords = count || 0
 	if (totalRecords === 0) return []
