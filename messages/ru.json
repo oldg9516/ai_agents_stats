@@ -8,6 +8,7 @@
 		"requestCategories": "Категории запросов",
 		"ticketsReview": "Обзор тикетов",
 		"backlogReports": "Отчёты бэклога",
+		"agentsStats": "Статистика агентов",
 		"aiChat": "AI Чат",
 		"documentation": "Документация",
 		"settings": "Настройки",
@@ -1208,5 +1209,51 @@
 		"pagination": "Показано {from}-{to} из {total}",
 		"previous": "Назад",
 		"next": "Вперед"
+	},
+	"agentsStats": {
+		"title": "Статистика агентов",
+		"description": "Насколько эффективно агенты используют AI драфты",
+		"filters": {
+			"title": "Параметры фильтра",
+			"description": "Фильтр статистики агентов по версии и категории"
+		},
+		"table": {
+			"email": "Email",
+			"answeredTickets": "Отвечено тикетов",
+			"aiReviewed": "Проверено AI",
+			"changed": "Изменено",
+			"criticalErrors": "Критические ошибки",
+			"unnecessaryChanges": "Лишние изменения %",
+			"aiEfficiency": "Эффективность AI %",
+			"total": "Итого",
+			"noResults": "Данные по агентам не найдены",
+			"searchPlaceholder": "Поиск по email..."
+		},
+		"modal": {
+			"title": "Изменения агента",
+			"tabs": {
+				"all": "Все изменения",
+				"critical": "Критические",
+				"unnecessary": "Правильные"
+			},
+			"noTickets": "Тикеты не найдены",
+			"loading": "Загрузка тикетов...",
+			"ticketId": "ID тикета",
+			"classification": "Классификация",
+			"category": "Категория",
+			"version": "Версия",
+			"date": "Дата",
+			"pagination": "Показано {from}-{to} из {total}",
+			"previous": "Назад",
+			"next": "Вперед"
+		},
+		"tooltips": {
+			"answeredTickets": "Всего тикетов, на которые агент дал ответ",
+			"aiReviewed": "Тикеты с AI классификацией (проверенные)",
+			"changed": "Тикеты, где агент изменил ответ AI",
+			"criticalErrors": "Реальные ошибки AI, которые нужно было исправить",
+			"unnecessaryChanges": "Агент изменил, но AI был прав",
+			"aiEfficiency": "Насколько эффективно агент использует AI драфты"
+		}
 	}
 }

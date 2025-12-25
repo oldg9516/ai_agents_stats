@@ -12,6 +12,10 @@ import {
 	BacklogReportsSlice,
 } from './slices/backlog-reports-slice'
 import {
+	createAgentsStatsSlice,
+	AgentsStatsSlice,
+} from './slices/agents-stats-slice'
+import {
 	validateAndFixDateRange,
 	isDateRangeValid,
 } from '@/lib/utils/validate-date-range'
@@ -19,7 +23,7 @@ import {
 /**
  * Global store combining all slices
  */
-type StoreState = DashboardSlice & SupportSlice & TicketsReviewSlice & BacklogReportsSlice
+type StoreState = DashboardSlice & SupportSlice & TicketsReviewSlice & BacklogReportsSlice & AgentsStatsSlice
 
 // Clean up invalid localStorage data on startup
 if (typeof window !== 'undefined') {
@@ -28,7 +32,7 @@ if (typeof window !== 'undefined') {
 		try {
 			const parsed = JSON.parse(stored)
 			// Check if version exists, if not - clear old data
-			if (!parsed.version || parsed.version < 8) {
+			if (!parsed.version || parsed.version < 9) {
 				localStorage.removeItem('ai-stats-storage')
 			}
 		} catch {
@@ -46,23 +50,25 @@ export const useStore = create<StoreState>()(
 				...createSupportSlice(...a),
 				...createTicketsReviewSlice(...a),
 				...createBacklogReportsSlice(...a),
+				...createAgentsStatsSlice(...a),
 			}),
 			{
 				name: 'ai-stats-storage',
-				version: 8, // Changed from 7 to 8 to add categoryDisplayMode with merged as default
+				version: 9, // Changed from 8 to 9 to add agentStatsFilters
 				partialize: state => ({
 					// Persist only filter states
 					dashboardFilters: state.dashboardFilters,
 					supportFilters: state.supportFilters,
 					ticketsReviewFilters: state.ticketsReviewFilters,
 					backlogReportsFilters: state.backlogReportsFilters,
+					agentStatsFilters: state.agentStatsFilters,
 					isGeneratingReport: state.isGeneratingReport,
 					generationStartedAt: state.generationStartedAt,
 				}),
 				// Migration function for version changes
 				migrate: (persistedState: any, version: number) => {
 					// Force reset on version change
-					if (version !== 8) {
+					if (version !== 9) {
 						return null
 					}
 
@@ -72,6 +78,7 @@ export const useStore = create<StoreState>()(
 						'supportFilters',
 						'ticketsReviewFilters',
 						'backlogReportsFilters',
+						'agentStatsFilters',
 					]
 
 					for (const key of filterKeys) {
@@ -100,6 +107,7 @@ export const useStore = create<StoreState>()(
 						{ key: 'supportFilters', defaultDays: 30 },
 						{ key: 'ticketsReviewFilters', defaultDays: 30 },
 						{ key: 'backlogReportsFilters', defaultDays: 90 },
+						{ key: 'agentStatsFilters', defaultDays: 30 },
 					]
 
 					for (const { key, defaultDays } of sliceConfigs) {

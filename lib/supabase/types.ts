@@ -659,3 +659,62 @@ export interface BacklogReportsFilters {
 	minTickets: number | null
 	searchQuery: string
 }
+
+// ============================================================================
+// Agent Statistics Types
+// ============================================================================
+
+/**
+ * Agent Statistics Row - shows how efficiently an agent uses AI drafts
+ */
+export interface AgentStatsRow {
+	email: string
+	answeredTickets: number // human_reply IS NOT NULL
+	aiReviewed: number // change_classification IS NOT NULL
+	changed: number // changed = true AND change_classification IS NOT NULL
+	criticalErrors: number // AI errors that needed fixing (AI_ERROR_CLASSIFICATIONS)
+	unnecessaryChangesPercent: number // (changed - criticalErrors) / aiReviewed * 100
+	aiEfficiency: number // 100 - unnecessaryChangesPercent
+}
+
+/**
+ * Agent Statistics Filters
+ */
+export interface AgentStatsFilters {
+	dateRange: {
+		from: Date
+		to: Date
+	}
+	versions: string[] // [] = all versions
+	categories: string[] // [] = all categories
+}
+
+/**
+ * Agent Change Type for modal filtering
+ * - 'all': All changes (changed=true)
+ * - 'critical': Only critical changes (real AI errors)
+ * - 'unnecessary': Only unnecessary changes (AI was correct)
+ */
+export type AgentChangeType = 'all' | 'critical' | 'unnecessary'
+
+/**
+ * Agent Change Ticket - ticket data for modal display
+ */
+export interface AgentChangeTicket {
+	id: number
+	ticket_id: string | null
+	email: string
+	change_classification: string | null
+	created_at: string
+	request_subtype: string | null
+	prompt_version: string | null
+}
+
+/**
+ * Agent Changes Modal State
+ */
+export interface AgentChangesModalState {
+	isOpen: boolean
+	agentEmail: string | null
+	changeType: AgentChangeType
+}

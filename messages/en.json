@@ -8,6 +8,7 @@
 		"requestCategories": "Request Categories",
 		"ticketsReview": "Tickets Review",
 		"backlogReports": "Backlog Reports",
+		"agentsStats": "Agent Statistics",
 		"aiChat": "AI Chat",
 		"documentation": "Documentation",
 		"settings": "Settings",
@@ -1208,5 +1209,51 @@
 		"pagination": "Showing {from}-{to} of {total}",
 		"previous": "Previous",
 		"next": "Next"
+	},
+	"agentsStats": {
+		"title": "Agent Statistics",
+		"description": "How efficiently agents use AI drafts",
+		"filters": {
+			"title": "Filter Options",
+			"description": "Filter agent statistics by version and category"
+		},
+		"table": {
+			"email": "Email",
+			"answeredTickets": "Answered Tickets",
+			"aiReviewed": "AI Reviewed",
+			"changed": "Changed",
+			"criticalErrors": "Critical Errors",
+			"unnecessaryChanges": "Unnecessary Changes %",
+			"aiEfficiency": "AI Efficiency %",
+			"total": "Total",
+			"noResults": "No agent data found",
+			"searchPlaceholder": "Search by email..."
+		},
+		"modal": {
+			"title": "Agent Changes",
+			"tabs": {
+				"all": "All Changes",
+				"critical": "Critical",
+				"unnecessary": "Unnecessary"
+			},
+			"noTickets": "No tickets found",
+			"loading": "Loading tickets...",
+			"ticketId": "Ticket ID",
+			"classification": "Classification",
+			"category": "Category",
+			"version": "Version",
+			"date": "Date",
+			"pagination": "Showing {from}-{to} of {total}",
+			"previous": "Previous",
+			"next": "Next"
+		},
+		"tooltips": {
+			"answeredTickets": "Total tickets where agent provided a response",
+			"aiReviewed": "Tickets with AI classification (reviewed)",
+			"changed": "Tickets where agent modified AI response",
+			"criticalErrors": "Real AI errors that needed fixing",
+			"unnecessaryChanges": "Agent changed but AI was correct",
+			"aiEfficiency": "How efficiently agent uses AI drafts"
+		}
 	}
 }

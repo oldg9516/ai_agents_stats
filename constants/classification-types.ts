@@ -311,3 +311,65 @@ export function isReviewedClassification(
 		classification as ClassificationType
 	)
 }
+
+// =============================================================================
+// AGENT CHANGE CLASSIFICATIONS (for agent stats page)
+// =============================================================================
+
+/**
+ * Critical change classifications - real AI errors that needed fixing
+ * Same as AI_ERROR_CLASSIFICATIONS but exported with different name for clarity
+ * Legacy: critical_error, meaningful_improvement
+ * New: CRITICAL_FACT_ERROR, MAJOR_FUNCTIONAL_OMISSION, MINOR_INFO_GAP, CONFUSING_VERBOSITY, TONAL_MISALIGNMENT
+ */
+export const CRITICAL_CHANGE_CLASSIFICATIONS: ClassificationType[] = [
+	// Legacy
+	'critical_error',
+	'meaningful_improvement',
+	// New
+	'CRITICAL_FACT_ERROR',
+	'MAJOR_FUNCTIONAL_OMISSION',
+	'MINOR_INFO_GAP',
+	'CONFUSING_VERBOSITY',
+	'TONAL_MISALIGNMENT',
+]
+
+/**
+ * Unnecessary change classifications - AI was correct but agent changed anyway
+ * Same as AI_QUALITY_CLASSIFICATIONS but exported with different name for clarity
+ * Legacy: stylistic_preference, no_significant_change
+ * New: STRUCTURAL_FIX, STYLISTIC_EDIT, PERFECT_MATCH
+ */
+export const UNNECESSARY_CHANGE_CLASSIFICATIONS: ClassificationType[] = [
+	// Legacy
+	'stylistic_preference',
+	'no_significant_change',
+	// New
+	'STRUCTURAL_FIX',
+	'STYLISTIC_EDIT',
+	'PERFECT_MATCH',
+]
+
+/**
+ * Check if classification is a critical change (real AI error)
+ */
+export function isCriticalChangeClassification(
+	classification: string | null
+): boolean {
+	if (!classification) return false
+	return CRITICAL_CHANGE_CLASSIFICATIONS.includes(
+		classification as ClassificationType
+	)
+}
+
+/**
+ * Check if classification is an unnecessary change (AI was correct)
+ */
+export function isUnnecessaryChangeClassification(
+	classification: string | null
+): boolean {
+	if (!classification) return false
+	return UNNECESSARY_CHANGE_CLASSIFICATIONS.includes(
+		classification as ClassificationType
+	)
+}

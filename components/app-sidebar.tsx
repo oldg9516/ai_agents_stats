@@ -19,6 +19,7 @@ import {
 	IconSearch,
 	IconSettings,
 	IconTicket,
+	IconUsers,
 } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'
 import * as React from 'react'
@@ -76,6 +77,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				title: t('backlogReports'),
 				url: '/backlog-reports',
 				icon: IconFileAnalytics,
+			},
+			{
+				title: t('agentsStats'),
+				url: '/agents-stats',
+				icon: IconUsers,
 			},
 			{
 				title: t('aiChat'),
