@@ -68,6 +68,7 @@ BEGIN
     SELECT DISTINCT
       std.thread_id,
       std.ticket_id,
+      std.request_type,
       std.request_subtype,
       std.created_at,
       -- Get the first outgoing response date for this thread
@@ -93,9 +94,10 @@ BEGIN
           AND sd.date > tid.incoming_date
       )
   ),
-  -- Aggregate response stats by category
+  -- Aggregate response stats by category (request_type + request_subtype)
   agent_response_stats AS (
     SELECT
+      twr.request_type,
       CASE
         WHEN twr.request_subtype LIKE '%,%' THEN 'multiply'
         ELSE twr.request_subtype
@@ -125,6 +127,7 @@ BEGIN
       ) AS p90_response_time
     FROM threads_with_responses twr
     GROUP BY
+      twr.request_type,
       CASE
         WHEN twr.request_subtype LIKE '%,%' THEN 'multiply'
         ELSE twr.request_subtype
@@ -141,7 +144,8 @@ BEGIN
   FROM category_stats cs
   CROSS JOIN total_records tr
   LEFT JOIN agent_response_stats ars
-    ON cs.request_subtype = ars.request_subtype
+    ON cs.request_type = ars.request_type
+    AND (cs.request_subtype = ars.request_subtype OR (cs.request_subtype IS NULL AND ars.request_subtype IS NULL))
   ORDER BY
     -- 1. Request type priority: Lev Haolam Subscription first, then others
     CASE cs.request_type
@@ -150,21 +154,15 @@ BEGIN
       WHEN 'Lev Haolam Subscription Retention' THEN 3
       ELSE 4
     END,
-    -- 2. Within each request_type, sort subtypes: priority subtypes first, 'other' and NULL last
+    -- 2. Within each request_type: 'other', 'multiply', NULL go last; rest sorted by count
     CASE cs.request_subtype
-      -- Priority subtypes for Lev Haolam Subscription
-      WHEN 'shipping_or_delivery_question' THEN 1
-      WHEN 'gratitude' THEN 2
-      WHEN 'payment_question' THEN 3
-      WHEN 'customization_request' THEN 4
-      -- Other specific subtypes in alphabetical-ish order
-      WHEN 'other' THEN 96
-      WHEN 'multiply' THEN 97
-      ELSE 50  -- All other subtypes in the middle
+      WHEN 'other' THEN 2
+      WHEN 'multiply' THEN 3
+      ELSE 1  -- All normal subtypes first
     END,
     -- 3. NULL subtypes at the very end
     CASE WHEN cs.request_subtype IS NULL THEN 1 ELSE 0 END,
-    -- 4. Within same priority, sort by count descending
+    -- 4. Sort by count descending (most frequent first)
     cs.category_count DESC;
 END;
 $$ LANGUAGE plpgsql
