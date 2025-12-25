@@ -1,10 +1,10 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
-import { useTranslations } from 'next-intl'
+import { LanguageSwitcher } from '@/components/language-switcher'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
-import { LanguageSwitcher } from '@/components/language-switcher'
+import { useTranslations } from 'next-intl'
+import { usePathname } from 'next/navigation'
 
 const PAGE_TITLE_KEYS: Record<string, string> = {
 	'/': 'common.home',
@@ -14,6 +14,7 @@ const PAGE_TITLE_KEYS: Record<string, string> = {
 	'/request-categories': 'common.requestCategories',
 	'/tickets-review': 'common.ticketsReview',
 	'/backlog-reports': 'common.backlogReports',
+	'/agents-stats': 'common.agentsStats',
 	'/ai-chat': 'common.aiChat',
 	'/docs': 'common.documentation',
 	'/settings': 'common.settings',
