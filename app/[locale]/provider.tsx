@@ -16,7 +16,11 @@ const Provider = ({
 	locale: string
 }) => {
 	return (
-		<NextIntlClientProvider messages={messages} locale={locale}>
+		<NextIntlClientProvider
+			messages={messages}
+			locale={locale}
+			timeZone='Asia/Jerusalem'
+		>
 			<ThemeProvider
 				attribute='class'
 				defaultTheme='light'
