@@ -42,16 +42,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const tSidebar = useTranslations('sidebar')
 
 	const data = {
-		user: {
-			name: 'shadcn',
-			email: 'm@example.com',
-			avatar: '/avatars/vercel.svg',
-		},
 		navMain: [
 			{
 				title: t('dashboard'),
 				url: '/dashboard',
 				icon: IconDashboard,
+			},
+			{
+				title: t('detailedStats'),
+				url: '/detailed-stats',
+				icon: IconListDetails,
 			},
 			{
 				title: t('ticketsReview'),
@@ -62,11 +62,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				title: t('requestCategories'),
 				url: '/request-categories',
 				icon: IconCategory,
-			},
-			{
-				title: t('detailedStats'),
-				url: '/detailed-stats',
-				icon: IconListDetails,
 			},
 			{
 				title: t('supportOverview'),
@@ -203,7 +198,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				{/* <NavSecondary items={data.navSecondary} className='mt-auto' /> */}
 			</SidebarContent>
 			<SidebarFooter>
-				<NavUser user={data.user} />
+				<NavUser />
 			</SidebarFooter>
 		</Sidebar>
 	)

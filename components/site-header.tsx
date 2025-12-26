@@ -3,7 +3,6 @@
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
-import { UserMenu } from '@/components/user-menu'
 import { useTranslations } from 'next-intl'
 import { usePathname } from 'next/navigation'
 
@@ -58,7 +57,6 @@ export function SiteHeader() {
 				<h1 className='text-base font-medium'>{getPageTitle()}</h1>
 				<div className='ml-auto flex items-center gap-2'>
 					<LanguageSwitcher />
-					<UserMenu />
 				</div>
 			</div>
 		</header>

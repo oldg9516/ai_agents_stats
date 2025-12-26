@@ -8,9 +8,16 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { supabase } from '@/lib/supabase/client'
 import { useTranslations } from 'next-intl'
 import { useParams, useSearchParams } from 'next/navigation'
+import { useState } from 'react'
+
+const isDev = process.env.NODE_ENV === 'development'
+const DEV_EMAIL = process.env.NEXT_PUBLIC_DEV_LOGIN || ''
+const DEV_PASSWORD = process.env.NEXT_PUBLIC_DEV_PASSWORD || ''
 
 function GoogleIcon({ className }: { className?: string }) {
 	return (
@@ -43,6 +50,38 @@ export default function LoginPage() {
 	const redirectTo = searchParams.get('redirect')
 	const error = searchParams.get('error')
 
+	// Dev mode state - pre-fill from env vars
+	const [devEmail, setDevEmail] = useState(DEV_EMAIL)
+	const [devPassword, setDevPassword] = useState(DEV_PASSWORD)
+	const [devLoading, setDevLoading] = useState(false)
+	const [devError, setDevError] = useState<string | null>(null)
+
+	const handleDevSignIn = async (e: React.FormEvent) => {
+		e.preventDefault()
+
+		if (!devEmail || !devPassword) {
+			setDevError('Email and password required')
+			return
+		}
+
+		setDevLoading(true)
+		setDevError(null)
+
+		const { error } = await supabase.auth.signInWithPassword({
+			email: devEmail,
+			password: devPassword,
+		})
+
+		if (error) {
+			setDevLoading(false)
+			setDevError(error.message)
+		} else {
+			// Redirect on success
+			const destination = redirectTo || `/${locale}/dashboard`
+			window.location.href = destination
+		}
+	}
+
 	const handleGoogleSignIn = async () => {
 		const origin = window.location.origin
 		const redirectUrl = `${origin}/api/auth/callback?locale=${locale}&next=${
@@ -72,6 +111,57 @@ export default function LoginPage() {
 					<div className='p-3 text-sm text-destructive bg-destructive/10 rounded-md'>
 						{t(`login.errors.${error}`)}
 					</div>
+				)}
+
+				{/* Dev mode: email/password login */}
+				{isDev && (
+					<form onSubmit={handleDevSignIn} className='space-y-4'>
+						<div className='p-2 text-xs text-center bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-md'>
+							DEV MODE
+						</div>
+
+						{devError && (
+							<div className='p-3 text-sm text-destructive bg-destructive/10 rounded-md'>
+								{devError}
+							</div>
+						)}
+
+						<div className='space-y-2'>
+							<Label htmlFor='email'>Email</Label>
+							<Input
+								id='email'
+								type='email'
+								placeholder='@levhaolam.com'
+								value={devEmail}
+								onChange={e => setDevEmail(e.target.value)}
+							/>
+						</div>
+
+						<div className='space-y-2'>
+							<Label htmlFor='password'>Password</Label>
+							<Input
+								id='password'
+								type='password'
+								value={devPassword}
+								onChange={e => setDevPassword(e.target.value)}
+							/>
+						</div>
+
+						<Button type='submit' className='w-full' disabled={devLoading}>
+							{devLoading ? 'Signing in...' : 'Sign in (Dev)'}
+						</Button>
+
+						<div className='relative'>
+							<div className='absolute inset-0 flex items-center'>
+								<span className='w-full border-t' />
+							</div>
+							<div className='relative flex justify-center text-xs uppercase'>
+								<span className='bg-background px-2 text-muted-foreground'>
+									Or
+								</span>
+							</div>
+						</div>
+					</form>
 				)}
 
 				<Button
