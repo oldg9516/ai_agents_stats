@@ -1,6 +1,6 @@
 import { supabaseServer } from '../server'
 import type { DashboardFilters, DateFilterMode, KPIData } from '../types'
-import { calculateTrend, getPreviousPeriod } from './utils'
+import { calculateTrend, getPreviousPeriod, isAiQualityClassification } from './utils'
 
 // Use server-side Supabase client for all queries
 const supabase = supabaseServer
@@ -151,16 +151,12 @@ export async function getKPIData(
 	const currentChanged = currentChangedCount || 0
 	const previousChanged = previousChangedCount || 0
 
-	// Unchanged records (no_significant_change or stylistic_preference - both are good quality)
-	const currentUnchanged = currentRecords.filter(
-		r =>
-			r.change_classification === 'no_significant_change' ||
-			r.change_classification === 'stylistic_preference'
+	// Good quality classifications: PERFECT_MATCH, STRUCTURAL_FIX, STYLISTIC_EDIT, no_significant_change, stylistic_preference
+	const currentUnchanged = currentRecords.filter(r =>
+		isAiQualityClassification(r.change_classification)
 	).length
-	const previousUnchanged = previousRecords.filter(
-		r =>
-			r.change_classification === 'no_significant_change' ||
-			r.change_classification === 'stylistic_preference'
+	const previousUnchanged = previousRecords.filter(r =>
+		isAiQualityClassification(r.change_classification)
 	).length
 
 	// Quality calculated from evaluable records
@@ -183,11 +179,8 @@ export async function getKPIData(
 			acc[cat] = { total: 0, unchanged: 0 }
 		}
 		acc[cat].total++
-		// Count no_significant_change and stylistic_preference as unchanged (good quality)
-		if (
-			record.change_classification === 'no_significant_change' ||
-			record.change_classification === 'stylistic_preference'
-		) {
+		// Count all AI quality classifications as unchanged (good quality)
+		if (isAiQualityClassification(record.change_classification)) {
 			acc[cat].unchanged++
 		}
 		return acc
@@ -213,10 +206,8 @@ export async function getKPIData(
 			r.change_classification !== 'context_shift'
 	)
 	const previousCategoryTotal = previousCategoryData.length
-	const previousCategoryUnchanged = previousCategoryData.filter(
-		r =>
-			r.change_classification === 'no_significant_change' ||
-			r.change_classification === 'stylistic_preference'
+	const previousCategoryUnchanged = previousCategoryData.filter(r =>
+		isAiQualityClassification(r.change_classification)
 	).length
 	const previousCategoryPercentage =
 		previousCategoryTotal > 0
