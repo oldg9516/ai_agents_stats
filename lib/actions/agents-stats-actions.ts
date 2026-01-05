@@ -5,6 +5,10 @@
  *
  * Server-side functions for fetching agent statistics
  * Shows how efficiently each agent uses AI drafts
+ *
+ * Data sources:
+ * - Answered Tickets: from support_dialogs (direction='out', grouped by email)
+ * - AI Reviewed/Changed/Critical: from ai_human_comparison
  */
 
 import { supabaseServer } from '@/lib/supabase/server'
@@ -23,11 +27,16 @@ import type {
 // TYPES
 // =============================================================================
 
-type RawAgentRecord = {
+type RawComparisonRecord = {
 	email: string
-	human_reply: string | null
 	change_classification: string | null
 	changed: boolean | null
+}
+
+type DialogOutRecord = {
+	email: string | null
+	ticket_id: string | null
+	date: string | null
 }
 
 type PaginatedTicketsResult = {
@@ -39,21 +48,8 @@ type PaginatedTicketsResult = {
 // CONSTANTS
 // =============================================================================
 
-const BATCH_SIZE = 1000
+const BATCH_SIZE = 500
 const MAX_CONCURRENT_BATCHES = 3
-const REQUEST_TIMEOUT = 30000
-
-/**
- * Creates a timeout promise that rejects after specified milliseconds
- */
-function createTimeoutPromise(ms: number, operationName: string): Promise<never> {
-	return new Promise((_, reject) =>
-		setTimeout(
-			() => reject(new Error(`${operationName} timed out after ${ms}ms`)),
-			ms
-		)
-	)
-}
 
 // =============================================================================
 // FETCH AGENT STATS
@@ -61,13 +57,13 @@ function createTimeoutPromise(ms: number, operationName: string): Promise<never>
 
 /**
  * Fetch agent statistics
- * Aggregates data by agent email to show:
- * - Answered tickets (human_reply IS NOT NULL)
- * - AI reviewed (change_classification IS NOT NULL)
- * - Changed (changed = true)
- * - Critical errors (real AI errors that needed fixing)
- * - Unnecessary changes % (agent changed but AI was correct)
- * - AI efficiency (100 - unnecessary %)
+ *
+ * Data sources:
+ * - Answered Tickets: from support_dialogs where direction='out'
+ *   Grouped by email, counted as unique responses after incoming message
+ * - AI Reviewed: from ai_human_comparison (change_classification IS NOT NULL)
+ * - Changed: from ai_human_comparison (changed = true)
+ * - Critical: from ai_human_comparison (classification in CRITICAL list)
  */
 export async function fetchAgentStats(
 	filters: AgentStatsFilters
@@ -76,52 +72,53 @@ export async function fetchAgentStats(
 		const startTime = Date.now()
 		const { dateRange, versions, categories } = filters
 
-		// Build base query
-		let query = supabaseServer
-			.from('ai_human_comparison')
-			.select('email, human_reply, change_classification, changed', { count: 'exact' })
-			.not('email', 'is', null)
-			.gte('created_at', dateRange.from.toISOString())
-			.lt('created_at', dateRange.to.toISOString())
+		// =========================================================================
+		// STEP 1: Fetch threads from support_threads_data (for filtering + ticket_id)
+		// =========================================================================
 
-		// Apply optional filters
+		let threadsQuery = supabaseServer
+			.from('support_threads_data')
+			.select('thread_id, ticket_id', { count: 'exact' })
+			.gte('thread_date', dateRange.from.toISOString())
+			.lt('thread_date', dateRange.to.toISOString())
+			.not('ticket_id', 'is', null)
+
 		if (versions.length > 0) {
-			query = query.in('prompt_version', versions)
+			threadsQuery = threadsQuery.in('prompt_version', versions)
 		}
 		if (categories.length > 0) {
-			query = query.in('request_subtype', categories)
+			threadsQuery = threadsQuery.in('request_subtype', categories)
 		}
 
-		// First, get total count
-		const { count, error: countError } = await query
+		const { count: threadsCount, error: countError } = await threadsQuery
 		if (countError) throw countError
 
-		const totalRecords = count || 0
-		if (totalRecords === 0) {
+		const totalThreads = threadsCount || 0
+		if (totalThreads === 0) {
 			return { success: true, data: [] }
 		}
 
-		// Fetch all records in batches
-		const allRecords: RawAgentRecord[] = []
-		const numBatches = Math.ceil(totalRecords / BATCH_SIZE)
+		// Fetch all threads in batches
+		const allThreads: { thread_id: string; ticket_id: string }[] = []
+		const numThreadBatches = Math.ceil(totalThreads / BATCH_SIZE)
 
-		for (let batchStart = 0; batchStart < numBatches; batchStart += MAX_CONCURRENT_BATCHES) {
-			const batchPromises: Promise<RawAgentRecord[]>[] = []
+		for (let batchStart = 0; batchStart < numThreadBatches; batchStart += MAX_CONCURRENT_BATCHES) {
+			const batchPromises: Promise<{ thread_id: string; ticket_id: string }[]>[] = []
 
 			for (
 				let i = batchStart;
-				i < Math.min(batchStart + MAX_CONCURRENT_BATCHES, numBatches);
+				i < Math.min(batchStart + MAX_CONCURRENT_BATCHES, numThreadBatches);
 				i++
 			) {
 				const offset = i * BATCH_SIZE
 
 				const promise = (async () => {
 					let batchQuery = supabaseServer
-						.from('ai_human_comparison')
-						.select('email, human_reply, change_classification, changed')
-						.not('email', 'is', null)
-						.gte('created_at', dateRange.from.toISOString())
-						.lt('created_at', dateRange.to.toISOString())
+						.from('support_threads_data')
+						.select('thread_id, ticket_id')
+						.gte('thread_date', dateRange.from.toISOString())
+						.lt('thread_date', dateRange.to.toISOString())
+						.not('ticket_id', 'is', null)
 						.range(offset, offset + BATCH_SIZE - 1)
 
 					if (versions.length > 0) {
@@ -133,85 +130,196 @@ export async function fetchAgentStats(
 
 					const { data, error } = await batchQuery
 					if (error) throw error
-					return (data || []) as RawAgentRecord[]
+					return (data || []) as { thread_id: string; ticket_id: string }[]
 				})()
 
 				batchPromises.push(promise)
 			}
 
 			const results = await Promise.all(batchPromises)
-			allRecords.push(...results.flat())
+			allThreads.push(...results.flat())
 
-			// Small delay between batch groups
-			if (batchStart + MAX_CONCURRENT_BATCHES < numBatches) {
+			if (batchStart + MAX_CONCURRENT_BATCHES < numThreadBatches) {
 				await new Promise(resolve => setTimeout(resolve, 50))
 			}
 		}
 
-		// Aggregate by agent email
-		const agentMap = new Map<string, {
-			answeredTickets: number
+		const threadIds = allThreads.map(t => t.thread_id)
+		const ticketIds = [...new Set(allThreads.map(t => t.ticket_id).filter(Boolean))]
+
+		// =========================================================================
+		// STEP 2: Fetch incoming message dates from support_dialogs
+		// =========================================================================
+
+		const incomingDates = new Map<string, Date>()
+
+		for (let i = 0; i < threadIds.length; i += BATCH_SIZE) {
+			const batchIds = threadIds.slice(i, i + BATCH_SIZE)
+
+			const { data, error } = await supabaseServer
+				.from('support_dialogs')
+				.select('thread_id, date')
+				.in('thread_id', batchIds)
+				.eq('direction', 'in')
+
+			if (error) throw error
+
+			for (const record of (data || []) as { thread_id: string; date: string }[]) {
+				if (record.thread_id && record.date) {
+					incomingDates.set(record.thread_id, new Date(record.date))
+				}
+			}
+
+			if (i + BATCH_SIZE < threadIds.length) {
+				await new Promise(resolve => setTimeout(resolve, 50))
+			}
+		}
+
+		// =========================================================================
+		// STEP 3: Fetch outgoing messages with email from support_dialogs
+		// Count answered tickets per agent
+		// =========================================================================
+
+		// Map: email -> Set of thread_ids where agent responded
+		const agentAnsweredThreads = new Map<string, Set<string>>()
+
+		// Group threads by ticket_id
+		const ticketToThreads = new Map<string, string[]>()
+		for (const thread of allThreads) {
+			if (!thread.ticket_id) continue
+			const existing = ticketToThreads.get(thread.ticket_id) || []
+			existing.push(thread.thread_id)
+			ticketToThreads.set(thread.ticket_id, existing)
+		}
+
+		// Fetch outgoing messages with email
+		for (let i = 0; i < ticketIds.length; i += BATCH_SIZE) {
+			const batchTicketIds = ticketIds.slice(i, i + BATCH_SIZE)
+
+			const { data, error } = await supabaseServer
+				.from('support_dialogs')
+				.select('email, ticket_id, date')
+				.in('ticket_id', batchTicketIds)
+				.eq('direction', 'out')
+				.not('email', 'is', null)
+
+			if (error) throw error
+
+			// Check if outgoing message is after incoming for each thread
+			for (const outMsg of (data || []) as DialogOutRecord[]) {
+				if (!outMsg.email || !outMsg.ticket_id || !outMsg.date) continue
+
+				const outDate = new Date(outMsg.date)
+				const threadsForTicket = ticketToThreads.get(outMsg.ticket_id) || []
+
+				for (const threadId of threadsForTicket) {
+					const inDate = incomingDates.get(threadId)
+					if (inDate && outDate > inDate) {
+						// This agent responded to this thread
+						const existing = agentAnsweredThreads.get(outMsg.email) || new Set()
+						existing.add(threadId)
+						agentAnsweredThreads.set(outMsg.email, existing)
+					}
+				}
+			}
+
+			if (i + BATCH_SIZE < ticketIds.length) {
+				await new Promise(resolve => setTimeout(resolve, 50))
+			}
+		}
+
+		// =========================================================================
+		// STEP 4: Fetch ai_human_comparison data (for AI stats)
+		// =========================================================================
+
+		// Map: email -> stats
+		const agentAIStats = new Map<string, {
 			aiReviewed: number
 			changed: number
 			criticalErrors: number
 		}>()
 
-		for (const record of allRecords) {
-			const email = record.email
-			if (!email) continue
+		for (let i = 0; i < threadIds.length; i += BATCH_SIZE) {
+			const batchIds = threadIds.slice(i, i + BATCH_SIZE)
 
-			const current = agentMap.get(email) || {
-				answeredTickets: 0,
-				aiReviewed: 0,
-				changed: 0,
-				criticalErrors: 0,
-			}
+			const { data, error } = await supabaseServer
+				.from('ai_human_comparison')
+				.select('email, change_classification, changed')
+				.in('thread_id', batchIds)
+				.not('email', 'is', null)
 
-			// Answered tickets - has human reply
-			if (record.human_reply !== null) {
-				current.answeredTickets++
-			}
+			if (error) throw error
 
-			// AI reviewed - has classification
-			if (record.change_classification !== null) {
-				current.aiReviewed++
+			for (const record of (data || []) as RawComparisonRecord[]) {
+				if (!record.email) continue
 
-				// Changed - agent modified AI output
-				if (record.changed === true) {
-					current.changed++
+				const current = agentAIStats.get(record.email) || {
+					aiReviewed: 0,
+					changed: 0,
+					criticalErrors: 0,
 				}
 
-				// Critical errors - real AI errors that needed fixing
-				if (CRITICAL_CHANGE_CLASSIFICATIONS.includes(record.change_classification as never)) {
-					current.criticalErrors++
+				// AI reviewed - has classification
+				if (record.change_classification !== null) {
+					current.aiReviewed++
+
+					// Changed - agent modified AI output
+					if (record.changed === true) {
+						current.changed++
+					}
+
+					// Critical errors - real AI errors that needed fixing
+					if (CRITICAL_CHANGE_CLASSIFICATIONS.includes(record.change_classification as never)) {
+						current.criticalErrors++
+					}
 				}
+
+				agentAIStats.set(record.email, current)
 			}
 
-			agentMap.set(email, current)
+			if (i + BATCH_SIZE < threadIds.length) {
+				await new Promise(resolve => setTimeout(resolve, 50))
+			}
 		}
 
-		// Calculate percentages and build result
+		// =========================================================================
+		// STEP 5: Combine stats and calculate percentages
+		// =========================================================================
+
+		// Get all unique emails from both sources
+		const allEmails = new Set([
+			...agentAnsweredThreads.keys(),
+			...agentAIStats.keys(),
+		])
+
 		const result: AgentStatsRow[] = []
 
-		for (const [email, stats] of agentMap) {
-			// Only include agents with AI reviewed records
-			if (stats.aiReviewed === 0) continue
+		for (const email of allEmails) {
+			const answeredThreads = agentAnsweredThreads.get(email)
+			const aiStats = agentAIStats.get(email)
+
+			const answeredTickets = answeredThreads?.size || 0
+			const aiReviewed = aiStats?.aiReviewed || 0
+			const changed = aiStats?.changed || 0
+			const criticalErrors = aiStats?.criticalErrors || 0
+
+			// Only include agents with answered tickets or AI reviewed records
+			if (answeredTickets === 0 && aiReviewed === 0) continue
 
 			// Unnecessary changes = changed but AI was correct
-			// This is: changed - criticalErrors (where change_classification is in UNNECESSARY)
-			const unnecessaryChanges = Math.max(0, stats.changed - stats.criticalErrors)
-			const unnecessaryChangesPercent = stats.aiReviewed > 0
-				? (unnecessaryChanges / stats.aiReviewed) * 100
+			const unnecessaryChanges = Math.max(0, changed - criticalErrors)
+			const unnecessaryChangesPercent = aiReviewed > 0
+				? (unnecessaryChanges / aiReviewed) * 100
 				: 0
 
 			const aiEfficiency = 100 - unnecessaryChangesPercent
 
 			result.push({
 				email,
-				answeredTickets: stats.answeredTickets,
-				aiReviewed: stats.aiReviewed,
-				changed: stats.changed,
-				criticalErrors: stats.criticalErrors,
+				answeredTickets,
+				aiReviewed,
+				changed,
+				criticalErrors,
 				unnecessaryChangesPercent: Math.round(unnecessaryChangesPercent * 10) / 10,
 				aiEfficiency: Math.round(aiEfficiency * 10) / 10,
 			})
@@ -221,7 +329,7 @@ export async function fetchAgentStats(
 		result.sort((a, b) => b.aiEfficiency - a.aiEfficiency)
 
 		const duration = Date.now() - startTime
-		console.log(`[AgentStats] Fetched ${result.length} agents in ${duration}ms`)
+		console.log(`[AgentStats] Fetched ${result.length} agents from ${totalThreads} threads in ${duration}ms`)
 
 		return { success: true, data: result }
 	} catch (error) {

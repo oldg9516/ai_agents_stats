@@ -59,23 +59,27 @@ const MAX_CONCURRENT_BATCHES = 3
 const DIALOG_BATCH_SIZE = 300
 
 // =============================================================================
-// SECOND REQUEST DETECTION
+// DIALOG PATTERNS DETECTION (Second Request + Not Responded)
 // =============================================================================
 
 /**
- * Fetch ticket IDs that have "second request" pattern
- * A second request is when there are >1 incoming messages without outgoing between them
+ * Fetch dialogs for ticket IDs and analyze patterns
+ * Returns both:
+ * - secondRequestTicketIds: tickets with >1 incoming messages without outgoing between them
+ * - notRespondedTicketIds: tickets where the last incoming message has no outgoing response after it
  *
  * @param ticketIds - List of ticket IDs to check
- * @returns Set of ticket IDs that have second request pattern
+ * @returns Object with both sets of ticket IDs
  */
-async function fetchSecondRequestTicketIds(
+async function fetchDialogPatterns(
 	ticketIds: string[]
-): Promise<Set<string>> {
-	if (ticketIds.length === 0) return new Set()
+): Promise<{ secondRequestTicketIds: Set<string>; notRespondedTicketIds: Set<string> }> {
+	const emptyResult = { secondRequestTicketIds: new Set<string>(), notRespondedTicketIds: new Set<string>() }
+
+	if (ticketIds.length === 0) return emptyResult
 
 	const uniqueTicketIds = [...new Set(ticketIds.filter(Boolean))]
-	if (uniqueTicketIds.length === 0) return new Set()
+	if (uniqueTicketIds.length === 0) return emptyResult
 
 	// Fetch dialogs in batches
 	const allDialogs: DialogRecord[] = []
@@ -95,7 +99,7 @@ async function fetchSecondRequestTicketIds(
 					.in('ticket_id', batchTicketIds)
 
 				if (error) {
-					console.error('[SecondRequest] Error fetching dialogs:', error)
+					console.error('[DialogPatterns] Error fetching dialogs:', error)
 					return []
 				}
 
@@ -114,7 +118,7 @@ async function fetchSecondRequestTicketIds(
 		}
 	}
 
-	if (allDialogs.length === 0) return new Set()
+	if (allDialogs.length === 0) return emptyResult
 
 	// Group dialogs by ticket_id
 	const dialogsByTicket = new Map<string, DialogRecord[]>()
@@ -125,8 +129,9 @@ async function fetchSecondRequestTicketIds(
 		dialogsByTicket.set(dialog.ticket_id, existing)
 	}
 
-	// Find tickets with second request pattern
-	const result = new Set<string>()
+	// Analyze patterns for each ticket
+	const secondRequestTicketIds = new Set<string>()
+	const notRespondedTicketIds = new Set<string>()
 
 	for (const [ticketId, ticketDialogs] of dialogsByTicket) {
 		// Sort by date
@@ -135,22 +140,40 @@ async function fetchSecondRequestTicketIds(
 		)
 
 		let lastIncoming: DialogRecord | null = null
+		let hasSecondRequest = false
 
 		for (const dialog of sorted) {
 			if (dialog.direction === 'in') {
-				if (lastIncoming !== null) {
+				if (lastIncoming !== null && !hasSecondRequest) {
 					// Found second incoming without outgoing between them!
-					result.add(ticketId)
-					break
+					secondRequestTicketIds.add(ticketId)
+					hasSecondRequest = true
 				}
 				lastIncoming = dialog
 			} else if (dialog.direction === 'out') {
 				lastIncoming = null // Reset - agent responded
 			}
 		}
+
+		// After processing all dialogs, if lastIncoming is not null,
+		// it means the last incoming message was never responded to
+		if (lastIncoming !== null) {
+			notRespondedTicketIds.add(ticketId)
+		}
 	}
 
-	return result
+	return { secondRequestTicketIds, notRespondedTicketIds }
+}
+
+/**
+ * Legacy wrapper for backward compatibility
+ * @deprecated Use fetchDialogPatterns instead
+ */
+async function fetchSecondRequestTicketIds(
+	ticketIds: string[]
+): Promise<Set<string>> {
+	const { secondRequestTicketIds } = await fetchDialogPatterns(ticketIds)
+	return secondRequestTicketIds
 }
 
 // =============================================================================
@@ -189,12 +212,12 @@ export async function fetchDetailedStatsTS(
 			`[DetailedStats TS] Fetched ${records.length} records in ${(performance.now() - startTime).toFixed(0)}ms`
 		)
 
-		// Step 2.5: Fetch second request ticket IDs
+		// Step 2.5: Fetch second request ticket IDs from support_dialogs
 		const ticketIds = records.map(r => r.ticket_id).filter(Boolean) as string[]
-		const secondRequestStart = performance.now()
+		const dialogPatternsStart = performance.now()
 		const secondRequestTicketIds = await fetchSecondRequestTicketIds(ticketIds)
 		console.log(
-			`[DetailedStats TS] Found ${secondRequestTicketIds.size} second request tickets in ${(performance.now() - secondRequestStart).toFixed(0)}ms`
+			`[DetailedStats TS] Found ${secondRequestTicketIds.size} second request tickets in ${(performance.now() - dialogPatternsStart).toFixed(0)}ms`
 		)
 
 		// Step 3: Aggregate in TypeScript
