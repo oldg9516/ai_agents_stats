@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import type { CategoryRecord } from '@/lib/supabase/types'
 import { getClassificationColor } from '@/constants/classification-types'
+import { ZOHO_TICKET_URL } from '@/constants/zoho'
 import { useTranslations } from 'next-intl'
 import { format } from 'date-fns'
 import {
@@ -26,8 +27,6 @@ import {
 	IconExternalLink,
 	IconSearch,
 } from '@tabler/icons-react'
-
-const ZOHO_TICKET_URL = 'https://support.levhaolam.com/agent/levh/support/tickets/details/'
 
 /**
  * Format classification name for display

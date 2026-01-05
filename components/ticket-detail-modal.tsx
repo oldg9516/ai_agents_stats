@@ -40,6 +40,7 @@ import {
 	getScoreGroup,
 } from '@/constants/classification-types'
 import { REVIEWER_AGENTS } from '@/constants/qualified-agents'
+import { ZOHO_TICKET_URL } from '@/constants/zoho'
 import { updateTicketReview } from '@/lib/actions/ticket-update-actions'
 import { triggerTicketsRefresh } from '@/lib/hooks/use-paginated-tickets'
 import type { TicketReviewRecord } from '@/lib/supabase/types'
@@ -185,24 +186,42 @@ export function TicketDetailModal({
 								)}
 							</DialogDescription>
 						</div>
-						<Button
-							variant='outline'
-							size='sm'
-							asChild
-							className='shrink-0 mr-6 self-end'
-						>
-							<Link
-								href={`/tickets-review/ticket/${ticket.id}`}
-								target='_blank'
-								rel='noopener noreferrer'
+						<div className='flex items-center gap-2 shrink-0 mr-6 self-end'>
+							{ticket.ticket_id && (
+								<Button
+									variant='outline'
+									size='sm'
+									asChild
+								>
+									<a
+										href={`${ZOHO_TICKET_URL}${ticket.ticket_id}`}
+										target='_blank'
+										rel='noopener noreferrer'
+									>
+										<IconExternalLink className='h-4 w-4 mr-2' />
+										<span className='hidden sm:inline'>Zoho</span>
+										<span className='sm:hidden'>Zoho</span>
+									</a>
+								</Button>
+							)}
+							<Button
+								variant='outline'
+								size='sm'
+								asChild
 							>
-								<IconExternalLink className='h-4 w-4 mr-2' />
-								<span className='hidden sm:inline'>
-									{t('modal.openFullPage')}
-								</span>
-								<span className='sm:hidden'>{t('modal.open')}</span>
-							</Link>
-						</Button>
+								<Link
+									href={`/tickets-review/ticket/${ticket.id}`}
+									target='_blank'
+									rel='noopener noreferrer'
+								>
+									<IconExternalLink className='h-4 w-4 mr-2' />
+									<span className='hidden sm:inline'>
+										{t('modal.openFullPage')}
+									</span>
+									<span className='sm:hidden'>{t('modal.open')}</span>
+								</Link>
+							</Button>
+						</div>
 					</div>
 
 					{/* Navigation Buttons */}
