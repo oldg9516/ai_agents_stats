@@ -92,6 +92,9 @@ export async function fetchTicketsReview(
 		query = query.in('reviewer_name', reviewerNames)
 	}
 
+	// Exclude system/API emails from statistics
+	query = query.neq('email', 'api@levhaolam.com')
+
 	const { data: tickets, error: ticketsError } = await query
 
 	if (ticketsError) throw ticketsError
@@ -278,6 +281,7 @@ export async function fetchTicketsReviewFilterOptions(
 		.gte('created_at', dateRange.from.toISOString())
 		.lt('created_at', dateRange.to.toISOString())
 		.not('change_classification', 'is', null)
+		.neq('email', 'api@levhaolam.com') // Exclude system/API emails
 
 	if (error) throw error
 
@@ -342,6 +346,7 @@ export async function fetchAdjacentTicketIds(
 		.from('ai_human_comparison')
 		.select('id')
 		.not('change_classification', 'is', null)
+		.neq('email', 'api@levhaolam.com') // Exclude system/API emails
 		.gt('created_at', currentCreatedAt)
 		.order('created_at', { ascending: true })
 		.limit(1)
@@ -352,6 +357,7 @@ export async function fetchAdjacentTicketIds(
 		.from('ai_human_comparison')
 		.select('id')
 		.not('change_classification', 'is', null)
+		.neq('email', 'api@levhaolam.com') // Exclude system/API emails
 		.lt('created_at', currentCreatedAt)
 		.order('created_at', { ascending: false })
 		.limit(1)

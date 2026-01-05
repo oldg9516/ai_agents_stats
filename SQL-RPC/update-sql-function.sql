@@ -56,6 +56,7 @@ BEGIN
       AND (p_versions IS NULL OR prompt_version = ANY(p_versions))
       AND (p_categories IS NULL OR request_subtype = ANY(p_categories))
       AND (p_agents IS NULL OR email = ANY(p_agents))
+      AND (email IS NULL OR email != 'api@levhaolam.com')  -- Exclude system/API emails
   ),
   version_aggregations AS (
     SELECT

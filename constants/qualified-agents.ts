@@ -49,3 +49,19 @@ export const REVIEWER_AGENTS = [
 ] as const
 
 export type ReviewerAgent = (typeof REVIEWER_AGENTS)[number]
+
+/**
+ * Excluded Emails - emails that should be excluded from all statistics
+ * These are system/API accounts that shouldn't appear in agent statistics
+ */
+export const EXCLUDED_EMAILS = ['api@levhaolam.com'] as const
+
+export type ExcludedEmail = (typeof EXCLUDED_EMAILS)[number]
+
+/**
+ * Helper function to check if an email should be excluded
+ */
+export function isExcludedEmail(email: string | null): boolean {
+	if (!email) return false
+	return EXCLUDED_EMAILS.includes(email as ExcludedEmail)
+}

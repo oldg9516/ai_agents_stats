@@ -147,12 +147,14 @@ BEGIN
     ON cs.request_type = ars.request_type
     AND (cs.request_subtype = ars.request_subtype OR (cs.request_subtype IS NULL AND ars.request_subtype IS NULL))
   ORDER BY
-    -- 1. Request type priority: Lev Haolam Subscription first, then others
+    -- 1. Request type priority: Lev Haolam Subscription first, then Retention, Shop, Tour, Other
     CASE cs.request_type
       WHEN 'Lev Haolam Subscription' THEN 1
-      WHEN 'Lev Haolam Shop' THEN 2
-      WHEN 'Lev Haolam Subscription Retention' THEN 3
-      ELSE 4
+      WHEN 'Lev Haolam Subscription Retention' THEN 2
+      WHEN 'Lev Haolam Shop' THEN 3
+      WHEN 'Lev Haolam Tour' THEN 4
+      WHEN 'Other' THEN 5
+      ELSE 6
     END,
     -- 2. Within each request_type: 'other', 'multiply', NULL go last; rest sorted by count
     CASE cs.request_subtype

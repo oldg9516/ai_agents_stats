@@ -289,6 +289,9 @@ async function getTotalCount(
 	if (categories.length > 0) query = query.in('request_subtype', categories)
 	if (agents.length > 0) query = query.in('email', agents)
 
+	// Exclude system/API emails from statistics
+	query = query.neq('email', 'api@levhaolam.com')
+
 	const { count, error } = await query
 
 	if (error) throw new Error(`Count query failed: ${error.message}`)
@@ -332,6 +335,9 @@ async function fetchInBatches(
 			if (versions.length > 0) query = query.in('prompt_version', versions)
 			if (categories.length > 0) query = query.in('request_subtype', categories)
 			if (agents.length > 0) query = query.in('email', agents)
+
+			// Exclude system/API emails from statistics
+			query = query.neq('email', 'api@levhaolam.com')
 
 			batchPromises.push(query)
 		}

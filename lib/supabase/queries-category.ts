@@ -48,6 +48,9 @@ async function fetchAllForCategory<T>(
     countQuery = countQuery.in('prompt_version', versions)
   }
 
+  // Exclude system/API emails from statistics
+  countQuery = countQuery.neq('email', 'api@levhaolam.com')
+
   const { count, error: countError } = await countQuery
   if (countError) throw countError
 
@@ -71,6 +74,9 @@ async function fetchAllForCategory<T>(
     if (versions.length > 0) {
       query = query.in('prompt_version', versions)
     }
+
+    // Exclude system/API emails from statistics
+    query = query.neq('email', 'api@levhaolam.com')
 
     const { data, error } = await query
     if (error) throw error
@@ -103,6 +109,9 @@ async function fetchAllForCategory<T>(
       if (versions.length > 0) {
         query = query.in('prompt_version', versions)
       }
+
+      // Exclude system/API emails from statistics
+      query = query.neq('email', 'api@levhaolam.com')
 
       const promise = query.then(({ data, error }) => {
         if (error) throw error
@@ -429,6 +438,9 @@ export async function getCategoryRecords(
   if (versions.length > 0) {
     query = query.in('prompt_version', versions)
   }
+
+  // Exclude system/API emails from statistics
+  query = query.neq('email', 'api@levhaolam.com')
 
   const { data, count, error } = await query
 

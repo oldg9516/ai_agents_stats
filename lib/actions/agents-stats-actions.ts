@@ -202,6 +202,7 @@ export async function fetchAgentStats(
 				.in('ticket_id', batchTicketIds)
 				.eq('direction', 'out')
 				.not('email', 'is', null)
+				.neq('email', 'api@levhaolam.com') // Exclude system/API emails
 
 			if (error) throw error
 
@@ -247,6 +248,7 @@ export async function fetchAgentStats(
 				.select('email, change_classification, changed')
 				.in('thread_id', batchIds)
 				.not('email', 'is', null)
+				.neq('email', 'api@levhaolam.com') // Exclude system/API emails
 
 			if (error) throw error
 

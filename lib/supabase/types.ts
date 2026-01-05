@@ -59,6 +59,39 @@ export interface Database {
 					total_count: number
 				}>
 			}
+			get_kpi_stats: {
+				Args: {
+					p_from_date: string
+					p_to_date: string
+					p_versions?: string[] | null
+					p_categories?: string[] | null
+					p_agents?: string[] | null
+					p_date_field?: string
+				}
+				Returns: Array<{
+					total_records: number
+					reviewed_records: number
+					context_shift_records: number
+					quality_records: number
+					changed_records: number
+				}>
+			}
+			get_best_category: {
+				Args: {
+					p_from_date: string
+					p_to_date: string
+					p_versions?: string[] | null
+					p_categories?: string[] | null
+					p_agents?: string[] | null
+					p_date_field?: string
+				}
+				Returns: Array<{
+					category: string
+					total_evaluable: number
+					quality_records: number
+					quality_percentage: number
+				}>
+			}
 		}
 		Enums: {
 			[_ in never]: never

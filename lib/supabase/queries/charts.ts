@@ -33,6 +33,9 @@ function applyDashboardFilters(
 		query = query.in('email', agents)
 	}
 
+	// Exclude system/API emails from statistics
+	query = query.neq('email', 'api@levhaolam.com')
+
 	return query
 }
 

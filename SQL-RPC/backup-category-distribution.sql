@@ -1,15 +1,6 @@
--- SQL function for category distribution aggregation
--- This avoids the 1000 row limit by aggregating on the database side
--- Counts ALL records (not just reviewed) for pie chart total display
--- Excludes context_shift from quality calculations only
--- Excludes system/API emails (api@levhaolam.com) from statistics
---
--- Good quality classifications (unchanged_records):
--- - PERFECT_MATCH (new v4.0)
--- - STRUCTURAL_FIX (new v4.0)
--- - STYLISTIC_EDIT (new v4.0)
--- - no_significant_change (legacy v3.x)
--- - stylistic_preference (legacy v3.x)
+-- BACKUP: get_category_distribution function BEFORE adding api@levhaolam.com exclusion
+-- Execute this in Supabase SQL Editor to ROLLBACK if needed
+-- Generated: 2025-01-05
 
 DROP FUNCTION IF EXISTS get_category_distribution(timestamp with time zone, timestamp with time zone, text[], text[]);
 DROP FUNCTION IF EXISTS get_category_distribution(timestamp with time zone, timestamp with time zone, text[], text[], text[]);
@@ -57,7 +48,6 @@ BEGIN
       AND ($3 IS NULL OR prompt_version = ANY($3))
       AND ($4 IS NULL OR request_subtype = ANY($4))
       AND ($5 IS NULL OR email = ANY($5))
-      AND (email IS NULL OR email != ''api@levhaolam.com'')
       %s
     GROUP BY request_subtype
     ORDER BY total_records DESC
@@ -70,4 +60,4 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION get_category_distribution IS 'Returns category distribution with total records (ALL) and unchanged records (good quality classifications: PERFECT_MATCH, STRUCTURAL_FIX, STYLISTIC_EDIT, no_significant_change, stylistic_preference) for pie chart. Supports dynamic date field (created_at or human_reply_date). Excludes system/API emails (api@levhaolam.com).';
+COMMENT ON FUNCTION get_category_distribution IS 'Returns category distribution with total records (ALL) and unchanged records (good quality classifications: PERFECT_MATCH, STRUCTURAL_FIX, STYLISTIC_EDIT, no_significant_change, stylistic_preference) for pie chart. Supports dynamic date field (created_at or human_reply_date).';
