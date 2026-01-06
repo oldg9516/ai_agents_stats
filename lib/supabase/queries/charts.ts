@@ -8,7 +8,7 @@ import type {
 	VersionComparisonData,
 } from '../types'
 import { fetchAllInBatchesGeneric, type BatchFetchFilters } from '../helpers'
-import { extractVersionNumber, getDayStart, getWeekStart } from './utils'
+import { extractVersionNumber, getDayStart, getWeekStart, isAiQualityClassification } from './utils'
 
 // Use server-side Supabase client for all queries
 const supabase = supabaseServer
@@ -198,9 +198,12 @@ export async function getVersionComparison(
 
 	if (!records.length) return []
 
-	// Filter out context_shift records
+	// Filter to only reviewed records, excluding context_shift and exclusion types
 	const evaluableRecords = records.filter(
-		r => r.change_classification !== 'context_shift'
+		r => r.change_classification !== null &&
+			r.change_classification !== 'context_shift' &&
+			r.change_classification !== 'EXCL_WORKFLOW_SHIFT' &&
+			r.change_classification !== 'EXCL_DATA_DISCREPANCY'
 	)
 
 	// Group by version (only evaluable records)
@@ -210,7 +213,8 @@ export async function getVersionComparison(
 			acc[ver] = { total: 0, unchanged: 0 }
 		}
 		acc[ver].total++
-		if (!record.changed) acc[ver].unchanged++
+		// Use classification-based quality check instead of 'changed' boolean
+		if (isAiQualityClassification(record.change_classification)) acc[ver].unchanged++
 		return acc
 	}, {} as Record<string, { total: number; unchanged: number }>)
 
