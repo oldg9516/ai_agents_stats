@@ -75,20 +75,22 @@ export function ChatMessageDisplay({
 
 	const [isExpanded, setIsExpanded] = useState(false)
 	const [isEditing, setIsEditing] = useState(false)
-	const [editContent, setEditContent] = useState(message.content)
+	const [editContent, setEditContent] = useState(message.content || '')
 	const [copied, setCopied] = useState(false)
 
-	const isLongMessage = message.content.length > MAX_MESSAGE_LENGTH
+	// Protect against null content
+	const content = message.content || ''
+	const isLongMessage = content.length > MAX_MESSAGE_LENGTH
 	const displayContent =
 		isLongMessage && !isExpanded
-			? message.content.slice(0, MAX_MESSAGE_LENGTH) + '...'
-			: message.content
+			? content.slice(0, MAX_MESSAGE_LENGTH) + '...'
+			: content
 	const hasError = !!metadata.error
 	const hasVisualization =
 		message.content_type === 'chart' || message.content_type === 'table'
 
 	const handleCopy = async () => {
-		await navigator.clipboard.writeText(message.content)
+		await navigator.clipboard.writeText(content)
 		setCopied(true)
 		setTimeout(() => setCopied(false), 2000)
 	}
@@ -116,7 +118,7 @@ export function ChatMessageDisplay({
 							size='sm'
 							variant='ghost'
 							onClick={() => {
-								setEditContent(message.content)
+								setEditContent(content)
 								setIsEditing(false)
 							}}
 							className='h-7 text-orange-700 hover:text-orange-950 hover:bg-orange-200'
@@ -178,7 +180,7 @@ export function ChatMessageDisplay({
 				<>
 					<div className={PROSE_STYLES}>
 						<ReactMarkdown remarkPlugins={[remarkGfm]}>
-							{message.content}
+							{content}
 						</ReactMarkdown>
 					</div>
 					<ReportCard
@@ -186,7 +188,7 @@ export function ChatMessageDisplay({
 						reportUrl={metadata.report_url}
 						preview={metadata.preview}
 						initialQuestion={userQuestion}
-						initialAnswer={message.content}
+						initialAnswer={content}
 					/>
 				</>
 			)
@@ -221,7 +223,7 @@ export function ChatMessageDisplay({
 				<>
 					<div className={PROSE_STYLES + ' mb-4'}>
 						<ReactMarkdown remarkPlugins={[remarkGfm]}>
-							{message.content}
+							{content}
 						</ReactMarkdown>
 					</div>
 					<ChartDisplay
@@ -252,7 +254,7 @@ export function ChatMessageDisplay({
 				<>
 					<div className={PROSE_STYLES + ' mb-4'}>
 						<ReactMarkdown remarkPlugins={[remarkGfm]}>
-							{message.content}
+							{content}
 						</ReactMarkdown>
 					</div>
 					<TableDisplay data={metadata.data} title={tableTitle} />
@@ -264,7 +266,7 @@ export function ChatMessageDisplay({
 		}
 
 		// Text with possible plain text table
-		const { before, tableData, after } = parseTextTable(message.content)
+		const { before, tableData, after } = parseTextTable(content)
 
 		if (tableData) {
 			return (
@@ -297,7 +299,7 @@ export function ChatMessageDisplay({
 			<>
 				<div className={PROSE_STYLES}>
 					<ReactMarkdown remarkPlugins={[remarkGfm]}>
-						{message.content || ''}
+						{content}
 					</ReactMarkdown>
 				</div>
 				{metadata.sql_executed && (
