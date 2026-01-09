@@ -9,11 +9,11 @@ export function TableSkeleton() {
 		<Card>
 			<CardHeader>
 				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-					<div className="space-y-2">
-						<Skeleton className="h-6 w-48" />
-						<Skeleton className="h-4 w-96" />
+					<div className="space-y-2 flex-1 min-w-0">
+						<Skeleton className="h-6 w-full max-w-48" />
+						<Skeleton className="h-4 w-full max-w-96" />
 					</div>
-					<Skeleton className="h-9 w-32" />
+					<Skeleton className="h-9 w-full sm:w-32" />
 				</div>
 				<Skeleton className="h-10 w-full max-w-sm" />
 			</CardHeader>
@@ -34,12 +34,12 @@ export function TableSkeleton() {
 						</div>
 					))}
 					{/* Pagination */}
-					<div className="flex items-center justify-between pt-4">
-						<Skeleton className="h-5 w-48" />
-						<div className="flex gap-2">
-							<Skeleton className="h-9 w-24" />
-							<Skeleton className="h-9 w-24" />
-							<Skeleton className="h-9 w-24" />
+					<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4">
+						<Skeleton className="h-5 w-full max-w-48" />
+						<div className="flex gap-2 flex-wrap">
+							<Skeleton className="h-9 w-20 sm:w-24" />
+							<Skeleton className="h-9 w-20 sm:w-24" />
+							<Skeleton className="h-9 w-20 sm:w-24" />
 						</div>
 					</div>
 				</div>

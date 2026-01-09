@@ -8,12 +8,12 @@ export function KPICardSkeleton() {
 	return (
 		<Card>
 			<CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-				<Skeleton className='h-4 w-24' />
-				<Skeleton className='h-4 w-4' />
+				<Skeleton className='h-4 w-full max-w-24' />
+				<Skeleton className='h-4 w-4 shrink-0' />
 			</CardHeader>
 			<CardContent>
-				<Skeleton className='h-8 w-32 mb-2' />
-				<Skeleton className='h-3 w-40' />
+				<Skeleton className='h-8 w-full max-w-32 mb-2' />
+				<Skeleton className='h-3 w-full max-w-40' />
 			</CardContent>
 		</Card>
 	)

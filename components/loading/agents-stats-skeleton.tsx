@@ -12,14 +12,14 @@ export function AgentsStatsSkeleton() {
 				<Card>
 					<CardHeader>
 						<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
-							<div className='space-y-2'>
-								<Skeleton className='h-6 w-48' />
-								<Skeleton className='h-4 w-72' />
+							<div className='space-y-2 flex-1 min-w-0'>
+								<Skeleton className='h-6 w-full max-w-48' />
+								<Skeleton className='h-4 w-full max-w-72' />
 							</div>
-							<div className='flex gap-2'>
-								<Skeleton className='h-10 w-[200px]' />
-								<Skeleton className='h-10 w-[120px]' />
-								<Skeleton className='h-10 w-[120px]' />
+							<div className='flex gap-2 flex-wrap'>
+								<Skeleton className='h-10 w-full sm:w-[200px]' />
+								<Skeleton className='h-10 w-full sm:w-[120px]' />
+								<Skeleton className='h-10 w-full sm:w-[120px]' />
 							</div>
 						</div>
 					</CardHeader>
@@ -29,9 +29,9 @@ export function AgentsStatsSkeleton() {
 				<Card>
 					<CardHeader>
 						<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
-							<div className='space-y-2'>
-								<Skeleton className='h-6 w-40' />
-								<Skeleton className='h-4 w-64' />
+							<div className='space-y-2 flex-1 min-w-0'>
+								<Skeleton className='h-6 w-full max-w-40' />
+								<Skeleton className='h-4 w-full max-w-64' />
 							</div>
 							<Skeleton className='h-10 w-full max-w-sm' />
 						</div>
