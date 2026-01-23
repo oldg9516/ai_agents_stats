@@ -1,17 +1,17 @@
 'use client'
 
-import { useBacklogReportsFilters } from '@/lib/store/hooks'
 import { useBacklogReports, useLatestReportTimestamp } from '@/lib/queries/backlog-reports-queries'
+import { useBacklogReportsFilters } from '@/lib/store/hooks'
+import { IconAlertCircle, IconLoader2, IconPlus } from '@tabler/icons-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import { Button } from './ui/button'
-import { IconPlus, IconLoader2, IconAlertCircle } from '@tabler/icons-react'
-import { ReportCard } from './backlog/report-card'
-import { ReportsFilterBar } from './backlog/reports-filter-bar'
 import { GenerateReportDialog } from './backlog/generate-report-dialog'
 import { GenerationIndicator } from './backlog/generation-indicator'
+import { ReportCard } from './backlog/report-card'
+import { ReportsFilterBar } from './backlog/reports-filter-bar'
 import { SupportOverviewSkeleton } from './loading/support-overview-skeleton'
+import { Button } from './ui/button'
 
 /**
  * Backlog Reports Content - Client Component
@@ -50,7 +50,6 @@ export function BacklogReportsContent() {
 	// Check if a new report appeared (generation completed)
 	useEffect(() => {
 		if (isGeneratingReport && generationStartedAt && latestTimestamp) {
-			// If the latest report timestamp is newer than when we started generating
 			const startedAt = new Date(generationStartedAt)
 			const latest = new Date(latestTimestamp)
 

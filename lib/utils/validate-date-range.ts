@@ -33,17 +33,30 @@ export function validateAndFixDateRange(
 	}
 
 	const from = new Date(dateRange.from)
-	const to = new Date(dateRange.to)
+	let to = new Date(dateRange.to)
 	const now = new Date()
+	const today = new Date()
+	today.setHours(23, 59, 59, 999)
 
-	// Check if dates are valid and not in future
-	if (
-		isNaN(from.getTime()) ||
-		isNaN(to.getTime()) ||
-		from > now ||
-		to > now
-	) {
+	// Check if dates are valid
+	if (isNaN(from.getTime()) || isNaN(to.getTime())) {
 		return getDefaultDateRange(defaultDays)
+	}
+
+	// If from date is in the future, reset to defaults
+	if (from > now) {
+		return getDefaultDateRange(defaultDays)
+	}
+
+	// If to date is in the past (stale filter), extend it to today
+	// This ensures new records created after the last visit are visible
+	if (to < today) {
+		to = today
+	}
+
+	// If to date is in the future, cap it to today
+	if (to > today) {
+		to = today
 	}
 
 	return { from, to }

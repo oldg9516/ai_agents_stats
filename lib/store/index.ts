@@ -32,7 +32,7 @@ if (typeof window !== 'undefined') {
 		try {
 			const parsed = JSON.parse(stored)
 			// Check if version exists, if not - clear old data
-			if (!parsed.version || parsed.version < 9) {
+			if (!parsed.version || parsed.version < 10) {
 				localStorage.removeItem('ai-stats-storage')
 			}
 		} catch {
@@ -54,7 +54,7 @@ export const useStore = create<StoreState>()(
 			}),
 			{
 				name: 'ai-stats-storage',
-				version: 9, // Changed from 8 to 9 to add agentStatsFilters
+				version: 10, // Changed from 9 to 10 to fix stale date range filters
 				partialize: state => ({
 					// Persist only filter states
 					dashboardFilters: state.dashboardFilters,
@@ -68,7 +68,7 @@ export const useStore = create<StoreState>()(
 				// Migration function for version changes
 				migrate: (persistedState: any, version: number) => {
 					// Force reset on version change
-					if (version !== 9) {
+					if (version !== 10) {
 						return null
 					}
 

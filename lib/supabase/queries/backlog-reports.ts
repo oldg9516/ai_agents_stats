@@ -11,14 +11,18 @@ export async function getBacklogReports(
 ): Promise<{ data: BacklogReport[]; totalCount: number }> {
 	const { dateRange, periodDays, minTickets, searchQuery } = filters
 
+	// Convert dates if they came as strings (from Server Action serialization)
+	const fromDate = dateRange.from instanceof Date ? dateRange.from : new Date(dateRange.from)
+	const toDate = dateRange.to instanceof Date ? dateRange.to : new Date(dateRange.to)
+
 	// Select only needed fields to reduce Disk IO
 	const BACKLOG_REPORT_FIELDS = 'id, created_at, period_days, date_from, date_to, total_tickets, stats, weekly_stats, executive_summary, main_patterns, temporal_trends, specific_issues, recommendations'
 
 	let query = supabaseServer
 		.from('backlog_reports')
 		.select(BACKLOG_REPORT_FIELDS, { count: 'exact' })
-		.gte('created_at', dateRange.from.toISOString())
-		.lte('created_at', dateRange.to.toISOString())
+		.gte('created_at', fromDate.toISOString())
+		.lte('created_at', toDate.toISOString())
 		.order('created_at', { ascending: false })
 
 	if (periodDays) {
