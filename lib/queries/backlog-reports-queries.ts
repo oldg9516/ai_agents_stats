@@ -52,7 +52,7 @@ export function useBacklogReports(
 			}
 			return result.data
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 1 * 60 * 1000, // 1 minute - short but not zero to avoid excessive requests
 		gcTime: 15 * 60 * 1000, // 15 minutes
 	})
 

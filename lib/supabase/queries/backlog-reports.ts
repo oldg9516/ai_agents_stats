@@ -102,6 +102,7 @@ export async function triggerReportGeneration(
 
 		console.log('📤 [Webhook] Headers:', Object.keys(headers).join(', '))
 
+		// No timeout - let n8n workflow complete (can take 10+ minutes)
 		const response = await fetch(webhookUrl, {
 			method: 'POST',
 			headers,

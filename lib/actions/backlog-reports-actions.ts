@@ -26,12 +26,19 @@ export async function fetchBacklogReports(
 	error?: string
 }> {
 	try {
+		console.log('🔍 [BacklogReports Action] Fetching with filters:', {
+			dateFrom: filters.dateRange.from,
+			dateTo: filters.dateRange.to,
+			periodDays: filters.periodDays,
+			page,
+		})
+
 		const startTime = Date.now()
 		const result = await getBacklogReports(filters, page)
 		const queryTime = Date.now() - startTime
 
 		console.log(
-			`✅ [BacklogReports] Fetched ${result.data.length} reports in ${queryTime}ms`
+			`✅ [BacklogReports Action] Fetched ${result.data.length} reports (total: ${result.totalCount}) in ${queryTime}ms`
 		)
 
 		return { success: true, data: result }

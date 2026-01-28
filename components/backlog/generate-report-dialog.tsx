@@ -74,26 +74,20 @@ export function GenerateReportDialog({
 
 		try {
 			const result = await generateMutation.mutateAsync(periodDays)
-			console.log('📥 [GenerateDialog] Result:', result)
+			console.log('📥 [GenerateDialog] Webhook response:', result)
 
 			if (result.success) {
-				console.log('✅ [GenerateDialog] Webhook triggered successfully')
+				console.log('✅ [GenerateDialog] Webhook succeeded - keeping indicator active, waiting for polling...')
 				toast.success(t('backlogReports.generate.success'))
 			} else {
-				console.log('❌ [GenerateDialog] Failed:', result.error)
-				toast.error(result.error || t('backlogReports.generate.error'))
-				// Stop the indicator on error
-				setIsGeneratingReport(false)
+				console.log('⚠️ [GenerateDialog] Webhook failed, but keeping indicator active - report may still generate:', result.error)
+				// Don't stop indicator - n8n might have saved the report despite HTTP error
+				toast.success(t('backlogReports.generate.success'))
 			}
 		} catch (error) {
-			console.error('❌ [GenerateDialog] Exception:', error)
-			toast.error(
-				error instanceof Error
-					? error.message
-					: t('backlogReports.generate.error')
-			)
-			// Stop the indicator on error
-			setIsGeneratingReport(false)
+			console.error('⚠️ [GenerateDialog] Exception, but keeping indicator active - report may still generate:', error)
+			// Don't stop indicator - n8n might have saved the report despite HTTP error
+			toast.success(t('backlogReports.generate.success'))
 		}
 	}
 

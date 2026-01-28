@@ -44,22 +44,48 @@ export function BacklogReportsContent() {
 		backlogReportsPage
 	)
 
-	// Poll for new reports when generating
+	// Debug: log when data changes
+	useEffect(() => {
+		if (data) {
+			console.log('📊 [BacklogReports] Data updated:', {
+				reportCount: data.data.length,
+				totalCount: data.totalCount,
+				firstReportId: data.data[0]?.id,
+				firstReportDate: data.data[0]?.created_at,
+			})
+		}
+	}, [data])
+
+	// Poll for new reports when generating (checks latest timestamp every 30s)
 	const { data: latestTimestamp } = useLatestReportTimestamp(isGeneratingReport)
 
 	// Check if a new report appeared (generation completed)
 	useEffect(() => {
+		console.log('🔄 [Polling] Check:', {
+			isGeneratingReport,
+			hasStartTime: !!generationStartedAt,
+			hasLatestTimestamp: !!latestTimestamp,
+			latestTimestamp,
+		})
+
 		if (isGeneratingReport && generationStartedAt && latestTimestamp) {
 			const startedAt = new Date(generationStartedAt)
 			const latest = new Date(latestTimestamp)
 
+			console.log('🔄 [Polling] Comparing timestamps:', {
+				startedAt: startedAt.toISOString(),
+				latest: latest.toISOString(),
+				isNewer: latest > startedAt,
+			})
+
 			if (latest > startedAt) {
-				// New report appeared - stop polling and invalidate all reports queries
+				console.log('✅ [Polling] New report detected! Refetching...')
+				// New report appeared - stop polling and refetch
 				setIsGeneratingReport(false)
-				queryClient.invalidateQueries({ queryKey: ['backlog-reports'] })
+				refetch()
 			}
 		}
-	}, [latestTimestamp, isGeneratingReport, generationStartedAt, setIsGeneratingReport, queryClient])
+	}, [latestTimestamp, isGeneratingReport, generationStartedAt, setIsGeneratingReport, refetch])
 
 	// Auto-stop generating indicator after 15 minutes (safety timeout)
 	useEffect(() => {
