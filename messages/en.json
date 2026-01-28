@@ -1010,6 +1010,7 @@
 			"ticketId": "Ticket ID",
 			"threadId": "Thread ID",
 			"category": "Subcategory",
+			"subSubcategory": "Sub-Subcategory",
 			"version": "Version",
 			"createdAt": "Created At",
 			"customerRequest": "Customer Request",

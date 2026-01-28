@@ -589,8 +589,9 @@ export interface CategoryDetailData {
  * Tickets Review Record (combined from ai_human_comparison + support_threads_data + support_dialogs)
  */
 export interface TicketReviewRecord extends AIHumanComparisonRow {
-	// Field from support_threads_data (via JOIN on thread_id)
+	// Fields from support_threads_data (via JOIN on thread_id)
 	user: string | null // Customer email from support_threads_data.user JSON
+	request_sub_subtype: string | null // Sub-subcategory from support_threads_data
 	// Field from support_dialogs (via JOIN on thread_id, direction='incoming')
 	customer_request_text: string | null // Customer's request text from support_dialogs
 }

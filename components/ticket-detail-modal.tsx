@@ -324,13 +324,26 @@ export function TicketDetailModal({
 												</div>
 												<div>
 													<p className='text-xs sm:text-sm font-medium text-muted-foreground'>
-														{t('modal.version')}
+														{t('modal.subSubcategory')}
 													</p>
 													<p className='text-xs sm:text-sm'>
-														{ticket.prompt_version || '—'}
+														{ticket.request_sub_subtype || '—'}
 													</p>
 												</div>
 											</div>
+
+										<Separator />
+
+										<div className='grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4'>
+											<div>
+												<p className='text-xs sm:text-sm font-medium text-muted-foreground'>
+													{t('modal.version')}
+												</p>
+												<p className='text-xs sm:text-sm'>
+													{ticket.prompt_version || '—'}
+												</p>
+											</div>
+										</div>
 
 											<Separator />
 

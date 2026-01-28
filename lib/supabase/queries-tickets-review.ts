@@ -106,14 +106,14 @@ export async function fetchTicketsReview(
 		.filter(Boolean) as string[]
 
 	if (threadIds.length === 0) {
-		// No thread_id links, return tickets without user field and customer request
-		return tickets.map(t => ({ ...t, user: null, customer_request_text: null }))
+		// No thread_id links, return tickets without user field, request_sub_subtype, and customer request
+		return tickets.map(t => ({ ...t, user: null, request_sub_subtype: null, customer_request_text: null }))
 	}
 
-	// Fetch user data from support_threads_data (user field contains JSON string)
+	// Fetch user data and request_sub_subtype from support_threads_data (user field contains JSON string)
 	const { data: threadsData, error: threadsError } = await supabase
 		.from('support_threads_data')
-		.select('thread_id, user')
+		.select('thread_id, user, request_sub_subtype')
 		.in('thread_id', threadIds)
 
 	if (threadsError) {
@@ -133,19 +133,27 @@ export async function fetchTicketsReview(
 	// Create map of thread_id -> user email
 	// Parse user JSON and extract email field
 	const userMap = new Map<string, string | null>()
+	const subSubTypeMap = new Map<string, string | null>()
 	threadsData?.forEach(thread => {
-		if (thread.thread_id && thread.user) {
-			try {
-				// user field is a JSON string like: {"name":"","email":"user@example.com",...}
-				const userData = typeof thread.user === 'string'
-					? JSON.parse(thread.user)
-					: thread.user
-				const email = userData?.email ?? null
-				userMap.set(thread.thread_id, email)
-			} catch (e) {
-				// If JSON parsing fails, set null
-				console.error('Error parsing user JSON:', e)
-				userMap.set(thread.thread_id, null)
+		if (thread.thread_id) {
+			// Parse user data
+			if (thread.user) {
+				try {
+					// user field is a JSON string like: {"name":"","email":"user@example.com",...}
+					const userData = typeof thread.user === 'string'
+						? JSON.parse(thread.user)
+						: thread.user
+					const email = userData?.email ?? null
+					userMap.set(thread.thread_id, email)
+				} catch (e) {
+					// If JSON parsing fails, set null
+					console.error('Error parsing user JSON:', e)
+					userMap.set(thread.thread_id, null)
+				}
+			}
+			// Store request_sub_subtype
+			if (thread.request_sub_subtype) {
+				subSubTypeMap.set(thread.thread_id, thread.request_sub_subtype)
 			}
 		}
 	})
@@ -158,10 +166,11 @@ export async function fetchTicketsReview(
 		}
 	})
 
-	// Enrich tickets with user field and customer request text
+	// Enrich tickets with user field, request_sub_subtype, and customer request text
 	const enrichedTickets: TicketReviewRecord[] = tickets.map(ticket => ({
 		...ticket,
 		user: ticket.thread_id ? userMap.get(ticket.thread_id) ?? null : null,
+		request_sub_subtype: ticket.thread_id ? subSubTypeMap.get(ticket.thread_id) ?? null : null,
 		customer_request_text: ticket.thread_id
 			? customerRequestMap.get(ticket.thread_id) ?? null
 			: null,
@@ -216,14 +225,15 @@ export async function fetchTicketDetail(
 	if (ticketError) throw ticketError
 	if (!ticket) return null
 
-	// Try to get user email from support_threads_data (user field contains JSON string)
+	// Try to get user email and request_sub_subtype from support_threads_data (user field contains JSON string)
 	let userEmail: string | null = null
+	let requestSubSubtype: string | null = null
 	let customerRequestText: string | null = null
 
 	if (ticket.thread_id) {
 		const { data: threadData } = await supabase
 			.from('support_threads_data')
-			.select('user')
+			.select('user, request_sub_subtype')
 			.eq('thread_id', ticket.thread_id)
 			.limit(1)
 			.single()
@@ -242,6 +252,11 @@ export async function fetchTicketDetail(
 			}
 		}
 
+		// Get request_sub_subtype
+		if (threadData?.request_sub_subtype) {
+			requestSubSubtype = threadData.request_sub_subtype
+		}
+
 		// Try to get customer request text from support_dialogs
 		const { data: dialogData } = await supabase
 			.from('support_dialogs')
@@ -258,6 +273,7 @@ export async function fetchTicketDetail(
 	return {
 		...ticket,
 		user: userEmail,
+		request_sub_subtype: requestSubSubtype,
 		customer_request_text: customerRequestText,
 	}
 }

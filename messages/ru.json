@@ -1010,6 +1010,7 @@
 			"ticketId": "ID тикета",
 			"threadId": "ID треда",
 			"category": "Категория",
+			"subSubcategory": "Подподкатегория",
 			"version": "Версия",
 			"createdAt": "Создан",
 			"customerRequest": "Запрос клиента",

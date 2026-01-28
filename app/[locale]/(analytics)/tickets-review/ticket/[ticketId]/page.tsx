@@ -144,13 +144,24 @@ export default async function TicketDetailPage({
 						<div className='grid grid-cols-2 gap-4'>
 							<div>
 								<p className='text-sm font-medium text-muted-foreground'>
-									Category
+									{t('category')}
 								</p>
 								<p className='text-sm'>{ticket.request_subtype || '—'}</p>
 							</div>
 							<div>
 								<p className='text-sm font-medium text-muted-foreground'>
-									Version
+									{t('subSubcategory')}
+								</p>
+								<p className='text-sm'>{ticket.request_sub_subtype || '—'}</p>
+							</div>
+						</div>
+
+						<Separator />
+
+						<div className='grid grid-cols-2 gap-4'>
+							<div>
+								<p className='text-sm font-medium text-muted-foreground'>
+									{t('version')}
 								</p>
 								<p className='text-sm'>{ticket.prompt_version || '—'}</p>
 							</div>
