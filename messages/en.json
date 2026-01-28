@@ -4,6 +4,7 @@
 		"home": "Home",
 		"dashboard": "Dashboard",
 		"detailedStats": "Detailed Stats",
+		"subcategoriesStats": "Subcategories Stats",
 		"supportOverview": "Support Overview",
 		"requestCategories": "Request Categories",
 		"ticketsReview": "Tickets Review",
@@ -14,7 +15,9 @@
 		"settings": "Settings",
 		"search": "Search",
 		"loading": "Loading...",
-		"error": "Error",
+		"error": {
+			"fetchFailed": "Failed to fetch data"
+		},
 		"noData": "No data",
 		"noDataAvailable": "No data available for the selected period",
 		"all": "All",
@@ -24,6 +27,7 @@
 		"apply": "Apply",
 		"cancel": "Cancel",
 		"retry": "Retry",
+		"refresh": "Refresh",
 		"previous": "Previous",
 		"next": "Next",
 		"pageOf": "Page {current} of {total}"
@@ -41,6 +45,24 @@
 			"all": "All",
 			"merged": "Merged"
 		}
+	},
+	"subcategoriesStats": {
+		"title": "Subcategories Statistics",
+		"description": "AI quality performance by subcategory",
+		"totalCategories": "Total Categories",
+		"totalSubcategories": "Total Subcategories",
+		"overallQuality": "Overall Quality",
+		"subcategories": "Subcategories",
+		"total": "Total",
+		"changed": "Changed",
+		"unchanged": "Unchanged",
+		"quality": "Quality",
+		"classificationBreakdown": "Classification Breakdown",
+		"criticalError": "Critical Error",
+		"meaningfulImprovement": "Meaningful Improvement",
+		"stylisticPreference": "Stylistic Preference",
+		"noSignificantChange": "No Significant Change",
+		"contextShift": "Context Shift"
 	},
 	"sidebar": {
 		"appTitle": "Lev Haolam AI",
@@ -1083,6 +1105,7 @@
 			"edit": "Edit",
 			"resend": "Resend",
 			"retry": "Retry",
+		"refresh": "Refresh",
 			"analyzing": "Analyzing...",
 			"showMore": "Show more",
 			"showLess": "Show less"

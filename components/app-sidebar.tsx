@@ -4,6 +4,7 @@ import {
 	IconBook,
 	IconCamera,
 	IconCategory,
+	IconChartTreemap,
 	IconDashboard,
 	IconDatabase,
 	IconFileAi,
@@ -62,6 +63,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				title: t('requestCategories'),
 				url: '/request-categories',
 				icon: IconCategory,
+			},
+			{
+				title: t('subcategoriesStats'),
+				url: '/subcategories-stats',
+				icon: IconChartTreemap,
 			},
 			{
 				title: t('supportOverview'),

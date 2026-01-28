@@ -4,6 +4,7 @@
 		"home": "Главная",
 		"dashboard": "Панель управления",
 		"detailedStats": "Детальная статистика",
+		"subcategoriesStats": "Статистика подподкатегорий",
 		"supportOverview": "Обзор поддержки",
 		"requestCategories": "Категории запросов",
 		"ticketsReview": "Обзор тикетов",
@@ -14,7 +15,9 @@
 		"settings": "Настройки",
 		"search": "Поиск",
 		"loading": "Загрузка...",
-		"error": "Ошибка",
+		"error": {
+			"fetchFailed": "Не удалось загрузить данные"
+		},
 		"noData": "Нет данных",
 		"noDataAvailable": "Нет доступных данных за выбранный период",
 		"all": "Все",
@@ -24,6 +27,7 @@
 		"apply": "Применить",
 		"cancel": "Отмена",
 		"retry": "Повторить",
+		"refresh": "Обновить",
 		"previous": "Предыдущая",
 		"next": "Следующая",
 		"pageOf": "Страница {current} из {total}"
@@ -41,6 +45,24 @@
 			"all": "Все",
 			"merged": "Объединено"
 		}
+	},
+	"subcategoriesStats": {
+		"title": "Статистика подподкатегорий",
+		"description": "Качество работы ИИ по подподкатегориям",
+		"totalCategories": "Всего категорий",
+		"totalSubcategories": "Всего подподкатегорий",
+		"overallQuality": "Общее качество",
+		"subcategories": "Подподкатегории",
+		"total": "Всего",
+		"changed": "Изменено",
+		"unchanged": "Не изменено",
+		"quality": "Качество",
+		"classificationBreakdown": "Разбивка по классификации",
+		"criticalError": "Критическая ошибка",
+		"meaningfulImprovement": "Значительное улучшение",
+		"stylisticPreference": "Стилистическое предпочтение",
+		"noSignificantChange": "Нет значимых изменений",
+		"contextShift": "Смена контекста"
 	},
 	"sidebar": {
 		"appTitle": "Lev Haolam AI",
@@ -1083,6 +1105,7 @@
 			"edit": "Редактировать",
 			"resend": "Отправить повторно",
 			"retry": "Повторить",
+		"refresh": "Обновить",
 			"analyzing": "Анализирую...",
 			"showMore": "Показать полностью",
 			"showLess": "Свернуть"
