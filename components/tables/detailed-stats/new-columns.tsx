@@ -1,6 +1,6 @@
 'use client'
 
-import type { DetailedStatsRow } from '@/lib/supabase/types'
+import type { DateFilterMode, DetailedStatsRow } from '@/lib/supabase/types'
 import type { ScoreGroup } from '@/constants/classification-types'
 import type { ColumnDef } from '@tanstack/react-table'
 import { calcPercentage, getCellClassName } from './types'
@@ -13,6 +13,7 @@ export type ScoreGroupClickHandler = (params: {
 	version: string
 	dates: string | null
 	scoreGroup: ScoreGroup
+	dateFilterMode: DateFilterMode
 }) => void
 
 /**
@@ -21,10 +22,12 @@ export type ScoreGroupClickHandler = (params: {
  *
  * @param t - Translation function
  * @param onScoreGroupClick - Optional callback when a score group cell is clicked
+ * @param dateFilterMode - Date field being used for filtering ('created' or 'human_reply')
  */
 export function createNewColumns(
 	t: (key: string) => string,
-	onScoreGroupClick?: ScoreGroupClickHandler
+	onScoreGroupClick?: ScoreGroupClickHandler,
+	dateFilterMode: DateFilterMode = 'created'
 ): ColumnDef<DetailedStatsRow>[] {
 	return [
 		// Critical (Score 0-50): CRITICAL_FACT_ERROR + MAJOR_FUNCTIONAL_OMISSION
@@ -71,6 +74,7 @@ export function createNewColumns(
 								version: row.original.version,
 								dates: row.original.dates,
 								scoreGroup: 'critical',
+								dateFilterMode,
 							})
 					: undefined
 
@@ -134,6 +138,7 @@ export function createNewColumns(
 								version: row.original.version,
 								dates: row.original.dates,
 								scoreGroup: 'needs_work',
+								dateFilterMode,
 							})
 					: undefined
 
@@ -195,6 +200,7 @@ export function createNewColumns(
 								version: row.original.version,
 								dates: row.original.dates,
 								scoreGroup: 'good',
+								dateFilterMode,
 							})
 					: undefined
 
@@ -251,6 +257,7 @@ export function createNewColumns(
 								version: row.original.version,
 								dates: row.original.dates,
 								scoreGroup: 'excluded',
+								dateFilterMode,
 							})
 					: undefined
 

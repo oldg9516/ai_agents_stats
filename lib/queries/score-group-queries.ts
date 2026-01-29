@@ -9,7 +9,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { fetchTicketsByScoreGroup } from '@/lib/actions/score-group-actions'
 import type { ScoreGroup } from '@/constants/classification-types'
-import type { TicketReviewRecord } from '@/lib/supabase/types'
+import type { DateFilterMode, TicketReviewRecord } from '@/lib/supabase/types'
 
 /**
  * Query key factory for score group tickets
@@ -19,12 +19,13 @@ function getScoreGroupQueryKey(
 	version: string | null,
 	dates: string | null,
 	scoreGroup: ScoreGroup | null,
+	dateFilterMode: DateFilterMode,
 	page: number,
 	pageSize: number
 ) {
 	return [
 		'score-group-tickets',
-		{ category, version, dates, scoreGroup, page, pageSize },
+		{ category, version, dates, scoreGroup, dateFilterMode, page, pageSize },
 	] as const
 }
 
@@ -50,6 +51,7 @@ export function useScoreGroupTickets(
 	version: string | null,
 	dates: string | null,
 	scoreGroup: ScoreGroup | null,
+	dateFilterMode: DateFilterMode,
 	page: number,
 	pageSize: number = 20
 ): {
@@ -68,6 +70,7 @@ export function useScoreGroupTickets(
 			version,
 			dates,
 			scoreGroup,
+			dateFilterMode,
 			page,
 			pageSize
 		),
@@ -76,7 +79,7 @@ export function useScoreGroupTickets(
 				return { data: [], total: 0 }
 			}
 
-			return fetchTicketsByScoreGroup(category, version, dates, scoreGroup, {
+			return fetchTicketsByScoreGroup(category, version, dates, scoreGroup, dateFilterMode, {
 				page,
 				pageSize,
 			})

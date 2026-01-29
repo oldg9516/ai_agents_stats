@@ -1,4 +1,4 @@
-import type { CategoryDisplayMode, DashboardFilters, ScoringMode } from '@/lib/supabase/types'
+import type { CategoryDisplayMode, DashboardFilters, DateFilterMode, ScoringMode } from '@/lib/supabase/types'
 import type { ScoreGroup } from '@/constants/classification-types'
 import { StateCreator } from 'zustand'
 
@@ -11,6 +11,7 @@ export interface ScoreGroupModalState {
 	version: string | null
 	dates: string | null // Week range or null for version-level
 	scoreGroup: ScoreGroup | null
+	dateFilterMode: DateFilterMode // Date field to filter by ('created' or 'human_reply')
 }
 
 /**
@@ -23,6 +24,7 @@ function getDefaultScoreGroupModalState(): ScoreGroupModalState {
 		version: null,
 		dates: null,
 		scoreGroup: null,
+		dateFilterMode: 'created',
 	}
 }
 

@@ -9,22 +9,47 @@
 
 import { supabaseServer } from '@/lib/supabase/server'
 import type { ScoreGroup } from '@/constants/classification-types'
-import type { TicketReviewRecord } from '@/lib/supabase/types'
+import type { DateFilterMode, TicketReviewRecord } from '@/lib/supabase/types'
 import { parse } from 'date-fns'
 
 /**
  * Map score groups to their classification types
+ * Includes both new and legacy classification types for backwards compatibility
+ *
+ * Mapping based on detailed-stats-actions.ts countAllClassifications():
+ * - critical = criticalFactErrors + majorFunctionalOmissions
+ *   = (CRITICAL_FACT_ERROR + critical_error) + MAJOR_FUNCTIONAL_OMISSION
+ * - needs_work = minorInfoGaps + confusingVerbosity + tonalMisalignments + structuralFixes
+ *   = (MINOR_INFO_GAP + meaningful_improvement) + CONFUSING_VERBOSITY + TONAL_MISALIGNMENT + STRUCTURAL_FIX
+ * - good = stylisticEdits + perfectMatches
+ *   = (STYLISTIC_EDIT + stylistic_preference) + (PERFECT_MATCH + no_significant_change)
+ * - excluded = exclWorkflowShifts + exclDataDiscrepancies
+ *   = (EXCL_WORKFLOW_SHIFT + context_shift) + EXCL_DATA_DISCREPANCY
  */
 const SCORE_GROUP_CLASSIFICATIONS: Record<ScoreGroup, string[]> = {
-	critical: ['CRITICAL_FACT_ERROR', 'MAJOR_FUNCTIONAL_OMISSION'],
+	critical: [
+		'CRITICAL_FACT_ERROR',
+		'MAJOR_FUNCTIONAL_OMISSION',
+		'critical_error', // legacy
+	],
 	needs_work: [
 		'MINOR_INFO_GAP',
 		'CONFUSING_VERBOSITY',
 		'TONAL_MISALIGNMENT',
 		'STRUCTURAL_FIX',
+		'meaningful_improvement', // legacy
 	],
-	good: ['STYLISTIC_EDIT', 'PERFECT_MATCH'],
-	excluded: ['EXCL_WORKFLOW_SHIFT', 'EXCL_DATA_DISCREPANCY'],
+	good: [
+		'STYLISTIC_EDIT',
+		'PERFECT_MATCH',
+		'stylistic_preference', // legacy
+		'no_significant_change', // legacy
+	],
+	excluded: [
+		'EXCL_WORKFLOW_SHIFT',
+		'EXCL_DATA_DISCREPANCY',
+		'context_shift', // legacy
+	],
 }
 
 /**
@@ -115,6 +140,7 @@ function parseWeekRange(dateStr: string): { from: Date; to: Date } | null {
  * @param version - Prompt version
  * @param dates - Week range string (e.g., "Dec 16 - Dec 22") or null for all dates
  * @param scoreGroup - Score group to filter by
+ * @param dateFilterMode - Date field to filter by ('created' or 'human_reply')
  * @param pagination - Pagination options
  */
 export async function fetchTicketsByScoreGroup(
@@ -122,10 +148,14 @@ export async function fetchTicketsByScoreGroup(
 	version: string,
 	dates: string | null,
 	scoreGroup: ScoreGroup,
+	dateFilterMode: DateFilterMode,
 	pagination: { page: number; pageSize: number }
 ): Promise<{ data: TicketReviewRecord[]; total: number }> {
 	const { page, pageSize } = pagination
 	const offset = page * pageSize
+
+	// Determine which date field to use based on mode
+	const dateField = dateFilterMode === 'human_reply' ? 'human_reply_date' : 'created_at'
 
 	// Get classifications for this score group
 	const classifications = SCORE_GROUP_CLASSIFICATIONS[scoreGroup]
@@ -170,7 +200,7 @@ export async function fetchTicketsByScoreGroup(
 		.eq('request_subtype', category)
 		.eq('prompt_version', version)
 		.in('change_classification', classifications)
-		.order('created_at', { ascending: false })
+		.order(dateField, { ascending: false })
 		.range(offset, offset + pageSize - 1)
 
 	// Apply date filter if provided
@@ -178,9 +208,14 @@ export async function fetchTicketsByScoreGroup(
 		const dateRange = parseWeekRange(dates)
 		if (dateRange) {
 			query = query
-				.gte('created_at', dateRange.from.toISOString())
-				.lt('created_at', dateRange.to.toISOString())
+				.gte(dateField, dateRange.from.toISOString())
+				.lte(dateField, dateRange.to.toISOString())
 		}
+	}
+
+	// For human_reply mode, also filter out records with no human_reply_date
+	if (dateFilterMode === 'human_reply') {
+		query = query.not('human_reply_date', 'is', null)
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any

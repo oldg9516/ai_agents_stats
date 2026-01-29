@@ -105,8 +105,8 @@ export function DetailedStatsTable({ filters, dateFilterMode = 'created' }: Deta
 	)
 	const legacyColumns = useMemo(() => createLegacyColumns(t), [t])
 	const newColumns = useMemo(
-		() => createNewColumns(t, handleScoreGroupClick),
-		[t, handleScoreGroupClick]
+		() => createNewColumns(t, handleScoreGroupClick, dateFilterMode),
+		[t, handleScoreGroupClick, dateFilterMode]
 	)
 
 	// Define columns based on scoring mode

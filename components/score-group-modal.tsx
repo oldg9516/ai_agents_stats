@@ -71,7 +71,7 @@ export function ScoreGroupModal() {
 	const [currentPage, setCurrentPage] = useState(0)
 	const pageSize = 20
 
-	const { category, version, dates, scoreGroup } = scoreGroupModal
+	const { category, version, dates, scoreGroup, dateFilterMode } = scoreGroupModal
 
 	// Fetch tickets
 	const { data, isLoading, isFetching, error } = useScoreGroupTickets(
@@ -79,6 +79,7 @@ export function ScoreGroupModal() {
 		version,
 		dates,
 		scoreGroup,
+		dateFilterMode,
 		currentPage,
 		pageSize
 	)
