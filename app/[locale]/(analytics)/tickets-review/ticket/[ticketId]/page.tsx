@@ -9,7 +9,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { fetchTicketDetail } from '@/lib/supabase/queries-tickets-review'
 import { supabaseServer } from '@/lib/supabase/server'
-import { IconArrowLeft } from '@tabler/icons-react'
+import { IconArrowLeft, IconExternalLink } from '@tabler/icons-react'
 import { format } from 'date-fns'
 import { Metadata } from 'next'
 import Link from 'next/link'
@@ -21,6 +21,7 @@ import {
 	getClassificationColor,
 	calculateQualityScore,
 } from '@/constants/classification-types'
+import { ZOHO_TICKET_URL } from '@/constants/zoho'
 
 interface TicketDetailPageProps {
 	params: Promise<{
@@ -88,6 +89,18 @@ export default async function TicketDetailPage({
 						<p className='text-sm text-muted-foreground'>ID: {ticket.id}</p>
 					</div>
 				</div>
+				{ticket.ticket_id && (
+					<Button variant='outline' size='sm' asChild>
+						<a
+							href={`${ZOHO_TICKET_URL}${ticket.ticket_id}`}
+							target='_blank'
+							rel='noopener noreferrer'
+						>
+							<IconExternalLink className='h-4 w-4 mr-2' />
+							Zoho
+						</a>
+					</Button>
+				)}
 			</div>
 
 			<div className='grid gap-6 lg:grid-cols-2'>
