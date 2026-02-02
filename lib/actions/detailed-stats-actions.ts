@@ -15,6 +15,8 @@ import type { DashboardFilters, DateFilterMode, DetailedStatsRow } from '@/lib/s
 import {
 	isAiErrorClassification,
 	isAiQualityClassification,
+	isQualityRecord,
+	isErrorRecord,
 	LEGACY_CLASSIFICATION_TYPES,
 	NEW_CLASSIFICATION_TYPES,
 	type LegacyClassificationType,
@@ -33,6 +35,7 @@ type RawRecord = {
 	change_classification: string | null
 	human_reply: string | null
 	ticket_id: string | null
+	ai_approved: boolean | null
 }
 
 type DialogRecord = {
@@ -321,7 +324,7 @@ async function fetchInBatches(
 			let query = supabaseServer
 				.from('ai_human_comparison')
 				.select(
-					'created_at, human_reply_date, request_subtype, prompt_version, change_classification, human_reply, ticket_id'
+					'created_at, human_reply_date, request_subtype, prompt_version, change_classification, human_reply, ticket_id, ai_approved'
 				)
 				.gte(dateField, dateRange.from.toISOString())
 				.lte(dateField, dateRange.to.toISOString())
@@ -495,19 +498,27 @@ function aggregateDetailedStats(
 
 /**
  * Count AI errors
+ * Uses ai_approved priority: ai_approved = true means NOT an error
  */
 function countAiErrors(records: RawRecord[]): number {
 	return records.filter(r =>
-		isAiErrorClassification(r.change_classification)
+		isErrorRecord({
+			ai_approved: r.ai_approved,
+			change_classification: r.change_classification,
+		})
 	).length
 }
 
 /**
  * Count AI quality (good performance)
+ * Uses ai_approved priority: ai_approved = true means quality
  */
 function countAiQuality(records: RawRecord[]): number {
 	return records.filter(r =>
-		isAiQualityClassification(r.change_classification)
+		isQualityRecord({
+			ai_approved: r.ai_approved,
+			change_classification: r.change_classification,
+		})
 	).length
 }
 

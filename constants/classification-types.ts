@@ -373,3 +373,41 @@ export function isUnnecessaryChangeClassification(
 		classification as ClassificationType
 	)
 }
+
+// =============================================================================
+// AI_APPROVED PRIORITY FUNCTIONS (for dashboard stats)
+// =============================================================================
+
+/**
+ * Determine if a record counts as "quality" (good AI performance)
+ * ai_approved = true → quality (priority)
+ * ai_approved = false/null → use change_classification
+ */
+export function isQualityRecord(record: {
+	ai_approved: boolean | null
+	change_classification: string | null
+}): boolean {
+	// Priority: ai_approved = true
+	if (record.ai_approved === true) {
+		return true
+	}
+	// Fallback: change_classification (when ai_approved = false or null)
+	return isAiQualityClassification(record.change_classification)
+}
+
+/**
+ * Determine if a record counts as "error" (bad AI performance)
+ * ai_approved = true → NOT an error
+ * ai_approved = false/null → use change_classification
+ */
+export function isErrorRecord(record: {
+	ai_approved: boolean | null
+	change_classification: string | null
+}): boolean {
+	// Priority: ai_approved = true means NOT an error
+	if (record.ai_approved === true) {
+		return false
+	}
+	// Fallback: change_classification (when ai_approved = false or null)
+	return isAiErrorClassification(record.change_classification)
+}
