@@ -209,7 +209,7 @@ export async function fetchTicketsByScoreGroup(
 		if (dateRange) {
 			query = query
 				.gte(dateField, dateRange.from.toISOString())
-				.lte(dateField, dateRange.to.toISOString())
+				.lt(dateField, dateRange.to.toISOString())
 		}
 	}
 

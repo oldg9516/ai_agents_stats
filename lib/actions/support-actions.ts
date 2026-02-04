@@ -217,20 +217,16 @@ export async function fetchAllSupportThreadsForExport(filters: SupportFilters) {
 /**
  * Fetch minimum created_at date from support_threads_data
  * Used for "All Time" filter
+ * Uses RPC with MIN() for optimal performance
  */
 export async function fetchSupportMinCreatedDate(): Promise<Date> {
 	try {
-		const { data, error } = await supabaseServer
-			.from('support_threads_data')
-			.select('created_at')
-			.order('created_at', { ascending: true })
-			.limit(1)
-			.single<{ created_at: string }>()
+		const { data, error } = await supabaseServer.rpc('get_support_min_created_date')
 
 		if (error) throw error
 		if (!data) throw new Error('No data returned')
 
-		return new Date(data.created_at)
+		return new Date(data)
 	} catch (error) {
 		console.error('❌ [Support MinDate] Error:', error)
 		// Fallback to a safe default date

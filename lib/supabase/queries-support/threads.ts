@@ -16,6 +16,8 @@ const SUPABASE_BATCH_SIZE = 300
 /**
  * Check if there's a human response (direction='out') AFTER the AI thread
  * in support_dialogs table for each thread
+ *
+ * Optimized: O(n) instead of O(n*m) by finding max outgoing thread_id per ticket
  */
 async function fetchHumanResponsesInBatches(
 	supabase: SupabaseClient,
@@ -34,8 +36,11 @@ async function fetchHumanResponsesInBatches(
 	})
 
 	const ticketIds = [...ticketToThreads.keys()]
-	const BATCH_SIZE = 50 // Smaller batches for complex queries
+	const BATCH_SIZE = 50
 	const MAX_CONCURRENT = 3
+
+	// Map to store max outgoing thread_id per ticket
+	const maxOutgoingByTicket = new Map<string, bigint>()
 
 	// Fetch all outgoing messages for these tickets
 	for (let i = 0; i < ticketIds.length; i += BATCH_SIZE * MAX_CONCURRENT) {
@@ -57,18 +62,13 @@ async function fetchHumanResponsesInBatches(
 					return
 				}
 
-				// For each thread, check if there's an outgoing message with higher thread_id
+				// Find max outgoing thread_id for each ticket - O(n) single pass
 				data?.forEach(dialog => {
 					const dialogThreadId = BigInt(dialog.thread_id)
-					const threadsForTicket = ticketToThreads.get(dialog.ticket_id) || []
-
-					threadsForTicket.forEach(t => {
-						const aiThreadId = BigInt(t.thread_id)
-						// If there's an outgoing message AFTER the AI thread, mark it as having human response
-						if (dialogThreadId > aiThreadId) {
-							result.set(t.thread_id, true)
-						}
-					})
+					const currentMax = maxOutgoingByTicket.get(dialog.ticket_id)
+					if (currentMax === undefined || dialogThreadId > currentMax) {
+						maxOutgoingByTicket.set(dialog.ticket_id, dialogThreadId)
+					}
 				})
 			})()
 
@@ -80,6 +80,20 @@ async function fetchHumanResponsesInBatches(
 		// Small delay between batch groups
 		if (i + BATCH_SIZE * MAX_CONCURRENT < ticketIds.length) {
 			await new Promise(resolve => setTimeout(resolve, 50))
+		}
+	}
+
+	// Now check each AI thread against max outgoing - O(threads) single pass
+	for (const [ticketId, ticketThreads] of ticketToThreads) {
+		const maxOutgoing = maxOutgoingByTicket.get(ticketId)
+		if (maxOutgoing === undefined) continue
+
+		for (const t of ticketThreads) {
+			const aiThreadId = BigInt(t.thread_id)
+			// If max outgoing thread_id > AI thread_id, there's a human response after it
+			if (maxOutgoing > aiThreadId) {
+				result.set(t.thread_id, true)
+			}
 		}
 	}
 
@@ -465,37 +479,22 @@ export async function fetchRequestCategoryStats(
 /**
  * Fetch all unique categories (request_subtype) for filter dropdown
  * Sorted: single categories (without comma) first, then multi-categories
+ * Uses RPC function for efficient DISTINCT query on database level
  */
 export async function fetchAvailableCategories(
 	supabase: SupabaseClient,
 	dateRange: { from: Date; to: Date }
 ): Promise<string[]> {
-	const { data, error } = await supabase
-		.from('support_threads_data')
-		.select('request_subtype')
-		.gte('created_at', dateRange.from.toISOString())
-		.lt('created_at', dateRange.to.toISOString())
-		.not('request_subtype', 'is', null)
+	const { data, error } = await supabase.rpc('get_available_categories', {
+		date_from: dateRange.from.toISOString(),
+		date_to: dateRange.to.toISOString(),
+	})
 
 	if (error) {
-		console.error('[Available Categories] Error:', error)
+		console.error('[Available Categories] RPC error:', error)
 		return []
 	}
 
-	// Get unique values
-	const uniqueCategories = Array.from(
-		new Set((data || []).map(d => d.request_subtype).filter(Boolean))
-	) as string[]
-
-	// Sort: single categories (without comma) first, then multi-categories
-	// Within each group, sort alphabetically
-	const singleCategories = uniqueCategories
-		.filter(cat => !cat.includes(','))
-		.sort((a, b) => a.localeCompare(b))
-
-	const multiCategories = uniqueCategories
-		.filter(cat => cat.includes(','))
-		.sort((a, b) => a.localeCompare(b))
-
-	return [...singleCategories, ...multiCategories]
+	// RPC returns array of { request_subtype: string }
+	return (data || []).map((d: { request_subtype: string }) => d.request_subtype)
 }

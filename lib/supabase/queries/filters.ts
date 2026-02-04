@@ -41,7 +41,7 @@ export async function getFilterOptions(dateRange?: {
 	if (dateRange) {
 		agentsQuery = agentsQuery
 			.gte('created_at', dateRange.from.toISOString())
-			.lte('created_at', dateRange.to.toISOString())
+			.lt('created_at', dateRange.to.toISOString())
 	}
 
 	const { data: agentsData } = await agentsQuery

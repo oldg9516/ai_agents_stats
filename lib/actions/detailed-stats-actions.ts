@@ -281,7 +281,7 @@ async function getTotalCount(
 		.from('ai_human_comparison')
 		.select('id', { count: 'exact', head: true })
 		.gte(dateField, dateRange.from.toISOString())
-		.lte(dateField, dateRange.to.toISOString())
+		.lt(dateField, dateRange.to.toISOString())
 
 	// For human_reply mode, also filter out records with no human_reply_date
 	if (dateFilterMode === 'human_reply') {
@@ -294,6 +294,7 @@ async function getTotalCount(
 
 	// Exclude system/API emails from statistics
 	query = query.neq('email', 'api@levhaolam.com')
+	query = query.neq('email', 'samantha@levhaolam.com')
 
 	const { count, error } = await query
 
@@ -327,7 +328,7 @@ async function fetchInBatches(
 					'created_at, human_reply_date, request_subtype, prompt_version, change_classification, human_reply, ticket_id, ai_approved'
 				)
 				.gte(dateField, dateRange.from.toISOString())
-				.lte(dateField, dateRange.to.toISOString())
+				.lt(dateField, dateRange.to.toISOString())
 				.range(offset, offset + BATCH_SIZE - 1)
 
 			// For human_reply mode, also filter out records with no human_reply_date
@@ -341,6 +342,7 @@ async function fetchInBatches(
 
 			// Exclude system/API emails from statistics
 			query = query.neq('email', 'api@levhaolam.com')
+			query = query.neq('email', 'samantha@levhaolam.com')
 
 			batchPromises.push(query)
 		}

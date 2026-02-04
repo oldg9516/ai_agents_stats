@@ -62,7 +62,7 @@ export async function fetchAllInBatchesGeneric<T>(
 		.from(tableName)
 		.select('id', { count: 'exact', head: true })
 		.gte(dateField, dateRange.from.toISOString())
-		.lte(dateField, dateRange.to.toISOString())
+		.lt(dateField, dateRange.to.toISOString())
 
 	// Apply additional filters if provided
 	if (applyFilters) {
@@ -95,7 +95,7 @@ export async function fetchAllInBatchesGeneric<T>(
 					.from(tableName)
 					.select(selectFields)
 					.gte(dateField, dateRange.from.toISOString())
-					.lte(dateField, dateRange.to.toISOString())
+					.lt(dateField, dateRange.to.toISOString())
 					.range(offset, offset + batchSize - 1)
 
 				// Apply additional filters if provided

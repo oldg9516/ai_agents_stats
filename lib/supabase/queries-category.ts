@@ -37,7 +37,7 @@ async function fetchAllForCategory<T>(
     .select('id', { count: 'exact', head: true })
     .in('request_subtype', categories)
     .gte('created_at', dateFrom.toISOString())
-    .lte('created_at', dateTo.toISOString())
+    .lt('created_at', dateTo.toISOString())
 
   // Only filter by email if specific agents are provided
   if (emailFilter.length > 0) {
@@ -64,7 +64,7 @@ async function fetchAllForCategory<T>(
       .select(selectFields)
       .in('request_subtype', categories)
       .gte('created_at', dateFrom.toISOString())
-      .lte('created_at', dateTo.toISOString())
+      .lt('created_at', dateTo.toISOString())
 
     // Only filter by email if specific agents are provided
     if (emailFilter.length > 0) {
@@ -98,7 +98,7 @@ async function fetchAllForCategory<T>(
         .select(selectFields)
         .in('request_subtype', categories)
         .gte('created_at', dateFrom.toISOString())
-        .lte('created_at', dateTo.toISOString())
+        .lt('created_at', dateTo.toISOString())
         .range(offset, offset + BATCH_SIZE - 1)
 
       // Only filter by email if specific agents are provided
@@ -426,7 +426,7 @@ export async function getCategoryRecords(
     .select('id, ticket_id, prompt_version, created_at, email, changed, change_classification', { count: 'exact' })
     .in('request_subtype', categories)
     .gte('created_at', dateRange.from.toISOString())
-    .lte('created_at', dateRange.to.toISOString())
+    .lt('created_at', dateRange.to.toISOString())
     .order('created_at', { ascending: false })
     .range(page * pageSize, (page + 1) * pageSize - 1)
 

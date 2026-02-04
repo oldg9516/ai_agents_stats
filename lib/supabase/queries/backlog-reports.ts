@@ -22,7 +22,7 @@ export async function getBacklogReports(
 		.from('backlog_reports')
 		.select(BACKLOG_REPORT_FIELDS, { count: 'exact' })
 		.gte('created_at', fromDate.toISOString())
-		.lte('created_at', toDate.toISOString())
+		.lt('created_at', toDate.toISOString())
 		.order('created_at', { ascending: false })
 
 	if (periodDays) {

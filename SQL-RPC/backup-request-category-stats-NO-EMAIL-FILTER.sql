@@ -1,12 +1,5 @@
--- Update get_request_category_stats function to use support_dialogs for agent responses
--- This update changes:
--- 1. compared_count (Agent Responses) - counts threads that have an outgoing response (direction='out')
---    in support_dialogs with date > incoming message date (response came AFTER the request)
--- 2. avg_response_time - time from thread creation to first agent response (hours)
--- 3. p90_response_time - 90th percentile response time (hours)
---
--- Logic: A thread has an agent response if there's a record in support_dialogs
---        with the same ticket_id, direction='out', and date > original thread date
+-- BACKUP: Previous version of get_request_category_stats WITHOUT email filtering
+-- Run this SQL to ROLLBACK if the new version breaks something
 
 -- Drop all possible signatures of the function
 DROP FUNCTION IF EXISTS get_request_category_stats(timestamp with time zone, timestamp with time zone);
@@ -64,7 +57,6 @@ BEGIN
   -- Find threads that have agent responses
   -- A thread has a response if there's an outgoing message (direction='out')
   -- in support_dialogs with the same ticket_id and date > original incoming date
-  -- Exclude api@ and samantha@ emails from support_dialogs
   threads_with_responses AS (
     SELECT DISTINCT
       std.thread_id,
@@ -72,14 +64,13 @@ BEGIN
       std.request_type,
       std.request_subtype,
       std.created_at,
-      -- Get the first outgoing response date for this thread (excluding api@ and samantha@)
+      -- Get the first outgoing response date for this thread
       (
         SELECT MIN(sd.date)
         FROM support_dialogs sd
         WHERE sd.ticket_id = std.ticket_id
           AND sd.direction = 'out'
           AND sd.date > tid.incoming_date
-          AND sd.email NOT IN ('api@levhaolam.com', 'samantha@levhaolam.com')
       ) AS first_response_date
     FROM support_threads_data std
     INNER JOIN thread_incoming_dates tid
@@ -87,14 +78,13 @@ BEGIN
     WHERE std.thread_date >= date_from
       AND std.thread_date < date_to
       AND std.ticket_id IS NOT NULL
-      -- Check if there's an outgoing response after this thread (excluding api@ and samantha@)
+      -- Check if there's an outgoing response after this thread
       AND EXISTS (
         SELECT 1
         FROM support_dialogs sd
         WHERE sd.ticket_id = std.ticket_id
           AND sd.direction = 'out'
           AND sd.date > tid.incoming_date
-          AND sd.email NOT IN ('api@levhaolam.com', 'samantha@levhaolam.com')
       )
   ),
   -- Aggregate response stats by category (request_type + request_subtype)
@@ -174,4 +164,4 @@ $$ LANGUAGE plpgsql
 SET search_path = public;
 
 -- Add comment
-COMMENT ON FUNCTION get_request_category_stats IS 'Returns request category statistics with agent response counts (threads with outgoing messages in support_dialogs where date > incoming date, excluding api@levhaolam.com and samantha@levhaolam.com) and response time metrics (avg and P90 in hours)';
+COMMENT ON FUNCTION get_request_category_stats IS 'Returns request category statistics with agent response counts (threads with outgoing messages in support_dialogs where date > incoming date) and response time metrics (avg and P90 in hours)';

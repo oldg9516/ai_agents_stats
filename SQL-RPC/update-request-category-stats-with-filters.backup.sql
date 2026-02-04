@@ -26,7 +26,7 @@ BEGIN
   WITH total_records AS (
     SELECT COUNT(*)::bigint AS total
     FROM support_threads_data
-    WHERE thread_date >= date_from AND thread_date <= date_to
+    WHERE thread_date >= date_from AND thread_date < date_to
   ),
   category_stats AS (
     SELECT
@@ -38,7 +38,7 @@ BEGIN
       END AS request_subtype,
       COUNT(*)::bigint AS category_count
     FROM support_threads_data std
-    WHERE std.thread_date >= date_from AND std.thread_date <= date_to
+    WHERE std.thread_date >= date_from AND std.thread_date < date_to
     GROUP BY
       std.request_type,
       CASE
@@ -56,7 +56,7 @@ BEGIN
     FROM ai_human_comparison ahc
     WHERE ahc.status = 'compared'
       AND ahc.created_at >= date_from
-      AND ahc.created_at <= date_to
+      AND ahc.created_at < date_to
       AND ahc.change_classification IS NOT NULL
       AND ahc.change_classification != 'context_shift'
     GROUP BY
@@ -88,7 +88,7 @@ BEGIN
       ) AS p90_response_time
     FROM ai_human_comparison ahc
     WHERE ahc.created_at >= date_from
-      AND ahc.created_at <= date_to
+      AND ahc.created_at < date_to
       AND ahc.human_reply_date IS NOT NULL
       AND ahc.created_at IS NOT NULL
     GROUP BY

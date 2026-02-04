@@ -23,7 +23,7 @@ BEGIN
       FROM ai_human_comparison
       WHERE prompt_version IS NOT NULL
         AND (p_from_date IS NULL OR created_at >= p_from_date)
-        AND (p_to_date IS NULL OR created_at <= p_to_date)
+        AND (p_to_date IS NULL OR created_at < p_to_date)
       ORDER BY prompt_version
     ) AS versions,
     ARRAY(
@@ -31,7 +31,7 @@ BEGIN
       FROM ai_human_comparison
       WHERE request_subtype IS NOT NULL
         AND (p_from_date IS NULL OR created_at >= p_from_date)
-        AND (p_to_date IS NULL OR created_at <= p_to_date)
+        AND (p_to_date IS NULL OR created_at < p_to_date)
       ORDER BY request_subtype
     ) AS categories;
 END;
@@ -65,7 +65,7 @@ BEGIN
     )::bigint AS unchanged_records
   FROM ai_human_comparison
   WHERE created_at >= p_from_date
-    AND created_at <= p_to_date
+    AND created_at < p_to_date
     AND (p_versions IS NULL OR prompt_version = ANY(p_versions))
     AND (p_categories IS NULL OR request_subtype = ANY(p_categories))
     AND (p_agents IS NULL OR email = ANY(p_agents))
@@ -155,7 +155,7 @@ BEGIN
   WITH filtered_data AS (
     SELECT request_subtype, prompt_version, created_at, email, changed, change_classification
     FROM ai_human_comparison
-    WHERE created_at >= p_from_date AND created_at <= p_to_date
+    WHERE created_at >= p_from_date AND created_at < p_to_date
       AND (p_versions IS NULL OR prompt_version = ANY(p_versions))
       AND (p_categories IS NULL OR request_subtype = ANY(p_categories))
       AND (p_agents IS NULL OR email = ANY(p_agents))
@@ -342,7 +342,7 @@ BEGIN
   WITH total_records AS (
     SELECT COUNT(*)::bigint AS total
     FROM support_threads_data
-    WHERE thread_date >= date_from AND thread_date <= date_to
+    WHERE thread_date >= date_from AND thread_date < date_to
   ),
   category_stats AS (
     SELECT
@@ -354,7 +354,7 @@ BEGIN
       END AS request_subtype,
       COUNT(*)::bigint AS category_count
     FROM support_threads_data std
-    WHERE std.thread_date >= date_from AND std.thread_date <= date_to
+    WHERE std.thread_date >= date_from AND std.thread_date < date_to
     GROUP BY
       std.request_type,
       CASE
@@ -372,9 +372,10 @@ BEGIN
     FROM ai_human_comparison ahc
     WHERE ahc.status = 'compared'
       AND ahc.created_at >= date_from
-      AND ahc.created_at <= date_to
+      AND ahc.created_at < date_to
       AND ahc.change_classification IS NOT NULL
       AND ahc.change_classification != 'context_shift'
+      AND ahc.email NOT IN ('api@levhaolam.com', 'samantha@levhaolam.com')
     GROUP BY
       CASE
         WHEN ahc.request_subtype LIKE '%,%' THEN 'multiply'
@@ -404,7 +405,7 @@ BEGIN
       ) AS p90_response_time
     FROM ai_human_comparison ahc
     WHERE ahc.created_at >= date_from
-      AND ahc.created_at <= date_to
+      AND ahc.created_at < date_to
       AND ahc.human_reply_date IS NOT NULL
       AND ahc.created_at IS NOT NULL
     GROUP BY
@@ -464,7 +465,7 @@ BEGIN
       SELECT COUNT(*)
       FROM support_threads_data
       WHERE created_at >= p_from_date
-        AND created_at <= p_to_date
+        AND created_at < p_to_date
         AND (p_statuses IS NULL OR status = ANY(p_statuses))
         AND (p_request_types IS NULL OR request_type = ANY(p_request_types))
         AND (p_versions IS NULL OR prompt_version = ANY(p_versions))
@@ -473,7 +474,7 @@ BEGIN
       SELECT COUNT(*)
       FROM support_threads_data
       WHERE created_at >= p_from_date
-        AND created_at <= p_to_date
+        AND created_at < p_to_date
         AND (p_statuses IS NULL OR status = ANY(p_statuses))
         AND (p_request_types IS NULL OR request_type = ANY(p_request_types))
         AND (p_versions IS NULL OR prompt_version = ANY(p_versions))
@@ -484,7 +485,7 @@ BEGIN
       SELECT COUNT(*)
       FROM support_threads_data
       WHERE created_at >= p_from_date
-        AND created_at <= p_to_date
+        AND created_at < p_to_date
         AND (p_statuses IS NULL OR status = ANY(p_statuses))
         AND (p_request_types IS NULL OR request_type = ANY(p_request_types))
         AND (p_versions IS NULL OR prompt_version = ANY(p_versions))
@@ -494,7 +495,7 @@ BEGIN
       SELECT COUNT(*)
       FROM support_threads_data
       WHERE created_at >= p_from_date
-        AND created_at <= p_to_date
+        AND created_at < p_to_date
         AND (p_statuses IS NULL OR status = ANY(p_statuses))
         AND (p_request_types IS NULL OR request_type = ANY(p_request_types))
         AND (p_versions IS NULL OR prompt_version = ANY(p_versions))
@@ -511,7 +512,7 @@ BEGIN
       ), 0)
       FROM support_threads_data
       WHERE created_at >= p_from_date
-        AND created_at <= p_to_date
+        AND created_at < p_to_date
         AND (p_statuses IS NULL OR status = ANY(p_statuses))
         AND (p_request_types IS NULL OR request_type = ANY(p_request_types))
         AND (p_versions IS NULL OR prompt_version = ANY(p_versions))
@@ -633,7 +634,7 @@ BEGIN
   SELECT COUNT(*) INTO v_total_count
   FROM support_threads_data s
   WHERE s.created_at >= p_from_date
-    AND s.created_at <= p_to_date
+    AND s.created_at < p_to_date
     AND (p_statuses IS NULL OR s.status = ANY(p_statuses))
     AND (p_request_types IS NULL OR s.request_type = ANY(p_request_types))
     AND (p_versions IS NULL OR s.prompt_version = ANY(p_versions));
@@ -688,7 +689,7 @@ BEGIN
   FROM support_threads_data s
   LEFT JOIN ai_human_comparison ahc ON s.prompt_version = ahc.prompt_version
   WHERE s.created_at >= p_from_date
-    AND s.created_at <= p_to_date
+    AND s.created_at < p_to_date
     AND (p_statuses IS NULL OR s.status = ANY(p_statuses))
     AND (p_request_types IS NULL OR s.request_type = ANY(p_request_types))
     AND (p_versions IS NULL OR s.prompt_version = ANY(p_versions))
@@ -734,7 +735,7 @@ BEGIN
     COUNT(*) FILTER (WHERE status = 'compared' AND change_classification IS NOT NULL AND change_classification NOT IN ('context_shift', 'EXCL_WORKFLOW_SHIFT', 'EXCL_DATA_DISCREPANCY'))::bigint AS compared_records
   FROM ai_human_comparison
   WHERE created_at >= p_from_date
-    AND created_at <= p_to_date
+    AND created_at < p_to_date
     AND (p_versions IS NULL OR prompt_version = ANY(p_versions))
     AND (p_categories IS NULL OR request_subtype = ANY(p_categories));
 END;

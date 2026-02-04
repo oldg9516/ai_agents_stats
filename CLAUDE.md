@@ -113,157 +113,25 @@ export function MyComponent() {
 
 **Important**: When adding new UI text, update BOTH `messages/en.json` and `messages/ru.json`.
 
-### Project Structure
+### Key Directories
 
-```
-app/
-├── globals.css              # Global styles with Tailwind directives
-└── [locale]/               # Internationalization wrapper (ru, en)
-    ├── layout.tsx          # Root layout with providers, fonts
-    ├── (root)/             # Public pages route group
-    │   ├── page.tsx        # Landing page with hero, mockup, features
-    │   ├── docs/           # Documentation
-    │   │   ├── page.tsx    # User guide
-    │   │   └── error.tsx   # Error boundary
-    │   └── login/          # Login page
-    │       └── page.tsx    # Google OAuth login
-    ├── (analytics)/        # Analytics pages (auth required)
-    │   ├── layout.tsx      # Analytics layout with sidebar
-    │   ├── dashboard/      # Main dashboard (AI quality metrics)
-    │   │   ├── page.tsx    # KPIs, charts, filters, table
-    │   │   └── error.tsx   # Error boundary
-    │   ├── agents-stats/   # Agent statistics dashboard
-    │   │   ├── page.tsx    # Agent performance metrics
-    │   │   └── error.tsx   # Error boundary
-    │   ├── detailed-stats/ # Full-page table view
-    │   │   └── page.tsx    # Optimized table (3-5x faster)
-    │   ├── support-overview/ # Support operations & threads
-    │   │   ├── page.tsx      # Support KPIs, charts, table
-    │   │   ├── error.tsx     # Error boundary
-    │   │   ├── thread/[threadId]/
-    │   │   │   └── page.tsx  # Thread detail page
-    │   │   └── @modal/       # Parallel route for modals
-    │   │       └── (.)thread/[threadId]/
-    │   │           └── page.tsx # Thread detail modal
-    │   ├── tickets-review/    # Ticket review interface
-    │   │   ├── page.tsx       # Review & approve tickets
-    │   │   └── ticket/[ticketId]/
-    │   │       └── page.tsx   # Ticket detail
-    │   ├── backlog-reports/   # Backlog reports management
-    │   │   └── page.tsx       # Backlog statistics
-    │   ├── ai-chat/           # AI chat interface
-    │   │   └── page.tsx       # Interactive AI conversation
-    │   ├── request-categories/ # Request category management
-    │   │   └── page.tsx        # Add/edit/delete categories
-    │   └── settings/          # Settings
-    │       └── page.tsx       # User preferences
-    ├── unauthorized/          # Access denied page
-    │   └── page.tsx          # Invalid email domain
-    └── api/
-        └── auth/
-            └── callback/
-                └── route.ts  # OAuth callback handler
-
-components/
-├── ui/                 # shadcn/ui components
-│   ├── glow.tsx        # Background glow effect component with variants
-│   ├── mockup.tsx      # Browser chrome mockup component
-│   └── ...             # Other shadcn components
-├── filters/            # Filter components (date, version, category, agent, status, requirements)
-├── kpi/                # KPI card components
-├── charts/             # Chart components (quality trends, pie, bar, sankey, heatmap)
-├── tables/             # Data table components
-├── loading/            # Skeleton loading states
-├── error/              # Error boundary and display
-├── app-sidebar.tsx     # Main navigation sidebar
-├── site-header.tsx     # Header component
-├── dashboard-content.tsx        # Main dashboard client component
-└── support-overview-content.tsx # Support overview client component
-
-lib/
-├── supabase/
-│   ├── client.ts         # Browser Supabase client (with auth)
-│   ├── server.ts         # Server Supabase client (with cookies)
-│   ├── types.ts          # Database types (auto-generated)
-│   ├── queries.ts        # SQL queries for dashboard (OPTIMIZED)
-│   ├── queries-support.ts # SQL queries for support (OPTIMIZED)
-│   └── queries-support/  # Support-specific query modules
-│       └── threads.ts    # Thread queries
-├── auth/
-│   ├── utils.ts          # Auth utility functions
-│   └── types.ts          # Auth type definitions
-├── actions/
-│   ├── dashboard-actions.ts    # Server Actions for dashboard data (with performance logging)
-│   └── support-actions.ts      # Server Actions for support data (with performance logging)
-├── queries/
-│   ├── dashboard-queries.ts    # React Query functions for dashboard (with timeout & retry)
-│   ├── support-queries.ts      # React Query functions for support (with timeout & retry)
-│   └── index.ts                # Query exports
-├── store/
-│   ├── index.ts                # Zustand store initialization
-│   ├── slices/
-│   │   ├── dashboard-slice.ts  # Dashboard filter state
-│   │   └── support-slice.ts    # Support filter state
-│   └── hooks/
-│       ├── use-dashboard-filters.ts  # Dashboard filter hooks
-│       └── use-support-filters.ts    # Support filter hooks
-├── providers/
-│   └── query-provider.tsx      # React Query provider wrapper
-├── hooks/
-│   ├── use-dashboard-data.ts   # Dashboard data fetching hook (re-export from queries)
-│   ├── use-detailed-stats.ts   # Optimized hook for /detailed-stats page (ONLY table data)
-│   ├── use-filters.ts          # Legacy filter hook (dashboard)
-│   ├── use-realtime.ts         # Real-time updates hook
-│   ├── use-support-data.ts     # Support data fetching hook
-│   └── use-support-filters.ts  # Legacy filter hook (support)
-└── utils/
-    ├── date.ts         # Date formatting utilities
-    ├── calculations.ts # Trend calculations, quality scores
-    ├── export.ts       # CSV export logic (dashboard)
-    ├── export-support.ts       # CSV export logic (support)
-    ├── support-calculations.ts # Support metrics calculations
-    └── parse-filters.ts        # Filter parsing utilities
-
-constants/
-├── qualified-agents.ts     # Qualified agent emails
-├── support-statuses.ts     # Support status definitions (11 statuses)
-├── request-types.ts        # Request type definitions
-└── requirement-types.ts    # Requirement flag definitions
-
-i18n/
-├── routing.ts              # next-intl routing config
-└── request.ts              # Server-side request config
-
-messages/
-├── en.json                 # English translations (50KB)
-└── ru.json                 # Russian translations (80KB)
-
-docs/                       # Additional documentation
-├── AUTH_SETUP_GUIDE.md    # Google OAuth setup (1300+ lines)
-├── PERFORMANCE.md         # Performance optimization
-├── PRD.md                 # Product requirements
-├── NEXTJS_16_BEST_PRACTICES.md
-├── SERVER_ACTIONS_ARCHITECTURE.md
-├── FEATURES_ROADMAP_2025.md
-└── AI_CHAT_FOR_BACKLOG_REPORTS.md
-
-middleware.ts               # Auth + i18n middleware
-database-indexes.sql        # Database optimization indexes
-```
+- `app/[locale]/(root)/` - Public pages (landing, docs, login)
+- `app/[locale]/(analytics)/` - Protected analytics pages (dashboard, support-overview, etc.)
+- `components/` - React components (ui/, filters/, kpi/, charts/, tables/)
+- `lib/supabase/` - Database clients and queries
+  - `queries.ts` - Main dashboard queries
+  - `queries-support/` - Support module queries (kpi.ts, charts.ts, threads.ts, utils.ts)
+- `lib/actions/` - Server Actions for data fetching
+- `lib/queries/` - React Query hooks
+- `lib/store/` - Zustand state slices and hooks
+- `constants/` - Qualified agents, statuses, classification types
+  - `classification-types.ts` - v4.0 scoring system (penalties, groups, utility functions)
+- `messages/` - i18n translations (en.json, ru.json)
 
 ## Architecture Notes
 
-### Landing Page
-The landing page ([app/(root)/page.tsx](app/(root)/page.tsx)) features:
-- **Hero Section**: Gradient title, description, 3 CTA buttons (Dashboard, Support Overview, Documentation)
-- **Mockup Section**: Browser chrome mockup displaying dashboard screenshot from `/public/dashboard-hero.png`
-- **Features Section**: 4 cards with hover effects describing each analytics section
-- **Key Features Highlight**: Two-column section explaining platform capabilities
-- **Design**: Background glow effects, staggered animations, fully responsive, dark mode support
-- **UI Components**: Uses custom `Glow` and `Mockup` components from `components/ui/`
-
 ### Dashboard Layout Pattern
-The main dashboard ([app/(analytics)/dashboard/page.tsx](app/(analytics)/dashboard/page.tsx)) uses a `SidebarProvider` + `SidebarInset` pattern:
+The main dashboard (`app/[locale]/(analytics)/dashboard/page.tsx`) uses a `SidebarProvider` + `SidebarInset` pattern:
 - `AppSidebar` provides collapsible navigation
 - `SiteHeader` displays the top header
 - Main content area contains: `SectionCards`, `ChartAreaInteractive`, and `DataTable`
@@ -278,7 +146,9 @@ The main dashboard ([app/(analytics)/dashboard/page.tsx](app/(analytics)/dashboa
   - `prompt_version` (text) - Version (v1, v2, v3, etc.)
   - `created_at` (timestamp) - Record creation time
   - `email` (text) - Agent who processed the record
-  - `changed` (boolean) - Whether human edited AI output
+  - `changed` (boolean) - Whether human edited AI output (legacy v3.x)
+  - `ai_approved` (boolean | null) - Priority field for quality calculation (v4.0)
+  - `change_classification` (text | null) - Classification type for penalty scoring (v4.0)
 
 **Data Fetching Pattern**:
 1. **Server Actions** (`lib/actions/`) for data fetching (bypasses RLS with service_role key)
@@ -287,7 +157,7 @@ The main dashboard ([app/(analytics)/dashboard/page.tsx](app/(analytics)/dashboa
 4. **Filter state** synchronized with URL query params and localStorage (Zustand)
 5. All SQL queries centralized in `lib/supabase/queries.ts` and `lib/supabase/queries-support.ts`
 
-**Performance Optimizations** (see [PERFORMANCE.md](PERFORMANCE.md) for details):
+**Performance Optimizations** (see [docs/PERFORMANCE.md](docs/PERFORMANCE.md) for details):
 - SELECT only needed fields (not SELECT *)
 - Database indexes on frequently queried columns
 - Pagination (limit 50-100 records)
@@ -297,7 +167,7 @@ The main dashboard ([app/(analytics)/dashboard/page.tsx](app/(analytics)/dashboa
 - Separate hooks for different pages (e.g., `useDetailedStats` for /detailed-stats)
 - Performance logging with detailed timing metrics
 
-**Quality Calculation Logic**:
+**Quality Calculation Logic (Legacy v3.x)**:
 ```typescript
 // Good percentage = records NOT changed by qualified agents
 goodPercentage = (unchangedRecords / totalRecordsByQualifiedAgents) * 100
@@ -305,6 +175,33 @@ goodPercentage = (unchangedRecords / totalRecordsByQualifiedAgents) * 100
 // Only records processed by qualified agents count toward metrics
 // Qualified agents list: constants/qualified-agents.ts
 ```
+
+**Quality Scoring (v4.0 - Current)**:
+
+The system uses penalty-based scoring with 10 classifications. See `constants/classification-types.ts`.
+
+| Classification | Penalty | Score |
+|---------------|---------|-------|
+| PERFECT_MATCH | 0 | 100 |
+| STYLISTIC_EDIT | -2 | 98 |
+| STRUCTURAL_FIX | -5 | 95 |
+| TONAL_MISALIGNMENT | -10 | 90 |
+| CONFUSING_VERBOSITY | -15 | 85 |
+| MINOR_INFO_GAP | -20 | 80 |
+| MAJOR_FUNCTIONAL_OMISSION | -50 | 50 |
+| CRITICAL_FACT_ERROR | -100 | 0 |
+| EXCL_WORKFLOW_SHIFT | N/A | Excluded |
+| EXCL_DATA_DISCREPANCY | N/A | Excluded |
+
+**Score Groups for UI**:
+- **Critical (0-50)**: Red (`bg-red-100 dark:bg-red-900/30`)
+- **Needs Work (51-89)**: Yellow (`bg-yellow-100 dark:bg-yellow-900/30`)
+- **Good (90-100)**: Green (`bg-green-100 dark:bg-green-900/30`)
+- **Excluded**: Gray (`bg-gray-100 dark:bg-gray-900/30`)
+
+**Priority Logic** (see `isQualityRecord()` in classification-types.ts):
+1. If `ai_approved = true` → Quality (takes priority)
+2. Else → Use `change_classification` to determine quality
 
 **Key Queries**:
 - KPI aggregations with trend calculations (current vs. previous period)
@@ -525,7 +422,7 @@ The **Support Overview** section monitors support thread operations and AI draft
 - CSV export
 - Click row → navigate to thread detail page
 
-**Thread Detail Page** (`/(analytics)/support-overview/[threadId]`):
+**Thread Detail Page** (`app/[locale]/(analytics)/support-overview/[threadId]`):
 - Complete thread metadata
 - Quality score from JOIN with ai_human_comparison
 - Active requirements breakdown
@@ -604,7 +501,7 @@ Data fetching is managed with TanStack Query:
 
 All charts use a consistent color palette from CSS variables:
 - `--chart-1` through `--chart-5` (5-color rotation)
-- Defined in [globals.css](app/globals.css#L66-L70)
+- Defined in `app/globals.css`
 - Automatically work in light and dark modes
 
 **Important**:
@@ -618,241 +515,32 @@ Two MCP servers are configured in [.mcp.json](.mcp.json):
 1. **shadcn**: For adding/managing shadcn/ui components
 2. **context7**: Upstash context management service
 
-## Important Files
+## Key Files Reference
 
-### Documentation
-- **[CLAUDE.md](CLAUDE.md)**: Development guide for Claude Code (this file)
-- **[README.md](README.md)**: Project overview and getting started guide
-- **[docs/PERFORMANCE.md](docs/PERFORMANCE.md)**: Performance optimization guide with indexing strategies
-- **[docs/PRD.md](docs/PRD.md)**: Complete Product Requirements Document
-- **[docs/AUTH_SETUP_GUIDE.md](docs/AUTH_SETUP_GUIDE.md)**: Complete Google OAuth setup guide (1300+ lines)
-- **[docs/NEXTJS_16_BEST_PRACTICES.md](docs/NEXTJS_16_BEST_PRACTICES.md)**: Next.js 16 patterns and practices
-- **[docs/SERVER_ACTIONS_ARCHITECTURE.md](docs/SERVER_ACTIONS_ARCHITECTURE.md)**: Server Actions architecture
-- **[docs/FEATURES_ROADMAP_2025.md](docs/FEATURES_ROADMAP_2025.md)**: Feature roadmap
-- **[docs/AI_CHAT_FOR_BACKLOG_REPORTS.md](docs/AI_CHAT_FOR_BACKLOG_REPORTS.md)**: AI Chat feature documentation
-
-### Configuration
-- **[.env.local.example](.env.local.example)**: Template for environment variables
-- **[database-indexes.sql](database-indexes.sql)**: 22 database indexes for performance (deploy to Supabase)
-- **[components.json](components.json)**: shadcn/ui configuration
-- **[.mcp.json](.mcp.json)**: MCP server configuration (shadcn, context7)
-
-### Key Constants
-- **[constants/qualified-agents.ts](constants/qualified-agents.ts)**: List of qualified agent emails for quality calculations
-- **[constants/support-statuses.ts](constants/support-statuses.ts)**: Support status definitions (11 statuses)
-- **[constants/request-types.ts](constants/request-types.ts)**: Request type definitions
-- **[constants/requirement-types.ts](constants/requirement-types.ts)**: Requirement flag definitions
-
-### Core Architecture
-- **[middleware.ts](middleware.ts)**: Combined authentication + internationalization middleware
-- **[i18n/routing.ts](i18n/routing.ts)**: Internationalization routing configuration
-- **[lib/supabase/server.ts](lib/supabase/server.ts)**: Server-side Supabase client with cookie-based sessions
-- **[lib/supabase/client.ts](lib/supabase/client.ts)**: Browser Supabase client
+| Category | Files |
+|----------|-------|
+| Documentation | `docs/PERFORMANCE.md`, `docs/PRD.md`, `docs/AUTH_SETUP_GUIDE.md` |
+| Database | `database-indexes.sql`, `lib/supabase/queries.ts`, `lib/supabase/queries-support/` |
+| Auth | `middleware.ts`, `lib/supabase/server.ts`, `lib/supabase/client.ts` |
+| i18n | `i18n/routing.ts`, `messages/en.json`, `messages/ru.json` |
+| Constants | `constants/classification-types.ts` (v4.0 scoring), `constants/qualified-agents.ts`, `constants/support-statuses.ts` |
+| Config | `.env.local.example`, `components.json`, `.mcp.json` |
 
 ## Development Workflow
 
-### 1. Environment Setup
+For installation and environment setup, see [README.md](README.md).
 
-**Prerequisites**:
-- Node.js 18+
-- npm, yarn, pnpm, or bun
-- Supabase account with Google OAuth configured
-- @levhaolam.com email address for authentication
+### Quick Reference
 
-**Initial Setup**:
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd ai_agent_stats
-
-# Install dependencies
-npm install
-
-# Set up environment variables
-cp .env.local.example .env.local
-```
-
-**Configure `.env.local`**:
-```env
-# Supabase Configuration (required)
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-
-# Authentication (required)
-NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN=levhaolam.com
-
-# Optional: Service role key for RLS bypass
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-```
-
-**Database Setup** (one-time):
-1. Open Supabase SQL Editor
-2. Copy contents of `database-indexes.sql`
-3. Execute the SQL script to create indexes
-4. Verify: `SELECT * FROM pg_indexes WHERE tablename IN ('ai_human_comparison', 'support_threads_data')`
-
-**Google OAuth Setup**:
-- Follow the complete guide in [docs/AUTH_SETUP_GUIDE.md](docs/AUTH_SETUP_GUIDE.md)
-- This is required for authentication to work
-
-**Start Development**:
-```bash
-npm run dev
-# Opens at http://localhost:3000 (Russian)
-# Or http://localhost:3000/en (English)
-```
-
-**First Login**:
-- Visit any protected route (e.g., `/dashboard`)
-- You'll be redirected to `/login`
-- Sign in with your @levhaolam.com Google account
-
-### 2. Adding New Features
-
-Refer to [docs/PRD.md](docs/PRD.md) for complete feature specifications and implementation phases.
-
-### 3. Database Queries
-
-All SQL queries should be centralized in:
-- `lib/supabase/queries.ts` - Dashboard queries (OPTIMIZED: SELECT specific fields only)
-- `lib/supabase/queries-support/` - Support queries (OPTIMIZED: SELECT specific fields only)
-- **Important**: Always SELECT only needed fields, never use SELECT *
-
-### 4. Data Fetching Pattern
-
-- **Server Actions** ([lib/actions/](lib/actions/)) for database queries (bypasses RLS)
-- **React Query hooks** ([lib/queries/](lib/queries/)) for caching and timeout handling
-- **Custom hooks** ([lib/hooks/](lib/hooks/)) for component-specific logic
-- **Important**: Use `fetchFilterOptions` from `dashboard-actions.ts` (not client-side queries)
-
-### 5. State Management
-
-- Use Zustand store for filter state
-- Use React Query for data fetching and caching
-- Server Components use `createClient()` from [lib/supabase/server.ts](lib/supabase/server.ts)
-- Client Components should call Server Actions, not direct Supabase client queries
-
-### 6. Internationalization
-
-- Always use next-intl navigation wrappers from `@/i18n/routing`
-- Update BOTH `messages/en.json` and `messages/ru.json` when adding UI text
-- Use `useTranslations()` hook for all text content
-- Test in both Russian and English locales
-
-### 7. Charts
-
-- Always use CSS variables from `--chart-1` to `--chart-5`
-- Convert status/category names with spaces to safe CSS names
-- Test in both light and dark modes
-
-### 8. Performance Best Practices
-
-- SELECT only needed fields in queries (see [lib/supabase/queries.ts](lib/supabase/queries.ts) for examples)
-- Add timeout protection (30s) and retry logic (2 attempts) to React Query hooks
-- Use appropriate cache times: `staleTime: 2 * 60 * 1000` (2 min), `gcTime: 10 * 60 * 1000` (10 min)
-- Add performance logging to Server Actions for monitoring
-- Consider pagination for large datasets (limit 50-100 records)
-- Create page-specific hooks (like `useDetailedStats`) instead of fetching all data
-- Monitor performance in browser console (logs show timing metrics)
-- Refer to [docs/PERFORMANCE.md](docs/PERFORMANCE.md) for detailed optimization guide
-
-## Application Routes
-
-### Public Routes (No Authentication Required)
-
-- **`/`** - Landing page with hero, mockup, features
-- **`/docs`** - User documentation and guides
-- **`/login`** - Google OAuth login page
-- **`/unauthorized`** - Access denied page (invalid email domain)
-
-### Protected Routes (Authentication Required)
-
-All protected routes are under `app/[locale]/(analytics)/`:
-
-#### Core Analytics
-
-- **`/dashboard`** - Main dashboard
-  - KPI cards: Quality %, total records, changes, trends
-  - Quality trends chart (time-series)
-  - Category distribution (pie chart)
-  - Version comparison (bar chart)
-  - Detailed stats table (hierarchical)
-  - Filters: date range, versions, categories, agents
-
-- **`/detailed-stats`** - Full-page table view
-  - Optimized for large datasets (3-5x faster than dashboard)
-  - Advanced sorting, search, pagination
-  - CSV export
-
-#### Agent & Support Analytics
-
-- **`/agents-stats`** - Agent statistics dashboard
-  - Agent performance metrics
-  - Quality trends per agent
-  - Category breakdowns
-
-- **`/support-overview`** - Support operations overview
-  - Support KPIs: draft coverage, reply required, resolution rate
-  - Status distribution (pie chart)
-  - Resolution time (bar chart)
-  - AI draft flow (Sankey diagram)
-  - Requirements correlation (heatmap)
-  - Support threads table with search
-  - Click row → thread detail modal
-
-- **`/support-overview/thread/[threadId]`** - Thread detail page
-  - Complete thread metadata
-  - Quality score (from ai_human_comparison JOIN)
-  - Active requirements breakdown
-  - Full AI draft content
-  - Reviewed by qualified agent
-
-#### Ticket Management
-
-- **`/tickets-review`** - Ticket review interface
-  - Review and approve tickets
-  - Ticket quality assessment
-  - Assignment management
-
-- **`/backlog-reports`** - Backlog reports management
-  - View backlog statistics
-  - Generate reports
-  - Track backlog trends
-
-#### AI Features
-
-- **`/ai-chat`** - AI chat interface
-  - Interactive AI conversation
-  - Context-aware responses
-  - Integration with backlog reports
-  - See [docs/AI_CHAT_FOR_BACKLOG_REPORTS.md](docs/AI_CHAT_FOR_BACKLOG_REPORTS.md)
-
-#### Configuration
-
-- **`/request-categories`** - Request category management
-  - Add/edit/delete categories
-  - Category mappings
-  - Category statistics
-
-- **`/settings`** - Application settings
-  - User preferences
-  - Display options
-  - (Placeholder - minimal functionality)
-
-### Route Patterns
-
-**Locale Prefixes**:
-- Russian (default): `/dashboard`, `/support-overview`
-- English: `/en/dashboard`, `/en/support-overview`
-
-**Modal Routes**:
-Support overview uses parallel routes for modals:
-- **`@modal/(.)thread/[threadId]`** - Intercepted route for modal display
-- **`thread/[threadId]`** - Full page fallback
-
-**API Routes**:
-- **`/api/auth/callback`** - Google OAuth callback handler
+| Task | Location/Pattern |
+|------|------------------|
+| Add new feature | See [docs/PRD.md](docs/PRD.md) for specs |
+| Database queries | Centralize in `lib/supabase/queries.ts` or `queries-support/` |
+| Data fetching | Server Actions → React Query → Components |
+| Filter state | Zustand store (`lib/store/slices/`) |
+| Add translations | Update BOTH `messages/en.json` AND `messages/ru.json` |
+| Chart colors | Use `--chart-1` through `--chart-5` CSS variables |
+| Performance | See [docs/PERFORMANCE.md](docs/PERFORMANCE.md) |
 
 ## Common Pitfalls & Best Practices
 
