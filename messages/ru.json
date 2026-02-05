@@ -105,6 +105,8 @@
 		"searchRequestTypes": "Поиск типов запросов...",
 		"pendingDraftsOnly": "Ожидающие AI драфты",
 		"pendingDraftsDescription": "Показать только тикеты с AI драфтом без ответа агента",
+		"hideRequiresEditing": "Скрыть требующие редактирования",
+		"hideRequiresEditingDescription": "Показать только треды, не требующие редактирования",
 		"quickOptions": {
 			"7d": "7 дней",
 			"30d": "30 дней",

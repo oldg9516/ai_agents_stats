@@ -465,6 +465,7 @@ export interface SupportFilters {
 	requirements: string[] // [] = all, else filter by active requirements
 	versions: string[] // [] = all versions
 	pendingDraftsOnly: boolean // true = show only threads with AI draft but no agent response
+	hideRequiresEditing: boolean // true = hide threads where requires_editing = true
 }
 
 /**

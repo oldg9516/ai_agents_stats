@@ -135,6 +135,7 @@ function buildThreadsQuery(
 		requirements,
 		versions,
 		pendingDraftsOnly,
+		hideRequiresEditing,
 	} = filters
 
 	let query = supabase
@@ -163,6 +164,9 @@ function buildThreadsQuery(
 	}
 	if (pendingDraftsOnly) {
 		query = query.not('ai_draft_reply', 'is', null)
+	}
+	if (hideRequiresEditing) {
+		query = query.eq('requires_editing', false)
 	}
 
 	return query

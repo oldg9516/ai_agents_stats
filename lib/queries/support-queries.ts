@@ -39,6 +39,7 @@ function getSupportQueryKey(filters: SupportFilters) {
 			requirements: filters.requirements.sort(),
 			versions: filters.versions.sort(),
 			pendingDraftsOnly: filters.pendingDraftsOnly,
+			hideRequiresEditing: filters.hideRequiresEditing,
 		},
 	] as const
 }

@@ -24,6 +24,7 @@ interface SupportFilterBarProps {
 		requirements: string[]
 		versions: string[]
 		pendingDraftsOnly: boolean
+		hideRequiresEditing: boolean
 	}) => void
 	onReset: () => void
 	availableVersions: string[]
@@ -62,6 +63,7 @@ export function SupportFilterBar({
 	const [localRequirements, setLocalRequirements] = useState<string[]>(filters.requirements ?? [])
 	const [localVersions, setLocalVersions] = useState<string[]>(filters.versions ?? [])
 	const [localPendingDraftsOnly, setLocalPendingDraftsOnly] = useState(filters.pendingDraftsOnly ?? false)
+	const [localHideRequiresEditing, setLocalHideRequiresEditing] = useState(filters.hideRequiresEditing ?? false)
 
 	// Sync local state when filters prop changes (e.g., after reset)
 	// Use JSON.stringify to create a stable dependency
@@ -72,6 +74,7 @@ export function SupportFilterBar({
 		requirements: filters.requirements,
 		versions: filters.versions,
 		pendingDraftsOnly: filters.pendingDraftsOnly,
+		hideRequiresEditing: filters.hideRequiresEditing,
 	})
 
 	useEffect(() => {
@@ -81,6 +84,7 @@ export function SupportFilterBar({
 		setLocalRequirements(filters.requirements ?? [])
 		setLocalVersions(filters.versions ?? [])
 		setLocalPendingDraftsOnly(filters.pendingDraftsOnly ?? false)
+		setLocalHideRequiresEditing(filters.hideRequiresEditing ?? false)
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [filtersKey])
 
@@ -114,7 +118,8 @@ export function SupportFilterBar({
 		JSON.stringify([...localCategories].sort()) !== JSON.stringify([...(filters.categories ?? [])].sort()) ||
 		JSON.stringify([...localRequirements].sort()) !== JSON.stringify([...(filters.requirements ?? [])].sort()) ||
 		JSON.stringify([...localVersions].sort()) !== JSON.stringify([...(filters.versions ?? [])].sort()) ||
-		localPendingDraftsOnly !== (filters.pendingDraftsOnly ?? false)
+		localPendingDraftsOnly !== (filters.pendingDraftsOnly ?? false) ||
+		localHideRequiresEditing !== (filters.hideRequiresEditing ?? false)
 
 	// Apply filters and close sheet
 	const handleApply = () => {
@@ -125,6 +130,7 @@ export function SupportFilterBar({
 			requirements: localRequirements,
 			versions: localVersions,
 			pendingDraftsOnly: localPendingDraftsOnly,
+			hideRequiresEditing: localHideRequiresEditing,
 		})
 		onClose?.()
 	}
@@ -155,6 +161,26 @@ export function SupportFilterBar({
 						id='pending-drafts'
 						checked={localPendingDraftsOnly}
 						onCheckedChange={setLocalPendingDraftsOnly}
+					/>
+				</div>
+
+				{/* Hide Requires Editing Toggle */}
+				<div className='flex items-center justify-between rounded-lg border p-3 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800'>
+					<div className='space-y-0.5'>
+						<Label
+							htmlFor='hide-requires-editing'
+							className='text-sm font-medium cursor-pointer'
+						>
+							{t('filters.hideRequiresEditing')}
+						</Label>
+						<p className='text-xs text-muted-foreground'>
+							{t('filters.hideRequiresEditingDescription')}
+						</p>
+					</div>
+					<Switch
+						id='hide-requires-editing'
+						checked={localHideRequiresEditing}
+						onCheckedChange={setLocalHideRequiresEditing}
 					/>
 				</div>
 

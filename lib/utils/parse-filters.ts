@@ -38,6 +38,7 @@ export function getDefaultSupportFilters(): SupportFilters {
 		requirements: [],
 		versions: [],
 		pendingDraftsOnly: false,
+		hideRequiresEditing: false,
 	}
 }
 
@@ -144,6 +145,13 @@ export function parseSupportFiltersFromSearchParams(
 			? pendingDraftsParam === 'true'
 			: defaults.pendingDraftsOnly
 
+	// Parse hideRequiresEditing
+	const hideRequiresEditingParam = searchParams.hideRequiresEditing
+	const hideRequiresEditing =
+		typeof hideRequiresEditingParam === 'string'
+			? hideRequiresEditingParam === 'true'
+			: defaults.hideRequiresEditing
+
 	return {
 		dateRange,
 		statuses,
@@ -152,5 +160,6 @@ export function parseSupportFiltersFromSearchParams(
 		requirements,
 		versions,
 		pendingDraftsOnly,
+		hideRequiresEditing,
 	}
 }

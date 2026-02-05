@@ -26,6 +26,7 @@ export function useSupportFilters() {
 			setSupportRequirements: state.setSupportRequirements,
 			setSupportVersions: state.setSupportVersions,
 			setSupportPendingDraftsOnly: state.setSupportPendingDraftsOnly,
+			setSupportHideRequiresEditing: state.setSupportHideRequiresEditing,
 			resetSupportFilters: state.resetSupportFilters,
 			updateSupportFilters: state.updateSupportFilters,
 		}))
@@ -40,6 +41,7 @@ export function useSupportFilters() {
 			requirements: string[]
 			versions: string[]
 			pendingDraftsOnly: boolean
+			hideRequiresEditing: boolean
 		}) => {
 			storeValues.updateSupportFilters(filters)
 		},
@@ -56,6 +58,7 @@ export function useSupportFilters() {
 			setRequirements: storeValues.setSupportRequirements,
 			setVersions: storeValues.setSupportVersions,
 			setPendingDraftsOnly: storeValues.setSupportPendingDraftsOnly,
+			setHideRequiresEditing: storeValues.setSupportHideRequiresEditing,
 			resetFilters: storeValues.resetSupportFilters,
 			applyFilters,
 		}),
