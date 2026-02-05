@@ -52,6 +52,7 @@ export function DashboardContent() {
 		setVersions,
 		setCategories,
 		setAgents,
+		setHideRequiresEditing,
 		resetFilters,
 	} = useFilters()
 
@@ -80,10 +81,11 @@ export function DashboardContent() {
 	}
 
 	// Handle filter apply from sheet (deferred application)
-	const handleApplyFilters = (updates: { versions: string[]; categories: string[]; agents: string[] }) => {
+	const handleApplyFilters = (updates: { versions: string[]; categories: string[]; agents: string[]; hideRequiresEditing: boolean }) => {
 		setVersions(updates.versions)
 		setCategories(updates.categories)
 		setAgents(updates.agents)
+		setHideRequiresEditing(updates.hideRequiresEditing)
 
 		// Invalidate all dashboard queries to force refetch with new filters
 		queryClient.invalidateQueries({ queryKey: ['dashboard'] })
@@ -93,6 +95,11 @@ export function DashboardContent() {
 	// Count active filters (excluding date range, which has its own selector)
 	const getActiveFilterCount = () => {
 		let count = 0
+
+		// Check if hideRequiresEditing is enabled
+		if (filters.hideRequiresEditing) {
+			count++
+		}
 
 		// Check if versions are filtered
 		if (

@@ -36,7 +36,11 @@ type RawRecord = {
 	human_reply: string | null
 	ticket_id: string | null
 	ai_approved: boolean | null
+	thread_id: string | null
 }
+
+// Extended filters type that includes includedThreadIds (whitelist for showOnlyRequiresEditing)
+type ExtendedDashboardFilters = DashboardFilters & { includedThreadIds?: string[] }
 
 type DialogRecord = {
 	ticket_id: string
@@ -187,12 +191,12 @@ async function fetchSecondRequestTicketIds(
  * Fetch detailed stats with TypeScript aggregation
  * Replaces SQL function: get_detailed_stats_paginated
  *
- * @param filters - Dashboard filters
+ * @param filters - Dashboard filters (with optional includedThreadIds for showOnlyRequiresEditing)
  * @param mergeMultiCategories - If true, merge categories containing commas into "Multi-category"
  * @param dateFilterMode - Date field to filter by ('created' or 'human_reply')
  */
 export async function fetchDetailedStatsTS(
-	filters: DashboardFilters,
+	filters: ExtendedDashboardFilters,
 	mergeMultiCategories: boolean = false,
 	dateFilterMode: DateFilterMode = 'created'
 ): Promise<PaginatedResult> {
@@ -251,6 +255,35 @@ export async function fetchDetailedStatsTS(
 	}
 }
 
+/**
+ * Wrapper server action for DetailedStatsTable
+ * Handles hideRequiresEditing filter by fetching includedThreadIds
+ *
+ * @param filters - Dashboard filters
+ * @param mergeMultiCategories - If true, merge categories containing commas into "Multi-category"
+ * @param dateFilterMode - Date field to filter by ('created' or 'human_reply')
+ */
+export async function fetchDetailedStatsWithFilter(
+	filters: DashboardFilters,
+	mergeMultiCategories: boolean = false,
+	dateFilterMode: DateFilterMode = 'created'
+): Promise<PaginatedResult> {
+	// If hideRequiresEditing is enabled, fetch thread_ids to INCLUDE (whitelist)
+	let includedThreadIds: string[] = []
+	if (filters.hideRequiresEditing) {
+		const { fetchRequiresEditingThreadIds } = await import('@/lib/supabase/helpers')
+		includedThreadIds = await fetchRequiresEditingThreadIds(supabaseServer)
+	}
+
+	// Create extended filters with includedThreadIds
+	const extendedFilters: ExtendedDashboardFilters = {
+		...filters,
+		includedThreadIds: includedThreadIds.length > 0 ? includedThreadIds : undefined,
+	}
+
+	return fetchDetailedStatsTS(extendedFilters, mergeMultiCategories, dateFilterMode)
+}
+
 // =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
@@ -270,10 +303,10 @@ function emptyResult(): PaginatedResult {
  * Get total count of records matching filters
  */
 async function getTotalCount(
-	filters: DashboardFilters,
+	filters: ExtendedDashboardFilters,
 	dateFilterMode: DateFilterMode
 ): Promise<number> {
-	const { dateRange, versions, categories, agents } = filters
+	const { dateRange, versions, categories, agents, includedThreadIds } = filters
 	const dateField = dateFilterMode === 'human_reply' ? 'human_reply_date' : 'created_at'
 
 	// Using 'id' instead of '*' for better performance
@@ -296,6 +329,12 @@ async function getTotalCount(
 	query = query.neq('email', 'api@levhaolam.com')
 	query = query.neq('email', 'samantha@levhaolam.com')
 
+	// INCLUDE ONLY thread_ids where requires_editing = true (showOnlyRequiresEditing filter)
+	// Only apply for small arrays to avoid query size limits
+	if (includedThreadIds && includedThreadIds.length > 0 && includedThreadIds.length <= 100) {
+		query = query.in('thread_id', includedThreadIds)
+	}
+
 	const { count, error } = await query
 
 	if (error) throw new Error(`Count query failed: ${error.message}`)
@@ -306,11 +345,11 @@ async function getTotalCount(
  * Fetch records in batches to bypass Supabase limits
  */
 async function fetchInBatches(
-	filters: DashboardFilters,
+	filters: ExtendedDashboardFilters,
 	totalRecords: number,
 	dateFilterMode: DateFilterMode
 ): Promise<RawRecord[]> {
-	const { dateRange, versions, categories, agents } = filters
+	const { dateRange, versions, categories, agents, includedThreadIds } = filters
 	const dateField = dateFilterMode === 'human_reply' ? 'human_reply_date' : 'created_at'
 	const batches = Math.ceil(totalRecords / BATCH_SIZE)
 	const allRecords: RawRecord[] = []
@@ -325,7 +364,7 @@ async function fetchInBatches(
 			let query = supabaseServer
 				.from('ai_human_comparison')
 				.select(
-					'created_at, human_reply_date, request_subtype, prompt_version, change_classification, human_reply, ticket_id, ai_approved'
+					'thread_id, created_at, human_reply_date, request_subtype, prompt_version, change_classification, human_reply, ticket_id, ai_approved'
 				)
 				.gte(dateField, dateRange.from.toISOString())
 				.lt(dateField, dateRange.to.toISOString())
@@ -344,6 +383,12 @@ async function fetchInBatches(
 			query = query.neq('email', 'api@levhaolam.com')
 			query = query.neq('email', 'samantha@levhaolam.com')
 
+			// INCLUDE ONLY thread_ids where requires_editing = true (showOnlyRequiresEditing filter)
+			// Only apply for small arrays to avoid query size limits
+			if (includedThreadIds && includedThreadIds.length > 0 && includedThreadIds.length <= 100) {
+				query = query.in('thread_id', includedThreadIds)
+			}
+
 			batchPromises.push(query)
 		}
 
@@ -353,6 +398,12 @@ async function fetchInBatches(
 			if (error) throw new Error(`Batch fetch failed: ${error.message}`)
 			if (data) allRecords.push(...(data as RawRecord[]))
 		}
+	}
+
+	// For large included arrays (> 100), filter client-side
+	if (includedThreadIds && includedThreadIds.length > 100) {
+		const includedSet = new Set(includedThreadIds)
+		return allRecords.filter(r => r.thread_id && includedSet.has(r.thread_id))
 	}
 
 	return allRecords

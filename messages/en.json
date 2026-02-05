@@ -105,8 +105,8 @@
 		"allAgents": "All Agents",
 		"pendingDraftsOnly": "Pending AI Drafts",
 		"pendingDraftsDescription": "Show only tickets with AI draft awaiting agent review",
-		"hideRequiresEditing": "Hide requiring editing",
-		"hideRequiresEditingDescription": "Show only threads that don't require editing",
+		"hideRequiresEditing": "Show only requiring editing",
+		"hideRequiresEditingDescription": "Show only records that require editing",
 		"quickOptions": {
 			"7d": "7 days",
 			"30d": "30 days",

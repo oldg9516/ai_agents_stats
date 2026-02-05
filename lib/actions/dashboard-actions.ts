@@ -17,6 +17,8 @@ import {
 	getVersionComparison,
 } from '@/lib/supabase/queries'
 import { fetchDetailedStatsTS } from './detailed-stats-actions'
+import { fetchRequiresEditingThreadIds } from '@/lib/supabase/helpers'
+import { supabaseServer } from '@/lib/supabase/server'
 import type {
 	CategoryDistributionResult,
 	DashboardFilters,
@@ -58,13 +60,25 @@ export async function fetchDashboardData(
 	dateFilterMode: DateFilterMode = 'created'
 ) {
 	try {
+		// If showOnlyRequiresEditing is enabled, fetch thread_ids to INCLUDE (whitelist)
+		let includedThreadIds: string[] = []
+		if (filters.hideRequiresEditing) {
+			includedThreadIds = await fetchRequiresEditingThreadIds(supabaseServer)
+		}
+
+		// Create filters with included thread_ids for queries that support it
+		const filtersWithIncluded = {
+			...filters,
+			includedThreadIds: includedThreadIds.length > 0 ? includedThreadIds : undefined,
+		}
+
 		// Fetch all data in parallel for best performance
 		const promises = [
-			getKPIData(filters, dateFilterMode),
-			getQualityTrends(filters, dateFilterMode),
-			getCategoryDistribution(filters, dateFilterMode),
-			getVersionComparison(filters, dateFilterMode),
-			fetchDetailedStatsTS(filters, false, dateFilterMode).then(result => result.data),
+			getKPIData(filters, dateFilterMode, includedThreadIds),
+			getQualityTrends(filtersWithIncluded, dateFilterMode),
+			getCategoryDistribution(filters, dateFilterMode, includedThreadIds),
+			getVersionComparison(filtersWithIncluded, dateFilterMode),
+			fetchDetailedStatsTS(filtersWithIncluded, false, dateFilterMode).then(result => result.data),
 		]
 
 		// Track individual query times

@@ -12,14 +12,19 @@ const supabase = supabaseServer as any
  * This bypasses the 1000 row limit by aggregating on the database side
  * @param filters - Dashboard filters
  * @param dateFilterMode - Date field to filter by ('created' or 'human_reply')
+ * @param includedThreadIds - Thread IDs to INCLUDE (whitelist for showOnlyRequiresEditing filter)
  */
 export async function getKPIData(
 	filters: DashboardFilters,
-	dateFilterMode: DateFilterMode = 'created'
+	dateFilterMode: DateFilterMode = 'created',
+	includedThreadIds?: string[]
 ): Promise<KPIData> {
 	const { dateRange, versions, categories, agents } = filters
 	const previousPeriod = getPreviousPeriod(dateRange.from, dateRange.to)
 	const dateField = dateFilterMode === 'human_reply' ? 'human_reply_date' : 'created_at'
+
+	// Prepare included thread_ids parameter (null if empty = no filter)
+	const includedParam = includedThreadIds && includedThreadIds.length > 0 ? includedThreadIds : null
 
 	// Use SQL RPC functions for accurate aggregation (bypasses 1000 row limit)
 	const [
@@ -35,6 +40,7 @@ export async function getKPIData(
 			p_categories: categories.length > 0 ? categories : null,
 			p_agents: agents && agents.length > 0 ? agents : null,
 			p_date_field: dateField,
+			p_included_thread_ids: includedParam,
 		}),
 		// Previous period KPI stats
 		supabase.rpc('get_kpi_stats', {
@@ -44,6 +50,7 @@ export async function getKPIData(
 			p_categories: categories.length > 0 ? categories : null,
 			p_agents: agents && agents.length > 0 ? agents : null,
 			p_date_field: dateField,
+			p_included_thread_ids: includedParam,
 		}),
 		// Current period best category
 		supabase.rpc('get_best_category', {
@@ -53,6 +60,7 @@ export async function getKPIData(
 			p_categories: categories.length > 0 ? categories : null,
 			p_agents: agents && agents.length > 0 ? agents : null,
 			p_date_field: dateField,
+			p_included_thread_ids: includedParam,
 		}),
 	])
 
@@ -112,6 +120,7 @@ export async function getKPIData(
 			p_categories: [bestCategory.category], // Filter to same category
 			p_agents: agents && agents.length > 0 ? agents : null,
 			p_date_field: dateField,
+			p_included_thread_ids: includedParam,
 		})
 
 		if (!previousBestCategoryForCategory.error && previousBestCategoryForCategory.data?.[0]) {

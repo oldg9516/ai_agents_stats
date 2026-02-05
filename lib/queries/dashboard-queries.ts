@@ -8,7 +8,7 @@
  */
 
 import { fetchDashboardData } from '@/lib/actions/dashboard-actions'
-import { fetchDetailedStatsTS } from '@/lib/actions/detailed-stats-actions'
+import { fetchDetailedStatsWithFilter } from '@/lib/actions/detailed-stats-actions'
 import { QUERY_CACHE_CONFIG, REQUEST_TIMEOUT } from './query-config'
 import type {
 	CategoryDisplayMode,
@@ -38,6 +38,7 @@ function getDashboardQueryKey(
 			versions: filters.versions.sort(),
 			categories: filters.categories.sort(),
 			agents: (filters.agents ?? []).sort(),
+			hideRequiresEditing: filters.hideRequiresEditing ?? false,
 			dateFilterMode,
 		},
 	] as const
@@ -187,6 +188,7 @@ function getPaginatedStatsQueryKey(
 			versions: filters.versions.sort(),
 			categories: filters.categories.sort(),
 			agents: (filters.agents ?? []).sort(),
+			hideRequiresEditing: filters.hideRequiresEditing ?? false,
 			page,
 			pageSize,
 			categoryDisplayMode,
@@ -245,7 +247,7 @@ export function useDetailedStatsPaginated(
 			const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
 
 			try {
-				const result = await fetchDetailedStatsTS(filters, mergeMultiCategories, dateFilterMode)
+				const result = await fetchDetailedStatsWithFilter(filters, mergeMultiCategories, dateFilterMode)
 				clearTimeout(timeoutId)
 
 				// Client-side pagination

@@ -22,6 +22,8 @@ export function DetailedStatsContent() {
 		setDateRange,
 		setVersions,
 		setCategories,
+		setAgents,
+		setHideRequiresEditing,
 		resetFilters,
 	} = useFilters()
 
@@ -43,14 +45,21 @@ export function DetailedStatsContent() {
 	}
 
 	// Handle filter apply from sheet (deferred application)
-	const handleApplyFilters = (updates: { versions: string[]; categories: string[]; agents: string[] }) => {
+	const handleApplyFilters = (updates: { versions: string[]; categories: string[]; agents: string[]; hideRequiresEditing: boolean }) => {
 		setVersions(updates.versions)
 		setCategories(updates.categories)
+		setAgents(updates.agents)
+		setHideRequiresEditing(updates.hideRequiresEditing)
 	}
 
 	// Count active filters (excluding date range, which has its own selector)
 	const getActiveFilterCount = () => {
 		let count = 0
+
+		// Check if hideRequiresEditing is enabled
+		if (filters.hideRequiresEditing) {
+			count++
+		}
 
 		// Check if versions are filtered
 		if (
@@ -66,6 +75,15 @@ export function DetailedStatsContent() {
 			filterOptions &&
 			filters.categories.length > 0 &&
 			filters.categories.length < filterOptions.categories.length
+		) {
+			count++
+		}
+
+		// Check if agents are filtered
+		if (
+			filterOptions &&
+			(filters.agents?.length ?? 0) > 0 &&
+			(filters.agents?.length ?? 0) < filterOptions.agents.length
 		) {
 			count++
 		}

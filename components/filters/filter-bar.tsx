@@ -1,6 +1,8 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import type { DashboardFilters } from '@/lib/supabase/types'
 import { IconRefresh, IconCheck } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'
@@ -14,6 +16,7 @@ interface FilterBarProps {
 		versions: string[]
 		categories: string[]
 		agents: string[]
+		hideRequiresEditing: boolean
 	}) => void
 	onReset: () => void
 	availableVersions: string[]
@@ -49,6 +52,7 @@ export function FilterBar({
 	const [localVersions, setLocalVersions] = useState<string[]>(filters.versions ?? [])
 	const [localCategories, setLocalCategories] = useState<string[]>(filters.categories ?? [])
 	const [localAgents, setLocalAgents] = useState<string[]>(filters.agents ?? [])
+	const [localHideRequiresEditing, setLocalHideRequiresEditing] = useState(filters.hideRequiresEditing ?? false)
 
 	// Refs to track previous values and avoid stale closures
 	const filtersRef = useRef(filters)
@@ -63,12 +67,14 @@ export function FilterBar({
 		versions: filters.versions,
 		categories: filters.categories,
 		agents: filters.agents,
+		hideRequiresEditing: filters.hideRequiresEditing,
 	})
 
 	useEffect(() => {
 		setLocalVersions(filters.versions ?? [])
 		setLocalCategories(filters.categories ?? [])
 		setLocalAgents(filters.agents ?? [])
+		setLocalHideRequiresEditing(filters.hideRequiresEditing ?? false)
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [filtersKey])
 
@@ -100,6 +106,7 @@ export function FilterBar({
 			versions: localVersions,
 			categories: localCategories,
 			agents: localAgents,
+			hideRequiresEditing: localHideRequiresEditing,
 		})
 		onClose?.()
 	}
@@ -113,6 +120,26 @@ export function FilterBar({
 	return (
 		<div className='space-y-4'>
 			<div className='grid gap-4 sm:gap-6 grid-cols-1'>
+				{/* Hide Requires Editing Toggle */}
+				<div className='flex items-center justify-between rounded-lg border p-3 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800'>
+					<div className='space-y-0.5'>
+						<Label
+							htmlFor='hide-requires-editing-dashboard'
+							className='text-sm font-medium cursor-pointer'
+						>
+							{t('filters.hideRequiresEditing')}
+						</Label>
+						<p className='text-xs text-muted-foreground'>
+							{t('filters.hideRequiresEditingDescription')}
+						</p>
+					</div>
+					<Switch
+						id='hide-requires-editing-dashboard'
+						checked={localHideRequiresEditing}
+						onCheckedChange={setLocalHideRequiresEditing}
+					/>
+				</div>
+
 				{/* Version Filter */}
 				<MultiSelectFilter
 					label={t('filters.versions')}

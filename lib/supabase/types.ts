@@ -305,6 +305,7 @@ export interface DashboardFilters {
 	versions: string[] // [] = all versions
 	categories: string[] // [] = all categories
 	agents: string[] // [] = all agents (filter by email)
+	hideRequiresEditing?: boolean // true = hide records where support_threads_data.requires_editing = true
 }
 
 /**

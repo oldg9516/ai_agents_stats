@@ -21,7 +21,7 @@ function applyDashboardFilters(
 	query: ReturnType<typeof supabase.from>['select'],
 	filters: BatchFetchFilters
 ) {
-	const { versions, categories, agents } = filters
+	const { versions, categories, agents, includedThreadIds } = filters
 
 	if (versions && versions.length > 0) {
 		query = query.in('prompt_version', versions)
@@ -36,6 +36,16 @@ function applyDashboardFilters(
 	// Exclude system/API emails from statistics
 	query = query.neq('email', 'api@levhaolam.com')
 
+	// INCLUDE ONLY thread_ids where requires_editing = true (showOnlyRequiresEditing filter)
+	if (includedThreadIds && includedThreadIds.length > 0) {
+		// For small arrays (< 100), we can filter in query
+		// For large arrays, we filter client-side after fetch
+		if (includedThreadIds.length <= 100) {
+			query = query.in('thread_id', includedThreadIds)
+		}
+		// For larger arrays, filtering happens post-fetch in the calling function
+	}
+
 	return query
 }
 
@@ -43,21 +53,21 @@ function applyDashboardFilters(
  * Fetch Quality Trends data (for line chart)
  * Uses only reviewed records (change_classification IS NOT NULL)
  * Uses batch fetching to handle large datasets (bypasses 1000 row limit)
- * @param filters - Dashboard filters
+ * @param filters - Dashboard filters (with optional includedThreadIds for showOnlyRequiresEditing)
  * @param dateFilterMode - Date field to filter by ('created' or 'human_reply')
  */
 export async function getQualityTrends(
-	filters: DashboardFilters,
+	filters: DashboardFilters & { includedThreadIds?: string[] },
 	dateFilterMode: DateFilterMode = 'created'
 ): Promise<QualityTrendData[]> {
-	const { dateRange, versions, categories, agents } = filters
+	const { dateRange, versions, categories, agents, includedThreadIds } = filters
 
 	// Use batch fetching for unlimited records
 	const records = await fetchAllInBatchesGeneric<AIHumanComparisonRow>(
 		supabase,
 		'ai_human_comparison',
-		'request_subtype, created_at, human_reply_date, changed, change_classification',
-		{ dateRange, versions, categories, agents, dateFilterMode },
+		'thread_id, request_subtype, created_at, human_reply_date, changed, change_classification',
+		{ dateRange, versions, categories, agents, dateFilterMode, includedThreadIds },
 		(query, f) => {
 			// Apply dashboard filters + only reviewed records
 			query = applyDashboardFilters(query, f)
@@ -72,8 +82,15 @@ export async function getQualityTrends(
 
 	if (!records.length) return []
 
+	// Filter to INCLUDE only thread_ids client-side (for large arrays that weren't filtered in query)
+	let filteredRecords = records
+	if (includedThreadIds && includedThreadIds.length > 100) {
+		const includedSet = new Set(includedThreadIds)
+		filteredRecords = records.filter(r => r.thread_id && includedSet.has(r.thread_id))
+	}
+
 	// Filter out context_shift records before calculations
-	const evaluableRecords = records.filter(
+	const evaluableRecords = filteredRecords.filter(
 		r => r.change_classification !== 'context_shift'
 	)
 
@@ -116,10 +133,12 @@ export async function getQualityTrends(
  * Uses RPC function to aggregate on database side (avoids 1000 row limit)
  * @param filters - Dashboard filters
  * @param dateFilterMode - Date field to filter by ('created' or 'human_reply')
+ * @param includedThreadIds - Thread IDs to INCLUDE (whitelist for showOnlyRequiresEditing filter)
  */
 export async function getCategoryDistribution(
 	filters: DashboardFilters,
-	dateFilterMode: DateFilterMode = 'created'
+	dateFilterMode: DateFilterMode = 'created',
+	includedThreadIds?: string[]
 ): Promise<CategoryDistributionResult> {
 	const { dateRange, versions, categories, agents } = filters
 
@@ -133,6 +152,7 @@ export async function getCategoryDistribution(
 		p_categories: categories.length > 0 ? categories : null,
 		p_agents: agents && agents.length > 0 ? agents : null,
 		p_date_field: dateFilterMode === 'human_reply' ? 'human_reply_date' : 'created_at',
+		p_included_thread_ids: includedThreadIds && includedThreadIds.length > 0 ? includedThreadIds : null,
 	})
 
 	if (error) throw error
@@ -171,21 +191,21 @@ export async function getCategoryDistribution(
 /**
  * Fetch Version Comparison data (for bar chart)
  * Uses batch fetching to handle large datasets (bypasses 1000 row limit)
- * @param filters - Dashboard filters
+ * @param filters - Dashboard filters (with optional includedThreadIds for showOnlyRequiresEditing)
  * @param dateFilterMode - Date field to filter by ('created' or 'human_reply')
  */
 export async function getVersionComparison(
-	filters: DashboardFilters,
+	filters: DashboardFilters & { includedThreadIds?: string[] },
 	dateFilterMode: DateFilterMode = 'created'
 ): Promise<VersionComparisonData[]> {
-	const { dateRange, versions, categories, agents } = filters
+	const { dateRange, versions, categories, agents, includedThreadIds } = filters
 
 	// Use batch fetching for unlimited records
 	const records = await fetchAllInBatchesGeneric<AIHumanComparisonRow>(
 		supabase,
 		'ai_human_comparison',
-		'prompt_version, changed, change_classification',
-		{ dateRange, versions, categories, agents, dateFilterMode },
+		'thread_id, prompt_version, changed, change_classification',
+		{ dateRange, versions, categories, agents, dateFilterMode, includedThreadIds },
 		(query, f) => {
 			query = applyDashboardFilters(query, f)
 			// For human_reply mode, filter out records with no human_reply_date
@@ -198,8 +218,15 @@ export async function getVersionComparison(
 
 	if (!records.length) return []
 
+	// Filter to INCLUDE only thread_ids client-side (for large arrays that weren't filtered in query)
+	let filteredRecords = records
+	if (includedThreadIds && includedThreadIds.length > 100) {
+		const includedSet = new Set(includedThreadIds)
+		filteredRecords = records.filter(r => r.thread_id && includedSet.has(r.thread_id))
+	}
+
 	// Filter to only reviewed records, excluding context_shift and exclusion types
-	const evaluableRecords = records.filter(
+	const evaluableRecords = filteredRecords.filter(
 		r => r.change_classification !== null &&
 			r.change_classification !== 'context_shift' &&
 			r.change_classification !== 'EXCL_WORKFLOW_SHIFT' &&

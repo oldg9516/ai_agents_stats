@@ -18,6 +18,8 @@ export interface BatchFetchFilters {
 	requestTypes?: string[]
 	requirements?: string[]
 	dateFilterMode?: DateFilterMode
+	hideRequiresEditing?: boolean // Show only records where support_threads_data.requires_editing = true
+	includedThreadIds?: string[] // Pre-fetched thread_ids to INCLUDE (whitelist for showOnlyRequiresEditing)
 }
 
 /**
@@ -207,4 +209,46 @@ export function formatDate(date: Date): string {
 	const month = String(date.getMonth() + 1).padStart(2, '0')
 	const year = date.getFullYear()
 	return `${day}.${month}.${year}`
+}
+
+/**
+ * Fetch thread_ids from support_threads_data where requires_editing = true
+ * Used as whitelist when "Show Only Requires Editing" filter is enabled
+ * SQL uses: thread_id = ANY(includedThreadIds) to include ONLY these records
+ *
+ * @param supabase - Supabase client instance
+ * @returns Array of thread_ids to INCLUDE (those that require editing)
+ */
+export async function fetchRequiresEditingThreadIds(
+	supabase: SupabaseClient
+): Promise<string[]> {
+	const BATCH_SIZE = 1000
+	const results: string[] = []
+
+	// Fetch all thread_ids where requires_editing = true (whitelist)
+	let offset = 0
+	let hasMore = true
+
+	while (hasMore) {
+		const { data, error } = await supabase
+			.from('support_threads_data')
+			.select('thread_id')
+			.eq('requires_editing', true)
+			.range(offset, offset + BATCH_SIZE - 1)
+
+		if (error) {
+			console.error('❌ [fetchRequiresEditingThreadIds] Error:', error)
+			break
+		}
+
+		if (data && data.length > 0) {
+			results.push(...data.map((d: { thread_id: string }) => d.thread_id))
+			offset += BATCH_SIZE
+			hasMore = data.length === BATCH_SIZE
+		} else {
+			hasMore = false
+		}
+	}
+
+	return results
 }
