@@ -40,6 +40,12 @@ export function AgentsStatsContent() {
 		openAgentChangesModal,
 	} = useAgentsStatsFilters()
 
+	// Handle filter apply from sheet (deferred application)
+	const handleApplyFilters = (updates: { versions: string[]; categories: string[] }) => {
+		setVersions(updates.versions)
+		setCategories(updates.categories)
+	}
+
 	// Fetch filter options based on current date range
 	const { data: filterOptions } = useQuery({
 		queryKey: [
@@ -104,14 +110,16 @@ export function AgentsStatsContent() {
 						description={t('agentsStats.filters.description')}
 						activeFilterCount={getActiveFilterCount()}
 					>
-						<AgentsStatsFilterBar
-							filters={filters}
-							onVersionsChange={setVersions}
-							onCategoriesChange={setCategories}
-							onReset={resetFilters}
-							availableVersions={filterOptions?.versions ?? []}
-							availableCategories={filterOptions?.categories ?? []}
-						/>
+						{({ close }) => (
+							<AgentsStatsFilterBar
+								filters={filters}
+								onApplyFilters={handleApplyFilters}
+								onReset={resetFilters}
+								availableVersions={filterOptions?.versions ?? []}
+								availableCategories={filterOptions?.categories ?? []}
+								onClose={close}
+							/>
+						)}
 					</FilterSheet>
 				</div>
 

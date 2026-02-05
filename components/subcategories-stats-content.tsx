@@ -14,7 +14,8 @@ import {
 } from '@/components/ui/accordion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DateRangeSelector } from '@/components/filters/date-range-selector'
-import { MultiSelectFilter } from '@/components/filters/multi-select-filter'
+import { FilterSheet } from '@/components/filters/filter-sheet'
+import { SubcategoriesStatsFilterBar } from '@/components/filters/subcategories-stats-filter-bar'
 import { Button } from '@/components/ui/button'
 import { IconRefresh } from '@tabler/icons-react'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -32,6 +33,26 @@ export function SubcategoriesStatsContent() {
 	})
 	const [selectedVersions, setSelectedVersions] = useState<string[]>([])
 	const [selectedAgents, setSelectedAgents] = useState<string[]>([])
+
+	// Count active filters
+	const getActiveFilterCount = () => {
+		let count = 0
+		if (selectedVersions.length > 0) count++
+		if (selectedAgents.length > 0) count++
+		return count
+	}
+
+	// Handle filter apply from sheet (deferred application)
+	const handleApplyFilters = (updates: { versions: string[]; agents: string[] }) => {
+		setSelectedVersions(updates.versions)
+		setSelectedAgents(updates.agents)
+	}
+
+	// Reset filters
+	const handleReset = () => {
+		setSelectedVersions([])
+		setSelectedAgents([])
+	}
 
 	// Fetch filter options
 	const { data: filterOptions } = useQuery({
@@ -82,44 +103,42 @@ export function SubcategoriesStatsContent() {
 				</Button>
 			</div>
 
-			{/* Date Range Selector */}
-			<DateRangeSelector
-				filters={{ dateRange, versions: [], categories: [], agents: [] }}
-				onFiltersChange={(updates) => {
-					if (updates.dateRange) {
-						setDateRange(updates.dateRange)
-					}
-				}}
-				dateFilterMode='created'
-			/>
+			{/* Filters Section */}
+			<div className='flex flex-col gap-3 lg:flex-row lg:items-center'>
+				{/* More Filters Button */}
+				<div className='lg:order-1'>
+					<FilterSheet
+						title={tFilters('title')}
+						description={t('description')}
+						activeFilterCount={getActiveFilterCount()}
+					>
+						{({ close }) => (
+							<SubcategoriesStatsFilterBar
+								versions={selectedVersions}
+								agents={selectedAgents}
+								onApplyFilters={handleApplyFilters}
+								onReset={handleReset}
+								availableVersions={filterOptions?.versions ?? []}
+								availableAgents={filterOptions?.agents ?? []}
+								onClose={close}
+							/>
+						)}
+					</FilterSheet>
+				</div>
 
-			{/* Filters */}
-			<Card>
-				<CardHeader>
-					<CardTitle>{tFilters('title')}</CardTitle>
-				</CardHeader>
-				<CardContent className='space-y-4'>
-					<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-						{/* Version Filter */}
-						<MultiSelectFilter
-							label={tFilters('versions')}
-							placeholder={tFilters('searchVersions')}
-							options={filterOptions?.versions || []}
-							selected={selectedVersions}
-							onChange={setSelectedVersions}
-						/>
-
-						{/* Agent Filter */}
-						<MultiSelectFilter
-							label={tFilters('agents')}
-							placeholder={tFilters('searchAgents')}
-							options={filterOptions?.agents || []}
-							selected={selectedAgents}
-							onChange={setSelectedAgents}
-						/>
-					</div>
-				</CardContent>
-			</Card>
+				{/* Date Range Selector */}
+				<div className='lg:order-2 lg:flex-1'>
+					<DateRangeSelector
+						filters={{ dateRange, versions: [], categories: [], agents: [] }}
+						onFiltersChange={(updates) => {
+							if (updates.dateRange) {
+								setDateRange(updates.dateRange)
+							}
+						}}
+						dateFilterMode='created'
+					/>
+				</div>
+			</div>
 
 			{/* Summary Stats */}
 			{!loading && data.length > 0 && (

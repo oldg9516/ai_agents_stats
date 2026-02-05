@@ -35,17 +35,17 @@ export function DetailedStatsContent() {
 		staleTime: 5 * 60 * 1000, // Cache for 5 minutes
 	})
 
-	// Handle filter changes
-	const handleFiltersChange = (updates: Partial<typeof filters>) => {
+	// Handle date range change (immediate, used by date selector)
+	const handleDateRangeChange = (updates: Partial<typeof filters>) => {
 		if (updates.dateRange) {
 			setDateRange(updates.dateRange.from, updates.dateRange.to)
 		}
-		if (updates.versions !== undefined) {
-			setVersions(updates.versions)
-		}
-		if (updates.categories !== undefined) {
-			setCategories(updates.categories)
-		}
+	}
+
+	// Handle filter apply from sheet (deferred application)
+	const handleApplyFilters = (updates: { versions: string[]; categories: string[]; agents: string[] }) => {
+		setVersions(updates.versions)
+		setCategories(updates.categories)
 	}
 
 	// Count active filters (excluding date range, which has its own selector)
@@ -83,14 +83,17 @@ export function DetailedStatsContent() {
 						description='Customize your detailed stats view by filtering data across date ranges, versions, categories, and qualified agents.'
 						activeFilterCount={0}
 					>
-						<FilterBar
-							filters={filters}
-							onFiltersChange={handleFiltersChange}
-							onReset={resetFilters}
-							availableVersions={[]}
-							availableCategories={[]}
-							availableAgents={[]}
-						/>
+						{({ close }) => (
+							<FilterBar
+								filters={filters}
+								onApplyFilters={handleApplyFilters}
+								onReset={resetFilters}
+								availableVersions={[]}
+								availableCategories={[]}
+								availableAgents={[]}
+								onClose={close}
+							/>
+						)}
 					</FilterSheet>
 				</div>
 			</div>
@@ -108,14 +111,17 @@ export function DetailedStatsContent() {
 						description='Customize your detailed stats view by filtering data across versions, categories, and qualified agents.'
 						activeFilterCount={getActiveFilterCount()}
 					>
-						<FilterBar
-							filters={filters}
-							onFiltersChange={handleFiltersChange}
-							onReset={resetFilters}
-							availableVersions={filterOptions.versions}
-							availableCategories={filterOptions.categories}
-							availableAgents={filterOptions.agents}
-						/>
+						{({ close }) => (
+							<FilterBar
+								filters={filters}
+								onApplyFilters={handleApplyFilters}
+								onReset={resetFilters}
+								availableVersions={filterOptions.versions}
+								availableCategories={filterOptions.categories}
+								availableAgents={filterOptions.agents}
+								onClose={close}
+							/>
+						)}
 					</FilterSheet>
 				</div>
 
@@ -123,7 +129,7 @@ export function DetailedStatsContent() {
 				<div className='lg:order-2 lg:flex-1'>
 					<DateRangeSelector
 						filters={filters}
-						onFiltersChange={handleFiltersChange}
+						onFiltersChange={handleDateRangeChange}
 					/>
 				</div>
 			</div>

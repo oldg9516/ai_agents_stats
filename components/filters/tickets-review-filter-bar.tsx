@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
-import { IconRefresh } from '@tabler/icons-react'
+import { IconRefresh, IconCheck } from '@tabler/icons-react'
 import type { TicketsReviewFilters } from '@/lib/supabase/types'
 import { fetchTicketsReviewFilterOptionsAction } from '@/lib/actions/tickets-review-actions'
 import { MultiSelectFilter } from './multi-select-filter'
@@ -12,28 +12,28 @@ import { REVIEWER_AGENTS } from '@/constants/qualified-agents'
 
 interface TicketsReviewFilterBarProps {
 	filters: TicketsReviewFilters
-	onCategoriesChange: (categories: string[]) => void
-	onVersionsChange: (versions: string[]) => void
-	onClassificationsChange: (classifications: string[]) => void
-	onAgentsChange: (agents: string[]) => void
-	onStatusesChange: (statuses: string[]) => void
-	onReviewerNamesChange: (reviewerNames: string[]) => void
+	onApplyFilters: (filters: {
+		categories: string[]
+		versions: string[]
+		classifications: string[]
+		agents: string[]
+		reviewStatuses: string[]
+		reviewerNames: string[]
+	}) => void
 	onReset: () => void
+	onClose?: () => void
 }
 
 /**
  * Filter Bar for Tickets Review
  * Contains category, version, classification, and agent filters
+ * Uses local state with Apply button for deferred filter application
  */
 export function TicketsReviewFilterBar({
 	filters,
-	onCategoriesChange,
-	onVersionsChange,
-	onClassificationsChange,
-	onAgentsChange,
-	onStatusesChange,
-	onReviewerNamesChange,
+	onApplyFilters,
 	onReset,
+	onClose,
 }: TicketsReviewFilterBarProps) {
 	const t = useTranslations()
 
@@ -44,6 +44,34 @@ export function TicketsReviewFilterBar({
 		string[]
 	>([])
 	const [availableAgents, setAvailableAgents] = useState<string[]>([])
+
+	// Local state for pending filter changes
+	const [localCategories, setLocalCategories] = useState<string[]>(filters.categories ?? [])
+	const [localVersions, setLocalVersions] = useState<string[]>(filters.versions ?? [])
+	const [localClassifications, setLocalClassifications] = useState<string[]>(filters.classifications ?? [])
+	const [localAgents, setLocalAgents] = useState<string[]>(filters.agents ?? [])
+	const [localReviewStatuses, setLocalReviewStatuses] = useState<string[]>(filters.reviewStatuses ?? [])
+	const [localReviewerNames, setLocalReviewerNames] = useState<string[]>(filters.reviewerNames ?? [])
+
+	// Sync local state when filters prop changes (e.g., after reset)
+	const filtersKey = JSON.stringify({
+		categories: filters.categories,
+		versions: filters.versions,
+		classifications: filters.classifications,
+		agents: filters.agents,
+		reviewStatuses: filters.reviewStatuses,
+		reviewerNames: filters.reviewerNames,
+	})
+
+	useEffect(() => {
+		setLocalCategories(filters.categories ?? [])
+		setLocalVersions(filters.versions ?? [])
+		setLocalClassifications(filters.classifications ?? [])
+		setLocalAgents(filters.agents ?? [])
+		setLocalReviewStatuses(filters.reviewStatuses ?? [])
+		setLocalReviewerNames(filters.reviewerNames ?? [])
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [filtersKey])
 
 	// Fetch filter options on mount and when date range changes
 	useEffect(() => {
@@ -61,15 +89,23 @@ export function TicketsReviewFilterBar({
 		fetchOptions()
 	}, [filters.dateRange])
 
-	// Classification labels (not currently used, but keeping for future)
-	const getClassificationLabel = (classification: string) => {
-		const key = `ticketsReview.classifications.${classification}` as
-			| 'ticketsReview.classifications.critical_error'
-			| 'ticketsReview.classifications.meaningful_improvement'
-			| 'ticketsReview.classifications.stylistic_preference'
-			| 'ticketsReview.classifications.no_significant_change'
-			| 'ticketsReview.classifications.context_shift'
-		return t(key)
+	// Apply filters and close sheet
+	const handleApply = () => {
+		onApplyFilters({
+			categories: localCategories,
+			versions: localVersions,
+			classifications: localClassifications,
+			agents: localAgents,
+			reviewStatuses: localReviewStatuses,
+			reviewerNames: localReviewerNames,
+		})
+		onClose?.()
+	}
+
+	// Reset and sync local state
+	const handleReset = () => {
+		onReset()
+		// Local state will be synced via useEffect when filters prop changes
 	}
 
 	return (
@@ -78,8 +114,8 @@ export function TicketsReviewFilterBar({
 			<MultiSelectFilter
 				label={t('ticketsReview.filters.category')}
 				options={availableCategories}
-				selected={filters.categories}
-				onChange={onCategoriesChange}
+				selected={localCategories}
+				onChange={setLocalCategories}
 				placeholder={t('ticketsReview.filters.searchCategories')}
 			/>
 
@@ -87,8 +123,8 @@ export function TicketsReviewFilterBar({
 			<MultiSelectFilter
 				label={t('ticketsReview.filters.version')}
 				options={availableVersions}
-				selected={filters.versions}
-				onChange={onVersionsChange}
+				selected={localVersions}
+				onChange={setLocalVersions}
 				placeholder={t('ticketsReview.filters.searchVersions')}
 			/>
 
@@ -96,8 +132,8 @@ export function TicketsReviewFilterBar({
 			<MultiSelectFilter
 				label={t('ticketsReview.filters.classification')}
 				options={availableClassifications.filter(c => CLASSIFICATION_TYPES.includes(c as any))}
-				selected={filters.classifications}
-				onChange={onClassificationsChange}
+				selected={localClassifications}
+				onChange={setLocalClassifications}
 				placeholder={t('ticketsReview.filters.searchClassifications')}
 				formatLabel={(classification: string) =>
 					t(`ticketsReview.classifications.${classification}` as any)
@@ -108,8 +144,8 @@ export function TicketsReviewFilterBar({
 			<MultiSelectFilter
 				label={t('ticketsReview.filters.agent')}
 				options={availableAgents}
-				selected={filters.agents}
-				onChange={onAgentsChange}
+				selected={localAgents}
+				onChange={setLocalAgents}
 				placeholder={t('ticketsReview.filters.searchAgents')}
 			/>
 
@@ -117,8 +153,8 @@ export function TicketsReviewFilterBar({
 			<MultiSelectFilter
 				label={t('ticketsReview.filters.status')}
 				options={['processed', 'unprocessed']}
-				selected={filters.reviewStatuses}
-				onChange={onStatusesChange}
+				selected={localReviewStatuses}
+				onChange={setLocalReviewStatuses}
 				placeholder={t('ticketsReview.filters.searchStatuses')}
 				formatLabel={(status: string) =>
 					status === 'processed'
@@ -131,8 +167,8 @@ export function TicketsReviewFilterBar({
 			<MultiSelectFilter
 				label={t('ticketsReview.filters.reviewer')}
 				options={REVIEWER_AGENTS.map(r => r.id)}
-				selected={filters.reviewerNames ?? []}
-				onChange={onReviewerNamesChange}
+				selected={localReviewerNames}
+				onChange={setLocalReviewerNames}
 				placeholder={t('ticketsReview.filters.searchReviewers')}
 				formatLabel={(reviewerId: string) => {
 					const reviewer = REVIEWER_AGENTS.find(r => r.id === reviewerId)
@@ -140,11 +176,15 @@ export function TicketsReviewFilterBar({
 				}}
 			/>
 
-			{/* Reset Button */}
-			<div className='pt-4 border-t'>
-				<Button onClick={onReset} variant='outline' className='w-full'>
+			{/* Action Buttons */}
+			<div className='flex flex-col sm:flex-row gap-2 sm:justify-end pt-4 border-t'>
+				<Button onClick={handleReset} variant='outline' size='sm' className='w-full sm:w-auto'>
 					<IconRefresh className='mr-2 h-4 w-4' />
 					{t('ticketsReview.filters.reset')}
+				</Button>
+				<Button onClick={handleApply} variant='default' size='sm' className='w-full sm:w-auto'>
+					<IconCheck className='mr-2 h-4 w-4' />
+					{t('filters.apply')}
 				</Button>
 			</div>
 		</div>

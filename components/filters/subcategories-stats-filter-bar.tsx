@@ -2,52 +2,53 @@
 
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import type { AgentStatsFilters } from '@/lib/supabase/types'
 import { IconRefresh, IconCheck } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'
 import { MultiSelectFilter } from './multi-select-filter'
 
-interface AgentsStatsFilterBarProps {
-	filters: AgentStatsFilters
-	onApplyFilters: (filters: { versions: string[]; categories: string[] }) => void
+interface SubcategoriesStatsFilterBarProps {
+	versions: string[]
+	agents: string[]
+	onApplyFilters: (filters: { versions: string[]; agents: string[] }) => void
 	onReset: () => void
 	availableVersions: string[]
-	availableCategories: string[]
+	availableAgents: string[]
 	onClose?: () => void
 }
 
 /**
- * Agents Stats Filter Bar (inside FilterSheet)
+ * Subcategories Stats Filter Bar (inside FilterSheet)
  *
  * Features:
  * - Version multi-select
- * - Category multi-select
+ * - Agent multi-select
  * - Apply button (deferred filter application)
  * - Reset button
  */
-export function AgentsStatsFilterBar({
-	filters,
+export function SubcategoriesStatsFilterBar({
+	versions,
+	agents,
 	onApplyFilters,
 	onReset,
 	availableVersions,
-	availableCategories,
+	availableAgents,
 	onClose,
-}: AgentsStatsFilterBarProps) {
-	const t = useTranslations()
+}: SubcategoriesStatsFilterBarProps) {
+	const t = useTranslations('filters')
 
 	// Local state for pending filter changes
-	const [localVersions, setLocalVersions] = useState<string[]>(filters.versions ?? [])
-	const [localCategories, setLocalCategories] = useState<string[]>(filters.categories ?? [])
+	const [localVersions, setLocalVersions] = useState<string[]>(versions ?? [])
+	const [localAgents, setLocalAgents] = useState<string[]>(agents ?? [])
 
 	// Sync local state when filters prop changes (e.g., after reset)
 	const filtersKey = JSON.stringify({
-		versions: filters.versions,
-		categories: filters.categories,
+		versions,
+		agents,
 	})
 
 	useEffect(() => {
-		setLocalVersions(filters.versions ?? [])
-		setLocalCategories(filters.categories ?? [])
+		setLocalVersions(versions ?? [])
+		setLocalAgents(agents ?? [])
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [filtersKey])
 
@@ -55,7 +56,7 @@ export function AgentsStatsFilterBar({
 	const handleApply = () => {
 		onApplyFilters({
 			versions: localVersions,
-			categories: localCategories,
+			agents: localAgents,
 		})
 		onClose?.()
 	}
@@ -70,31 +71,31 @@ export function AgentsStatsFilterBar({
 		<div className='space-y-6'>
 			{/* Version Filter */}
 			<MultiSelectFilter
-				label={t('filters.versions')}
+				label={t('versions')}
 				options={availableVersions}
 				selected={localVersions}
 				onChange={setLocalVersions}
-				placeholder={t('filters.searchVersions')}
+				placeholder={t('searchVersions')}
 			/>
 
-			{/* Category Filter */}
+			{/* Agent Filter */}
 			<MultiSelectFilter
-				label={t('filters.categories')}
-				options={availableCategories}
-				selected={localCategories}
-				onChange={setLocalCategories}
-				placeholder={t('filters.searchCategories')}
+				label={t('agents')}
+				options={availableAgents}
+				selected={localAgents}
+				onChange={setLocalAgents}
+				placeholder={t('searchAgents')}
 			/>
 
 			{/* Action Buttons */}
 			<div className='flex flex-col sm:flex-row gap-2 sm:justify-end pt-4 border-t'>
 				<Button onClick={handleReset} variant='outline' size='sm' className='w-full sm:w-auto'>
 					<IconRefresh className='mr-2 h-4 w-4' />
-					{t('filters.resetFilters')}
+					{t('resetFilters')}
 				</Button>
 				<Button onClick={handleApply} variant='default' size='sm' className='w-full sm:w-auto'>
 					<IconCheck className='mr-2 h-4 w-4' />
-					{t('filters.apply')}
+					{t('apply')}
 				</Button>
 			</div>
 		</div>

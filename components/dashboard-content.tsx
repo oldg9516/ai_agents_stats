@@ -69,20 +69,21 @@ export function DashboardContent() {
 		staleTime: 5 * 60 * 1000, // Cache for 5 minutes
 	})
 
-	// Handle filter changes with cache invalidation
-	const handleFiltersChange = (updates: Partial<typeof filters>) => {
+	// Handle date range change (immediate, used by date selector)
+	const handleDateRangeChange = (updates: Partial<typeof filters>) => {
 		if (updates.dateRange) {
 			setDateRange(updates.dateRange.from, updates.dateRange.to)
+			// Invalidate all dashboard queries to force refetch with new filters
+			queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+			queryClient.invalidateQueries({ queryKey: ['detailed-stats-paginated'] })
 		}
-		if (updates.versions !== undefined) {
-			setVersions(updates.versions)
-		}
-		if (updates.categories !== undefined) {
-			setCategories(updates.categories)
-		}
-		if (updates.agents !== undefined) {
-			setAgents(updates.agents)
-		}
+	}
+
+	// Handle filter apply from sheet (deferred application)
+	const handleApplyFilters = (updates: { versions: string[]; categories: string[]; agents: string[] }) => {
+		setVersions(updates.versions)
+		setCategories(updates.categories)
+		setAgents(updates.agents)
 
 		// Invalidate all dashboard queries to force refetch with new filters
 		queryClient.invalidateQueries({ queryKey: ['dashboard'] })
@@ -151,14 +152,17 @@ export function DashboardContent() {
 						description={t('filterSheet.dashboardDescription')}
 						activeFilterCount={getActiveFilterCount()}
 					>
-						<FilterBar
-							filters={filters}
-							onFiltersChange={handleFiltersChange}
-							onReset={resetFilters}
-							availableVersions={filterOptions.versions}
-							availableCategories={filterOptions.categories}
-							availableAgents={filterOptions.agents}
-						/>
+						{({ close }) => (
+							<FilterBar
+								filters={filters}
+								onApplyFilters={handleApplyFilters}
+								onReset={resetFilters}
+								availableVersions={filterOptions.versions}
+								availableCategories={filterOptions.categories}
+								availableAgents={filterOptions.agents}
+								onClose={close}
+							/>
+						)}
 					</FilterSheet>
 				</div>
 
@@ -166,7 +170,7 @@ export function DashboardContent() {
 				<div className='lg:order-2 lg:flex-1'>
 					<DateRangeSelector
 						filters={filters}
-						onFiltersChange={handleFiltersChange}
+						onFiltersChange={handleDateRangeChange}
 						dateFilterMode={dateFilterMode}
 						onDateFilterModeChange={setDateFilterMode}
 					/>

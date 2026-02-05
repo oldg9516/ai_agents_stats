@@ -24,13 +24,8 @@ export function TicketsReviewContent() {
 	const {
 		filters,
 		setDateRange,
-		setCategories,
-		setVersions,
-		setClassifications,
-		setAgents,
-		setStatuses,
-		setReviewerNames,
 		resetFilters,
+		updateFilters,
 	} = useTicketsReviewFilters()
 
 	// Fetch paginated tickets (60 records per batch, cached in session)
@@ -72,16 +67,14 @@ export function TicketsReviewContent() {
 						description={t('ticketsReview.description')}
 						activeFilterCount={getActiveFilterCount()}
 					>
-						<TicketsReviewFilterBar
-							filters={filters}
-							onCategoriesChange={setCategories}
-							onVersionsChange={setVersions}
-							onClassificationsChange={setClassifications}
-							onAgentsChange={setAgents}
-							onStatusesChange={setStatuses}
-							onReviewerNamesChange={setReviewerNames}
-							onReset={resetFilters}
-						/>
+						{({ close }) => (
+							<TicketsReviewFilterBar
+								filters={filters}
+								onApplyFilters={updateFilters}
+								onReset={resetFilters}
+								onClose={close}
+							/>
+						)}
 					</FilterSheet>
 				</div>
 
