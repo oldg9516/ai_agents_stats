@@ -961,6 +961,14 @@
 			"avgResponseTime": "Ср. время ответа",
 			"p90ResponseTime": "P90 время ответа",
 			"search": "Поиск по типу или подтипу..."
+		},
+		"nullReasons": {
+			"replyNotRequired": "Ответ не требуется",
+			"identifyingManyUsers": "Идентификация — Много пользователей",
+			"identifyingNotFound": "Идентификация — Не найден",
+			"identifying": "Идентификация",
+			"subscriptionInfoMissing": "Нет информации о подписке",
+			"other": "Другое"
 		}
 	},
 	"ticketsReview": {

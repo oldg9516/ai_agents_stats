@@ -1,23 +1,24 @@
--- Update get_request_category_stats function to use support_dialogs for agent responses
--- This update changes:
--- 1. compared_count (Agent Responses) - counts threads that have an outgoing response (direction='out')
---    in support_dialogs with date > incoming message date (response came AFTER the request)
--- 2. avg_response_time - time from thread creation to first agent response (hours)
--- 3. p90_response_time - 90th percentile response time (hours)
+-- Update get_request_category_stats function to add NULL subtype breakdown
+-- This update adds:
+-- 1. NULL subtype classification by reason (Reply not required, Identifying issues, etc.)
 --
--- Logic: A thread has an agent response if there's a record in support_dialogs
---        with the same ticket_id, direction='out', and date > original thread date
+-- NULL subtype classification priority:
+-- 1. Reply not required - requires_reply = false
+-- 2. Identifying — Many users - status = 'Identifying — Many users'
+-- 3. Identifying — Not found - status = 'Identifying — Not found'
+-- 4. Identifying - status = 'Identifying'
+-- 5. Subscription info missing - requires_subscription_info = true AND subscription_info IS NULL
+-- 6. Other - remaining NULL subtype cases
 
--- Drop all possible signatures of the function
 DROP FUNCTION IF EXISTS get_request_category_stats(timestamp with time zone, timestamp with time zone);
 DROP FUNCTION IF EXISTS get_request_category_stats(text, text);
 DROP FUNCTION IF EXISTS get_request_category_stats();
 
-CREATE OR REPLACE FUNCTION get_request_category_stats(
+CREATE OR REPLACE FUNCTION public.get_request_category_stats(
   date_from timestamp with time zone,
   date_to timestamp with time zone
 )
-RETURNS TABLE (
+RETURNS TABLE(
   request_type text,
   request_subtype text,
   count bigint,
@@ -25,7 +26,11 @@ RETURNS TABLE (
   compared_count bigint,
   avg_response_time numeric,
   p90_response_time numeric
-) AS $$
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $function$
 BEGIN
   RETURN QUERY
   WITH total_records AS (
@@ -33,13 +38,28 @@ BEGIN
     FROM support_threads_data
     WHERE thread_date >= date_from AND thread_date < date_to
   ),
-  -- Count all threads by category
+  -- Count all threads by category with NULL subtype breakdown
   category_stats AS (
     SELECT
       std.request_type,
       CASE
         -- Group multiple subtypes (containing comma) as "multiply"
         WHEN std.request_subtype LIKE '%,%' THEN 'multiply'
+        -- NULL subtype breakdown by reason (priority order)
+        WHEN std.request_subtype IS NULL THEN
+          CASE
+            -- Priority 1: Reply not required
+            WHEN std.requires_reply = false THEN 'NULL (Reply not required)'
+            -- Priority 2-4: Identification issues (by specific status)
+            WHEN std.status = 'Identifying — Many users' THEN 'NULL (Identifying — Many users)'
+            WHEN std.status = 'Identifying — Not found' THEN 'NULL (Identifying — Not found)'
+            WHEN std.status = 'Identifying' THEN 'NULL (Identifying)'
+            -- Priority 5: Subscription info missing
+            WHEN std.requires_subscription_info = true AND std.subscription_info IS NULL
+              THEN 'NULL (Subscription info missing)'
+            -- Priority 6: Other (catch-all)
+            ELSE 'NULL (Other)'
+          END
         ELSE std.request_subtype
       END AS request_subtype,
       COUNT(*)::bigint AS category_count
@@ -49,91 +69,68 @@ BEGIN
       std.request_type,
       CASE
         WHEN std.request_subtype LIKE '%,%' THEN 'multiply'
+        WHEN std.request_subtype IS NULL THEN
+          CASE
+            WHEN std.requires_reply = false THEN 'NULL (Reply not required)'
+            WHEN std.status = 'Identifying — Many users' THEN 'NULL (Identifying — Many users)'
+            WHEN std.status = 'Identifying — Not found' THEN 'NULL (Identifying — Not found)'
+            WHEN std.status = 'Identifying' THEN 'NULL (Identifying)'
+            WHEN std.requires_subscription_info = true AND std.subscription_info IS NULL
+              THEN 'NULL (Subscription info missing)'
+            ELSE 'NULL (Other)'
+          END
         ELSE std.request_subtype
       END
   ),
-  -- Get the date of the original incoming message for each thread
-  thread_incoming_dates AS (
+  -- Keep existing compared_stats logic from ai_human_comparison
+  compared_stats AS (
     SELECT
-      sd.thread_id,
-      sd.ticket_id,
-      sd.date AS incoming_date
-    FROM support_dialogs sd
-    WHERE sd.direction = 'in'
-  ),
-  -- Find threads that have agent responses
-  -- A thread has a response if there's an outgoing message (direction='out')
-  -- in support_dialogs with the same ticket_id and date > original incoming date
-  -- Exclude api@ and samantha@ emails from support_dialogs
-  threads_with_responses AS (
-    SELECT DISTINCT
-      std.thread_id,
-      std.ticket_id,
-      std.request_type,
-      std.request_subtype,
-      std.created_at,
-      -- Get the first outgoing response date for this thread (excluding api@ and samantha@)
-      (
-        SELECT MIN(sd.date)
-        FROM support_dialogs sd
-        WHERE sd.ticket_id = std.ticket_id
-          AND sd.direction = 'out'
-          AND sd.date > tid.incoming_date
-          AND sd.email NOT IN ('api@levhaolam.com', 'samantha@levhaolam.com')
-      ) AS first_response_date
-    FROM support_threads_data std
-    INNER JOIN thread_incoming_dates tid
-      ON std.thread_id = tid.thread_id
-    WHERE std.thread_date >= date_from
-      AND std.thread_date < date_to
-      AND std.ticket_id IS NOT NULL
-      -- Check if there's an outgoing response after this thread (excluding api@ and samantha@)
-      AND EXISTS (
-        SELECT 1
-        FROM support_dialogs sd
-        WHERE sd.ticket_id = std.ticket_id
-          AND sd.direction = 'out'
-          AND sd.date > tid.incoming_date
-          AND sd.email NOT IN ('api@levhaolam.com', 'samantha@levhaolam.com')
-      )
-  ),
-  -- Aggregate response stats by category (request_type + request_subtype)
-  agent_response_stats AS (
-    SELECT
-      twr.request_type,
       CASE
-        WHEN twr.request_subtype LIKE '%,%' THEN 'multiply'
-        ELSE twr.request_subtype
+        WHEN ahc.request_subtype LIKE '%,%' THEN 'multiply'
+        ELSE ahc.request_subtype
       END AS request_subtype,
-      COUNT(*)::bigint AS responded_count,
-      -- Average response time in hours (from thread creation to first agent response)
+      COUNT(*)::bigint AS compared_count
+    FROM ai_human_comparison ahc
+    WHERE ahc.status = 'compared'
+      AND ahc.created_at >= date_from
+      AND ahc.created_at < date_to
+      AND ahc.change_classification IS NOT NULL
+      AND ahc.change_classification != 'context_shift'
+      AND ahc.email NOT IN ('api@levhaolam.com', 'samantha@levhaolam.com')
+    GROUP BY
+      CASE
+        WHEN ahc.request_subtype LIKE '%,%' THEN 'multiply'
+        ELSE ahc.request_subtype
+      END
+  ),
+  -- Keep existing response_time_stats logic from ai_human_comparison
+  response_time_stats AS (
+    SELECT
+      CASE
+        WHEN ahc.request_subtype LIKE '%,%' THEN 'multiply'
+        ELSE ahc.request_subtype
+      END AS request_subtype,
       ROUND(
         AVG(
-          CASE
-            WHEN twr.first_response_date IS NOT NULL AND twr.created_at IS NOT NULL
-            THEN EXTRACT(EPOCH FROM (twr.first_response_date - twr.created_at)) / 3600
-            ELSE NULL
-          END
+          EXTRACT(EPOCH FROM (ahc.human_reply_date - ahc.created_at)) / 3600
         )::numeric,
         1
       ) AS avg_response_time,
-      -- P90 response time in hours
       ROUND(
         PERCENTILE_CONT(0.9) WITHIN GROUP (
-          ORDER BY CASE
-            WHEN twr.first_response_date IS NOT NULL AND twr.created_at IS NOT NULL
-            THEN EXTRACT(EPOCH FROM (twr.first_response_date - twr.created_at)) / 3600
-            ELSE NULL
-          END
+          ORDER BY EXTRACT(EPOCH FROM (ahc.human_reply_date - ahc.created_at)) / 3600
         )::numeric,
         1
       ) AS p90_response_time
-    FROM threads_with_responses twr
+    FROM ai_human_comparison ahc
+    WHERE ahc.created_at >= date_from
+      AND ahc.created_at < date_to
+      AND ahc.human_reply_date IS NOT NULL
+      AND ahc.created_at IS NOT NULL
     GROUP BY
-      twr.request_type,
       CASE
-        WHEN twr.request_subtype LIKE '%,%' THEN 'multiply'
-        ELSE twr.request_subtype
+        WHEN ahc.request_subtype LIKE '%,%' THEN 'multiply'
+        ELSE ahc.request_subtype
       END
   )
   SELECT
@@ -141,16 +138,17 @@ BEGIN
     cs.request_subtype::text,
     cs.category_count AS count,
     ROUND((cs.category_count::numeric / tr.total::numeric * 100), 1) AS percent,
-    COALESCE(ars.responded_count, 0) AS compared_count,
-    COALESCE(ars.avg_response_time, 0) AS avg_response_time,
-    COALESCE(ars.p90_response_time, 0) AS p90_response_time
+    COALESCE(cms.compared_count, 0) AS compared_count,
+    COALESCE(rts.avg_response_time, 0) AS avg_response_time,
+    COALESCE(rts.p90_response_time, 0) AS p90_response_time
   FROM category_stats cs
   CROSS JOIN total_records tr
-  LEFT JOIN agent_response_stats ars
-    ON cs.request_type = ars.request_type
-    AND (cs.request_subtype = ars.request_subtype OR (cs.request_subtype IS NULL AND ars.request_subtype IS NULL))
+  LEFT JOIN compared_stats cms
+    ON cs.request_subtype = cms.request_subtype
+  LEFT JOIN response_time_stats rts
+    ON cs.request_subtype = rts.request_subtype
   ORDER BY
-    -- 1. Request type priority: Lev Haolam Subscription first, then Retention, Shop, Tour, Other
+    -- 1. Request type priority (existing)
     CASE cs.request_type
       WHEN 'Lev Haolam Subscription' THEN 1
       WHEN 'Lev Haolam Subscription Retention' THEN 2
@@ -159,19 +157,37 @@ BEGIN
       WHEN 'Other' THEN 5
       ELSE 6
     END,
-    -- 2. Within each request_type: 'other', 'multiply', NULL go last; rest sorted by count
+    -- 2. Subtype priority (existing order preserved)
     CASE cs.request_subtype
-      WHEN 'other' THEN 2
-      WHEN 'multiply' THEN 3
-      ELSE 1  -- All normal subtypes first
-    END,
-    -- 3. NULL subtypes at the very end
-    CASE WHEN cs.request_subtype IS NULL THEN 1 ELSE 0 END,
-    -- 4. Sort by count descending (most frequent first)
-    cs.category_count DESC;
+      WHEN 'shipping_or_delivery_question' THEN 1
+      WHEN 'gratitude' THEN 2
+      WHEN 'payment_question' THEN 3
+      WHEN 'damaged_or_leaking_item_report' THEN 4
+      WHEN 'recipient_or_address_change' THEN 5
+      WHEN 'frequency_change_request' THEN 6
+      WHEN 'customization_request' THEN 7
+      WHEN 'skip_or_pause_request' THEN 8
+      WHEN 'other_question' THEN 9
+      WHEN 'multiply' THEN 10
+      WHEN 'no_action_needed' THEN 11
+      WHEN 'refund_request' THEN 12
+      WHEN 'additional_or_gift_box_request' THEN 13
+      WHEN 'clarification_needed' THEN 14
+      WHEN 'donation' THEN 15
+      -- Retention subtypes
+      WHEN 'retention_primary_request' THEN 16
+      WHEN 'retention_repeated_request' THEN 17
+      -- NULL reasons at the end
+      WHEN 'NULL (Reply not required)' THEN 90
+      WHEN 'NULL (Identifying — Many users)' THEN 91
+      WHEN 'NULL (Identifying — Not found)' THEN 92
+      WHEN 'NULL (Identifying)' THEN 93
+      WHEN 'NULL (Subscription info missing)' THEN 94
+      WHEN 'NULL (Other)' THEN 95
+      ELSE 99
+    END;
 END;
-$$ LANGUAGE plpgsql
-SET search_path = public;
+$function$;
 
 -- Add comment
-COMMENT ON FUNCTION get_request_category_stats IS 'Returns request category statistics with agent response counts (threads with outgoing messages in support_dialogs where date > incoming date, excluding api@levhaolam.com and samantha@levhaolam.com) and response time metrics (avg and P90 in hours)';
+COMMENT ON FUNCTION get_request_category_stats IS 'Returns request category statistics with NULL subtype breakdown by reason';

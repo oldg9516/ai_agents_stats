@@ -961,6 +961,14 @@
 			"avgResponseTime": "Avg Response Time",
 			"p90ResponseTime": "P90 Response Time",
 			"search": "Search by type or subtype..."
+		},
+		"nullReasons": {
+			"replyNotRequired": "Reply not required",
+			"identifyingManyUsers": "Identifying — Many users",
+			"identifyingNotFound": "Identifying — Not found",
+			"identifying": "Identifying",
+			"subscriptionInfoMissing": "Subscription info missing",
+			"other": "Other"
 		}
 	},
 	"ticketsReview": {

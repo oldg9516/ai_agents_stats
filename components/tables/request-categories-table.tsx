@@ -47,6 +47,12 @@ import {
 import { format } from 'date-fns'
 import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
+import { cn } from '@/lib/utils'
+import {
+	getNullReasonConfig,
+	getNullReasonLabel,
+	isNullReason,
+} from '@/constants/null-subtype-reasons'
 
 interface RequestCategoriesTableProps {
 	dateRange: { from: Date; to: Date }
@@ -111,6 +117,29 @@ export function RequestCategoriesTable({
 				header: t('requestCategories.table.requestSubtype'),
 				cell: ({ getValue }) => {
 					const value = getValue() as string | null
+
+					// Handle NULL reason subtypes (format: "NULL (reason)")
+					if (value && isNullReason(value)) {
+						const config = getNullReasonConfig(value)
+						const label = getNullReasonLabel(value)
+
+						return (
+							<div className='flex items-center gap-2'>
+								<span className='text-muted-foreground italic'>NULL</span>
+								<span
+									className={cn(
+										'px-2 py-0.5 rounded text-xs font-medium',
+										config?.bgColor ?? 'bg-gray-100 dark:bg-gray-900',
+										config?.textColor ?? 'text-gray-700 dark:text-gray-300'
+									)}
+								>
+									{label}
+								</span>
+							</div>
+						)
+					}
+
+					// Handle other cases
 					return (
 						<div
 							className={value === null ? 'text-muted-foreground italic' : ''}
@@ -273,26 +302,41 @@ export function RequestCategoriesTable({
 		const headers = [
 			'Request Type',
 			'Request Subtype',
+			'NULL Reason',
 			'Count',
 			'Percent',
 			'Agent Responses',
 			'Avg Response Time (h)',
 			'P90 Response Time (h)',
 		]
-		const rows = data.map(row => [
-			row.request_type,
-			row.request_subtype || 'NULL',
-			row.count,
-			`${row.percent}%`,
-			row.compared_count ?? 0,
-			row.avg_response_time ?? 0,
-			row.p90_response_time ?? 0,
-		])
+		const rows = data.map(row => {
+			// Extract NULL reason if applicable
+			const subtype = row.request_subtype
+			const isNullReasonSubtype = subtype?.startsWith('NULL (')
+			const nullReason = isNullReasonSubtype
+				? subtype?.replace(/^NULL \(|\)$/g, '')
+				: ''
+			const displaySubtype = isNullReasonSubtype
+				? 'NULL'
+				: subtype || 'NULL'
+
+			return [
+				row.request_type,
+				displaySubtype,
+				nullReason,
+				row.count,
+				`${row.percent}%`,
+				row.compared_count ?? 0,
+				row.avg_response_time ?? 0,
+				row.p90_response_time ?? 0,
+			]
+		})
 
 		// Add total row
 		const totalRow = [
 			'Total',
 			'',
+			'', // NULL Reason column
 			totals.totalCount,
 			`${totals.totalPercent.toFixed(1)}%`,
 			totals.totalComparedCount,
