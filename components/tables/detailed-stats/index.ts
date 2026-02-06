@@ -10,17 +10,16 @@ export { DetailedStatsTable } from './detailed-stats-table'
 
 // Types and utilities
 export {
-	type DetailedStatsTableProps,
-	isNewLogic,
-	checkIsLatestWeek,
 	buildLatestWeeksMap,
 	calcPercentage,
+	checkIsLatestWeek,
 	getCellClassName,
+	isNewLogic,
+	type DetailedStatsTableProps,
 } from './types'
 
 // Column definitions
 export { createBaseColumns, sortOrderColumn } from './base-columns'
-export { createLegacyColumns } from './legacy-columns'
 export { createNewColumns } from './new-columns'
 
 // Sub-components

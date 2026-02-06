@@ -47,8 +47,11 @@ export function createNewColumns(
 				const total = row.original.reviewedRecords
 				const excluded =
 					(row.original.exclWorkflowShifts || 0) +
-					(row.original.exclDataDiscrepancies || 0)
-				const evaluable = total - excluded
+					(row.original.exclDataDiscrepancies || 0) +
+					(row.original.humanIncomplete || 0)
+				const aiApproved = row.original.aiApprovedCount || 0
+				// evaluable = reviewed - excluded - aiApproved (ai_approved records are counted separately)
+				const evaluable = total - excluded - aiApproved
 				const percent = calcPercentage(count, evaluable)
 
 				if (count === 0 && evaluable === 0) {
@@ -92,7 +95,7 @@ export function createNewColumns(
 				)
 			},
 		},
-		// Needs Work (Score 51-89): MINOR_INFO_GAP + CONFUSING_VERBOSITY + TONAL_MISALIGNMENT + STRUCTURAL_FIX
+		// Needs Work (Score 51-89): MINOR_INFO_GAP + CONFUSING_VERBOSITY + TONAL_MISALIGNMENT
 		{
 			id: 'needsWorkGroup',
 			header: () => (
@@ -106,13 +109,15 @@ export function createNewColumns(
 				const count =
 					(row.original.minorInfoGaps || 0) +
 					(row.original.confusingVerbosity || 0) +
-					(row.original.tonalMisalignments || 0) +
-					(row.original.structuralFixes || 0)
+					(row.original.tonalMisalignments || 0)
 				const total = row.original.reviewedRecords
 				const excluded =
 					(row.original.exclWorkflowShifts || 0) +
-					(row.original.exclDataDiscrepancies || 0)
-				const evaluable = total - excluded
+					(row.original.exclDataDiscrepancies || 0) +
+					(row.original.humanIncomplete || 0)
+				const aiApproved = row.original.aiApprovedCount || 0
+				// evaluable = reviewed - excluded - aiApproved (ai_approved records are counted separately)
+				const evaluable = total - excluded - aiApproved
 				const percent = calcPercentage(count, evaluable)
 
 				if (count === 0 && evaluable === 0) {
@@ -156,7 +161,7 @@ export function createNewColumns(
 				)
 			},
 		},
-		// Good (Score 90-100): STYLISTIC_EDIT + PERFECT_MATCH
+		// Good (Score 90-100): STRUCTURAL_FIX (95) + STYLISTIC_EDIT (98) + PERFECT_MATCH (100)
 		{
 			id: 'goodGroup',
 			header: () => (
@@ -168,13 +173,17 @@ export function createNewColumns(
 			cell: ({ row }) => {
 				const isVersionLevel = row.original.sortOrder === 1
 				const count =
+					(row.original.structuralFixes || 0) +
 					(row.original.stylisticEdits || 0) +
 					(row.original.perfectMatches || 0)
 				const total = row.original.reviewedRecords
 				const excluded =
 					(row.original.exclWorkflowShifts || 0) +
-					(row.original.exclDataDiscrepancies || 0)
-				const evaluable = total - excluded
+					(row.original.exclDataDiscrepancies || 0) +
+					(row.original.humanIncomplete || 0)
+				const aiApproved = row.original.aiApprovedCount || 0
+				// evaluable = reviewed - excluded - aiApproved (ai_approved records are counted separately)
+				const evaluable = total - excluded - aiApproved
 				const percent = calcPercentage(count, evaluable)
 
 				if (count === 0 && evaluable === 0) {
@@ -218,7 +227,7 @@ export function createNewColumns(
 				)
 			},
 		},
-		// Excluded: EXCL_WORKFLOW_SHIFT + EXCL_DATA_DISCREPANCY
+		// Excluded: v4.0 EXCL_WORKFLOW_SHIFT + EXCL_DATA_DISCREPANCY + HUMAN_INCOMPLETE (includes mapped legacy context_shift)
 		{
 			id: 'excludedGroup',
 			header: () => (
@@ -228,9 +237,11 @@ export function createNewColumns(
 			),
 			cell: ({ row }) => {
 				const isVersionLevel = row.original.sortOrder === 1
+				// Use v4.0 fields only (exclWorkflowShifts already includes mapped legacy context_shift)
 				const count =
 					(row.original.exclWorkflowShifts || 0) +
-					(row.original.exclDataDiscrepancies || 0)
+					(row.original.exclDataDiscrepancies || 0) +
+					(row.original.humanIncomplete || 0)
 				const total = row.original.reviewedRecords
 				const percent = calcPercentage(count, total)
 
@@ -271,6 +282,47 @@ export function createNewColumns(
 						>
 							{count} ({percent}%)
 						</button>
+					</div>
+				)
+			},
+		},
+		// AI Approved: Records manually marked as ai_approved = true (override classification)
+		{
+			id: 'aiApprovedGroup',
+			header: () => (
+				<div className="text-center text-sm whitespace-nowrap">
+					{t('ticketsReview.scoreGroups.ai_approved')}
+				</div>
+			),
+			cell: ({ row }) => {
+				const isVersionLevel = row.original.sortOrder === 1
+				const count = row.original.aiApprovedCount || 0
+				const total = row.original.reviewedRecords
+				const percent = calcPercentage(count, total)
+
+				if (count === 0 && total === 0) {
+					return (
+						<div className="text-left text-muted-foreground text-sm">-</div>
+					)
+				}
+
+				// Version level - just display text
+				if (isVersionLevel) {
+					return (
+						<div className={`text-left text-sm ${getCellClassName(true)}`}>
+							{count} ({percent}%)
+						</div>
+					)
+				}
+
+				// Week level - display with blue background (no click action)
+				return (
+					<div className="flex justify-left">
+						<span
+							className="inline-block px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200"
+						>
+							{count} ({percent}%)
+						</span>
 					</div>
 				)
 			},

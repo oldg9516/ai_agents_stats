@@ -292,7 +292,10 @@
 		"detailedStatsDescription": "Метрики качества по подкатегориям, версиям и неделям",
 		"supportThreads": "Треды поддержки",
 		"supportThreadsDesc": "Все треды поддержки с метриками качества",
-		"avgScore": "Ср. балл"
+		"avgScore": "Ср. балл",
+		"showResponseColumns": "Показать статус ответа",
+		"needEdit": "Требует редакт.",
+		"notNeedEdit": "Не требует редакт."
 	},
 	"landing": {
 		"hero": {
@@ -1034,7 +1037,8 @@
 			"critical": "Критично",
 			"needs_work": "Требует доработки",
 			"good": "Хорошо",
-			"excluded": "Исключено"
+			"excluded": "Исключено",
+			"ai_approved": "AI Одобрено"
 		},
 		"modal": {
 			"title": "Детали тикета",

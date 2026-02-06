@@ -35,6 +35,7 @@ export const NEW_CLASSIFICATION_TYPES = [
 	'PERFECT_MATCH',
 	'EXCL_WORKFLOW_SHIFT',
 	'EXCL_DATA_DISCREPANCY',
+	'HUMAN_INCOMPLETE',
 ] as const
 
 export type NewClassificationType = (typeof NEW_CLASSIFICATION_TYPES)[number]
@@ -73,6 +74,7 @@ export const CLASSIFICATION_PENALTIES: Record<
 	PERFECT_MATCH: 0, // Score: 100
 	EXCL_WORKFLOW_SHIFT: null, // N/A - excluded
 	EXCL_DATA_DISCREPANCY: null, // N/A - excluded
+	HUMAN_INCOMPLETE: null, // N/A - excluded (human reply incomplete)
 }
 
 /**
@@ -107,6 +109,7 @@ export const NEW_TO_LEGACY_MAP: Record<
 	PERFECT_MATCH: 'no_significant_change',
 	EXCL_WORKFLOW_SHIFT: 'context_shift',
 	EXCL_DATA_DISCREPANCY: 'context_shift', // Excluded -> context_shift
+	HUMAN_INCOMPLETE: 'context_shift', // Excluded -> context_shift
 }
 
 // =============================================================================

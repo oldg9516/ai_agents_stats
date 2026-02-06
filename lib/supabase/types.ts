@@ -268,8 +268,13 @@ export interface DetailedStatsRow {
 	perfectMatches: number
 	exclWorkflowShifts: number
 	exclDataDiscrepancies: number
+	humanIncomplete: number // HUMAN_INCOMPLETE - human reply was incomplete (excluded)
 	// New scoring (v4.0)
 	averageScore: number | null // Average quality score (0-100) for new system
+	// AI Approved override
+	aiApprovedCount: number // Records manually marked as ai_approved = true (excluded from classification groups)
+	// Unclassified records (null, empty, or unknown classification)
+	unclassifiedCount: number // Records with null/empty/unknown change_classification
 	// Response status fields
 	notResponded: number // Records with human_reply IS NULL (agent didn't respond)
 	secondRequest: number // Records with repeated customer message before agent response
@@ -305,7 +310,9 @@ export interface DashboardFilters {
 	versions: string[] // [] = all versions
 	categories: string[] // [] = all categories
 	agents: string[] // [] = all agents (filter by email)
-	hideRequiresEditing?: boolean // true = hide records where support_threads_data.requires_editing = true
+	hideRequiresEditing?: boolean // DEPRECATED: use showNeedEdit/showNotNeedEdit instead
+	showNeedEdit?: boolean // true = show records where requires_editing = true (default: true)
+	showNotNeedEdit?: boolean // true = show records where requires_editing = false (default: true)
 }
 
 /**

@@ -222,10 +222,24 @@ export function formatDate(date: Date): string {
 export async function fetchRequiresEditingThreadIds(
 	supabase: SupabaseClient
 ): Promise<string[]> {
+	return fetchThreadIdsByRequiresEditing(supabase, true)
+}
+
+/**
+ * Fetch thread_ids from support_threads_data based on requires_editing value
+ * Used for filtering records by requires_editing status
+ *
+ * @param supabase - Supabase client instance
+ * @param requiresEditing - true to get threads that need editing, false for those that don't
+ * @returns Array of thread_ids
+ */
+export async function fetchThreadIdsByRequiresEditing(
+	supabase: SupabaseClient,
+	requiresEditing: boolean
+): Promise<string[]> {
 	const BATCH_SIZE = 1000
 	const results: string[] = []
 
-	// Fetch all thread_ids where requires_editing = true (whitelist)
 	let offset = 0
 	let hasMore = true
 
@@ -233,11 +247,11 @@ export async function fetchRequiresEditingThreadIds(
 		const { data, error } = await supabase
 			.from('support_threads_data')
 			.select('thread_id')
-			.eq('requires_editing', true)
+			.eq('requires_editing', requiresEditing)
 			.range(offset, offset + BATCH_SIZE - 1)
 
 		if (error) {
-			console.error('❌ [fetchRequiresEditingThreadIds] Error:', error)
+			console.error(`❌ [fetchThreadIdsByRequiresEditing] Error (requires_editing=${requiresEditing}):`, error)
 			break
 		}
 
@@ -251,4 +265,36 @@ export async function fetchRequiresEditingThreadIds(
 	}
 
 	return results
+}
+
+/**
+ * Fetch thread_ids based on showNeedEdit and showNotNeedEdit filters
+ * Returns null if both are true (no filtering needed) or empty array if both false
+ *
+ * @param supabase - Supabase client instance
+ * @param showNeedEdit - Show records where requires_editing = true
+ * @param showNotNeedEdit - Show records where requires_editing = false
+ * @returns Array of thread_ids to include, or null if no filtering needed, or empty array if nothing to show
+ */
+export async function fetchFilteredThreadIds(
+	supabase: SupabaseClient,
+	showNeedEdit: boolean,
+	showNotNeedEdit: boolean
+): Promise<string[] | null> {
+	// Both true - no filtering needed
+	if (showNeedEdit && showNotNeedEdit) {
+		return null
+	}
+
+	// Both false - show nothing
+	if (!showNeedEdit && !showNotNeedEdit) {
+		return []
+	}
+
+	// Only one is true - fetch the corresponding thread_ids
+	if (showNeedEdit) {
+		return fetchThreadIdsByRequiresEditing(supabase, true)
+	} else {
+		return fetchThreadIdsByRequiresEditing(supabase, false)
+	}
 }

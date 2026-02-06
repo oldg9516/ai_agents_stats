@@ -292,7 +292,10 @@
 		"detailedStatsDescription": "Quality metrics by subcategory, version, and week",
 		"supportThreads": "Support Threads",
 		"supportThreadsDesc": "All support threads with quality metrics",
-		"avgScore": "Avg Score"
+		"avgScore": "Avg Score",
+		"showResponseColumns": "Show response columns",
+		"needEdit": "Need Edit",
+		"notNeedEdit": "Not Need Edit"
 	},
 	"landing": {
 		"hero": {
@@ -1034,7 +1037,8 @@
 			"critical": "Critical",
 			"needs_work": "Needs Work",
 			"good": "Good",
-			"excluded": "Excluded"
+			"excluded": "Excluded",
+			"ai_approved": "AI Approved"
 		},
 		"modal": {
 			"title": "Ticket Details",

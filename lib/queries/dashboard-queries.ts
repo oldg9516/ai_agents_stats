@@ -189,6 +189,8 @@ function getPaginatedStatsQueryKey(
 			categories: filters.categories.sort(),
 			agents: (filters.agents ?? []).sort(),
 			hideRequiresEditing: filters.hideRequiresEditing ?? false,
+			showNeedEdit: filters.showNeedEdit ?? true,
+			showNotNeedEdit: filters.showNotNeedEdit ?? true,
 			page,
 			pageSize,
 			categoryDisplayMode,

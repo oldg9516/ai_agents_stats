@@ -22,6 +22,8 @@ export function useDashboardFilters() {
 			setCategories: state.setDashboardCategories,
 			setAgents: state.setDashboardAgents,
 			setHideRequiresEditing: state.setDashboardHideRequiresEditing,
+			setShowNeedEdit: state.setDashboardShowNeedEdit,
+			setShowNotNeedEdit: state.setDashboardShowNotNeedEdit,
 			resetFilters: state.resetDashboardFilters,
 			updateFilters: state.updateDashboardFilters,
 			scoringMode: state.scoringMode,

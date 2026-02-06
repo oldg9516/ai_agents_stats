@@ -17,7 +17,9 @@ import {
 
 import { CategoryDisplayToggle } from '@/components/category-display-toggle'
 import { TableSkeleton } from '@/components/loading/table-skeleton'
-import { ScoringModeToggle } from '@/components/scoring-mode-toggle'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 
 // Dynamic import for modal - reduces initial bundle size
 const ScoreGroupModal = dynamic(
@@ -47,7 +49,6 @@ import type { DetailedStatsRow } from '@/lib/supabase/types'
 import { exportToCSV } from '@/lib/utils/export'
 
 import { createBaseColumns, sortOrderColumn } from './base-columns'
-import { createLegacyColumns } from './legacy-columns'
 import { createNewColumns, type ScoreGroupClickHandler } from './new-columns'
 import { TablePagination, type PageSize } from './table-pagination'
 import { buildLatestWeeksMap, checkIsLatestWeek, type DetailedStatsTableProps } from './types'
@@ -66,11 +67,35 @@ import { buildLatestWeeksMap, checkIsLatestWeek, type DetailedStatsTableProps } 
 export function DetailedStatsTable({ filters, dateFilterMode = 'created' }: DetailedStatsTableProps) {
 	const t = useTranslations()
 	const router = useRouter()
-	const { scoringMode, categoryDisplayMode, openScoreGroupModal } = useDashboardFilters()
+	const {
+		categoryDisplayMode,
+		openScoreGroupModal,
+		filters: storeFilters,
+		setShowNeedEdit,
+		setShowNotNeedEdit,
+	} = useDashboardFilters()
 
 	// Server-side pagination state
 	const [currentPage, setCurrentPage] = useState(0)
 	const [pageSize, setPageSize] = useState<PageSize>(20)
+
+	// Merge filters with store filters for showNeedEdit/showNotNeedEdit
+	const mergedFilters = useMemo(() => ({
+		...filters,
+		showNeedEdit: storeFilters.showNeedEdit ?? true,
+		showNotNeedEdit: storeFilters.showNotNeedEdit ?? true,
+	}), [filters, storeFilters.showNeedEdit, storeFilters.showNotNeedEdit])
+
+	// Handlers for requires_editing checkboxes (reset page on change)
+	const handleShowNeedEditChange = useCallback((checked: boolean) => {
+		setShowNeedEdit(checked)
+		setCurrentPage(0)
+	}, [setShowNeedEdit])
+
+	const handleShowNotNeedEditChange = useCallback((checked: boolean) => {
+		setShowNotNeedEdit(checked)
+		setCurrentPage(0)
+	}, [setShowNotNeedEdit])
 
 	// Fetch paginated data with category display mode and date filter mode
 	const {
@@ -82,11 +107,14 @@ export function DetailedStatsTable({ filters, dateFilterMode = 'created' }: Deta
 		isLoading,
 		error,
 		isFetching,
-	} = useDetailedStatsPaginated(filters, currentPage, pageSize, categoryDisplayMode, dateFilterMode)
+	} = useDetailedStatsPaginated(mergedFilters, currentPage, pageSize, categoryDisplayMode, dateFilterMode)
 
 	// Client-side sorting and filtering (on current page only)
 	const [sorting, setSorting] = useState<SortingState>([])
 	const [globalFilter, setGlobalFilter] = useState('')
+
+	// Toggle for showing/hiding response status columns (hidden by default)
+	const [showResponseColumns, setShowResponseColumns] = useState(false)
 
 	// Handle category click
 	const handleCategoryClick = useCallback((category: string) => {
@@ -98,25 +126,24 @@ export function DetailedStatsTable({ filters, dateFilterMode = 'created' }: Deta
 		openScoreGroupModal(params)
 	}, [openScoreGroupModal])
 
-	// Build columns based on scoring mode
+	// Build columns
 	const baseColumns = useMemo(
 		() => createBaseColumns(t, handleCategoryClick),
 		[t, handleCategoryClick]
 	)
-	const legacyColumns = useMemo(() => createLegacyColumns(t), [t])
 	const newColumns = useMemo(
 		() => createNewColumns(t, handleScoreGroupClick, dateFilterMode),
 		[t, handleScoreGroupClick, dateFilterMode]
 	)
 
-	// Define columns based on scoring mode
+	// Define columns (always use new scoring mode)
 	const columns = useMemo<ColumnDef<DetailedStatsRow>[]>(
 		() => [
 			...baseColumns,
-			...(scoringMode === 'legacy' ? legacyColumns : newColumns),
+			...newColumns,
 			sortOrderColumn,
 		],
-		[baseColumns, legacyColumns, newColumns, scoringMode]
+		[baseColumns, newColumns]
 	)
 
 	// Find the latest week for each category (to highlight)
@@ -139,6 +166,8 @@ export function DetailedStatsTable({ filters, dateFilterMode = 'created' }: Deta
 			globalFilter,
 			columnVisibility: {
 				sortOrder: false, // Hide sortOrder column
+				notResponded: showResponseColumns, // Hidden by default
+				secondRequest: showResponseColumns, // Hidden by default
 			},
 		},
 		onSortingChange: setSorting,
@@ -249,7 +278,48 @@ export function DetailedStatsTable({ filters, dateFilterMode = 'created' }: Deta
 						</div>
 						<div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6">
 							<CategoryDisplayToggle />
-							<ScoringModeToggle />
+							{/* Requires Editing Filter Checkboxes */}
+							<div className="flex items-center gap-4">
+								<div className="flex items-center gap-2">
+									<Checkbox
+										id="show-need-edit"
+										checked={storeFilters.showNeedEdit ?? true}
+										onCheckedChange={(checked) => handleShowNeedEditChange(checked === true)}
+									/>
+									<Label
+										htmlFor="show-need-edit"
+										className="text-sm font-normal cursor-pointer"
+									>
+										{t('table.needEdit')}
+									</Label>
+								</div>
+								<div className="flex items-center gap-2">
+									<Checkbox
+										id="show-not-need-edit"
+										checked={storeFilters.showNotNeedEdit ?? true}
+										onCheckedChange={(checked) => handleShowNotNeedEditChange(checked === true)}
+									/>
+									<Label
+										htmlFor="show-not-need-edit"
+										className="text-sm font-normal cursor-pointer"
+									>
+										{t('table.notNeedEdit')}
+									</Label>
+								</div>
+							</div>
+							<div className="flex items-center gap-2">
+								<Switch
+									id="show-response-columns"
+									checked={showResponseColumns}
+									onCheckedChange={setShowResponseColumns}
+								/>
+								<Label
+									htmlFor="show-response-columns"
+									className="text-sm font-normal cursor-pointer"
+								>
+									{t('table.showResponseColumns')}
+								</Label>
+							</div>
 						</div>
 					</div>
 				</div>

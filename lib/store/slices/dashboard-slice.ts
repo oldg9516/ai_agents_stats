@@ -47,7 +47,9 @@ function getDefaultDashboardFilters(): DashboardFilters {
 		versions: [], // Empty = all versions
 		categories: [], // Empty = all categories
 		agents: [], // Empty = all agents
-		hideRequiresEditing: false, // false = show all records
+		hideRequiresEditing: false, // DEPRECATED
+		showNeedEdit: true, // true = show records where requires_editing = true
+		showNotNeedEdit: true, // true = show records where requires_editing = false
 	}
 }
 
@@ -64,6 +66,8 @@ export interface DashboardSlice {
 	setDashboardCategories: (categories: string[]) => void
 	setDashboardAgents: (agents: string[]) => void
 	setDashboardHideRequiresEditing: (enabled: boolean) => void
+	setDashboardShowNeedEdit: (enabled: boolean) => void
+	setDashboardShowNotNeedEdit: (enabled: boolean) => void
 	resetDashboardFilters: () => void
 	updateDashboardFilters: (filters: Partial<DashboardFilters>) => void
 	setScoringMode: (mode: ScoringMode) => void
@@ -122,6 +126,22 @@ export const createDashboardSlice: StateCreator<
 			dashboardFilters: {
 				...state.dashboardFilters,
 				hideRequiresEditing: enabled,
+			},
+		})),
+
+	setDashboardShowNeedEdit: enabled =>
+		set(state => ({
+			dashboardFilters: {
+				...state.dashboardFilters,
+				showNeedEdit: enabled,
+			},
+		})),
+
+	setDashboardShowNotNeedEdit: enabled =>
+		set(state => ({
+			dashboardFilters: {
+				...state.dashboardFilters,
+				showNotNeedEdit: enabled,
 			},
 		})),
 

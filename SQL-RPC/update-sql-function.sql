@@ -39,7 +39,8 @@ RETURNS TABLE (
   out_stylistic_edits bigint,
   out_perfect_matches bigint,
   out_excl_workflow_shifts bigint,
-  out_excl_data_discrepancies bigint
+  out_excl_data_discrepancies bigint,
+  out_human_incomplete bigint
 )
 LANGUAGE plpgsql
 AS $$
@@ -70,7 +71,7 @@ BEGIN
       COUNT(*) FILTER (WHERE change_classification IN (
         'critical_error', 'meaningful_improvement', 'stylistic_preference', 'no_significant_change', 'context_shift',
         'CRITICAL_FACT_ERROR', 'MAJOR_FUNCTIONAL_OMISSION', 'MINOR_INFO_GAP', 'CONFUSING_VERBOSITY', 'TONAL_MISALIGNMENT',
-        'STRUCTURAL_FIX', 'STYLISTIC_EDIT', 'PERFECT_MATCH', 'EXCL_WORKFLOW_SHIFT', 'EXCL_DATA_DISCREPANCY'
+        'STRUCTURAL_FIX', 'STYLISTIC_EDIT', 'PERFECT_MATCH', 'EXCL_WORKFLOW_SHIFT', 'EXCL_DATA_DISCREPANCY', 'HUMAN_INCOMPLETE'
       ))::bigint AS reviewed_records,
       -- AI Errors: legacy + new
       COUNT(*) FILTER (WHERE change_classification IN (
@@ -98,7 +99,8 @@ BEGIN
       COUNT(*) FILTER (WHERE change_classification = 'STYLISTIC_EDIT')::bigint AS stylistic_edits,
       COUNT(*) FILTER (WHERE change_classification = 'PERFECT_MATCH')::bigint AS perfect_matches,
       COUNT(*) FILTER (WHERE change_classification = 'EXCL_WORKFLOW_SHIFT')::bigint AS excl_workflow_shifts,
-      COUNT(*) FILTER (WHERE change_classification = 'EXCL_DATA_DISCREPANCY')::bigint AS excl_data_discrepancies
+      COUNT(*) FILTER (WHERE change_classification = 'EXCL_DATA_DISCREPANCY')::bigint AS excl_data_discrepancies,
+      COUNT(*) FILTER (WHERE change_classification = 'HUMAN_INCOMPLETE')::bigint AS human_incomplete
     FROM filtered_data
     GROUP BY request_subtype, prompt_version
   ),
@@ -115,7 +117,7 @@ BEGIN
       COUNT(*) FILTER (WHERE change_classification IN (
         'critical_error', 'meaningful_improvement', 'stylistic_preference', 'no_significant_change', 'context_shift',
         'CRITICAL_FACT_ERROR', 'MAJOR_FUNCTIONAL_OMISSION', 'MINOR_INFO_GAP', 'CONFUSING_VERBOSITY', 'TONAL_MISALIGNMENT',
-        'STRUCTURAL_FIX', 'STYLISTIC_EDIT', 'PERFECT_MATCH', 'EXCL_WORKFLOW_SHIFT', 'EXCL_DATA_DISCREPANCY'
+        'STRUCTURAL_FIX', 'STYLISTIC_EDIT', 'PERFECT_MATCH', 'EXCL_WORKFLOW_SHIFT', 'EXCL_DATA_DISCREPANCY', 'HUMAN_INCOMPLETE'
       ))::bigint AS reviewed_records,
       -- AI Errors: legacy + new
       COUNT(*) FILTER (WHERE change_classification IN (
@@ -143,7 +145,8 @@ BEGIN
       COUNT(*) FILTER (WHERE change_classification = 'STYLISTIC_EDIT')::bigint AS stylistic_edits,
       COUNT(*) FILTER (WHERE change_classification = 'PERFECT_MATCH')::bigint AS perfect_matches,
       COUNT(*) FILTER (WHERE change_classification = 'EXCL_WORKFLOW_SHIFT')::bigint AS excl_workflow_shifts,
-      COUNT(*) FILTER (WHERE change_classification = 'EXCL_DATA_DISCREPANCY')::bigint AS excl_data_discrepancies
+      COUNT(*) FILTER (WHERE change_classification = 'EXCL_DATA_DISCREPANCY')::bigint AS excl_data_discrepancies,
+      COUNT(*) FILTER (WHERE change_classification = 'HUMAN_INCOMPLETE')::bigint AS human_incomplete
     FROM filtered_data
     GROUP BY request_subtype, prompt_version, DATE_TRUNC('week', created_at)
   ),
@@ -180,7 +183,8 @@ BEGIN
     c.stylistic_edits AS out_stylistic_edits,
     c.perfect_matches AS out_perfect_matches,
     c.excl_workflow_shifts AS out_excl_workflow_shifts,
-    c.excl_data_discrepancies AS out_excl_data_discrepancies
+    c.excl_data_discrepancies AS out_excl_data_discrepancies,
+    c.human_incomplete AS out_human_incomplete
   FROM combined c
   CROSS JOIN total t
   ORDER BY

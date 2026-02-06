@@ -19,6 +19,7 @@ import {
 	isErrorRecord,
 	LEGACY_CLASSIFICATION_TYPES,
 	NEW_CLASSIFICATION_TYPES,
+	CLASSIFICATION_TYPES,
 	type LegacyClassificationType,
 	type NewClassificationType,
 } from '@/constants/classification-types'
@@ -257,7 +258,7 @@ export async function fetchDetailedStatsTS(
 
 /**
  * Wrapper server action for DetailedStatsTable
- * Handles hideRequiresEditing filter by fetching includedThreadIds
+ * Handles requires_editing filter by fetching includedThreadIds
  *
  * @param filters - Dashboard filters
  * @param mergeMultiCategories - If true, merge categories containing commas into "Multi-category"
@@ -268,9 +269,29 @@ export async function fetchDetailedStatsWithFilter(
 	mergeMultiCategories: boolean = false,
 	dateFilterMode: DateFilterMode = 'created'
 ): Promise<PaginatedResult> {
-	// If hideRequiresEditing is enabled, fetch thread_ids to INCLUDE (whitelist)
-	let includedThreadIds: string[] = []
-	if (filters.hideRequiresEditing) {
+	// Get show filters with defaults (both true = show all)
+	const showNeedEdit = filters.showNeedEdit ?? true
+	const showNotNeedEdit = filters.showNotNeedEdit ?? true
+
+	// Determine if we need to filter by requires_editing
+	let includedThreadIds: string[] | undefined = undefined
+
+	// Both false - return empty result
+	if (!showNeedEdit && !showNotNeedEdit) {
+		return emptyResult()
+	}
+
+	// If not both true, we need to filter
+	if (!(showNeedEdit && showNotNeedEdit)) {
+		const { fetchFilteredThreadIds } = await import('@/lib/supabase/helpers')
+		const result = await fetchFilteredThreadIds(supabaseServer, showNeedEdit, showNotNeedEdit)
+		if (result !== null) {
+			includedThreadIds = result
+		}
+	}
+
+	// Legacy support: if hideRequiresEditing is set and new filters are not used
+	if (filters.hideRequiresEditing && showNeedEdit && showNotNeedEdit) {
 		const { fetchRequiresEditingThreadIds } = await import('@/lib/supabase/helpers')
 		includedThreadIds = await fetchRequiresEditingThreadIds(supabaseServer)
 	}
@@ -278,7 +299,7 @@ export async function fetchDetailedStatsWithFilter(
 	// Create extended filters with includedThreadIds
 	const extendedFilters: ExtendedDashboardFilters = {
 		...filters,
-		includedThreadIds: includedThreadIds.length > 0 ? includedThreadIds : undefined,
+		includedThreadIds: includedThreadIds && includedThreadIds.length > 0 ? includedThreadIds : undefined,
 	}
 
 	return fetchDetailedStatsTS(extendedFilters, mergeMultiCategories, dateFilterMode)
@@ -484,8 +505,9 @@ function aggregateDetailedStats(
 	// Process each version group
 	for (const group of versionGroups.values()) {
 		const classifications = countAllClassifications(group.records)
+		// reviewedRecords = records with known classification OR ai_approved = true
 		const reviewedRecords = group.records.filter(
-			r => r.change_classification !== null
+			r => r.ai_approved === true || isKnownClassification(r.change_classification)
 		)
 
 		// Level 1: Version-level row
@@ -500,6 +522,8 @@ function aggregateDetailedStats(
 			aiQuality: countAiQuality(reviewedRecords),
 			notResponded: countNotResponded(group.records),
 			secondRequest: countSecondRequest(group.records, secondRequestTicketIds),
+			aiApprovedCount: countAiApproved(reviewedRecords),
+			unclassifiedCount: countUnclassified(group.records),
 			...classifications,
 		})
 
@@ -522,8 +546,9 @@ function aggregateDetailedStats(
 
 		for (const [weekStart, weekRecords] of weekGroups) {
 			const weekClassifications = countAllClassifications(weekRecords)
+			// weekReviewedRecords = records with known classification OR ai_approved = true
 			const weekReviewedRecords = weekRecords.filter(
-				r => r.change_classification !== null
+				r => r.ai_approved === true || isKnownClassification(r.change_classification)
 			)
 
 			const weekStartDate = new Date(weekStart)
@@ -541,6 +566,8 @@ function aggregateDetailedStats(
 				aiQuality: countAiQuality(weekReviewedRecords),
 				notResponded: countNotResponded(weekRecords),
 				secondRequest: countSecondRequest(weekRecords, secondRequestTicketIds),
+				aiApprovedCount: countAiApproved(weekReviewedRecords),
+				unclassifiedCount: countUnclassified(weekRecords),
 				...weekClassifications,
 			})
 		}
@@ -576,7 +603,33 @@ function countAiQuality(records: RawRecord[]): number {
 }
 
 /**
+ * Count records with ai_approved = true
+ */
+function countAiApproved(records: RawRecord[]): number {
+	return records.filter(r => r.ai_approved === true).length
+}
+
+/**
+ * Check if a classification is known (exists in LEGACY or NEW types)
+ */
+function isKnownClassification(classification: string | null): boolean {
+	if (!classification) return false
+	return CLASSIFICATION_TYPES.includes(classification as LegacyClassificationType | NewClassificationType)
+}
+
+/**
+ * Count records with unknown/null/empty classification
+ * (not ai_approved and not a known classification type)
+ */
+function countUnclassified(records: RawRecord[]): number {
+	return records.filter(r =>
+		r.ai_approved !== true && !isKnownClassification(r.change_classification)
+	).length
+}
+
+/**
  * Count all classification types (legacy + new with bidirectional mapping)
+ * EXCLUDES records with ai_approved = true (they go to aiApprovedCount instead)
  */
 function countAllClassifications(records: RawRecord[]): Omit<
 	DetailedStatsRow,
@@ -590,7 +643,11 @@ function countAllClassifications(records: RawRecord[]): Omit<
 	| 'aiQuality'
 	| 'notResponded'
 	| 'secondRequest'
+	| 'aiApprovedCount'
+	| 'unclassifiedCount'
 > {
+	// Filter out ai_approved = true records (they are counted separately)
+	const filteredRecords = records.filter(r => r.ai_approved !== true)
 	// Legacy classifications
 	const legacyCounts: Record<LegacyClassificationType, number> = {
 		critical_error: 0,
@@ -612,10 +669,11 @@ function countAllClassifications(records: RawRecord[]): Omit<
 		PERFECT_MATCH: 0,
 		EXCL_WORKFLOW_SHIFT: 0,
 		EXCL_DATA_DISCREPANCY: 0,
+		HUMAN_INCOMPLETE: 0,
 	}
 
-	// Count each classification
-	for (const record of records) {
+	// Count each classification (only for records WITHOUT ai_approved = true)
+	for (const record of filteredRecords) {
 		const c = record.change_classification
 		if (!c) continue
 
@@ -648,7 +706,8 @@ function countAllClassifications(records: RawRecord[]): Omit<
 		contextShifts:
 			legacyCounts.context_shift +
 			newCounts.EXCL_WORKFLOW_SHIFT +
-			newCounts.EXCL_DATA_DISCREPANCY,
+			newCounts.EXCL_DATA_DISCREPANCY +
+			newCounts.HUMAN_INCOMPLETE,
 
 		// New columns: combine new + mapped legacy
 		criticalFactErrors:
@@ -666,6 +725,7 @@ function countAllClassifications(records: RawRecord[]): Omit<
 		exclWorkflowShifts:
 			newCounts.EXCL_WORKFLOW_SHIFT + legacyCounts.context_shift,
 		exclDataDiscrepancies: newCounts.EXCL_DATA_DISCREPANCY,
+		humanIncomplete: newCounts.HUMAN_INCOMPLETE,
 
 		// Average score (not calculated yet)
 		averageScore: null,

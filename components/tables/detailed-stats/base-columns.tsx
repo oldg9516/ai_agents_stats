@@ -121,11 +121,19 @@ export function createBaseColumns(
 			),
 			cell: ({ row }) => {
 				const isVersionLevel = row.original.sortOrder === 1
+				const reviewed = row.original.reviewedRecords
+				const unclassified = row.original.unclassifiedCount || 0
+
 				return (
 					<div
 						className={isVersionLevel ? 'text-left font-semibold' : 'text-left'}
 					>
-						{row.original.reviewedRecords}
+						{reviewed}
+						{unclassified > 0 && (
+							<span className="text-xs text-muted-foreground ml-1">
+								(-{unclassified} N/A)
+							</span>
+						)}
 					</div>
 				)
 			},
@@ -182,9 +190,9 @@ export function createBaseColumns(
 			cell: ({ row }) => {
 				const isVersionLevel = row.original.sortOrder === 1
 				const errors = row.original.aiErrors
-				const reviewed = row.original.reviewedRecords
-				const contextShifts = row.original.contextShifts || 0
-				const evaluable = reviewed - contextShifts
+				const quality = row.original.aiQuality
+				// Use sum of ai_errors + ai_quality as evaluable to guarantee 100% total
+				const evaluable = errors + quality
 				const percentage = evaluable > 0 ? (errors / evaluable) * 100 : 0
 				return (
 					<div
@@ -204,10 +212,10 @@ export function createBaseColumns(
 			),
 			cell: ({ row }) => {
 				const isVersionLevel = row.original.sortOrder === 1
+				const errors = row.original.aiErrors
 				const quality = row.original.aiQuality
-				const reviewed = row.original.reviewedRecords
-				const contextShifts = row.original.contextShifts || 0
-				const evaluable = reviewed - contextShifts
+				// Use sum of ai_errors + ai_quality as evaluable to guarantee 100% total
+				const evaluable = errors + quality
 				const percentage = evaluable > 0 ? (quality / evaluable) * 100 : 0
 				return (
 					<div
