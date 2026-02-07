@@ -92,6 +92,91 @@ export interface Database {
 					quality_percentage: number
 				}>
 			}
+			get_support_status_distribution: {
+				Args: {
+					p_date_from: string
+					p_date_to: string
+					p_statuses?: string[] | null
+					p_request_types?: string[] | null
+					p_categories?: string[] | null
+					p_requirements?: string[] | null
+					p_versions?: string[] | null
+				}
+				Returns: Array<{
+					status: string
+					count: number
+					percentage: number
+				}>
+			}
+			get_support_resolution_time: {
+				Args: {
+					p_date_from: string
+					p_date_to: string
+				}
+				Returns: Array<{
+					week_start: string
+					avg_resolution_time: number
+					thread_count: number
+				}>
+			}
+			get_support_sankey_data: {
+				Args: {
+					p_date_from: string
+					p_date_to: string
+					p_statuses?: string[] | null
+					p_request_types?: string[] | null
+					p_categories?: string[] | null
+					p_requirements?: string[] | null
+					p_versions?: string[] | null
+				}
+				Returns: Array<{
+					created: number
+					used_as_is: number
+					edited: number
+					rejected: number
+					resolved: number
+					pending: number
+				}>
+			}
+			get_support_correlation_matrix: {
+				Args: {
+					p_date_from: string
+					p_date_to: string
+					p_statuses?: string[] | null
+					p_request_types?: string[] | null
+					p_categories?: string[] | null
+					p_versions?: string[] | null
+				}
+				Returns: Array<{
+					x: string
+					y: string
+					value: number
+				}>
+			}
+			get_support_kpis: {
+				Args: {
+					p_date_from: string
+					p_date_to: string
+					p_prev_date_from: string
+					p_statuses?: string[] | null
+					p_request_types?: string[] | null
+					p_categories?: string[] | null
+					p_requirements?: string[] | null
+					p_versions?: string[] | null
+				}
+				Returns: Array<{
+					current_total: number
+					current_requires_reply: number
+					current_resolved: number
+					current_requirements_sum: number
+					current_agent_response_count: number
+					previous_total: number
+					previous_requires_reply: number
+					previous_resolved: number
+					previous_requirements_sum: number
+					previous_agent_response_count: number
+				}>
+			}
 		}
 		Enums: {
 			[_ in never]: never

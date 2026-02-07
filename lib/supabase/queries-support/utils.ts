@@ -1,4 +1,4 @@
-import type { TrendData } from '../types'
+import type { SupportFilters, TrendData } from '../types'
 
 /**
  * Calculate trend between current and previous values
@@ -23,35 +23,18 @@ export function calculateTrend(current: number, previous: number): TrendData {
 }
 
 /**
- * Build common filter query for support threads
+ * Build RPC filter parameters from SupportFilters
+ * Converts empty arrays to null (SQL functions use NULL = no filter)
  */
-export function applyCommonFilters<T>(
-	query: T,
-	filters: {
-		statuses?: string[]
-		requestTypes?: string[]
-		versions?: string[]
-		requirements?: string[]
-	},
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	methods: { in: (col: string, values: string[]) => T; eq: (col: string, value: boolean) => T }
-): T {
-	const { statuses = [], requestTypes = [], versions = [], requirements = [] } = filters
-
-	if (statuses.length > 0) {
-		query = methods.in('status', statuses)
+export function buildFilterParams(filters: SupportFilters) {
+	return {
+		p_date_from: filters.dateRange.from.toISOString(),
+		p_date_to: filters.dateRange.to.toISOString(),
+		p_statuses: filters.statuses?.length ? filters.statuses : null,
+		p_request_types: filters.requestTypes?.length ? filters.requestTypes : null,
+		p_categories: filters.categories?.length ? filters.categories : null,
+		p_requirements: filters.requirements?.length ? filters.requirements : null,
+		p_versions: filters.versions?.length ? filters.versions : null,
 	}
-	if (requestTypes.length > 0) {
-		query = methods.in('request_type', requestTypes)
-	}
-	if (versions.length > 0) {
-		query = methods.in('prompt_version', versions)
-	}
-	if (requirements.length > 0) {
-		requirements.forEach(req => {
-			query = methods.eq(req, true)
-		})
-	}
-
-	return query
 }
+
