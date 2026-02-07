@@ -238,18 +238,6 @@ export interface VisitorInfo {
 	created_at: string
 }
 
-export const getOrCreateVisitorId = (): string => {
-	if (typeof window === 'undefined') return ''
-
-	let visitorId = localStorage.getItem('chat_visitor_id')
-	if (!visitorId) {
-		visitorId = crypto.randomUUID()
-		localStorage.setItem('chat_visitor_id', visitorId)
-		localStorage.setItem('chat_visitor_created', new Date().toISOString())
-	}
-	return visitorId
-}
-
 export const getCurrentSession = (): string | null => {
 	if (typeof window === 'undefined') return null
 	return localStorage.getItem('current_chat_session')
