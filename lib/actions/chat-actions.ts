@@ -253,7 +253,7 @@ export interface PollingResponse {
 
 // Poll for message by message_id (for long-running requests)
 export async function pollMessageByMessageId(messageId: string): Promise<PollingResponse> {
-	await requireAuth()
+	const email = await requireAuth()
 	const supabase = getChatAdmin()
 
 	const { data, error } = await supabase
@@ -268,6 +268,18 @@ export async function pollMessageByMessageId(messageId: string): Promise<Polling
 			return { status: 'processing', message: null }
 		}
 		console.error('Error polling message:', error)
+		return { status: 'error', message: null }
+	}
+
+	// Verify session ownership to prevent IDOR
+	const { data: session } = await supabase
+		.from('dashboard_chat_sessions')
+		.select('id')
+		.eq('id', data.session_id)
+		.eq('visitor_id', email)
+		.single()
+
+	if (!session) {
 		return { status: 'error', message: null }
 	}
 
@@ -332,11 +344,12 @@ export async function deleteMessagesFromId(
 		return false
 	}
 
-	// First get the message to find its created_at
+	// First get the message to find its created_at (scoped to session to prevent cross-session leaks)
 	const { data: targetMessage, error: fetchError } = await supabase
 		.from('dashboard_chat_messages')
 		.select('created_at')
 		.eq('id', messageId)
+		.eq('session_id', sessionId)
 		.single()
 
 	if (fetchError || !targetMessage) {
