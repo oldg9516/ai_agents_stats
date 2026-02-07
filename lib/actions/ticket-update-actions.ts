@@ -6,13 +6,21 @@
  * Server Actions for updating ticket review status and AI approval
  */
 
-import { createClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
-import type { Database } from '@/lib/supabase/types'
+import { createAuthClient, supabaseServer } from '@/lib/supabase/server'
 
 export interface UpdateTicketReviewResult {
 	success: boolean
 	error?: string
+}
+
+async function requireAuth(): Promise<string> {
+	const supabase = await createAuthClient()
+	const { data: { user }, error } = await supabase.auth.getUser()
+	if (error || !user?.email) {
+		throw new Error('Unauthorized')
+	}
+	return user.email
 }
 
 /**
@@ -23,17 +31,9 @@ export async function updateTicketReviewStatus(
 	status: 'processed' | 'unprocessed'
 ): Promise<UpdateTicketReviewResult> {
 	try {
-		const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-		const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)!
+		await requireAuth()
 
-		const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey, {
-			auth: {
-				persistSession: false,
-				autoRefreshToken: false,
-			},
-		})
-
-		const { error } = await supabase
+		const { error } = await supabaseServer
 			.from('ai_human_comparison')
 			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 			// @ts-ignore - Supabase type generation issue with review_status field
@@ -50,6 +50,9 @@ export async function updateTicketReviewStatus(
 
 		return { success: true }
 	} catch (error) {
+		if (error instanceof Error && error.message === 'Unauthorized') {
+			return { success: false, error: 'Unauthorized' }
+		}
 		console.error('Unexpected error in updateTicketReviewStatus:', error)
 		return {
 			success: false,
@@ -66,17 +69,9 @@ export async function updateAiApproval(
 	approved: boolean
 ): Promise<UpdateTicketReviewResult> {
 	try {
-		const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-		const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)!
+		await requireAuth()
 
-		const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey, {
-			auth: {
-				persistSession: false,
-				autoRefreshToken: false,
-			},
-		})
-
-		const { error } = await supabase
+		const { error } = await supabaseServer
 			.from('ai_human_comparison')
 			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 			// @ts-ignore - Supabase type generation issue with ai_approved field
@@ -93,6 +88,9 @@ export async function updateAiApproval(
 
 		return { success: true }
 	} catch (error) {
+		if (error instanceof Error && error.message === 'Unauthorized') {
+			return { success: false, error: 'Unauthorized' }
+		}
 		console.error('Unexpected error in updateAiApproval:', error)
 		return {
 			success: false,
@@ -114,15 +112,7 @@ export async function updateTicketReview(
 	}
 ): Promise<UpdateTicketReviewResult> {
 	try {
-		const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-		const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)!
-
-		const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey, {
-			auth: {
-				persistSession: false,
-				autoRefreshToken: false,
-			},
-		})
+		await requireAuth()
 
 		const updateData: {
 			review_status?: 'processed' | 'unprocessed'
@@ -144,7 +134,7 @@ export async function updateTicketReview(
 			updateData.reviewer_name = data.reviewerName
 		}
 
-		const { error } = await supabase
+		const { error } = await supabaseServer
 			.from('ai_human_comparison')
 			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 			// @ts-ignore - Supabase type generation issue with review_status and ai_approved fields
@@ -161,6 +151,9 @@ export async function updateTicketReview(
 
 		return { success: true }
 	} catch (error) {
+		if (error instanceof Error && error.message === 'Unauthorized') {
+			return { success: false, error: 'Unauthorized' }
+		}
 		console.error('Unexpected error in updateTicketReview:', error)
 		return {
 			success: false,

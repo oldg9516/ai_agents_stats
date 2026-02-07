@@ -18,6 +18,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo } from 'react'
 
 const BATCH_SIZE = 60 // Server fetch size
+const MAX_BATCHES = 20 // Max batches to keep in memory (1200 records)
 
 interface PaginatedThreadsReturn {
 	allLoadedThreads: SupportThread[] // All threads loaded so far
@@ -104,8 +105,8 @@ export function usePaginatedThreads(): PaginatedThreadsReturn {
 
 			return result.data
 		},
-		staleTime: Infinity, // Keep in cache forever during session
-		gcTime: Infinity, // Never garbage collect during session
+		staleTime: 5 * 60 * 1000, // 5 minutes
+		gcTime: 10 * 60 * 1000, // 10 minutes
 	})
 
 	// Update hasMore when batch loads
@@ -164,16 +165,16 @@ export function usePaginatedThreads(): PaginatedThreadsReturn {
 		batchData, // IMPORTANT: Re-compute when new batch arrives
 	])
 
-	// Wrap fetchNextBatch to check hasMore
+	// Wrap fetchNextBatch to check hasMore and max batches
 	const loadNextBatch = useCallback(() => {
-		if (hasMoreThreads) {
+		if (hasMoreThreads && currentBatch < MAX_BATCHES - 1) {
 			fetchNextBatch()
 		}
-	}, [hasMoreThreads, fetchNextBatch])
+	}, [hasMoreThreads, currentBatch, fetchNextBatch])
 
 	return {
 		allLoadedThreads,
-		hasMore: hasMoreThreads,
+		hasMore: hasMoreThreads && currentBatch < MAX_BATCHES - 1,
 		isLoadingInitial: isLoading && currentBatch === 0,
 		isFetchingMore: isFetching && currentBatch > 0,
 		error: error as Error | null,

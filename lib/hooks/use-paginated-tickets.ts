@@ -36,6 +36,7 @@ export function usePaginatedTickets() {
 	const [currentOffset, setCurrentOffset] = useState(0)
 
 	const BATCH_SIZE = 60
+	const MAX_RECORDS = 1200 // Max records to keep in memory (20 batches)
 
 	// Load initial batch (no caching - data can change frequently)
 	const loadInitialBatch = useCallback(async () => {
@@ -60,7 +61,7 @@ export function usePaginatedTickets() {
 
 	// Load next batch (no caching - data can change frequently)
 	const loadNextBatch = useCallback(async () => {
-		if (!hasMore || isFetchingMore) return
+		if (!hasMore || isFetchingMore || allLoadedTickets.length >= MAX_RECORDS) return
 
 		setIsFetchingMore(true)
 		try {
@@ -73,7 +74,7 @@ export function usePaginatedTickets() {
 				const newTickets = [...allLoadedTickets, ...result.data]
 				setAllLoadedTickets(newTickets)
 				setCurrentOffset(prev => prev + BATCH_SIZE)
-				setHasMore(result.data.length === BATCH_SIZE)
+				setHasMore(result.data.length === BATCH_SIZE && newTickets.length < MAX_RECORDS)
 			}
 		} catch (error) {
 			console.error('Error loading more tickets:', error)

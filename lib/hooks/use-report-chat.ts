@@ -9,7 +9,6 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import {
 	ChatMessage,
 	ChatMessageMetadata,
-	getOrCreateVisitorId,
 	getReportChatSession,
 	setReportChatSession,
 	ReportChatSessionMetadata,
@@ -69,7 +68,6 @@ export function useReportChat({
 	const [isInitializing, setIsInitializing] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
-	const visitorIdRef = useRef<string>('')
 	const abortControllerRef = useRef<AbortController | null>(null)
 	const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 	const isInitializedRef = useRef(false)
@@ -93,9 +91,6 @@ export function useReportChat({
 
 		const init = async () => {
 			try {
-				visitorIdRef.current = getOrCreateVisitorId()
-				if (!visitorIdRef.current) return
-
 				// Check for existing session for this report
 				const existingSessionId = getReportChatSession(reportId)
 
@@ -127,7 +122,6 @@ export function useReportChat({
 			}
 
 			const newSession = await createChatSession(
-				visitorIdRef.current,
 				`Report: ${reportPeriod}`,
 				metadata
 			)
@@ -215,7 +209,6 @@ export function useReportChat({
 				}
 
 				const newSession = await createChatSession(
-					visitorIdRef.current,
 					`Report: ${reportPeriod}`,
 					metadata
 				)
@@ -275,7 +268,6 @@ export function useReportChat({
 						body: JSON.stringify({
 							message: content.trim(),
 							session_id: sessionId,
-							visitor_id: visitorIdRef.current,
 							user_message_id: savedUserMessage.id,
 							message_id: generatedMessageId,
 							// Report-specific context

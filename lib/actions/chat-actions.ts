@@ -2,27 +2,37 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { ChatSession, ChatMessage } from '@/types/chat'
+import { createAuthClient } from '@/lib/supabase/server'
 
-// Server-side Supabase client with service role
-function getSupabaseAdmin() {
+// Untyped admin client for chat tables (not in Database type)
+function getChatAdmin() {
 	const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 	const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 	return createClient(supabaseUrl, supabaseServiceKey)
 }
 
+async function requireAuth(): Promise<string> {
+	const supabase = await createAuthClient()
+	const { data: { user }, error } = await supabase.auth.getUser()
+	if (error || !user?.email) {
+		throw new Error('Unauthorized')
+	}
+	return user.email
+}
+
 // === Session Actions ===
 
 export async function createChatSession(
-	visitorId: string,
 	title?: string | null,
 	metadata?: Record<string, unknown>
 ): Promise<ChatSession | null> {
-	const supabase = getSupabaseAdmin()
+	const email = await requireAuth()
+	const supabase = getChatAdmin()
 
 	const { data, error } = await supabase
 		.from('dashboard_chat_sessions')
 		.insert({
-			visitor_id: visitorId,
+			visitor_id: email,
 			title: title ?? null,
 			metadata: metadata ?? {},
 			is_archived: false,
@@ -46,13 +56,14 @@ export async function createChatSession(
 	}
 }
 
-export async function getChatSessions(visitorId: string): Promise<ChatSession[]> {
-	const supabase = getSupabaseAdmin()
+export async function getChatSessions(): Promise<ChatSession[]> {
+	const email = await requireAuth()
+	const supabase = getChatAdmin()
 
 	const { data, error } = await supabase
 		.from('dashboard_chat_sessions')
 		.select('id, visitor_id, title, created_at, updated_at, metadata, is_archived')
-		.eq('visitor_id', visitorId)
+		.eq('visitor_id', email)
 		.eq('is_archived', false)
 		.order('updated_at', { ascending: false })
 		.limit(50)
@@ -62,7 +73,8 @@ export async function getChatSessions(visitorId: string): Promise<ChatSession[]>
 		return []
 	}
 
-	return data.map(session => ({
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	return data.map((session: any) => ({
 		id: session.id,
 		visitor_id: session.visitor_id,
 		title: session.title,
@@ -77,12 +89,14 @@ export async function updateSessionTitle(
 	sessionId: string,
 	title: string
 ): Promise<boolean> {
-	const supabase = getSupabaseAdmin()
+	const email = await requireAuth()
+	const supabase = getChatAdmin()
 
 	const { error } = await supabase
 		.from('dashboard_chat_sessions')
 		.update({ title, updated_at: new Date().toISOString() })
 		.eq('id', sessionId)
+		.eq('visitor_id', email)
 
 	if (error) {
 		console.error('Error updating session title:', error)
@@ -93,7 +107,21 @@ export async function updateSessionTitle(
 }
 
 export async function deleteSession(sessionId: string): Promise<boolean> {
-	const supabase = getSupabaseAdmin()
+	const email = await requireAuth()
+	const supabase = getChatAdmin()
+
+	// Verify ownership before deleting
+	const { data: session } = await supabase
+		.from('dashboard_chat_sessions')
+		.select('id')
+		.eq('id', sessionId)
+		.eq('visitor_id', email)
+		.single()
+
+	if (!session) {
+		console.error('Session not found or not owned by user')
+		return false
+	}
 
 	// Delete all messages first (cascade should handle this, but let's be safe)
 	await supabase
@@ -106,6 +134,7 @@ export async function deleteSession(sessionId: string): Promise<boolean> {
 		.from('dashboard_chat_sessions')
 		.delete()
 		.eq('id', sessionId)
+		.eq('visitor_id', email)
 
 	if (error) {
 		console.error('Error deleting session:', error)
@@ -118,7 +147,21 @@ export async function deleteSession(sessionId: string): Promise<boolean> {
 // === Message Actions ===
 
 export async function getChatMessages(sessionId: string): Promise<ChatMessage[]> {
-	const supabase = getSupabaseAdmin()
+	const email = await requireAuth()
+	const supabase = getChatAdmin()
+
+	// Verify session ownership
+	const { data: session } = await supabase
+		.from('dashboard_chat_sessions')
+		.select('id')
+		.eq('id', sessionId)
+		.eq('visitor_id', email)
+		.single()
+
+	if (!session) {
+		console.error('Session not found or not owned by user')
+		return []
+	}
 
 	const { data, error } = await supabase
 		.from('dashboard_chat_messages')
@@ -131,7 +174,8 @@ export async function getChatMessages(sessionId: string): Promise<ChatMessage[]>
 		return []
 	}
 
-	return data.map(msg => ({
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	return data.map((msg: any) => ({
 		id: msg.id,
 		session_id: msg.session_id,
 		role: msg.role,
@@ -147,7 +191,21 @@ export async function getChatMessages(sessionId: string): Promise<ChatMessage[]>
 export async function saveChatMessage(
 	message: Omit<ChatMessage, 'id' | 'created_at'>
 ): Promise<ChatMessage | null> {
-	const supabase = getSupabaseAdmin()
+	const email = await requireAuth()
+	const supabase = getChatAdmin()
+
+	// Verify session ownership
+	const { data: session } = await supabase
+		.from('dashboard_chat_sessions')
+		.select('id')
+		.eq('id', message.session_id)
+		.eq('visitor_id', email)
+		.single()
+
+	if (!session) {
+		console.error('Session not found or not owned by user')
+		return null
+	}
 
 	const { data, error } = await supabase
 		.from('dashboard_chat_messages')
@@ -195,7 +253,8 @@ export interface PollingResponse {
 
 // Poll for message by message_id (for long-running requests)
 export async function pollMessageByMessageId(messageId: string): Promise<PollingResponse> {
-	const supabase = getSupabaseAdmin()
+	await requireAuth()
+	const supabase = getChatAdmin()
 
 	const { data, error } = await supabase
 		.from('dashboard_chat_messages')
@@ -257,7 +316,21 @@ export async function deleteMessagesFromId(
 	sessionId: string,
 	messageId: string
 ): Promise<boolean> {
-	const supabase = getSupabaseAdmin()
+	const email = await requireAuth()
+	const supabase = getChatAdmin()
+
+	// Verify session ownership
+	const { data: session } = await supabase
+		.from('dashboard_chat_sessions')
+		.select('id')
+		.eq('id', sessionId)
+		.eq('visitor_id', email)
+		.single()
+
+	if (!session) {
+		console.error('Session not found or not owned by user')
+		return false
+	}
 
 	// First get the message to find its created_at
 	const { data: targetMessage, error: fetchError } = await supabase

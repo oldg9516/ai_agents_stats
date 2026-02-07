@@ -11,7 +11,6 @@ import {
 	ChatSession,
 	ChatResponse,
 	ChatMessageMetadata,
-	getOrCreateVisitorId,
 	getCurrentSession,
 	setCurrentSession,
 } from '@/types/chat'
@@ -76,7 +75,6 @@ export function useChat({ webhookUrl, onError }: UseChatOptions): UseChatReturn 
 	const [isInitializing, setIsInitializing] = useState(true)
 	const [error, setError] = useState<string | null>(null)
 
-	const visitorIdRef = useRef<string>('')
 	const abortControllerRef = useRef<AbortController | null>(null)
 	const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 	const isInitializedRef = useRef(false)
@@ -97,11 +95,8 @@ export function useChat({ webhookUrl, onError }: UseChatOptions): UseChatReturn 
 
 		const init = async () => {
 			try {
-				visitorIdRef.current = getOrCreateVisitorId()
-				if (!visitorIdRef.current) return
-
-				// Load sessions from database
-				const dbSessions = await getChatSessions(visitorIdRef.current)
+				// Load sessions from database (auth handled server-side)
+				const dbSessions = await getChatSessions()
 				setSessions(dbSessions)
 
 				// Restore last session
@@ -130,7 +125,7 @@ export function useChat({ webhookUrl, onError }: UseChatOptions): UseChatReturn 
 
 	// Create new session
 	const createNewSession = useCallback(async (): Promise<string> => {
-		const newSession = await createChatSession(visitorIdRef.current)
+		const newSession = await createChatSession()
 
 		if (!newSession) {
 			throw new Error('Failed to create session')
@@ -156,8 +151,7 @@ export function useChat({ webhookUrl, onError }: UseChatOptions): UseChatReturn 
 
 	// Load all sessions
 	const loadSessions = useCallback(async () => {
-		if (!visitorIdRef.current) return
-		const dbSessions = await getChatSessions(visitorIdRef.current)
+		const dbSessions = await getChatSessions()
 		setSessions(dbSessions)
 	}, [])
 
@@ -289,7 +283,6 @@ export function useChat({ webhookUrl, onError }: UseChatOptions): UseChatReturn 
 						body: JSON.stringify({
 							message: content.trim(),
 							session_id: sessionId,
-							visitor_id: visitorIdRef.current,
 							user_message_id: savedUserMessage.id,
 							message_id: generatedMessageId, // ID for n8n to use when saving response
 							chat_type: 'general', // Main chat - for orchestrator routing
