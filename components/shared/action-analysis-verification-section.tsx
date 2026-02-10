@@ -141,24 +141,9 @@ export function ActionAnalysisVerificationSection({
 			</div>
 
 			{/* Action Details */}
-			<div className='flex items-center justify-between p-3 rounded-md border border-muted-foreground/20 bg-background'>
-				<div className='flex-1 mr-3'>
-					<p className='text-xs text-muted-foreground'>{t('actionDetails')}</p>
-					<p className='text-sm'>{actionAnalysis.action_details || '—'}</p>
-				</div>
-				<div className='flex items-center space-x-2 shrink-0'>
-					<Checkbox
-						id='action-details-correct'
-						checked={verification.action_details_correct}
-						onCheckedChange={(checked) =>
-							handleFieldChange('action_details_correct', checked as boolean)
-						}
-						disabled={disabled}
-					/>
-					<Label htmlFor='action-details-correct' className='text-xs cursor-pointer'>
-						{t('correct')}
-					</Label>
-				</div>
+			<div className='p-3 rounded-md border border-muted-foreground/20 bg-background'>
+				<p className='text-xs text-muted-foreground'>{t('actionDetails')}</p>
+				<p className='text-sm'>{actionAnalysis.action_details || '—'}</p>
 			</div>
 
 			{/* Reasoning */}
