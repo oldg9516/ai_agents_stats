@@ -220,7 +220,6 @@ export async function fetchTicketDetail(
 			ai_reply_date,
 			human_reply_date,
 			comment,
-			manual_comment,
 			request_subtype,
 			email,
 			changes,
