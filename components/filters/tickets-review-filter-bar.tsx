@@ -112,14 +112,10 @@ export function TicketsReviewFilterBar({
 				/>
 				<MultiSelectFilter
 					label={t('ticketsReview.filters.reviewer')}
-					options={REVIEWER_AGENTS.map(r => r.id)}
+					options={REVIEWER_AGENTS.map(r => r.name)}
 					selected={values.reviewerNames}
 					onChange={v => setValue('reviewerNames', v)}
 					placeholder={t('ticketsReview.filters.searchReviewers')}
-					formatLabel={(reviewerId: string) => {
-						const reviewer = REVIEWER_AGENTS.find(r => r.id === reviewerId)
-						return reviewer?.name || reviewerId
-					}}
 				/>
 			</FilterBarLayout.Fields>
 			<FilterBarLayout.Actions

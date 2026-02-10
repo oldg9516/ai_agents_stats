@@ -2,8 +2,8 @@
  * Tickets Review Database Queries
  *
  * All queries for the Tickets Review section
- * Fetches records from ai_human_comparison table where change_classification IS NOT NULL (reviewed records)
- * Review fields come from ticket_reviews table (separate from ai_human_comparison)
+ * Fetches records from ai_comparison_with_reviews VIEW (LEFT JOIN ticket_reviews)
+ * Review fields come from the VIEW (LEFT JOIN ticket_reviews)
  * Enriched with data from support_threads_data and support_dialogs
  */
 
@@ -13,6 +13,7 @@ import type { ActionAnalysis, TicketReviewRecord, TicketsReviewFilters } from '.
 /**
  * Fetch Tickets Review Records with pagination
  * Shows only reviewed tickets (change_classification IS NOT NULL)
+ * Uses ai_comparison_with_reviews VIEW for direct review field filtering
  * OPTIMIZED: Parallel fetches (async-parallel), Map lookups (js-index-maps)
  */
 export async function fetchTicketsReview(
@@ -31,35 +32,9 @@ export async function fetchTicketsReview(
 	} = filters
 	const { limit = 100, offset = 0 } = options || {}
 
-	// Two-stage filter: if review filters are active, pre-fetch matching comparison_ids from ticket_reviews
-	let reviewFilteredIds: number[] | null = null
-	if (reviewStatuses.length > 0 || reviewerNames.length > 0) {
-		let reviewQuery = supabase
-			.from('ticket_reviews')
-			.select('comparison_id')
-
-		if (reviewStatuses.length > 0) {
-			reviewQuery = reviewQuery.in('review_status', reviewStatuses)
-		}
-		if (reviewerNames.length > 0) {
-			reviewQuery = reviewQuery.in('reviewer_name', reviewerNames)
-		}
-
-		const { data: reviewIds, error: reviewError } = await reviewQuery
-
-		if (reviewError) {
-			console.error('Error fetching review filter IDs:', reviewError)
-		}
-
-		reviewFilteredIds = reviewIds?.map(r => r.comparison_id) ?? []
-
-		// Early exit if no matches
-		if (reviewFilteredIds.length === 0) return []
-	}
-
-	// Build query for ai_human_comparison (without review fields)
+	// Use VIEW that LEFT JOINs ticket_reviews — enables direct filtering on review fields
 	let query = supabase
-		.from('ai_human_comparison')
+		.from('ai_comparison_with_reviews')
 		.select(
 			`
 			id,
@@ -87,7 +62,12 @@ export async function fetchTicketsReview(
 			improvement_suggestions,
 			similarity_score,
 			prompt_version,
-			change_classification
+			change_classification,
+			review_status,
+			ai_approved,
+			reviewer_name,
+			requires_editing_correct,
+			action_analysis_verification
 		`
 		)
 		.gte('created_at', dateRange.from.toISOString())
@@ -96,7 +76,7 @@ export async function fetchTicketsReview(
 		.order('created_at', { ascending: false })
 		.range(offset, offset + limit - 1)
 
-	// Apply ai_human_comparison filters
+	// Apply filters
 	if (categories.length > 0) {
 		query = query.in('request_subtype', categories)
 	}
@@ -110,9 +90,12 @@ export async function fetchTicketsReview(
 		query = query.in('email', agents)
 	}
 
-	// Apply pre-fetched review filter IDs
-	if (reviewFilteredIds !== null) {
-		query = query.in('id', reviewFilteredIds)
+	// Review filters — direct on VIEW columns
+	if (reviewStatuses.length > 0) {
+		query = query.in('review_status', reviewStatuses)
+	}
+	if (reviewerNames.length > 0) {
+		query = query.in('reviewer_name', reviewerNames)
 	}
 
 	// Exclude system/API emails from statistics
@@ -123,15 +106,11 @@ export async function fetchTicketsReview(
 	if (ticketsError) throw ticketsError
 	if (!tickets || tickets.length === 0) return []
 
-	// Parallel fetch: ticket_reviews + support_threads_data + support_dialogs (async-parallel)
-	const ticketIds = tickets.map(t => t.id)
+	// Parallel fetch: support_threads_data + support_dialogs (async-parallel)
+	// Review fields already come from the VIEW — no separate ticket_reviews query needed
 	const threadIds = tickets.map(t => t.thread_id).filter(Boolean) as string[]
 
-	const [reviewsResult, threadsResult, dialogsResult] = await Promise.all([
-		supabase
-			.from('ticket_reviews')
-			.select('comparison_id, review_status, ai_approved, reviewer_name, manual_comment, requires_editing_correct, action_analysis_verification')
-			.in('comparison_id', ticketIds),
+	const [threadsResult, dialogsResult] = await Promise.all([
 		threadIds.length > 0
 			? supabase
 				.from('support_threads_data')
@@ -146,9 +125,6 @@ export async function fetchTicketsReview(
 			: Promise.resolve({ data: null, error: null }),
 	])
 
-	if (reviewsResult.error) {
-		console.error('Error fetching reviews data:', reviewsResult.error)
-	}
 	if (threadsResult.error) {
 		console.error('Error fetching thread user data:', threadsResult.error)
 	}
@@ -157,24 +133,12 @@ export async function fetchTicketsReview(
 	}
 
 	// Build maps for O(1) lookups (js-index-maps)
-	type ReviewData = {
-		review_status: string
-		ai_approved: boolean | null
-		reviewer_name: string | null
-		manual_comment: string | null
-		requires_editing_correct: boolean | null
-		action_analysis_verification: any | null
-	}
-	const reviewsMap = new Map<number, ReviewData>()
-	reviewsResult.data?.forEach(r => reviewsMap.set(r.comparison_id, r))
-
 	const userMap = new Map<string, string | null>()
 	const subSubTypeMap = new Map<string, string | null>()
 	const requiresEditingMap = new Map<string, boolean | null>()
 	const actionAnalysisMap = new Map<string, ActionAnalysis | null>()
 	threadsResult.data?.forEach(thread => {
 		if (thread.thread_id) {
-			// Parse user data
 			if (thread.user) {
 				try {
 					const userData = typeof thread.user === 'string'
@@ -211,26 +175,24 @@ export async function fetchTicketsReview(
 		}
 	})
 
-	// Enrich tickets in single pass (js-combine-iterations)
-	const enrichedTickets: TicketReviewRecord[] = tickets.map(ticket => {
-		const review = reviewsMap.get(ticket.id)
-		return {
-			...ticket,
-			// Review fields from ticket_reviews
-			review_status: (review?.review_status as 'processed' | 'unprocessed') ?? null,
-			ai_approved: review?.ai_approved ?? null,
-			reviewer_name: review?.reviewer_name ?? null,
-			manual_comment: review?.manual_comment ?? null,
-			requires_editing_correct: review?.requires_editing_correct ?? null,
-			action_analysis_verification: review?.action_analysis_verification ?? null,
-			// Thread fields
-			user: ticket.thread_id ? userMap.get(ticket.thread_id) ?? null : null,
-			request_sub_subtype: ticket.thread_id ? subSubTypeMap.get(ticket.thread_id) ?? null : null,
-			requires_editing: ticket.thread_id ? requiresEditingMap.get(ticket.thread_id) ?? null : null,
-			action_analysis: ticket.thread_id ? actionAnalysisMap.get(ticket.thread_id) ?? null : null,
-			customer_request_text: ticket.thread_id ? customerRequestMap.get(ticket.thread_id) ?? null : null,
-		}
-	})
+	// Enrich tickets with thread data (js-combine-iterations)
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const enrichedTickets: TicketReviewRecord[] = tickets.map((ticket: any) => ({
+		...ticket,
+		// Coerce review fields from VIEW
+		review_status: (ticket.review_status as 'processed' | 'unprocessed') ?? null,
+		ai_approved: ticket.ai_approved ?? null,
+		reviewer_name: ticket.reviewer_name ?? null,
+		manual_comment: ticket.manual_comment ?? null,
+		requires_editing_correct: ticket.requires_editing_correct ?? null,
+		action_analysis_verification: ticket.action_analysis_verification ?? null,
+		// Thread fields
+		user: ticket.thread_id ? userMap.get(ticket.thread_id) ?? null : null,
+		request_sub_subtype: ticket.thread_id ? subSubTypeMap.get(ticket.thread_id) ?? null : null,
+		requires_editing: ticket.thread_id ? requiresEditingMap.get(ticket.thread_id) ?? null : null,
+		action_analysis: ticket.thread_id ? actionAnalysisMap.get(ticket.thread_id) ?? null : null,
+		customer_request_text: ticket.thread_id ? customerRequestMap.get(ticket.thread_id) ?? null : null,
+	}))
 
 	return enrichedTickets
 }

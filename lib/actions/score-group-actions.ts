@@ -191,12 +191,11 @@ export async function fetchTicketsByScoreGroup(
 			similarity_score,
 			prompt_version,
 			change_classification,
-			rv_review_status,
-			rv_ai_approved,
-			rv_reviewer_name,
-			rv_manual_comment,
-			rv_requires_editing_correct,
-			rv_action_analysis_verification
+			review_status,
+			ai_approved,
+			reviewer_name,
+			requires_editing_correct,
+			action_analysis_verification
 		`,
 			{ count: 'exact' }
 		)
@@ -292,17 +291,17 @@ export async function fetchTicketsByScoreGroup(
 		})
 	}
 
-	// Enrich tickets: map rv_ VIEW columns to expected names + add thread data (js-combine-iterations)
+	// Enrich tickets with thread data (js-combine-iterations)
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const enrichedTickets: TicketReviewRecord[] = tickets.map((ticket: any) => ({
 		...ticket,
-		// Map VIEW rv_ columns to standard names
-		review_status: ticket.rv_review_status ?? null,
-		ai_approved: ticket.rv_ai_approved ?? null,
-		reviewer_name: ticket.rv_reviewer_name ?? null,
-		manual_comment: ticket.rv_manual_comment ?? ticket.manual_comment ?? null,
-		requires_editing_correct: ticket.rv_requires_editing_correct ?? null,
-		action_analysis_verification: ticket.rv_action_analysis_verification ?? null,
+		// Coerce review fields from VIEW
+		review_status: ticket.review_status ?? null,
+		ai_approved: ticket.ai_approved ?? null,
+		reviewer_name: ticket.reviewer_name ?? null,
+		manual_comment: ticket.manual_comment ?? null,
+		requires_editing_correct: ticket.requires_editing_correct ?? null,
+		action_analysis_verification: ticket.action_analysis_verification ?? null,
 		// Thread enrichment
 		user: ticket.thread_id ? userMap.get(ticket.thread_id) ?? null : null,
 		customer_request_text: ticket.thread_id

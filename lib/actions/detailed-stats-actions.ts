@@ -385,7 +385,7 @@ async function fetchInBatches(
 			let query = supabaseServer
 				.from('ai_comparison_with_reviews')
 				.select(
-					'thread_id, created_at, human_reply_date, request_subtype, prompt_version, change_classification, human_reply, ticket_id, rv_ai_approved'
+					'thread_id, created_at, human_reply_date, request_subtype, prompt_version, change_classification, human_reply, ticket_id, ai_approved'
 				)
 				.gte(dateField, dateRange.from.toISOString())
 				.lt(dateField, dateRange.to.toISOString())
@@ -418,13 +418,7 @@ async function fetchInBatches(
 		for (const { data, error } of results) {
 			if (error) throw new Error(`Batch fetch failed: ${error.message}`)
 			if (data) {
-				// Map VIEW column rv_ai_approved → ai_approved for RawRecord compatibility
-				allRecords.push(
-					...data.map((r: any) => ({
-						...r,
-						ai_approved: r.rv_ai_approved ?? null,
-					})) as RawRecord[]
-				)
+				allRecords.push(...data as RawRecord[])
 			}
 		}
 	}

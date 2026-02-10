@@ -91,12 +91,12 @@ export interface Database {
 		Views: {
 			ai_comparison_with_reviews: {
 				Row: AIHumanComparisonRow & {
-					rv_review_status: string | null
-					rv_ai_approved: boolean | null
-					rv_reviewer_name: string | null
-					rv_manual_comment: string | null
-					rv_requires_editing_correct: boolean | null
-					rv_action_analysis_verification: any | null
+					review_status: string | null
+					ai_approved: boolean | null
+					reviewer_name: string | null
+					manual_comment: string | null
+					requires_editing_correct: boolean | null
+					action_analysis_verification: any | null
 				}
 				Relationships: []
 			}
