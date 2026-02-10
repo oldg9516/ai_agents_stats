@@ -1,36 +1,21 @@
 import type { BacklogReportsFilters } from '@/lib/supabase/types'
 import { StateCreator } from 'zustand'
+import { filterSliceActions, getDefaultDateRange } from '../create-filter-slice'
 
-/**
- * Get default backlog reports filter values
- */
 function getDefaultBacklogReportsFilters(): BacklogReportsFilters {
-	const now = new Date()
-	now.setHours(23, 59, 59, 999) // End of today
-
-	const ninetyDaysAgo = new Date()
-	ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90) // Last 3 months
-	ninetyDaysAgo.setHours(0, 0, 0, 0) // Start of day
-
 	return {
-		dateRange: {
-			from: ninetyDaysAgo,
-			to: now,
-		},
-		periodDays: null, // null = all periods
+		dateRange: getDefaultDateRange(90),
+		periodDays: null,
 		minTickets: null,
 		searchQuery: '',
 	}
 }
 
 export interface BacklogReportsSlice {
-	// State
 	backlogReportsFilters: BacklogReportsFilters
 	backlogReportsPage: number
 	isGeneratingReport: boolean
-	generationStartedAt: string | null // ISO timestamp when generation started
-
-	// Actions
+	generationStartedAt: string | null
 	setBacklogReportsDateRange: (from: Date, to: Date) => void
 	setBacklogReportsPeriodDays: (days: number | null) => void
 	setBacklogReportsMinTickets: (min: number | null) => void
@@ -41,68 +26,34 @@ export interface BacklogReportsSlice {
 	setGenerationStartedAt: (timestamp: string | null) => void
 }
 
+const PAGE_RESET = { backlogReportsPage: 0 }
+
 export const createBacklogReportsSlice: StateCreator<
 	BacklogReportsSlice,
 	[],
 	[],
 	BacklogReportsSlice
-> = set => ({
-	// Initial state
-	backlogReportsFilters: getDefaultBacklogReportsFilters(),
-	backlogReportsPage: 0,
-	isGeneratingReport: false,
-	generationStartedAt: null,
+> = set => {
+	const ops = filterSliceActions(set, 'backlogReportsFilters', getDefaultBacklogReportsFilters, PAGE_RESET)
 
-	// Actions
-	setBacklogReportsDateRange: (from, to) =>
-		set(state => ({
-			backlogReportsFilters: {
-				...state.backlogReportsFilters,
-				dateRange: { from, to },
-			},
-			backlogReportsPage: 0, // Reset page on filter change
-		})),
+	return {
+		backlogReportsFilters: getDefaultBacklogReportsFilters(),
+		backlogReportsPage: 0,
+		isGeneratingReport: false,
+		generationStartedAt: null,
 
-	setBacklogReportsPeriodDays: days =>
-		set(state => ({
-			backlogReportsFilters: {
-				...state.backlogReportsFilters,
-				periodDays: days,
-			},
-			backlogReportsPage: 0,
-		})),
+		setBacklogReportsDateRange: ops.setDateRange,
+		setBacklogReportsPeriodDays: v => ops.setField('periodDays', v),
+		setBacklogReportsMinTickets: v => ops.setField('minTickets', v),
+		setBacklogReportsSearchQuery: v => ops.setField('searchQuery', v),
+		setBacklogReportsPage: page => set({ backlogReportsPage: page }),
+		resetBacklogReportsFilters: ops.resetFilters,
 
-	setBacklogReportsMinTickets: min =>
-		set(state => ({
-			backlogReportsFilters: {
-				...state.backlogReportsFilters,
-				minTickets: min,
-			},
-			backlogReportsPage: 0,
-		})),
-
-	setBacklogReportsSearchQuery: query =>
-		set(state => ({
-			backlogReportsFilters: {
-				...state.backlogReportsFilters,
-				searchQuery: query,
-			},
-			backlogReportsPage: 0,
-		})),
-
-	setBacklogReportsPage: page => set({ backlogReportsPage: page }),
-
-	resetBacklogReportsFilters: () =>
-		set({
-			backlogReportsFilters: getDefaultBacklogReportsFilters(),
-			backlogReportsPage: 0,
-		}),
-
-	setIsGeneratingReport: isGenerating =>
-		set({
-			isGeneratingReport: isGenerating,
-			generationStartedAt: isGenerating ? new Date().toISOString() : null,
-		}),
-
-	setGenerationStartedAt: timestamp => set({ generationStartedAt: timestamp }),
-})
+		setIsGeneratingReport: isGenerating =>
+			set({
+				isGeneratingReport: isGenerating,
+				generationStartedAt: isGenerating ? new Date().toISOString() : null,
+			}),
+		setGenerationStartedAt: timestamp => set({ generationStartedAt: timestamp }),
+	}
+}

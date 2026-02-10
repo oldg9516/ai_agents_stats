@@ -2,13 +2,13 @@
 
 import { usePaginatedThreads } from '@/lib/hooks/use-paginated-threads'
 import { useSupportData } from '@/lib/hooks/use-support-data'
-import { useSupportFilters } from '@/lib/hooks/use-support-filters'
+import { useSupportFilters } from '@/lib/store/hooks/use-support-filters'
 import { useAvailableCategories } from '@/lib/queries/support-queries'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import { useMemo } from 'react'
 import { FilterSheet } from './filters/filter-sheet'
-import { SupportDateRangeSelector } from './filters/support-date-range-selector'
+import { DateRangeFilter } from './filters/date-range-filter'
 import { SupportFilterBar } from './filters/support-filter-bar'
 import { AgentResponseRateCard } from './kpi/agent-response-rate-card'
 import { AvgRequirementsCard } from './kpi/avg-requirements-card'
@@ -42,17 +42,12 @@ const StatusDistributionChart = dynamic(
 export function SupportOverviewContent() {
 	const t = useTranslations()
 
-	const supportFiltersHook = useSupportFilters()
 	const {
 		filters,
 		setDateRange,
 		resetFilters,
-	} = supportFiltersHook
-
-	// applyFilters may be undefined if hook is not ready yet
-	const applyFilters = supportFiltersHook.applyFilters ?? (() => {
-		console.warn('[SupportOverviewContent] applyFilters is not available yet')
-	})
+		updateFilters,
+	} = useSupportFilters()
 
 	// Fetch support data with React Query (KPIs and charts)
 	const { data, isLoading, error } = useSupportData(filters)
@@ -138,7 +133,7 @@ export function SupportOverviewContent() {
 						{({ close }) => (
 							<SupportFilterBar
 								filters={filters}
-								onApplyFilters={applyFilters}
+								onApplyFilters={updateFilters}
 								onReset={resetFilters}
 								availableVersions={availableVersions}
 								availableCategories={availableCategories}
@@ -150,10 +145,10 @@ export function SupportOverviewContent() {
 
 				{/* Date Range Selector - Fills remaining space on large screens */}
 				<div className='lg:order-2 lg:flex-1'>
-					<SupportDateRangeSelector
+					<DateRangeFilter
 						from={filters.dateRange.from}
 						to={filters.dateRange.to}
-						onDateRangeChange={setDateRange}
+						onChange={setDateRange}
 					/>
 				</div>
 			</div>

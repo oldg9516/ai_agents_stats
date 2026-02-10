@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { useFilters } from '@/lib/hooks/use-filters'
+import { useDashboardFilters } from '@/lib/store/hooks/use-dashboard-filters'
 import { fetchFilterOptions } from '@/lib/actions/dashboard-actions'
 import { DetailedStatsTable } from './tables/detailed-stats-table'
 import { FilterSheet } from './filters/filter-sheet'
@@ -25,7 +25,7 @@ export function DetailedStatsContent() {
 		setAgents,
 		setHideRequiresEditing,
 		resetFilters,
-	} = useFilters()
+	} = useDashboardFilters()
 
 	// Fetch filter options (cached separately) - depends on date range
 	const { data: filterOptions, isLoading: isLoadingOptions } = useQuery({

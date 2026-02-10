@@ -1014,7 +1014,8 @@
 		},
 		"statuses": {
 			"processed": "Обработано",
-			"unprocessed": "Не обработано"
+			"unprocessed": "Не обработано",
+			"reviewed": "Проверено"
 		},
 		"classifications": {
 			"critical_error": "Критическая ошибка",
@@ -1031,7 +1032,8 @@
 			"STYLISTIC_EDIT": "Стилистическая правка",
 			"PERFECT_MATCH": "Идеальное совпадение",
 			"EXCL_WORKFLOW_SHIFT": "Исключено: Смена контекста",
-			"EXCL_DATA_DISCREPANCY": "Исключено: Расхождение данных"
+			"EXCL_DATA_DISCREPANCY": "Исключено: Расхождение данных",
+			"HUMAN_INCOMPLETE": "Исключено: Неполный ответ человека"
 		},
 		"scoreGroups": {
 			"critical": "Критично",
@@ -1068,6 +1070,24 @@
 			"reviewStatus": "Статус проверки",
 			"approveAiAnswer": "Одобрить AI ответ",
 			"aiApproved": "Одобрено",
+			"requiresEditing": "Проверка requires_editing",
+			"aiDetermined": "ИИ определил",
+			"requiresEditingYes": "Да, нужны доп. действия",
+			"requiresEditingNo": "Доп. действия не нужны",
+			"requiresEditingCorrect": "ИИ определил правильно",
+			"actionAnalysis": {
+				"title": "Проверка анализа действий",
+				"requiresSystemAction": "Требуется системное действие",
+				"actionType": "Тип действия",
+				"actionDetails": "Детали действия",
+				"confidence": "Уверенность",
+				"reasoning": "Обоснование",
+				"correct": "Верно",
+				"yes": "Да",
+				"no": "Нет",
+				"comment": "Комментарий проверки",
+				"commentPlaceholder": "Добавьте комментарий о точности анализа действий..."
+			},
 			"markAsProcessed": "Отметить как обработано",
 			"markAsUnprocessed": "Отметить как не обработано",
 			"processedHint": "Нажатие 'Отметить как обработано' сохранит комментарий и одобрение AI",
@@ -1087,7 +1107,9 @@
 				"info_added": "Информация добавлена",
 				"tone": "Изменение тона",
 				"structure": "Изменение структуры",
-				"accuracy": "Ошибка точности"
+				"accuracy": "Ошибка точности",
+				"proactive_addition": "Проактивное добавление",
+				"human_omission": "Упущение человека"
 			}
 		}
 	},

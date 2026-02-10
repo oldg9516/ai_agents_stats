@@ -11,7 +11,7 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { format } from 'date-fns'
-import { IconExternalLink, IconLoader2 } from '@tabler/icons-react'
+import { IconCheck, IconExternalLink, IconLoader2 } from '@tabler/icons-react'
 import {
 	Dialog,
 	DialogContent,
@@ -29,9 +29,10 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/components/ui/table'
-import { useDashboardFilters } from '@/lib/store/hooks/use-dashboard-filters'
+import { useScoreGroupModal } from '@/lib/store/hooks/use-dashboard-filters'
 import { useScoreGroupTickets } from '@/lib/queries/score-group-queries'
 import { getClassificationColor } from '@/constants/classification-types'
+import { isTicketReviewed } from '@/lib/utils/filter-utils'
 import { getCategoryLabel } from '@/constants/category-labels'
 import type { ScoreGroup } from '@/constants/classification-types'
 
@@ -67,7 +68,7 @@ function getScoreGroupDisplay(
 
 export function ScoreGroupModal() {
 	const t = useTranslations()
-	const { scoreGroupModal, closeScoreGroupModal } = useDashboardFilters()
+	const { scoreGroupModal, closeScoreGroupModal } = useScoreGroupModal()
 	const [currentPage, setCurrentPage] = useState(0)
 	const pageSize = 20
 
@@ -178,7 +179,15 @@ export function ScoreGroupModal() {
 										{data.data.map(ticket => (
 											<TableRow key={ticket.id}>
 												<TableCell className="font-mono text-sm">
-													{ticket.id}
+													<div className="flex items-center gap-2">
+														{ticket.id}
+														{isTicketReviewed(ticket) && (
+															<Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800">
+																<IconCheck className="h-2.5 w-2.5 mr-0.5" />
+																{t('ticketsReview.statuses.reviewed')}
+															</Badge>
+														)}
+													</div>
 												</TableCell>
 												<TableCell className="font-mono text-sm max-w-[150px] truncate">
 													{ticket.ticket_id || '—'}

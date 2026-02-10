@@ -44,7 +44,7 @@ import {
 	TableRow,
 } from '@/components/ui/table'
 import { useDetailedStatsPaginated } from '@/lib/queries/dashboard-queries'
-import { useDashboardFilters } from '@/lib/store/hooks/use-dashboard-filters'
+import { useDashboardFilters, useDashboardDisplayMode, useScoreGroupModal } from '@/lib/store/hooks/use-dashboard-filters'
 import type { DetailedStatsRow } from '@/lib/supabase/types'
 import { exportToCSV } from '@/lib/utils/export'
 
@@ -67,9 +67,9 @@ import { buildLatestWeeksMap, checkIsLatestWeek, type DetailedStatsTableProps } 
 export function DetailedStatsTable({ filters, dateFilterMode = 'created' }: DetailedStatsTableProps) {
 	const t = useTranslations()
 	const router = useRouter()
+	const { categoryDisplayMode } = useDashboardDisplayMode()
+	const { openScoreGroupModal } = useScoreGroupModal()
 	const {
-		categoryDisplayMode,
-		openScoreGroupModal,
 		filters: storeFilters,
 		setShowNeedEdit,
 		setShowNotNeedEdit,

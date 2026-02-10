@@ -1,20 +1,10 @@
 import type { TicketsReviewFilters } from '@/lib/supabase/types'
 import { StateCreator } from 'zustand'
+import { filterSliceActions, getDefaultDateRange } from '../create-filter-slice'
 
-/**
- * Get default tickets review filter values
- */
 function getDefaultTicketsReviewFilters(): TicketsReviewFilters {
-	// Default: last 30 days
-	const to = new Date()
-	to.setHours(23, 59, 59, 999) // End of today
-
-	const from = new Date()
-	from.setDate(from.getDate() - 30)
-	from.setHours(0, 0, 0, 0) // Start of day 30 days ago
-
 	return {
-		dateRange: { from, to },
+		dateRange: getDefaultDateRange(30),
 		categories: [],
 		versions: [],
 		classifications: [],
@@ -25,10 +15,7 @@ function getDefaultTicketsReviewFilters(): TicketsReviewFilters {
 }
 
 export interface TicketsReviewSlice {
-	// State
 	ticketsReviewFilters: TicketsReviewFilters
-
-	// Actions
 	setTicketsReviewDateRange: (from: Date, to: Date) => void
 	setTicketsReviewCategories: (categories: string[]) => void
 	setTicketsReviewVersions: (versions: string[]) => void
@@ -45,77 +32,19 @@ export const createTicketsReviewSlice: StateCreator<
 	[],
 	[],
 	TicketsReviewSlice
-> = set => ({
-	// Initial state
-	ticketsReviewFilters: getDefaultTicketsReviewFilters(),
+> = set => {
+	const ops = filterSliceActions(set, 'ticketsReviewFilters', getDefaultTicketsReviewFilters)
 
-	// Actions
-	setTicketsReviewDateRange: (from, to) =>
-		set(state => ({
-			ticketsReviewFilters: {
-				...state.ticketsReviewFilters,
-				dateRange: { from, to },
-			},
-		})),
-
-	setTicketsReviewCategories: categories =>
-		set(state => ({
-			ticketsReviewFilters: {
-				...state.ticketsReviewFilters,
-				categories,
-			},
-		})),
-
-	setTicketsReviewVersions: versions =>
-		set(state => ({
-			ticketsReviewFilters: {
-				...state.ticketsReviewFilters,
-				versions,
-			},
-		})),
-
-	setTicketsReviewClassifications: classifications =>
-		set(state => ({
-			ticketsReviewFilters: {
-				...state.ticketsReviewFilters,
-				classifications,
-			},
-		})),
-
-	setTicketsReviewAgents: agents =>
-		set(state => ({
-			ticketsReviewFilters: {
-				...state.ticketsReviewFilters,
-				agents,
-			},
-		})),
-
-	setTicketsReviewStatuses: reviewStatuses =>
-		set(state => ({
-			ticketsReviewFilters: {
-				...state.ticketsReviewFilters,
-				reviewStatuses,
-			},
-		})),
-
-	setTicketsReviewReviewerNames: reviewerNames =>
-		set(state => ({
-			ticketsReviewFilters: {
-				...state.ticketsReviewFilters,
-				reviewerNames,
-			},
-		})),
-
-	resetTicketsReviewFilters: () =>
-		set({
-			ticketsReviewFilters: getDefaultTicketsReviewFilters(),
-		}),
-
-	updateTicketsReviewFilters: filters =>
-		set(state => ({
-			ticketsReviewFilters: {
-				...state.ticketsReviewFilters,
-				...filters,
-			},
-		})),
-})
+	return {
+		ticketsReviewFilters: getDefaultTicketsReviewFilters(),
+		setTicketsReviewDateRange: ops.setDateRange,
+		setTicketsReviewCategories: v => ops.setField('categories', v),
+		setTicketsReviewVersions: v => ops.setField('versions', v),
+		setTicketsReviewClassifications: v => ops.setField('classifications', v),
+		setTicketsReviewAgents: v => ops.setField('agents', v),
+		setTicketsReviewStatuses: v => ops.setField('reviewStatuses', v),
+		setTicketsReviewReviewerNames: v => ops.setField('reviewerNames', v),
+		resetTicketsReviewFilters: ops.resetFilters,
+		updateTicketsReviewFilters: ops.updateFilters,
+	}
+}

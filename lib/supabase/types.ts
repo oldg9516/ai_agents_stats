@@ -11,6 +11,29 @@ import type {
 	NewClassificationType,
 } from '@/constants/classification-types'
 
+/**
+ * Parsed action_analysis from support_threads_data (stored as JSON-stringified text)
+ */
+export interface ActionAnalysis {
+	requires_system_action: boolean | null
+	action_type: string
+	action_details: string
+	confidence: string // "high" | "medium" | "low"
+	reasoning: string
+}
+
+/**
+ * Verification data for action_analysis fields (stored as JSONB on ai_human_comparison)
+ */
+export interface ActionAnalysisVerification {
+	requires_system_action_correct: boolean
+	action_type_correct: boolean
+	action_details_correct: boolean
+	confidence_correct: boolean
+	reasoning_correct: boolean
+	comment: string
+}
+
 export interface Database {
 	public: {
 		Tables: {
@@ -223,6 +246,8 @@ export interface AIHumanComparisonRow {
 	review_status: 'processed' | 'unprocessed' | null // Review status for tickets review
 	ai_approved: boolean | null // Whether AI answer was approved
 	reviewer_name: string | null // Name of the reviewer who processed the ticket
+	requires_editing_correct: boolean | null // Whether agent confirmed AI's requires_editing determination
+	action_analysis_verification: ActionAnalysisVerification | null // Verification of action_analysis fields (jsonb)
 }
 
 /**
@@ -251,6 +276,8 @@ export interface AIHumanComparisonUpdate {
 	human_reply?: string
 	review_status?: 'processed' | 'unprocessed'
 	ai_approved?: boolean
+	requires_editing_correct?: boolean
+	action_analysis_verification?: ActionAnalysisVerification | null
 }
 
 /**
@@ -686,6 +713,8 @@ export interface TicketReviewRecord extends AIHumanComparisonRow {
 	// Fields from support_threads_data (via JOIN on thread_id)
 	user: string | null // Customer email from support_threads_data.user JSON
 	request_sub_subtype: string | null // Sub-subcategory from support_threads_data
+	requires_editing: boolean | null // Whether AI determined additional actions needed (from support_threads_data)
+	action_analysis: ActionAnalysis | null // Parsed action_analysis JSON from support_threads_data
 	// Field from support_dialogs (via JOIN on thread_id, direction='incoming')
 	customer_request_text: string | null // Customer's request text from support_dialogs
 }

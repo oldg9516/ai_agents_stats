@@ -1,6 +1,7 @@
 import type { CategoryDisplayMode, DashboardFilters, DateFilterMode, ScoringMode } from '@/lib/supabase/types'
 import type { ScoreGroup } from '@/constants/classification-types'
 import { StateCreator } from 'zustand'
+import { filterSliceActions, getDefaultDateRange } from '../create-filter-slice'
 
 /**
  * Score Group Modal state for viewing tickets by classification
@@ -14,9 +15,6 @@ export interface ScoreGroupModalState {
 	dateFilterMode: DateFilterMode // Date field to filter by ('created' or 'human_reply')
 }
 
-/**
- * Get default score group modal state
- */
 function getDefaultScoreGroupModalState(): ScoreGroupModalState {
 	return {
 		isOpen: false,
@@ -28,39 +26,23 @@ function getDefaultScoreGroupModalState(): ScoreGroupModalState {
 	}
 }
 
-/**
- * Get default dashboard filter values
- */
 function getDefaultDashboardFilters(): DashboardFilters {
-	const now = new Date()
-	now.setHours(23, 59, 59, 999) // End of today
-
-	const thirtyDaysAgo = new Date()
-	thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30) // ✅ Fixed: use thirtyDaysAgo.getDate()
-	thirtyDaysAgo.setHours(0, 0, 0, 0) // Start of day
-
 	return {
-		dateRange: {
-			from: thirtyDaysAgo,
-			to: now,
-		},
-		versions: [], // Empty = all versions
-		categories: [], // Empty = all categories
-		agents: [], // Empty = all agents
+		dateRange: getDefaultDateRange(30),
+		versions: [],
+		categories: [],
+		agents: [],
 		hideRequiresEditing: false, // DEPRECATED
-		showNeedEdit: true, // true = show records where requires_editing = true
-		showNotNeedEdit: true, // true = show records where requires_editing = false
+		showNeedEdit: true,
+		showNotNeedEdit: true,
 	}
 }
 
 export interface DashboardSlice {
-	// State
 	dashboardFilters: DashboardFilters
-	scoringMode: ScoringMode // 'legacy' or 'new'
-	categoryDisplayMode: CategoryDisplayMode // 'all' or 'merged'
-	scoreGroupModal: ScoreGroupModalState // Modal for viewing tickets by score group
-
-	// Actions
+	scoringMode: ScoringMode
+	categoryDisplayMode: CategoryDisplayMode
+	scoreGroupModal: ScoreGroupModalState
 	setDashboardDateRange: (from: Date, to: Date) => void
 	setDashboardVersions: (versions: string[]) => void
 	setDashboardCategories: (categories: string[]) => void
@@ -81,97 +63,28 @@ export const createDashboardSlice: StateCreator<
 	[],
 	[],
 	DashboardSlice
-> = set => ({
-	// Initial state
-	dashboardFilters: getDefaultDashboardFilters(),
-	scoringMode: 'new', // Default to new scoring mode
-	categoryDisplayMode: 'merged', // Default to merged categories
-	scoreGroupModal: getDefaultScoreGroupModalState(), // Score group modal state
+> = set => {
+	const ops = filterSliceActions(set, 'dashboardFilters', getDefaultDashboardFilters)
 
-	// Actions
-	setDashboardDateRange: (from, to) =>
-		set(state => ({
-			dashboardFilters: {
-				...state.dashboardFilters,
-				dateRange: { from, to },
-			},
-		})),
+	return {
+		dashboardFilters: getDefaultDashboardFilters(),
+		scoringMode: 'new',
+		categoryDisplayMode: 'merged',
+		scoreGroupModal: getDefaultScoreGroupModalState(),
 
-	setDashboardVersions: versions =>
-		set(state => ({
-			dashboardFilters: {
-				...state.dashboardFilters,
-				versions,
-			},
-		})),
+		setDashboardDateRange: ops.setDateRange,
+		setDashboardVersions: v => ops.setField('versions', v),
+		setDashboardCategories: v => ops.setField('categories', v),
+		setDashboardAgents: v => ops.setField('agents', v),
+		setDashboardHideRequiresEditing: v => ops.setField('hideRequiresEditing', v),
+		setDashboardShowNeedEdit: v => ops.setField('showNeedEdit', v),
+		setDashboardShowNotNeedEdit: v => ops.setField('showNotNeedEdit', v),
+		resetDashboardFilters: ops.resetFilters,
+		updateDashboardFilters: ops.updateFilters,
 
-	setDashboardCategories: categories =>
-		set(state => ({
-			dashboardFilters: {
-				...state.dashboardFilters,
-				categories,
-			},
-		})),
-
-	setDashboardAgents: agents =>
-		set(state => ({
-			dashboardFilters: {
-				...state.dashboardFilters,
-				agents,
-			},
-		})),
-
-	setDashboardHideRequiresEditing: enabled =>
-		set(state => ({
-			dashboardFilters: {
-				...state.dashboardFilters,
-				hideRequiresEditing: enabled,
-			},
-		})),
-
-	setDashboardShowNeedEdit: enabled =>
-		set(state => ({
-			dashboardFilters: {
-				...state.dashboardFilters,
-				showNeedEdit: enabled,
-			},
-		})),
-
-	setDashboardShowNotNeedEdit: enabled =>
-		set(state => ({
-			dashboardFilters: {
-				...state.dashboardFilters,
-				showNotNeedEdit: enabled,
-			},
-		})),
-
-	resetDashboardFilters: () =>
-		set({
-			dashboardFilters: getDefaultDashboardFilters(),
-		}),
-
-	updateDashboardFilters: filters =>
-		set(state => ({
-			dashboardFilters: {
-				...state.dashboardFilters,
-				...filters,
-			},
-		})),
-
-	setScoringMode: mode => set({ scoringMode: mode }),
-
-	setCategoryDisplayMode: mode => set({ categoryDisplayMode: mode }),
-
-	openScoreGroupModal: params =>
-		set({
-			scoreGroupModal: {
-				isOpen: true,
-				...params,
-			},
-		}),
-
-	closeScoreGroupModal: () =>
-		set({
-			scoreGroupModal: getDefaultScoreGroupModalState(),
-		}),
-})
+		setScoringMode: mode => set({ scoringMode: mode }),
+		setCategoryDisplayMode: mode => set({ categoryDisplayMode: mode }),
+		openScoreGroupModal: params => set({ scoreGroupModal: { isOpen: true, ...params } }),
+		closeScoreGroupModal: () => set({ scoreGroupModal: getDefaultScoreGroupModalState() }),
+	}
+}

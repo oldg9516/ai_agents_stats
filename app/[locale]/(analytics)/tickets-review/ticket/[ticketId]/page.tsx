@@ -9,7 +9,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { fetchTicketDetail } from '@/lib/supabase/queries-tickets-review'
 import { supabaseServer } from '@/lib/supabase/server'
-import { IconArrowLeft, IconExternalLink } from '@tabler/icons-react'
+import { IconArrowLeft, IconCheck, IconExternalLink } from '@tabler/icons-react'
 import { format } from 'date-fns'
 import { Metadata } from 'next'
 import Link from 'next/link'
@@ -22,6 +22,8 @@ import {
 	calculateQualityScore,
 } from '@/constants/classification-types'
 import { ZOHO_TICKET_URL } from '@/constants/zoho'
+import { Badge } from '@/components/ui/badge'
+import { isTicketReviewed } from '@/lib/utils/filter-utils'
 
 interface TicketDetailPageProps {
 	params: Promise<{
@@ -56,6 +58,7 @@ export default async function TicketDetailPage({
 }: TicketDetailPageProps) {
 	const { ticketId } = await params
 	const t = await getTranslations('ticketsReview.modal')
+	const tStatuses = await getTranslations('ticketsReview.statuses')
 
 	// Fetch ticket details
 	let ticket
@@ -85,7 +88,15 @@ export default async function TicketDetailPage({
 						</Button>
 					</Link>
 					<div>
-						<h1 className='text-2xl font-bold'>Ticket Details</h1>
+						<div className='flex items-center gap-3'>
+							<h1 className='text-2xl font-bold'>Ticket Details</h1>
+							{isTicketReviewed(ticket) && (
+								<Badge className='bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800'>
+									<IconCheck className='h-3 w-3 mr-1' />
+									{tStatuses('reviewed')}
+								</Badge>
+							)}
+						</div>
 						<p className='text-sm text-muted-foreground'>ID: {ticket.id}</p>
 					</div>
 				</div>
@@ -306,6 +317,8 @@ export default async function TicketDetailPage({
 				initialAiApproved={ticket.ai_approved}
 				initialComment={ticket.manual_comment}
 				initialReviewerName={ticket.reviewer_name}
+				initialActionAnalysis={ticket.action_analysis}
+				initialActionAnalysisVerification={ticket.action_analysis_verification}
 			/>
 		</div>
 	)

@@ -4,16 +4,11 @@ import { useShallow } from 'zustand/react/shallow'
 import { useStore } from '../index'
 
 /**
- * Hook for managing dashboard filters with Zustand
- *
- * Features:
- * - Global state management via Zustand
- * - localStorage persistence (via Zustand persist middleware)
- * - No URL sync - cleaner URLs
- * - Optimized with shallow comparison to prevent unnecessary re-renders
+ * Hook for managing dashboard filters with Zustand.
+ * Only returns filter-related state. For display settings, use useDashboardDisplayMode.
+ * For score group modal, use useScoreGroupModal.
  */
 export function useDashboardFilters() {
-	// Use shallow selector to prevent re-renders when other slices change
 	return useStore(
 		useShallow(state => ({
 			filters: state.dashboardFilters,
@@ -26,10 +21,32 @@ export function useDashboardFilters() {
 			setShowNotNeedEdit: state.setDashboardShowNotNeedEdit,
 			resetFilters: state.resetDashboardFilters,
 			updateFilters: state.updateDashboardFilters,
+		}))
+	)
+}
+
+/**
+ * Hook for dashboard display mode settings (scoring mode, category display).
+ * Separated from filters to avoid unnecessary re-renders.
+ */
+export function useDashboardDisplayMode() {
+	return useStore(
+		useShallow(state => ({
 			scoringMode: state.scoringMode,
 			setScoringMode: state.setScoringMode,
 			categoryDisplayMode: state.categoryDisplayMode,
 			setCategoryDisplayMode: state.setCategoryDisplayMode,
+		}))
+	)
+}
+
+/**
+ * Hook for score group modal state.
+ * Separated from filters to avoid unnecessary re-renders.
+ */
+export function useScoreGroupModal() {
+	return useStore(
+		useShallow(state => ({
 			scoreGroupModal: state.scoreGroupModal,
 			openScoreGroupModal: state.openScoreGroupModal,
 			closeScoreGroupModal: state.closeScoreGroupModal,

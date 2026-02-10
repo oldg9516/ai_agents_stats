@@ -24,6 +24,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { REVIEWER_AGENTS } from '@/constants/qualified-agents'
 import { updateTicketReview } from '@/lib/actions/ticket-update-actions'
 import { triggerTicketsRefresh } from '@/lib/hooks/use-paginated-tickets'
+import { ActionAnalysisVerificationSection } from '@/components/shared/action-analysis-verification-section'
+import type { ActionAnalysis, ActionAnalysisVerification } from '@/lib/supabase/types'
 import { IconCheck } from '@tabler/icons-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -36,6 +38,8 @@ interface TicketReviewActionsProps {
 	initialAiApproved: boolean | null
 	initialComment: string | null
 	initialReviewerName?: string | null
+	initialActionAnalysis?: ActionAnalysis | null
+	initialActionAnalysisVerification?: ActionAnalysisVerification | null
 }
 
 export function TicketReviewActions({
@@ -44,6 +48,8 @@ export function TicketReviewActions({
 	initialAiApproved,
 	initialComment,
 	initialReviewerName,
+	initialActionAnalysis,
+	initialActionAnalysisVerification,
 }: TicketReviewActionsProps) {
 	const t = useTranslations('ticketsReview.modal')
 	const router = useRouter()
@@ -55,6 +61,16 @@ export function TicketReviewActions({
 	const [selectedReviewer, setSelectedReviewer] = useState<string | null>(
 		initialReviewerName || null
 	)
+	const [actionAnalysisVerification, setActionAnalysisVerification] =
+		useState<ActionAnalysisVerification>(() => ({
+			requires_system_action_correct: false,
+			action_type_correct: false,
+			action_details_correct: false,
+			confidence_correct: false,
+			reasoning_correct: false,
+			comment: '',
+			...(initialActionAnalysisVerification ?? {}),
+		}))
 	const [isSaving, setIsSaving] = useState(false)
 
 	// Handle AI approval checkbox change (local state only, no API call)
@@ -72,6 +88,7 @@ export function TicketReviewActions({
 			aiApproved: aiApproved,
 			manualComment: manualComment,
 			reviewerName: selectedReviewer || undefined,
+			actionAnalysisVerification: initialActionAnalysis != null ? actionAnalysisVerification : undefined,
 		})
 
 		if (result.success) {
@@ -180,6 +197,19 @@ export function TicketReviewActions({
 						)}
 					</Label>
 				</div>
+
+				{/* Action Analysis Verification */}
+				{initialActionAnalysis != null ? (
+					<>
+						<Separator />
+						<ActionAnalysisVerificationSection
+							actionAnalysis={initialActionAnalysis}
+							verification={actionAnalysisVerification}
+							onVerificationChange={setActionAnalysisVerification}
+							disabled={isSaving}
+						/>
+					</>
+				) : null}
 
 				<Separator />
 

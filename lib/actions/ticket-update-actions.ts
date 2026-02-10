@@ -8,6 +8,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAuthClient, supabaseServer } from '@/lib/supabase/server'
+import type { ActionAnalysisVerification } from '@/lib/supabase/types'
 
 export interface UpdateTicketReviewResult {
 	success: boolean
@@ -109,6 +110,8 @@ export async function updateTicketReview(
 		aiApproved?: boolean
 		manualComment?: string
 		reviewerName?: string
+		requiresEditingCorrect?: boolean | null
+		actionAnalysisVerification?: ActionAnalysisVerification | null
 	}
 ): Promise<UpdateTicketReviewResult> {
 	try {
@@ -119,6 +122,8 @@ export async function updateTicketReview(
 			ai_approved?: boolean
 			manual_comment?: string
 			reviewer_name?: string
+			requires_editing_correct?: boolean | null
+			action_analysis_verification?: ActionAnalysisVerification | null
 		} = {}
 
 		if (data.reviewStatus !== undefined) {
@@ -132,6 +137,12 @@ export async function updateTicketReview(
 		}
 		if (data.reviewerName !== undefined) {
 			updateData.reviewer_name = data.reviewerName
+		}
+		if (data.requiresEditingCorrect !== undefined) {
+			updateData.requires_editing_correct = data.requiresEditingCorrect
+		}
+		if (data.actionAnalysisVerification !== undefined) {
+			updateData.action_analysis_verification = data.actionAnalysisVerification
 		}
 
 		const { error } = await supabaseServer

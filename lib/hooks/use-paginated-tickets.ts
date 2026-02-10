@@ -1,5 +1,6 @@
 'use client'
 
+import { CLIENT_BATCH_SIZE, MAX_CLIENT_RECORDS } from '@/constants/pagination'
 import { useState, useCallback, useEffect } from 'react'
 import { useTicketsReviewFilters } from '../store/hooks/use-tickets-review-filters'
 import { fetchTicketsReviewAction } from '../actions/tickets-review-actions'
@@ -35,8 +36,8 @@ export function usePaginatedTickets() {
 	const [isFetchingMore, setIsFetchingMore] = useState(false)
 	const [currentOffset, setCurrentOffset] = useState(0)
 
-	const BATCH_SIZE = 60
-	const MAX_RECORDS = 1200 // Max records to keep in memory (20 batches)
+	const BATCH_SIZE = CLIENT_BATCH_SIZE
+	const MAX_RECORDS = MAX_CLIENT_RECORDS
 
 	// Load initial batch (no caching - data can change frequently)
 	const loadInitialBatch = useCallback(async () => {

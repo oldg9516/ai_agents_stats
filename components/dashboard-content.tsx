@@ -2,7 +2,7 @@
 
 import { fetchFilterOptions } from '@/lib/actions/dashboard-actions'
 import { useDashboardData } from '@/lib/hooks/use-dashboard-data'
-import { useFilters } from '@/lib/hooks/use-filters'
+import { useDashboardFilters } from '@/lib/store/hooks/use-dashboard-filters'
 import type { DateFilterMode } from '@/lib/supabase/types'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
@@ -54,7 +54,7 @@ export function DashboardContent() {
 		setAgents,
 		setHideRequiresEditing,
 		resetFilters,
-	} = useFilters()
+	} = useDashboardFilters()
 
 	// Fetch dashboard data with React Query
 	const { data, isLoading, error } = useDashboardData(filters, dateFilterMode)

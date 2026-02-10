@@ -7,7 +7,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { TicketReviewRecord, TicketsReviewFilters } from './types'
+import type { ActionAnalysis, TicketReviewRecord, TicketsReviewFilters } from './types'
 
 /**
  * Fetch Tickets Review Records with pagination
@@ -63,7 +63,9 @@ export async function fetchTicketsReview(
 			change_classification,
 			review_status,
 			ai_approved,
-			reviewer_name
+			reviewer_name,
+			requires_editing_correct,
+			action_analysis_verification
 		`
 		)
 		.gte('created_at', dateRange.from.toISOString())
@@ -107,13 +109,13 @@ export async function fetchTicketsReview(
 
 	if (threadIds.length === 0) {
 		// No thread_id links, return tickets without user field, request_sub_subtype, and customer request
-		return tickets.map(t => ({ ...t, user: null, request_sub_subtype: null, customer_request_text: null }))
+		return tickets.map(t => ({ ...t, user: null, request_sub_subtype: null, requires_editing: null, action_analysis: null, customer_request_text: null }))
 	}
 
 	// Fetch user data and request_sub_subtype from support_threads_data (user field contains JSON string)
 	const { data: threadsData, error: threadsError } = await supabase
 		.from('support_threads_data')
-		.select('thread_id, user, request_sub_subtype')
+		.select('thread_id, user, request_sub_subtype, requires_editing, action_analysis')
 		.in('thread_id', threadIds)
 
 	if (threadsError) {
@@ -130,10 +132,11 @@ export async function fetchTicketsReview(
 		console.error('Error fetching dialogs data:', dialogsError)
 	}
 
-	// Create map of thread_id -> user email
-	// Parse user JSON and extract email field
+	// Create maps for thread data
 	const userMap = new Map<string, string | null>()
 	const subSubTypeMap = new Map<string, string | null>()
+	const requiresEditingMap = new Map<string, boolean | null>()
+	const actionAnalysisMap = new Map<string, ActionAnalysis | null>()
 	threadsData?.forEach(thread => {
 		if (thread.thread_id) {
 			// Parse user data
@@ -155,6 +158,20 @@ export async function fetchTicketsReview(
 			if (thread.request_sub_subtype) {
 				subSubTypeMap.set(thread.thread_id, thread.request_sub_subtype)
 			}
+			// Store requires_editing
+			requiresEditingMap.set(thread.thread_id, thread.requires_editing ?? null)
+			// Parse and store action_analysis
+			if (thread.action_analysis) {
+				try {
+					const parsed = typeof thread.action_analysis === 'string'
+						? JSON.parse(thread.action_analysis)
+						: thread.action_analysis
+					actionAnalysisMap.set(thread.thread_id, parsed)
+				} catch (e) {
+					console.error('Error parsing action_analysis JSON:', e)
+					actionAnalysisMap.set(thread.thread_id, null)
+				}
+			}
 		}
 	})
 
@@ -166,11 +183,17 @@ export async function fetchTicketsReview(
 		}
 	})
 
-	// Enrich tickets with user field, request_sub_subtype, and customer request text
+	// Enrich tickets with user field, request_sub_subtype, requires_editing, and customer request text
 	const enrichedTickets: TicketReviewRecord[] = tickets.map(ticket => ({
 		...ticket,
 		user: ticket.thread_id ? userMap.get(ticket.thread_id) ?? null : null,
 		request_sub_subtype: ticket.thread_id ? subSubTypeMap.get(ticket.thread_id) ?? null : null,
+		requires_editing: ticket.thread_id
+			? requiresEditingMap.get(ticket.thread_id) ?? null
+			: null,
+		action_analysis: ticket.thread_id
+			? actionAnalysisMap.get(ticket.thread_id) ?? null
+			: null,
 		customer_request_text: ticket.thread_id
 			? customerRequestMap.get(ticket.thread_id) ?? null
 			: null,
@@ -217,7 +240,9 @@ export async function fetchTicketDetail(
 			change_classification,
 			review_status,
 			ai_approved,
-			reviewer_name
+			reviewer_name,
+			requires_editing_correct,
+			action_analysis_verification
 		`)
 		.eq('id', ticketId)
 		.single()
@@ -228,12 +253,14 @@ export async function fetchTicketDetail(
 	// Try to get user email and request_sub_subtype from support_threads_data (user field contains JSON string)
 	let userEmail: string | null = null
 	let requestSubSubtype: string | null = null
+	let requiresEditing: boolean | null = null
+	let actionAnalysis: ActionAnalysis | null = null
 	let customerRequestText: string | null = null
 
 	if (ticket.thread_id) {
 		const { data: threadData } = await supabase
 			.from('support_threads_data')
-			.select('user, request_sub_subtype')
+			.select('user, request_sub_subtype, requires_editing, action_analysis')
 			.eq('thread_id', ticket.thread_id)
 			.limit(1)
 			.single()
@@ -257,6 +284,22 @@ export async function fetchTicketDetail(
 			requestSubSubtype = threadData.request_sub_subtype
 		}
 
+		// Get requires_editing
+		requiresEditing = threadData?.requires_editing ?? null
+
+		// Parse and get action_analysis
+		if (threadData?.action_analysis) {
+			try {
+				const parsed = typeof threadData.action_analysis === 'string'
+					? JSON.parse(threadData.action_analysis)
+					: threadData.action_analysis
+				actionAnalysis = parsed
+			} catch (e) {
+				console.error('Error parsing action_analysis JSON:', e)
+				actionAnalysis = null
+			}
+		}
+
 		// Try to get customer request text from support_dialogs
 		const { data: dialogData } = await supabase
 			.from('support_dialogs')
@@ -274,6 +317,8 @@ export async function fetchTicketDetail(
 		...ticket,
 		user: userEmail,
 		request_sub_subtype: requestSubSubtype,
+		requires_editing: requiresEditing,
+		action_analysis: actionAnalysis,
 		customer_request_text: customerRequestText,
 	}
 }

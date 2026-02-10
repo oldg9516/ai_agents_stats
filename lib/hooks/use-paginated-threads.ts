@@ -11,14 +11,12 @@
  * - Uses Zustand store for pagination state management
  */
 
+import { CLIENT_BATCH_SIZE, MAX_BATCHES } from '@/constants/pagination'
 import { fetchSupportThreadsAction } from '@/lib/actions/support-actions'
 import { useStore } from '@/lib/store'
 import type { SupportThread } from '@/lib/supabase/types'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo } from 'react'
-
-const BATCH_SIZE = 60 // Server fetch size
-const MAX_BATCHES = 20 // Max batches to keep in memory (1200 records)
 
 interface PaginatedThreadsReturn {
 	allLoadedThreads: SupportThread[] // All threads loaded so far
@@ -93,9 +91,9 @@ export function usePaginatedThreads(): PaginatedThreadsReturn {
 			currentBatch
 		),
 		queryFn: async () => {
-			const offset = currentBatch * BATCH_SIZE
+			const offset = currentBatch * CLIENT_BATCH_SIZE
 			const result = await fetchSupportThreadsAction(supportFilters, {
-				limit: BATCH_SIZE,
+				limit: CLIENT_BATCH_SIZE,
 				offset,
 			})
 

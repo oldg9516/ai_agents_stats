@@ -9,11 +9,11 @@
  */
 
 import { Switch } from '@/components/ui/switch'
-import { useDashboardFilters } from '@/lib/store/hooks/use-dashboard-filters'
+import { useDashboardDisplayMode } from '@/lib/store/hooks/use-dashboard-filters'
 import { useTranslations } from 'next-intl'
 
 export function CategoryDisplayToggle() {
-	const { categoryDisplayMode, setCategoryDisplayMode } = useDashboardFilters()
+	const { categoryDisplayMode, setCategoryDisplayMode } = useDashboardDisplayMode()
 	const t = useTranslations('dashboard.categoryMode')
 
 	const isMerged = categoryDisplayMode === 'merged'

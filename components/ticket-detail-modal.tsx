@@ -43,7 +43,9 @@ import { REVIEWER_AGENTS } from '@/constants/qualified-agents'
 import { ZOHO_TICKET_URL } from '@/constants/zoho'
 import { updateTicketReview } from '@/lib/actions/ticket-update-actions'
 import { triggerTicketsRefresh } from '@/lib/hooks/use-paginated-tickets'
-import type { TicketReviewRecord } from '@/lib/supabase/types'
+import type { ActionAnalysisVerification, TicketReviewRecord } from '@/lib/supabase/types'
+import { ActionAnalysisVerificationSection } from '@/components/shared/action-analysis-verification-section'
+import { isTicketReviewed } from '@/lib/utils/filter-utils'
 import { IconCheck, IconExternalLink, IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
 import { format } from 'date-fns'
 import { useTranslations } from 'next-intl'
@@ -77,6 +79,16 @@ export function TicketDetailModal({
 	const [selectedReviewer, setSelectedReviewer] = useState<string | null>(
 		ticket.reviewer_name || null
 	)
+	const [actionAnalysisVerification, setActionAnalysisVerification] =
+		useState<ActionAnalysisVerification>(() => ({
+			requires_system_action_correct: false,
+			action_type_correct: false,
+			action_details_correct: false,
+			confidence_correct: false,
+			reasoning_correct: false,
+			comment: '',
+			...(ticket.action_analysis_verification ?? {}),
+		}))
 	const [isSaving, setIsSaving] = useState(false)
 
 	// Close modal by navigating back
@@ -113,6 +125,7 @@ export function TicketDetailModal({
 			aiApproved: aiApproved,
 			manualComment: manualComment,
 			reviewerName: selectedReviewer || undefined,
+			actionAnalysisVerification: ticket.action_analysis != null ? actionAnalysisVerification : undefined,
 		})
 
 		if (result.success) {
@@ -175,6 +188,12 @@ export function TicketDetailModal({
 											`classifications.${ticket.change_classification}` as unknown as 'classifications.critical_error'
 										)}
 									</span>
+								)}
+								{(reviewStatus === 'processed' || manualComment) && (
+									<Badge className='bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800'>
+										<IconCheck className='h-3 w-3 mr-1' />
+										{t('statuses.reviewed')}
+									</Badge>
 								)}
 							</div>
 							<DialogDescription className='font-mono text-xs sm:text-sm break-all flex items-center gap-2 flex-wrap'>
@@ -566,6 +585,19 @@ export function TicketDetailModal({
 										)}
 									</Label>
 								</div>
+
+								{/* Action Analysis Verification */}
+								{ticket.action_analysis != null ? (
+									<>
+										<Separator />
+										<ActionAnalysisVerificationSection
+											actionAnalysis={ticket.action_analysis}
+											verification={actionAnalysisVerification}
+											onVerificationChange={setActionAnalysisVerification}
+											disabled={isSaving}
+										/>
+									</>
+								) : null}
 
 								<Separator />
 

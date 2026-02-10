@@ -9,11 +9,11 @@
 
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { useDashboardFilters } from '@/lib/store/hooks/use-dashboard-filters'
+import { useDashboardDisplayMode } from '@/lib/store/hooks/use-dashboard-filters'
 import { useTranslations } from 'next-intl'
 
 export function ScoringModeToggle() {
-	const { scoringMode, setScoringMode } = useDashboardFilters()
+	const { scoringMode, setScoringMode } = useDashboardDisplayMode()
 	const t = useTranslations('dashboard.scoringMode')
 
 	const isNewMode = scoringMode === 'new'

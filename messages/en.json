@@ -1014,7 +1014,8 @@
 		},
 		"statuses": {
 			"processed": "Processed",
-			"unprocessed": "Unprocessed"
+			"unprocessed": "Unprocessed",
+			"reviewed": "Reviewed"
 		},
 		"classifications": {
 			"critical_error": "Critical Error",
@@ -1031,7 +1032,8 @@
 			"STYLISTIC_EDIT": "Stylistic Edit",
 			"PERFECT_MATCH": "Perfect Match",
 			"EXCL_WORKFLOW_SHIFT": "Excluded: Workflow Shift",
-			"EXCL_DATA_DISCREPANCY": "Excluded: Data Discrepancy"
+			"EXCL_DATA_DISCREPANCY": "Excluded: Data Discrepancy",
+			"HUMAN_INCOMPLETE": "Excluded: Human Incomplete"
 		},
 		"scoreGroups": {
 			"critical": "Critical",
@@ -1068,6 +1070,24 @@
 			"reviewStatus": "Review Status",
 			"approveAiAnswer": "Approve AI Answer",
 			"aiApproved": "Approved",
+			"requiresEditing": "Requires Editing Verification",
+			"aiDetermined": "AI determined",
+			"requiresEditingYes": "Yes, requires additional actions",
+			"requiresEditingNo": "No additional actions needed",
+			"requiresEditingCorrect": "AI determination is correct",
+			"actionAnalysis": {
+				"title": "Action Analysis Verification",
+				"requiresSystemAction": "Requires System Action",
+				"actionType": "Action Type",
+				"actionDetails": "Action Details",
+				"confidence": "Confidence",
+				"reasoning": "Reasoning",
+				"correct": "Correct",
+				"yes": "Yes",
+				"no": "No",
+				"comment": "Verification Comment",
+				"commentPlaceholder": "Add a comment about the action analysis accuracy..."
+			},
 			"markAsProcessed": "Mark as Processed",
 			"markAsUnprocessed": "Mark as Unprocessed",
 			"processedHint": "Clicking 'Mark as Processed' will save comment and AI approval",
@@ -1087,7 +1107,9 @@
 				"info_added": "Information Added",
 				"tone": "Tone Change",
 				"structure": "Structure Change",
-				"accuracy": "Accuracy Issue"
+				"accuracy": "Accuracy Issue",
+				"proactive_addition": "Proactive Addition",
+				"human_omission": "Human Omission"
 			}
 		}
 	},

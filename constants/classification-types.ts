@@ -321,37 +321,15 @@ export function isReviewedClassification(
 
 /**
  * Critical change classifications - real AI errors that needed fixing
- * Same as AI_ERROR_CLASSIFICATIONS but exported with different name for clarity
- * Legacy: critical_error, meaningful_improvement
- * New: CRITICAL_FACT_ERROR, MAJOR_FUNCTIONAL_OMISSION, MINOR_INFO_GAP, CONFUSING_VERBOSITY, TONAL_MISALIGNMENT
+ * Alias for AI_ERROR_CLASSIFICATIONS, exported with different name for clarity in agent stats context
  */
-export const CRITICAL_CHANGE_CLASSIFICATIONS: ClassificationType[] = [
-	// Legacy
-	'critical_error',
-	'meaningful_improvement',
-	// New
-	'CRITICAL_FACT_ERROR',
-	'MAJOR_FUNCTIONAL_OMISSION',
-	'MINOR_INFO_GAP',
-	'CONFUSING_VERBOSITY',
-	'TONAL_MISALIGNMENT',
-]
+export const CRITICAL_CHANGE_CLASSIFICATIONS = AI_ERROR_CLASSIFICATIONS
 
 /**
  * Unnecessary change classifications - AI was correct but agent changed anyway
- * Same as AI_QUALITY_CLASSIFICATIONS but exported with different name for clarity
- * Legacy: stylistic_preference, no_significant_change
- * New: STRUCTURAL_FIX, STYLISTIC_EDIT, PERFECT_MATCH
+ * Alias for AI_QUALITY_CLASSIFICATIONS, exported with different name for clarity in agent stats context
  */
-export const UNNECESSARY_CHANGE_CLASSIFICATIONS: ClassificationType[] = [
-	// Legacy
-	'stylistic_preference',
-	'no_significant_change',
-	// New
-	'STRUCTURAL_FIX',
-	'STYLISTIC_EDIT',
-	'PERFECT_MATCH',
-]
+export const UNNECESSARY_CHANGE_CLASSIFICATIONS = AI_QUALITY_CLASSIFICATIONS
 
 /**
  * Check if classification is a critical change (real AI error)

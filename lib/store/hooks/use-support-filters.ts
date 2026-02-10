@@ -1,67 +1,19 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useStore } from '../index'
 
 /**
- * Hook for managing support filters with Zustand
- *
- * Features:
- * - Global state management via Zustand
- * - localStorage persistence (via Zustand persist middleware)
- * - No URL sync - cleaner URLs
- * - Batch filter updates via applyFilters
- * - Optimized with shallow comparison to prevent unnecessary re-renders
+ * Hook for managing support filters with Zustand.
+ * Simplified: returns updateFilters directly instead of wrapping in useCallback/useMemo.
  */
 export function useSupportFilters() {
-	// Use shallow selector to prevent re-renders when other slices change
-	const storeValues = useStore(
+	return useStore(
 		useShallow(state => ({
-			supportFilters: state.supportFilters,
-			setSupportDateRange: state.setSupportDateRange,
-			setSupportStatuses: state.setSupportStatuses,
-			setSupportRequestTypes: state.setSupportRequestTypes,
-			setSupportCategories: state.setSupportCategories,
-			setSupportRequirements: state.setSupportRequirements,
-			setSupportVersions: state.setSupportVersions,
-			setSupportPendingDraftsOnly: state.setSupportPendingDraftsOnly,
-			setSupportHideRequiresEditing: state.setSupportHideRequiresEditing,
-			resetSupportFilters: state.resetSupportFilters,
-			updateSupportFilters: state.updateSupportFilters,
+			filters: state.supportFilters,
+			setDateRange: state.setSupportDateRange,
+			resetFilters: state.resetSupportFilters,
+			updateFilters: state.updateSupportFilters,
 		}))
-	)
-
-	// Apply multiple filters at once (used by SupportFilterBar with Apply button)
-	const applyFilters = useCallback(
-		(filters: {
-			statuses: string[]
-			requestTypes: string[]
-			categories: string[]
-			requirements: string[]
-			versions: string[]
-			pendingDraftsOnly: boolean
-			hideRequiresEditing: boolean
-		}) => {
-			storeValues.updateSupportFilters(filters)
-		},
-		[storeValues.updateSupportFilters]
-	)
-
-	return useMemo(
-		() => ({
-			filters: storeValues.supportFilters,
-			setDateRange: storeValues.setSupportDateRange,
-			setStatuses: storeValues.setSupportStatuses,
-			setRequestTypes: storeValues.setSupportRequestTypes,
-			setCategories: storeValues.setSupportCategories,
-			setRequirements: storeValues.setSupportRequirements,
-			setVersions: storeValues.setSupportVersions,
-			setPendingDraftsOnly: storeValues.setSupportPendingDraftsOnly,
-			setHideRequiresEditing: storeValues.setSupportHideRequiresEditing,
-			resetFilters: storeValues.resetSupportFilters,
-			applyFilters,
-		}),
-		[storeValues, applyFilters]
 	)
 }
