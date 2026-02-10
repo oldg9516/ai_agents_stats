@@ -160,9 +160,9 @@ export async function fetchTicketsByScoreGroup(
 	// Get classifications for this score group
 	const classifications = SCORE_GROUP_CLASSIFICATIONS[scoreGroup]
 
-	// Build base query
+	// Build base query (using VIEW for review fields)
 	let query = supabaseServer
-		.from('ai_human_comparison')
+		.from('ai_comparison_with_reviews')
 		.select(
 			`
 			id,
@@ -191,9 +191,12 @@ export async function fetchTicketsByScoreGroup(
 			similarity_score,
 			prompt_version,
 			change_classification,
-			review_status,
-			ai_approved,
-			reviewer_name
+			rv_review_status,
+			rv_ai_approved,
+			rv_reviewer_name,
+			rv_manual_comment,
+			rv_requires_editing_correct,
+			rv_action_analysis_verification
 		`,
 			{ count: 'exact' }
 		)
@@ -234,7 +237,7 @@ export async function fetchTicketsByScoreGroup(
 		return { data: [], total: 0 }
 	}
 
-	// Enrich with user data from support_threads_data
+	// Enrich with user data from support_threads_data (async-parallel)
 	const threadIds = tickets
 		.map((t: { thread_id?: string | null }) => t.thread_id)
 		.filter(Boolean) as string[]
@@ -243,29 +246,28 @@ export async function fetchTicketsByScoreGroup(
 	const customerRequestMap = new Map<string, string | null>()
 
 	if (threadIds.length > 0) {
-		// Fetch user data
-		const { data: threadsData, error: threadsError } = await supabaseServer
-			.from('support_threads_data')
-			.select('thread_id, user')
-			.in('thread_id', threadIds)
+		// Parallel fetch: threads + dialogs (async-parallel)
+		const [threadsResult, dialogsResult] = await Promise.all([
+			supabaseServer
+				.from('support_threads_data')
+				.select('thread_id, user')
+				.in('thread_id', threadIds),
+			supabaseServer
+				.from('support_dialogs')
+				.select('thread_id, text')
+				.in('thread_id', threadIds),
+		])
 
-		if (threadsError) {
-			console.error('Error fetching thread user data:', threadsError)
+		if (threadsResult.error) {
+			console.error('Error fetching thread user data:', threadsResult.error)
+		}
+		if (dialogsResult.error) {
+			console.error('Error fetching dialogs data:', dialogsResult.error)
 		}
 
-		// Fetch customer request text
-		const { data: dialogsData, error: dialogsError } = await supabaseServer
-			.from('support_dialogs')
-			.select('thread_id, text')
-			.in('thread_id', threadIds)
-
-		if (dialogsError) {
-			console.error('Error fetching dialogs data:', dialogsError)
-		}
-
-		// Build user map
+		// Build user map (js-index-maps)
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		threadsData?.forEach((thread: any) => {
+		threadsResult.data?.forEach((thread: any) => {
 			if (thread.thread_id && thread.user) {
 				try {
 					const userData =
@@ -281,19 +283,27 @@ export async function fetchTicketsByScoreGroup(
 			}
 		})
 
-		// Build customer request map
+		// Build customer request map (js-index-maps)
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		dialogsData?.forEach((dialog: any) => {
+		dialogsResult.data?.forEach((dialog: any) => {
 			if (dialog.thread_id && dialog.text) {
 				customerRequestMap.set(dialog.thread_id, dialog.text)
 			}
 		})
 	}
 
-	// Enrich tickets
+	// Enrich tickets: map rv_ VIEW columns to expected names + add thread data (js-combine-iterations)
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const enrichedTickets: TicketReviewRecord[] = tickets.map((ticket: any) => ({
 		...ticket,
+		// Map VIEW rv_ columns to standard names
+		review_status: ticket.rv_review_status ?? null,
+		ai_approved: ticket.rv_ai_approved ?? null,
+		reviewer_name: ticket.rv_reviewer_name ?? null,
+		manual_comment: ticket.rv_manual_comment ?? ticket.manual_comment ?? null,
+		requires_editing_correct: ticket.rv_requires_editing_correct ?? null,
+		action_analysis_verification: ticket.rv_action_analysis_verification ?? null,
+		// Thread enrichment
 		user: ticket.thread_id ? userMap.get(ticket.thread_id) ?? null : null,
 		customer_request_text: ticket.thread_id
 			? customerRequestMap.get(ticket.thread_id) ?? null

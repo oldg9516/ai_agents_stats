@@ -3,12 +3,21 @@
 /**
  * Ticket Update Actions
  *
- * Server Actions for updating ticket review status and AI approval
+ * Server Actions for updating ticket review data in ticket_reviews table
+ * Uses UPSERT (INSERT ON CONFLICT UPDATE) since ticket_reviews rows may not exist yet
  */
 
 import { revalidatePath } from 'next/cache'
 import { createAuthClient, supabaseServer } from '@/lib/supabase/server'
-import type { ActionAnalysisVerification } from '@/lib/supabase/types'
+import type { ActionAnalysisVerification, Database } from '@/lib/supabase/types'
+
+type TicketReviewInsert = Database['public']['Tables']['ticket_reviews']['Insert']
+
+// Supabase client's .from() generic doesn't resolve Insert type for manually added tables
+// (will be fixed when types are regenerated with `supabase gen types`).
+// We use `as any` on .from() but `satisfies TicketReviewInsert` on data for type safety.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ticketReviewsTable = () => supabaseServer.from('ticket_reviews') as any
 
 export interface UpdateTicketReviewResult {
 	success: boolean
@@ -34,21 +43,18 @@ export async function updateTicketReviewStatus(
 	try {
 		await requireAuth()
 
-		const { error } = await supabaseServer
-			.from('ai_human_comparison')
-			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-			// @ts-ignore - Supabase type generation issue with review_status field
-			.update({ review_status: status })
-			.eq('id', ticketId)
+		const { error } = await ticketReviewsTable()
+			.upsert(
+				{ comparison_id: ticketId, review_status: status } satisfies TicketReviewInsert,
+				{ onConflict: 'comparison_id' }
+			)
 
 		if (error) {
 			console.error('Error updating ticket review status:', error)
 			return { success: false, error: error.message }
 		}
 
-		// Revalidate the tickets review page
 		revalidatePath('/tickets-review')
-
 		return { success: true }
 	} catch (error) {
 		if (error instanceof Error && error.message === 'Unauthorized') {
@@ -72,21 +78,18 @@ export async function updateAiApproval(
 	try {
 		await requireAuth()
 
-		const { error } = await supabaseServer
-			.from('ai_human_comparison')
-			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-			// @ts-ignore - Supabase type generation issue with ai_approved field
-			.update({ ai_approved: approved })
-			.eq('id', ticketId)
+		const { error } = await ticketReviewsTable()
+			.upsert(
+				{ comparison_id: ticketId, ai_approved: approved } satisfies TicketReviewInsert,
+				{ onConflict: 'comparison_id' }
+			)
 
 		if (error) {
 			console.error('Error updating AI approval:', error)
 			return { success: false, error: error.message }
 		}
 
-		// Revalidate the tickets review page
 		revalidatePath('/tickets-review')
-
 		return { success: true }
 	} catch (error) {
 		if (error instanceof Error && error.message === 'Unauthorized') {
@@ -101,7 +104,7 @@ export async function updateAiApproval(
 }
 
 /**
- * Update both review status and AI approval in one transaction
+ * Update review data (status, AI approval, comment, reviewer, verification) in one UPSERT
  */
 export async function updateTicketReview(
 	ticketId: number,
@@ -117,49 +120,38 @@ export async function updateTicketReview(
 	try {
 		await requireAuth()
 
-		const updateData: {
-			review_status?: 'processed' | 'unprocessed'
-			ai_approved?: boolean
-			manual_comment?: string
-			reviewer_name?: string
-			requires_editing_correct?: boolean | null
-			action_analysis_verification?: ActionAnalysisVerification | null
-		} = {}
+		const upsertData: TicketReviewInsert = {
+			comparison_id: ticketId,
+		}
 
 		if (data.reviewStatus !== undefined) {
-			updateData.review_status = data.reviewStatus
+			upsertData.review_status = data.reviewStatus
 		}
 		if (data.aiApproved !== undefined) {
-			updateData.ai_approved = data.aiApproved
+			upsertData.ai_approved = data.aiApproved
 		}
 		if (data.manualComment !== undefined) {
-			updateData.manual_comment = data.manualComment
+			upsertData.manual_comment = data.manualComment
 		}
 		if (data.reviewerName !== undefined) {
-			updateData.reviewer_name = data.reviewerName
+			upsertData.reviewer_name = data.reviewerName
 		}
 		if (data.requiresEditingCorrect !== undefined) {
-			updateData.requires_editing_correct = data.requiresEditingCorrect
+			upsertData.requires_editing_correct = data.requiresEditingCorrect
 		}
 		if (data.actionAnalysisVerification !== undefined) {
-			updateData.action_analysis_verification = data.actionAnalysisVerification
+			upsertData.action_analysis_verification = data.actionAnalysisVerification
 		}
 
-		const { error } = await supabaseServer
-			.from('ai_human_comparison')
-			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-			// @ts-ignore - Supabase type generation issue with review_status and ai_approved fields
-			.update(updateData)
-			.eq('id', ticketId)
+		const { error } = await ticketReviewsTable()
+			.upsert(upsertData, { onConflict: 'comparison_id' })
 
 		if (error) {
 			console.error('Error updating ticket review:', error)
 			return { success: false, error: error.message }
 		}
 
-		// Revalidate the tickets review page
 		revalidatePath('/tickets-review')
-
 		return { success: true }
 	} catch (error) {
 		if (error instanceof Error && error.message === 'Unauthorized') {

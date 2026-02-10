@@ -23,7 +23,23 @@ export interface ActionAnalysis {
 }
 
 /**
- * Verification data for action_analysis fields (stored as JSONB on ai_human_comparison)
+ * Ticket Reviews table row (separate table for qualified agent feedback)
+ */
+export interface TicketReviewRow {
+	id: number
+	comparison_id: number
+	review_status: 'processed' | 'unprocessed'
+	ai_approved: boolean | null
+	reviewer_name: string | null
+	manual_comment: string | null
+	requires_editing_correct: boolean | null
+	action_analysis_verification: ActionAnalysisVerification | null
+	created_at: string
+	updated_at: string
+}
+
+/**
+ * Verification data for action_analysis fields (stored as JSONB on ticket_reviews)
  */
 export interface ActionAnalysisVerification {
 	requires_system_action_correct: boolean
@@ -43,9 +59,47 @@ export interface Database {
 				Update: AIHumanComparisonUpdate
 				Relationships: []
 			}
+			ticket_reviews: {
+				Row: TicketReviewRow
+				Insert: {
+					id?: number
+					comparison_id: number
+					review_status?: 'processed' | 'unprocessed'
+					ai_approved?: boolean | null
+					reviewer_name?: string | null
+					manual_comment?: string | null
+					requires_editing_correct?: boolean | null
+					action_analysis_verification?: ActionAnalysisVerification | null
+					created_at?: string
+					updated_at?: string
+				}
+				Update: {
+					id?: number
+					comparison_id?: number
+					review_status?: 'processed' | 'unprocessed'
+					ai_approved?: boolean | null
+					reviewer_name?: string | null
+					manual_comment?: string | null
+					requires_editing_correct?: boolean | null
+					action_analysis_verification?: ActionAnalysisVerification | null
+					created_at?: string
+					updated_at?: string
+				}
+				Relationships: []
+			}
 		}
 		Views: {
-			[_ in never]: never
+			ai_comparison_with_reviews: {
+				Row: AIHumanComparisonRow & {
+					rv_review_status: string | null
+					rv_ai_approved: boolean | null
+					rv_reviewer_name: string | null
+					rv_manual_comment: string | null
+					rv_requires_editing_correct: boolean | null
+					rv_action_analysis_verification: any | null
+				}
+				Relationships: []
+			}
 		}
 		Functions: {
 			get_min_created_date: {
@@ -243,11 +297,6 @@ export interface AIHumanComparisonRow {
 		| LegacyClassificationType
 		| NewClassificationType
 		| null // Classification of changes (legacy or new format)
-	review_status: 'processed' | 'unprocessed' | null // Review status for tickets review
-	ai_approved: boolean | null // Whether AI answer was approved
-	reviewer_name: string | null // Name of the reviewer who processed the ticket
-	requires_editing_correct: boolean | null // Whether agent confirmed AI's requires_editing determination
-	action_analysis_verification: ActionAnalysisVerification | null // Verification of action_analysis fields (jsonb)
 }
 
 /**
@@ -274,10 +323,6 @@ export interface AIHumanComparisonUpdate {
 	email?: string
 	changed?: boolean
 	human_reply?: string
-	review_status?: 'processed' | 'unprocessed'
-	ai_approved?: boolean
-	requires_editing_correct?: boolean
-	action_analysis_verification?: ActionAnalysisVerification | null
 }
 
 /**
@@ -710,6 +755,13 @@ export interface CategoryDetailData {
  * Tickets Review Record (combined from ai_human_comparison + support_threads_data + support_dialogs)
  */
 export interface TicketReviewRecord extends AIHumanComparisonRow {
+	// Review fields (from ticket_reviews table)
+	review_status: 'processed' | 'unprocessed' | null
+	ai_approved: boolean | null
+	reviewer_name: string | null
+	manual_comment: string | null
+	requires_editing_correct: boolean | null
+	action_analysis_verification: ActionAnalysisVerification | null
 	// Fields from support_threads_data (via JOIN on thread_id)
 	user: string | null // Customer email from support_threads_data.user JSON
 	request_sub_subtype: string | null // Sub-subcategory from support_threads_data
