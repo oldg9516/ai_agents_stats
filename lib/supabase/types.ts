@@ -254,6 +254,28 @@ export interface Database {
 					previous_agent_response_count: number
 				}>
 			}
+			get_subcategories_stats: {
+				Args: {
+					p_date_from: string
+					p_date_to: string
+					p_qualified_agents: string[]
+					p_versions?: string[] | null
+					p_agents?: string[] | null
+				}
+				Returns: Array<{
+					category: string
+					subcategory: string
+					total: number
+					changed: number
+					unchanged: number
+					quality_percentage: number
+					critical_error: number
+					meaningful_improvement: number
+					stylistic_preference: number
+					no_significant_change: number
+					context_shift: number
+				}>
+			}
 		}
 		Enums: {
 			[_ in never]: never

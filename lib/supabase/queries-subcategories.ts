@@ -3,6 +3,7 @@
  *
  * Fetches statistics grouped by category (request_subtype) and subcategory (request_sub_subtype)
  * Shows AI quality performance per subcategory
+ * Uses SQL RPC function for server-side aggregation (single query)
  * Excludes categories with commas in the name (merged categories)
  */
 
@@ -33,7 +34,7 @@ export interface CategoryGroup {
 
 /**
  * Fetch subcategories statistics grouped by category
- * Uses batched requests to avoid headers overflow
+ * Uses SQL RPC function for server-side aggregation (single query)
  * Only includes records from qualified agents
  * Excludes categories with commas in the name
  */
@@ -47,143 +48,59 @@ export async function fetchSubcategoriesStats(
 ): Promise<CategoryGroup[]> {
 	const { dateRange, versions, agents } = filters
 
-	// Fetch unique categories and subcategories first
-	const { data: categoriesData, error: categoriesError } = await supabase
-		.from('support_threads_data')
-		.select('request_subtype, request_sub_subtype')
-		.gte('thread_date', dateRange.from.toISOString())
-		.lt('thread_date', dateRange.to.toISOString())
-		.not('request_subtype', 'is', null)
-		.not('request_sub_subtype', 'is', null)
-		.not('request_subtype', 'like', '%,%') // Exclude categories with commas
-
-	if (categoriesError) throw categoriesError
-	if (!categoriesData || categoriesData.length === 0) return []
-
-	// Group unique category/subcategory pairs
-	const categoryPairs = new Map<string, Set<string>>()
-	categoriesData.forEach(item => {
-		if (!item.request_subtype || !item.request_sub_subtype) return
-		if (!categoryPairs.has(item.request_subtype)) {
-			categoryPairs.set(item.request_subtype, new Set())
+	const { data, error } = await (supabase as any).rpc(
+		'get_subcategories_stats',
+		{
+			p_date_from: dateRange.from.toISOString(),
+			p_date_to: dateRange.to.toISOString(),
+			p_qualified_agents: [...QUALIFIED_AGENTS],
+			p_versions: versions?.length ? versions : null,
+			p_agents: agents?.length ? agents : null,
 		}
-		categoryPairs.get(item.request_subtype)!.add(item.request_sub_subtype)
-	})
+	)
 
-	// Now fetch data for each category/subcategory pair
-	const statsMap = new Map<string, Map<string, SubcategoryStats>>()
+	if (error) throw error
+	if (!data || data.length === 0) return []
 
-	for (const [category, subcategories] of categoryPairs.entries()) {
-		for (const subcategory of subcategories) {
-			// Get thread IDs for this specific category/subcategory
-			const { data: threads } = await supabase
-				.from('support_threads_data')
-				.select('thread_id')
-				.gte('thread_date', dateRange.from.toISOString())
-				.lt('thread_date', dateRange.to.toISOString())
-				.eq('request_subtype', category)
-				.eq('request_sub_subtype', subcategory)
-				.limit(500)
+	// Group subcategory rows into CategoryGroup structure
+	const categoryMap = new Map<string, SubcategoryStats[]>()
 
-			if (!threads || threads.length === 0) continue
-
-			const threadIds = threads.map(t => t.thread_id).filter(Boolean) as string[]
-
-			// Fetch comparisons for these threads
-			let comparisonQuery = supabase
-				.from('ai_human_comparison')
-				.select('changed, change_classification')
-				.in('thread_id', threadIds)
-				.in('email', QUALIFIED_AGENTS)
-				.neq('email', 'api@levhaolam.com')
-				.not('change_classification', 'is', null)
-
-			// Apply filters
-			if (versions && versions.length > 0) {
-				comparisonQuery = comparisonQuery.in('prompt_version', versions)
-			}
-			if (agents && agents.length > 0) {
-				comparisonQuery = comparisonQuery.in('email', agents)
-			}
-
-			const { data: comparisons } = await comparisonQuery
-
-			if (!comparisons || comparisons.length === 0) continue
-
-			// Initialize stats for this subcategory
-			if (!statsMap.has(category)) {
-				statsMap.set(category, new Map())
-			}
-			const categoryMap = statsMap.get(category)!
-			if (!categoryMap.has(subcategory)) {
-				categoryMap.set(subcategory, {
-					category,
-					subcategory,
-					total: 0,
-					changed: 0,
-					unchanged: 0,
-					quality_percentage: 0,
-					critical_error: 0,
-					meaningful_improvement: 0,
-					stylistic_preference: 0,
-					no_significant_change: 0,
-					context_shift: 0,
-				})
-			}
-
-			const stats = categoryMap.get(subcategory)!
-
-			// Aggregate statistics
-			comparisons.forEach(comparison => {
-				stats.total++
-
-				// Count changed/unchanged (excluding context_shift)
-				if (comparison.change_classification !== 'context_shift') {
-					if (comparison.changed) {
-						stats.changed++
-					} else {
-						stats.unchanged++
-					}
-				}
-
-				// Count by classification
-				const classification = comparison.change_classification
-				if (classification === 'critical_error') stats.critical_error++
-				else if (classification === 'meaningful_improvement')
-					stats.meaningful_improvement++
-				else if (classification === 'stylistic_preference')
-					stats.stylistic_preference++
-				else if (classification === 'no_significant_change')
-					stats.no_significant_change++
-				else if (classification === 'context_shift') stats.context_shift++
-			})
+	for (const row of data as any[]) {
+		const stats: SubcategoryStats = {
+			category: row.category,
+			subcategory: row.subcategory,
+			total: Number(row.total),
+			changed: Number(row.changed),
+			unchanged: Number(row.unchanged),
+			quality_percentage: Number(row.quality_percentage),
+			critical_error: Number(row.critical_error),
+			meaningful_improvement: Number(row.meaningful_improvement),
+			stylistic_preference: Number(row.stylistic_preference),
+			no_significant_change: Number(row.no_significant_change),
+			context_shift: Number(row.context_shift),
 		}
+
+		if (!categoryMap.has(row.category)) {
+			categoryMap.set(row.category, [])
+		}
+		categoryMap.get(row.category)!.push(stats)
 	}
 
-	// Calculate quality percentages and build result
+	// Build CategoryGroup array with category-level aggregates
 	const result: CategoryGroup[] = []
 
-	statsMap.forEach((subcategoriesMap, category) => {
-		const subcategories: SubcategoryStats[] = []
-		let categoryTotal = 0
-		let categoryUnchanged = 0
-
-		subcategoriesMap.forEach(stats => {
-			// Calculate quality percentage (excluding context_shift)
-			const totalNonContext = stats.changed + stats.unchanged
-			stats.quality_percentage =
-				totalNonContext > 0
-					? Math.round((stats.unchanged / totalNonContext) * 100)
-					: 0
-
-			subcategories.push(stats)
-			categoryTotal += totalNonContext
-			categoryUnchanged += stats.unchanged
-		})
-
-		// Sort subcategories by total count descending
+	for (const [category, subcategories] of categoryMap.entries()) {
+		// Sort subcategories by total descending
 		subcategories.sort((a, b) => b.total - a.total)
 
+		let categoryChanged = 0
+		let categoryUnchanged = 0
+		for (const sub of subcategories) {
+			categoryChanged += sub.changed
+			categoryUnchanged += sub.unchanged
+		}
+
+		const categoryTotal = categoryChanged + categoryUnchanged
 		const categoryQuality =
 			categoryTotal > 0
 				? Math.round((categoryUnchanged / categoryTotal) * 100)
@@ -195,9 +112,9 @@ export async function fetchSubcategoriesStats(
 			quality_percentage: categoryQuality,
 			subcategories,
 		})
-	})
+	}
 
-	// Sort categories by total count descending
+	// Sort categories by total descending
 	result.sort((a, b) => b.total - a.total)
 
 	return result
