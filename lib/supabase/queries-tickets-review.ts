@@ -23,6 +23,7 @@ export async function fetchTicketsReview(
 ): Promise<TicketReviewRecord[]> {
 	const {
 		dateRange,
+		ticketId,
 		categories,
 		versions,
 		classifications,
@@ -88,6 +89,11 @@ export async function fetchTicketsReview(
 	}
 	if (agents.length > 0) {
 		query = query.in('email', agents)
+	}
+
+	// ID filter — exact match
+	if (ticketId != null) {
+		query = query.eq('id', ticketId)
 	}
 
 	// Review filters — direct on VIEW columns

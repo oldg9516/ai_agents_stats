@@ -15,7 +15,9 @@ export function getActiveFilterCount(
 	for (const [key, value] of Object.entries(filters as Record<string, unknown>)) {
 		if (key === 'dateRange') continue
 
-		if (typeof value === 'boolean' && value) {
+		if (typeof value === 'number') {
+			count++
+		} else if (typeof value === 'boolean' && value) {
 			count++
 		} else if (Array.isArray(value) && value.length > 0) {
 			// If we know total options, only count if fewer than all are selected

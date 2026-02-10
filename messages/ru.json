@@ -1010,7 +1010,9 @@
 			"searchAgents": "Поиск агентов...",
 			"searchStatuses": "Поиск статусов...",
 			"reviewer": "Проверяющий",
-			"searchReviewers": "Поиск проверяющих..."
+			"searchReviewers": "Поиск проверяющих...",
+			"ticketId": "ID записи",
+			"ticketIdPlaceholder": "Введите ID записи..."
 		},
 		"statuses": {
 			"processed": "Обработано",
@@ -1079,6 +1081,9 @@
 				"title": "Проверка анализа действий",
 				"requiresSystemAction": "Требуется системное действие",
 				"actionType": "Тип действия",
+				"correctedActionTypes": "Исправленные типы действий",
+				"resetCorrection": "Сбросить",
+				"noCorrection": "Без исправлений (ИИ верен)",
 				"actionDetails": "Детали действия",
 				"confidence": "Уверенность",
 				"reasoning": "Обоснование",
@@ -1337,5 +1342,16 @@
 			"unnecessaryChanges": "Агент изменил, но AI был прав",
 			"aiEfficiency": "Насколько эффективно агент использует AI драфты"
 		}
+	},
+	"actionTypes": {
+		"none": "Системное действие не требуется",
+		"update_subscription_preference": "Обновить предпочтения подписки",
+		"update_shipping_address": "Обновить адрес доставки",
+		"update_payment_method": "Обновить способ оплаты",
+		"skip_or_pause_subscription": "Пропустить или приостановить подписку",
+		"change_frequency": "Изменить частоту подписки",
+		"process_refund": "Оформить возврат",
+		"update_recipient": "Обновить получателя",
+		"other_system_action": "Другое системное действие"
 	}
 }

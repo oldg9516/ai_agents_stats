@@ -16,7 +16,7 @@ import type {
  */
 export interface ActionAnalysis {
 	requires_system_action: boolean | null
-	action_type: string
+	action_type: string[]
 	action_details: string
 	confidence: string // "high" | "medium" | "low"
 	reasoning: string
@@ -43,10 +43,8 @@ export interface TicketReviewRow {
  */
 export interface ActionAnalysisVerification {
 	requires_system_action_correct: boolean
-	action_type_correct: boolean
+	corrected_action_types: string[] | null
 	action_details_correct: boolean
-	confidence_correct: boolean
-	reasoning_correct: boolean
 	comment: string
 }
 
@@ -801,6 +799,7 @@ export interface TicketsReviewFilters {
 		from: Date
 		to: Date
 	}
+	ticketId: number | null // ai_human_comparison.id - null = no filter
 	categories: string[] // request_subtype - [] = all
 	versions: string[] // prompt_version - [] = all
 	classifications: string[] // change_classification - [] = all

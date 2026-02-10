@@ -1010,7 +1010,9 @@
 			"searchAgents": "Search agents...",
 			"searchStatuses": "Search statuses...",
 			"reviewer": "Reviewer",
-			"searchReviewers": "Search reviewers..."
+			"searchReviewers": "Search reviewers...",
+			"ticketId": "Ticket ID",
+			"ticketIdPlaceholder": "Enter record ID..."
 		},
 		"statuses": {
 			"processed": "Processed",
@@ -1079,6 +1081,9 @@
 				"title": "Action Analysis Verification",
 				"requiresSystemAction": "Requires System Action",
 				"actionType": "Action Type",
+				"correctedActionTypes": "Corrected Action Types",
+				"resetCorrection": "Reset",
+				"noCorrection": "No correction (AI is correct)",
 				"actionDetails": "Action Details",
 				"confidence": "Confidence",
 				"reasoning": "Reasoning",
@@ -1337,5 +1342,16 @@
 			"unnecessaryChanges": "Agent changed but AI was correct",
 			"aiEfficiency": "How efficiently agent uses AI drafts"
 		}
+	},
+	"actionTypes": {
+		"none": "No system action needed",
+		"update_subscription_preference": "Update subscription preference",
+		"update_shipping_address": "Update shipping address",
+		"update_payment_method": "Update payment method",
+		"skip_or_pause_subscription": "Skip or pause subscription",
+		"change_frequency": "Change frequency",
+		"process_refund": "Process refund",
+		"update_recipient": "Update recipient",
+		"other_system_action": "Other system action"
 	}
 }

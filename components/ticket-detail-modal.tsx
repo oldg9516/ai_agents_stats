@@ -82,10 +82,8 @@ export function TicketDetailModal({
 	const [actionAnalysisVerification, setActionAnalysisVerification] =
 		useState<ActionAnalysisVerification>(() => ({
 			requires_system_action_correct: false,
-			action_type_correct: false,
+			corrected_action_types: null,
 			action_details_correct: false,
-			confidence_correct: false,
-			reasoning_correct: false,
 			comment: '',
 			...(ticket.action_analysis_verification ?? {}),
 		}))
@@ -599,7 +597,7 @@ export function TicketDetailModal({
 									</>
 								) : null}
 
-								<Separator />
+									<Separator />
 
 								{/* Status Buttons */}
 								<div className='space-y-2'>

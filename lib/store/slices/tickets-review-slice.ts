@@ -5,6 +5,7 @@ import { filterSliceActions, getDefaultDateRange } from '../create-filter-slice'
 function getDefaultTicketsReviewFilters(): TicketsReviewFilters {
 	return {
 		dateRange: getDefaultDateRange(30),
+		ticketId: null,
 		categories: [],
 		versions: [],
 		classifications: [],

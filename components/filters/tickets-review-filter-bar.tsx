@@ -7,12 +7,15 @@ import { fetchTicketsReviewFilterOptionsAction } from '@/lib/actions/tickets-rev
 import { useLocalFilterState } from '@/lib/hooks/use-local-filter-state'
 import { CLASSIFICATION_TYPES } from '@/constants/classification-types'
 import { REVIEWER_AGENTS } from '@/constants/qualified-agents'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { FilterBarLayout } from './filter-bar-layout'
 import { MultiSelectFilter } from './multi-select-filter'
 
 interface TicketsReviewFilterBarProps {
 	filters: TicketsReviewFilters
 	onApplyFilters: (filters: {
+		ticketId: number | null
 		categories: string[]
 		versions: string[]
 		classifications: string[]
@@ -40,6 +43,7 @@ export function TicketsReviewFilterBar({
 
 	const { values, setValue, handleApply, handleReset } = useLocalFilterState(
 		{
+			ticketId: filters.ticketId ?? null as number | null,
 			categories: filters.categories ?? [],
 			versions: filters.versions ?? [],
 			classifications: filters.classifications ?? [],
@@ -67,6 +71,18 @@ export function TicketsReviewFilterBar({
 	return (
 		<FilterBarLayout.Root>
 			<FilterBarLayout.Fields>
+				<div className='space-y-2'>
+					<Label className='text-sm font-medium'>{t('ticketsReview.filters.ticketId')}</Label>
+					<Input
+						type='number'
+						placeholder={t('ticketsReview.filters.ticketIdPlaceholder')}
+						value={values.ticketId ?? ''}
+						onChange={e => {
+							const val = e.target.value.trim()
+							setValue('ticketId', val ? parseInt(val, 10) : null)
+						}}
+					/>
+				</div>
 				<MultiSelectFilter
 					label={t('ticketsReview.filters.category')}
 					options={availableCategories}
