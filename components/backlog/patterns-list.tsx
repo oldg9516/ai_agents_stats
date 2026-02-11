@@ -54,7 +54,7 @@ export function PatternsList({ patterns }: PatternsListProps) {
 						<Accordion type='single' collapsible className='w-full'>
 							{/* Examples */}
 							{pattern.examples && pattern.examples.length > 0 && (
-								<AccordionItem value='examples'>
+								<AccordionItem value='examples' className='last:border-b-0'>
 									<AccordionTrigger className='text-sm'>
 										{t('backlogReports.detail.examples')} ({pattern.examples.length})
 									</AccordionTrigger>
@@ -70,7 +70,7 @@ export function PatternsList({ patterns }: PatternsListProps) {
 
 							{/* Business Insight */}
 							{pattern.business_insight && (
-								<AccordionItem value='insight'>
+								<AccordionItem value='insight' className='last:border-b-0'>
 									<AccordionTrigger className='text-sm'>
 										{t('backlogReports.detail.businessInsight')}
 									</AccordionTrigger>

@@ -317,6 +317,7 @@ export default async function TicketDetailPage({
 				initialAiApproved={ticket.ai_approved}
 				initialComment={ticket.manual_comment}
 				initialReviewerName={ticket.reviewer_name}
+				initialClassification={ticket.change_classification}
 				initialActionAnalysis={ticket.action_analysis}
 				initialActionAnalysisVerification={ticket.action_analysis_verification}
 			/>

@@ -115,6 +115,7 @@ export async function updateTicketReview(
 		reviewerName?: string
 		requiresEditingCorrect?: boolean | null
 		actionAnalysisVerification?: ActionAnalysisVerification | null
+		changeClassification?: string
 	}
 ): Promise<UpdateTicketReviewResult> {
 	try {
@@ -149,6 +150,19 @@ export async function updateTicketReview(
 		if (error) {
 			console.error('Error updating ticket review:', error)
 			return { success: false, error: error.message }
+		}
+
+		// Update change_classification in ai_human_comparison if provided
+		if (data.changeClassification !== undefined) {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const { error: classError } = await (supabaseServer.from('ai_human_comparison') as any)
+				.update({ change_classification: data.changeClassification })
+				.eq('id', ticketId)
+
+			if (classError) {
+				console.error('Error updating classification:', classError)
+				return { success: false, error: classError.message }
+			}
 		}
 
 		revalidatePath('/tickets-review')

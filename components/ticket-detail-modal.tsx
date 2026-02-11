@@ -45,6 +45,7 @@ import { updateTicketReview } from '@/lib/actions/ticket-update-actions'
 import { triggerTicketsRefresh } from '@/lib/hooks/use-paginated-tickets'
 import type { ActionAnalysisVerification, TicketReviewRecord } from '@/lib/supabase/types'
 import { ActionAnalysisVerificationSection } from '@/components/shared/action-analysis-verification-section'
+import { ClassificationSelector } from '@/components/shared/classification-selector'
 import { isTicketReviewed } from '@/lib/utils/filter-utils'
 import { IconCheck, IconExternalLink, IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
 import { format } from 'date-fns'
@@ -78,6 +79,9 @@ export function TicketDetailModal({
 	)
 	const [selectedReviewer, setSelectedReviewer] = useState<string | null>(
 		ticket.reviewer_name || null
+	)
+	const [classification, setClassification] = useState<string | null>(
+		ticket.change_classification ?? null
 	)
 	const [actionAnalysisVerification, setActionAnalysisVerification] =
 		useState<ActionAnalysisVerification>(() => ({
@@ -124,6 +128,7 @@ export function TicketDetailModal({
 			manualComment: manualComment,
 			reviewerName: selectedReviewer || undefined,
 			actionAnalysisVerification: ticket.action_analysis != null ? actionAnalysisVerification : undefined,
+			changeClassification: classification !== ticket.change_classification ? (classification ?? undefined) : undefined,
 		})
 
 		if (result.success) {
@@ -546,21 +551,12 @@ export function TicketDetailModal({
 
 								<Separator />
 
-								{/* Manual Comment */}
-								<div className='space-y-2'>
-									<Label className='text-sm font-medium'>
-										{t('modal.comment')}
-									</Label>
-									<Textarea
-										placeholder={t('modal.commentPlaceholder')}
-										value={manualComment}
-										onChange={e => setManualComment(e.target.value)}
-										className='min-h-[100px] resize-none'
-										disabled={isSaving}
-									/>
-								</div>
-
-								<Separator />
+								{/* Classification Selector (accordion) */}
+								<ClassificationSelector
+									value={classification}
+									onChange={setClassification}
+									disabled={isSaving}
+								/>
 
 								{/* AI Approval Checkbox */}
 								<div className='flex items-center space-x-3 p-3 rounded-lg border bg-muted/30'>
@@ -584,6 +580,20 @@ export function TicketDetailModal({
 									</Label>
 								</div>
 
+								{/* Manual Comment */}
+								<div className='space-y-2'>
+									<Label className='text-sm font-medium'>
+										{t('modal.comment')}
+									</Label>
+									<Textarea
+										placeholder={t('modal.commentPlaceholder')}
+										value={manualComment}
+										onChange={e => setManualComment(e.target.value)}
+										className='min-h-[100px] resize-none'
+										disabled={isSaving}
+									/>
+								</div>
+
 								{/* Action Analysis Verification */}
 								{ticket.action_analysis != null ? (
 									<>
@@ -597,7 +607,7 @@ export function TicketDetailModal({
 									</>
 								) : null}
 
-									<Separator />
+								<Separator />
 
 								{/* Status Buttons */}
 								<div className='space-y-2'>

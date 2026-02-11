@@ -1044,6 +1044,19 @@
 			"excluded": "Excluded",
 			"ai_approved": "AI Approved"
 		},
+		"classificationDescriptions": {
+			"PERFECT_MATCH": "Texts are identical",
+			"STYLISTIC_EDIT": "AI answered correctly, stylistic edits only",
+			"STRUCTURAL_FIX": "Fixed formatting or links",
+			"TONAL_MISALIGNMENT": "Fixed tone",
+			"CONFUSING_VERBOSITY": "Removed misleading info",
+			"MINOR_INFO_GAP": "Missing a necessary detail",
+			"MAJOR_FUNCTIONAL_OMISSION": "Missed a required action",
+			"CRITICAL_FACT_ERROR": "Wrong facts stated",
+			"EXCL_WORKFLOW_SHIFT": "Human answered a different question",
+			"EXCL_DATA_DISCREPANCY": "Data changed after AI response",
+			"HUMAN_INCOMPLETE": "Human response was incomplete, AI was correct"
+		},
 		"modal": {
 			"title": "Ticket Details",
 			"ticketInformation": "Ticket Information",
@@ -1093,6 +1106,8 @@
 				"comment": "Verification Comment",
 				"commentPlaceholder": "Add a comment about the action analysis accuracy..."
 			},
+			"classificationSelector": "Classification",
+			"classificationHint": "Change if AI classification is incorrect",
 			"markAsProcessed": "Mark as Processed",
 			"markAsUnprocessed": "Mark as Unprocessed",
 			"processedHint": "Clicking 'Mark as Processed' will save comment and AI approval",

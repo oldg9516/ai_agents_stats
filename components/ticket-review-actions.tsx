@@ -25,6 +25,7 @@ import { REVIEWER_AGENTS } from '@/constants/qualified-agents'
 import { updateTicketReview } from '@/lib/actions/ticket-update-actions'
 import { triggerTicketsRefresh } from '@/lib/hooks/use-paginated-tickets'
 import { ActionAnalysisVerificationSection } from '@/components/shared/action-analysis-verification-section'
+import { ClassificationSelector } from '@/components/shared/classification-selector'
 import type { ActionAnalysis, ActionAnalysisVerification } from '@/lib/supabase/types'
 import { IconCheck } from '@tabler/icons-react'
 import { useRouter } from 'next/navigation'
@@ -38,6 +39,7 @@ interface TicketReviewActionsProps {
 	initialAiApproved: boolean | null
 	initialComment: string | null
 	initialReviewerName?: string | null
+	initialClassification?: string | null
 	initialActionAnalysis?: ActionAnalysis | null
 	initialActionAnalysisVerification?: ActionAnalysisVerification | null
 }
@@ -48,6 +50,7 @@ export function TicketReviewActions({
 	initialAiApproved,
 	initialComment,
 	initialReviewerName,
+	initialClassification,
 	initialActionAnalysis,
 	initialActionAnalysisVerification,
 }: TicketReviewActionsProps) {
@@ -58,6 +61,9 @@ export function TicketReviewActions({
 	)
 	const [aiApproved, setAiApproved] = useState(initialAiApproved || false)
 	const [manualComment, setManualComment] = useState(initialComment || '')
+	const [classification, setClassification] = useState<string | null>(
+		initialClassification ?? null
+	)
 	const [selectedReviewer, setSelectedReviewer] = useState<string | null>(
 		initialReviewerName || null
 	)
@@ -87,6 +93,7 @@ export function TicketReviewActions({
 			manualComment: manualComment,
 			reviewerName: selectedReviewer || undefined,
 			actionAnalysisVerification: initialActionAnalysis != null ? actionAnalysisVerification : undefined,
+			changeClassification: classification !== initialClassification ? (classification ?? undefined) : undefined,
 		})
 
 		if (result.success) {
@@ -160,19 +167,12 @@ export function TicketReviewActions({
 
 				<Separator />
 
-				{/* Manual Comment */}
-				<div className='space-y-2'>
-					<Label className='text-sm font-medium'>{t('comment')}</Label>
-					<Textarea
-						placeholder={t('commentPlaceholder')}
-						value={manualComment}
-						onChange={e => setManualComment(e.target.value)}
-						className='min-h-[100px] resize-none'
-						disabled={isSaving}
-					/>
-				</div>
-
-				<Separator />
+				{/* Classification Selector (accordion) */}
+				<ClassificationSelector
+					value={classification}
+					onChange={setClassification}
+					disabled={isSaving}
+				/>
 
 				{/* AI Approval Checkbox */}
 				<div className='flex items-center space-x-3 p-3 rounded-lg border bg-muted/30'>
@@ -194,6 +194,18 @@ export function TicketReviewActions({
 							</span>
 						)}
 					</Label>
+				</div>
+
+				{/* Manual Comment */}
+				<div className='space-y-2'>
+					<Label className='text-sm font-medium'>{t('comment')}</Label>
+					<Textarea
+						placeholder={t('commentPlaceholder')}
+						value={manualComment}
+						onChange={e => setManualComment(e.target.value)}
+						className='min-h-[100px] resize-none'
+						disabled={isSaving}
+					/>
 				</div>
 
 				{/* Action Analysis Verification */}

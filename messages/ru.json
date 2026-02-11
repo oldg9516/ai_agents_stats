@@ -1044,6 +1044,19 @@
 			"excluded": "Исключено",
 			"ai_approved": "AI Одобрено"
 		},
+		"classificationDescriptions": {
+			"PERFECT_MATCH": "Тексты идентичны",
+			"STYLISTIC_EDIT": "AI ответил верно, стилистические правки",
+			"STRUCTURAL_FIX": "Исправлено форматирование или ссылки",
+			"TONAL_MISALIGNMENT": "Исправлен тон",
+			"CONFUSING_VERBOSITY": "Убрана вводящая в заблуждение информация",
+			"MINOR_INFO_GAP": "Пропущена необходимая деталь",
+			"MAJOR_FUNCTIONAL_OMISSION": "Пропущено обязательное действие",
+			"CRITICAL_FACT_ERROR": "Ошибка в фактах",
+			"EXCL_WORKFLOW_SHIFT": "Human ответил на другой вопрос",
+			"EXCL_DATA_DISCREPANCY": "Данные изменились после ответа AI",
+			"HUMAN_INCOMPLETE": "Human ответ неполный, AI был прав"
+		},
 		"modal": {
 			"title": "Детали тикета",
 			"ticketInformation": "Информация о тикете",
@@ -1093,6 +1106,8 @@
 				"comment": "Комментарий проверки",
 				"commentPlaceholder": "Добавьте комментарий о точности анализа действий..."
 			},
+			"classificationSelector": "Классификация",
+			"classificationHint": "Измените, если классификация AI неверна",
 			"markAsProcessed": "Отметить как обработано",
 			"markAsUnprocessed": "Отметить как не обработано",
 			"processedHint": "Нажатие 'Отметить как обработано' сохранит комментарий и одобрение AI",
