@@ -6,6 +6,7 @@ function getDefaultTicketsReviewFilters(): TicketsReviewFilters {
 	return {
 		dateRange: getDefaultDateRange(30),
 		ticketId: null,
+		searchQuery: '',
 		categories: [],
 		versions: [],
 		classifications: [],

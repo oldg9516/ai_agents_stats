@@ -64,6 +64,8 @@ export function TicketsReviewContent() {
 				hasMore={hasMore}
 				isFetchingMore={isFetchingMore}
 				onLoadMore={loadNextBatch}
+				searchQuery={filters.searchQuery}
+				onSearchChange={(query) => updateFilters({ searchQuery: query })}
 			/>
 		</AnalyticsPageLayout>
 	)

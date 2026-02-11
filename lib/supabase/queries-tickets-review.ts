@@ -24,6 +24,7 @@ export async function fetchTicketsReview(
 	const {
 		dateRange,
 		ticketId,
+		searchQuery,
 		categories,
 		versions,
 		classifications,
@@ -94,6 +95,19 @@ export async function fetchTicketsReview(
 	// ID filter — exact match
 	if (ticketId != null) {
 		query = query.eq('id', ticketId)
+	}
+
+	// Text search — server-side across multiple fields
+	if (searchQuery && searchQuery.trim()) {
+		const q = searchQuery.trim()
+		// PostgREST or() filter: ilike for partial text match on text columns
+		let orFilter = `thread_id.ilike.%${q}%,ticket_id.ilike.%${q}%,email.ilike.%${q}%,request_subtype.ilike.%${q}%,change_classification.ilike.%${q}%,reviewer_name.ilike.%${q}%`
+		// If query is a valid integer, also match by numeric id
+		const numId = parseInt(q, 10)
+		if (!isNaN(numId) && String(numId) === q) {
+			orFilter += `,id.eq.${numId}`
+		}
+		query = query.or(orFilter)
 	}
 
 	// Review filters — direct on VIEW columns

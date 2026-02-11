@@ -800,6 +800,7 @@ export interface TicketsReviewFilters {
 		to: Date
 	}
 	ticketId: number | null // ai_human_comparison.id - null = no filter
+	searchQuery: string // server-side text search across multiple fields
 	categories: string[] // request_subtype - [] = all
 	versions: string[] // prompt_version - [] = all
 	classifications: string[] // change_classification - [] = all

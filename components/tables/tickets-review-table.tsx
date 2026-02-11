@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import {
@@ -57,7 +57,11 @@ interface TicketsReviewTableProps {
 	hasMore?: boolean // Whether there are more records on server
 	isFetchingMore?: boolean // Loading more records
 	onLoadMore?: () => void // Callback to load next batch
+	searchQuery?: string // Server-side search query (from Zustand)
+	onSearchChange?: (query: string) => void // Update server-side search (Zustand)
 }
+
+const SEARCH_DEBOUNCE_MS = 400
 
 /**
  * Tickets Review Table - Displays tickets changed by agents
@@ -77,14 +81,40 @@ export function TicketsReviewTable({
 	hasMore = false,
 	isFetchingMore = false,
 	onLoadMore,
+	searchQuery = '',
+	onSearchChange,
 }: TicketsReviewTableProps) {
 	const t = useTranslations()
 	const router = useRouter()
 	const [sorting, setSorting] = useState<SortingState>([
 		{ id: 'created_at', desc: true },
 	])
+	// Local input value for responsive UI; synced with server-side searchQuery
+	const [localSearch, setLocalSearch] = useState(searchQuery)
 	const [globalFilter, setGlobalFilter] = useState('')
 	const [pageSize, setPageSize] = useState<PageSize>(20)
+
+	// Debounced server-side search
+	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const handleSearchInput = useCallback(
+		(value: string) => {
+			setLocalSearch(value)
+			// Client-side filter for instant feedback on loaded data
+			setGlobalFilter(value)
+			// Debounce server-side search
+			if (debounceRef.current) clearTimeout(debounceRef.current)
+			debounceRef.current = setTimeout(() => {
+				onSearchChange?.(value)
+			}, SEARCH_DEBOUNCE_MS)
+		},
+		[onSearchChange]
+	)
+
+	// Sync local search when external searchQuery changes (e.g. filters reset)
+	useEffect(() => {
+		setLocalSearch(searchQuery)
+		setGlobalFilter(searchQuery)
+	}, [searchQuery])
 	const [pagination, setPagination] = useState({
 		pageIndex: 0,
 		pageSize: 20,
@@ -247,14 +277,17 @@ export function TicketsReviewTable({
 		getFilteredRowModel: getFilteredRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
 		globalFilterFn: (row, columnId, filterValue) => {
-			const ticketId = String(row.original.ticket_id || '').toLowerCase()
-			const email = String(row.original.email || '').toLowerCase()
-			const user = String(row.original.user || '').toLowerCase()
 			const filter = String(filterValue).toLowerCase()
+			const r = row.original
 			return (
-				ticketId.includes(filter) ||
-				email.includes(filter) ||
-				user.includes(filter)
+				String(r.id || '').includes(filter) ||
+				String(r.ticket_id || '').toLowerCase().includes(filter) ||
+				String(r.thread_id || '').toLowerCase().includes(filter) ||
+				String(r.email || '').toLowerCase().includes(filter) ||
+				String(r.user || '').toLowerCase().includes(filter) ||
+				String(r.request_subtype || '').toLowerCase().includes(filter) ||
+				String(r.change_classification || '').toLowerCase().includes(filter) ||
+				String(r.reviewer_name || '').toLowerCase().includes(filter)
 			)
 		},
 	})
@@ -295,8 +328,8 @@ export function TicketsReviewTable({
 						<IconSearch className='absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
 						<Input
 							placeholder={t('ticketsReview.table.search')}
-							value={globalFilter}
-							onChange={e => setGlobalFilter(e.target.value)}
+							value={localSearch}
+							onChange={e => handleSearchInput(e.target.value)}
 							className='pl-8'
 						/>
 					</div>

@@ -43,7 +43,7 @@ pnpm lint         # Run ESLint
 ```
 app/[locale]/(root)/        # Public pages (landing, docs, login, unauthorized)
 app/[locale]/(analytics)/   # Protected pages (dashboard, support-overview, etc.)
-components/                 # UI (ui/, filters/, kpi/, charts/, tables/, layouts/)
+components/                 # UI (ui/, filters/, kpi/, charts/, tables/, layouts/, shared/)
 lib/
   supabase/                 # DB clients + query functions
     queries/                # Dashboard queries (kpi.ts, charts.ts, filters.ts, utils.ts)
@@ -54,7 +54,7 @@ lib/
   auth/                     # Auth provider + utilities
   hooks/                    # Custom hooks (use-dashboard-data, use-support-data, etc.)
   utils/                    # Helpers (export, quality-colors, validate-date-range, etc.)
-constants/                  # qualified-agents, classification-types, support-statuses, etc.
+constants/                  # qualified-agents, classification-types, action-types, support-statuses, etc.
 messages/                   # en.json, ru.json (translation files)
 i18n/                       # routing.ts (locale config), request.ts
 ```
@@ -75,6 +75,8 @@ Client Component → Zustand filters (persisted to localStorage)
 - Service role key used server-side to bypass RLS
 - Real-time subscriptions are **disabled** — with 5500+ records/day they caused excessive queries. Users see updates after staleTime expires or manual refresh
 - Charts use dynamic imports with `ssr: false` for code splitting
+- Ticket review updates use UPSERT pattern (rows may not exist yet) and can update two tables in one action (`ticket_reviews` + `ai_human_comparison.change_classification`)
+- Parallel fetching with `Promise.all()` for independent queries (e.g., main data + thread enrichment)
 
 ### Database Tables
 
@@ -87,7 +89,11 @@ Client Component → Zustand filters (persisted to localStorage)
 **`support_threads_data`** — Support thread operations and AI drafts.
 Joined with `ai_human_comparison` for quality metrics.
 
-**`ticket_reviews`** — Ticket review data.
+**`ticket_reviews`** — Qualified agent review data for tickets:
+- `comparison_id` (FK → `ai_human_comparison.id`, unique conflict key for UPSERT)
+- `review_status` ('processed' | 'unprocessed'), `ai_approved` (boolean), `reviewer_name`
+- `manual_comment`, `requires_editing_correct`, `action_analysis_verification` (JSONB)
+- Queried via `ai_comparison_with_reviews` VIEW (LEFT JOIN with `ai_human_comparison`)
 
 ### Quality Scoring (v4.0)
 
@@ -180,6 +186,12 @@ Use `useTranslations('namespace')` in client components, `getTranslations('names
 - Spread `QUERY_CACHE_CONFIG` — don't hardcode cache/retry values
 - All Server Actions include 30s timeout protection via `REQUEST_TIMEOUT`
 
+### Ticket Review Updates
+- Use UPSERT (`onConflict: 'comparison_id'`) for `ticket_reviews` — rows may not exist
+- Supabase generated types don't include manually added tables; use `as any` on `.from()` but `satisfies` on data
+- `change_classification` lives in `ai_human_comparison`, not `ticket_reviews` — requires separate UPDATE
+- Cross-component refresh via `triggerTicketsRefresh()` custom event (`lib/hooks/use-paginated-tickets.ts`)
+
 ### Styling
 - Use `cn()` from `lib/utils` for merging Tailwind classes
 - Chart colors: `--chart-1` through `--chart-12` CSS variables (auto dark mode)
@@ -205,6 +217,9 @@ const Chart = dynamic(
 | Server Actions architecture | `docs/SERVER_ACTIONS_ARCHITECTURE.md` |
 | v4.0 scoring system | `constants/classification-types.ts` |
 | Qualified agents list | `constants/qualified-agents.ts` |
+| Action types list | `constants/action-types.ts` |
+| Ticket update actions | `lib/actions/ticket-update-actions.ts` |
+| Shared components | `components/shared/` (classification-selector, action-analysis-verification) |
 | Cache configuration | `lib/queries/query-config.ts` |
 | Query key factories | `lib/queries/query-keys.ts` |
 | Filter slice factory | `lib/store/create-filter-slice.ts` |

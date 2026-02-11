@@ -985,7 +985,7 @@
 			"classification": "Classification",
 			"status": "Status",
 			"export": "Export CSV",
-			"search": "Search by ticket ID, agent, or customer email...",
+			"search": "Search by ID, ticket ID, thread ID, agent, customer, category, classification, reviewer...",
 			"noResults": "No tickets found",
 			"showing": "Showing",
 			"to": "to",

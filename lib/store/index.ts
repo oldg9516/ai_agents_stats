@@ -59,7 +59,8 @@ export const useStore = create<StoreState>()(
 					// Persist only filter states
 					dashboardFilters: state.dashboardFilters,
 					supportFilters: state.supportFilters,
-					ticketsReviewFilters: state.ticketsReviewFilters,
+					// Exclude searchQuery from persistence (transient search state)
+					ticketsReviewFilters: { ...state.ticketsReviewFilters, searchQuery: '' },
 					backlogReportsFilters: state.backlogReportsFilters,
 					agentStatsFilters: state.agentStatsFilters,
 					isGeneratingReport: state.isGeneratingReport,
