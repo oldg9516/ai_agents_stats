@@ -20,6 +20,7 @@ export interface ActionAnalysis {
 	action_details: string
 	confidence: string // "high" | "medium" | "low"
 	reasoning: string
+	target_system: string | null // "Priority" | "PayPal" | "None" | custom
 }
 
 /**
@@ -45,6 +46,7 @@ export interface ActionAnalysisVerification {
 	requires_system_action_correct: boolean
 	corrected_action_types: string[] | null
 	action_details_correct: boolean
+	corrected_target_system: string[] | null // null = no correction, string[] = corrected values
 	comment: string
 }
 

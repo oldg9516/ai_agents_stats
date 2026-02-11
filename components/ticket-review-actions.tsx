@@ -72,6 +72,7 @@ export function TicketReviewActions({
 			requires_system_action_correct: false,
 			corrected_action_types: null,
 			action_details_correct: false,
+			corrected_target_system: null,
 			comment: '',
 			...(initialActionAnalysisVerification ?? {}),
 		}))

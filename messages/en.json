@@ -1104,7 +1104,10 @@
 				"yes": "Yes",
 				"no": "No",
 				"comment": "Verification Comment",
-				"commentPlaceholder": "Add a comment about the action analysis accuracy..."
+				"commentPlaceholder": "Add a comment about the action analysis accuracy...",
+				"targetSystem": "Target System",
+				"correctedTargetSystem": "Corrected Target System",
+				"targetSystemCustomPlaceholder": "Enter system name..."
 			},
 			"classificationSelector": "Classification",
 			"classificationHint": "Change if AI classification is incorrect",

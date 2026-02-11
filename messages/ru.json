@@ -1104,7 +1104,10 @@
 				"yes": "Да",
 				"no": "Нет",
 				"comment": "Комментарий проверки",
-				"commentPlaceholder": "Добавьте комментарий о точности анализа действий..."
+				"commentPlaceholder": "Добавьте комментарий о точности анализа действий...",
+				"targetSystem": "Целевая система",
+				"correctedTargetSystem": "Исправленная целевая система",
+				"targetSystemCustomPlaceholder": "Введите название системы..."
 			},
 			"classificationSelector": "Классификация",
 			"classificationHint": "Измените, если классификация AI неверна",
