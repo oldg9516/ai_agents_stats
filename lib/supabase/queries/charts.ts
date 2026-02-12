@@ -36,7 +36,7 @@ function applyDashboardFilters(
 	// Exclude system/API emails from statistics
 	query = query.neq('email', 'api@levhaolam.com')
 
-	// INCLUDE ONLY thread_ids where requires_editing = true (showOnlyRequiresEditing filter)
+	// INCLUDE ONLY thread_ids matching requires_system_action filter
 	if (includedThreadIds && includedThreadIds.length > 0) {
 		// For small arrays (< 100), we can filter in query
 		// For large arrays, we filter client-side after fetch
@@ -53,7 +53,7 @@ function applyDashboardFilters(
  * Fetch Quality Trends data (for line chart)
  * Uses only reviewed records (change_classification IS NOT NULL)
  * Uses batch fetching to handle large datasets (bypasses 1000 row limit)
- * @param filters - Dashboard filters (with optional includedThreadIds for showOnlyRequiresEditing)
+ * @param filters - Dashboard filters (with optional includedThreadIds for requires_system_action filter)
  * @param dateFilterMode - Date field to filter by ('created' or 'human_reply')
  */
 export async function getQualityTrends(
@@ -133,7 +133,7 @@ export async function getQualityTrends(
  * Uses RPC function to aggregate on database side (avoids 1000 row limit)
  * @param filters - Dashboard filters
  * @param dateFilterMode - Date field to filter by ('created' or 'human_reply')
- * @param includedThreadIds - Thread IDs to INCLUDE (whitelist for showOnlyRequiresEditing filter)
+ * @param includedThreadIds - Thread IDs to INCLUDE (whitelist for requires_system_action filter)
  */
 export async function getCategoryDistribution(
 	filters: DashboardFilters,
@@ -191,7 +191,7 @@ export async function getCategoryDistribution(
 /**
  * Fetch Version Comparison data (for bar chart)
  * Uses batch fetching to handle large datasets (bypasses 1000 row limit)
- * @param filters - Dashboard filters (with optional includedThreadIds for showOnlyRequiresEditing)
+ * @param filters - Dashboard filters (with optional includedThreadIds for requires_system_action filter)
  * @param dateFilterMode - Date field to filter by ('created' or 'human_reply')
  */
 export async function getVersionComparison(

@@ -19,6 +19,7 @@ pnpm lint         # Run ESLint
 ```
 
 **Notes**:
+- Package manager is **pnpm** — do not use npm or yarn
 - Default locale is Russian — access at `http://localhost:3000` (or `/ru`)
 - English at `http://localhost:3000/en`
 - Protected routes redirect to `/login`; requires @levhaolam.com Google account
@@ -26,15 +27,17 @@ pnpm lint         # Run ESLint
 ## Tech Stack
 
 - **Next.js 16** (App Router) + **React 19** + **TypeScript** (strict mode)
-- **Tailwind CSS v4** with OKLCH color space CSS variables
+- **Tailwind CSS v4** with OKLCH color space CSS variables — no `tailwind.config.ts` (v4 uses `@tailwindcss/postcss` plugin + `@theme inline` in `app/globals.css`)
 - **shadcn/ui** (new-york style) — add components via shadcn MCP server
 - **Supabase** (PostgreSQL) — `@supabase/supabase-js` + `@supabase/ssr`
 - **TanStack React Query** — caching, retry, timeout
 - **TanStack React Table** — sorting, filtering, pagination
 - **Zustand** — filter state with localStorage persistence
 - **Recharts** + **@nivo/sankey** + **@nivo/heatmap** — charts
-- **next-intl** — i18n (Russian default, English)
-- **next-themes** — dark mode (class-based)
+- **next-intl** — i18n (Russian default, English); timezone `Asia/Jerusalem`
+- **next-themes** — dark mode (class-based, custom variant: `@custom-variant dark (&:is(.dark *))`)
+- **@dnd-kit** — drag-and-drop (sortable columns in tables)
+- **tw-animate-css** — animation utilities
 
 ## Architecture
 
@@ -42,7 +45,7 @@ pnpm lint         # Run ESLint
 
 ```
 app/[locale]/(root)/        # Public pages (landing, docs, login, unauthorized)
-app/[locale]/(analytics)/   # Protected pages (dashboard, support-overview, etc.)
+app/[locale]/(analytics)/   # Protected pages (see Analytics Pages below)
 components/                 # UI (ui/, filters/, kpi/, charts/, tables/, layouts/, shared/)
 lib/
   supabase/                 # DB clients + query functions
@@ -54,9 +57,49 @@ lib/
   auth/                     # Auth provider + utilities
   hooks/                    # Custom hooks (use-dashboard-data, use-support-data, etc.)
   utils/                    # Helpers (export, quality-colors, validate-date-range, etc.)
-constants/                  # qualified-agents, classification-types, action-types, support-statuses, etc.
+constants/                  # qualified-agents, classification-types, action-types, pagination, etc.
 messages/                   # en.json, ru.json (translation files)
 i18n/                       # routing.ts (locale config), request.ts
+```
+
+### Analytics Pages
+
+```
+/dashboard                              # Main analytics dashboard
+/dashboard/category/[categoryName]      # Category detail (parallel route modal)
+/support-overview                       # Support threads overview
+/support-overview/thread/[threadId]     # Thread detail (parallel route modal)
+/tickets-review                         # Ticket reviews for qualified agents
+/tickets-review/ticket/[ticketId]       # Ticket detail (parallel route modal)
+/detailed-stats                         # Detailed statistics table
+/request-categories                     # Request category analysis
+/backlog-reports                        # Backlog reports list
+/backlog-reports/[reportId]             # Individual report detail
+/agents-stats                           # Agent performance statistics
+/subcategories-stats                    # Subcategory analysis
+/ai-chat                                # AI chat interface
+/settings                               # User settings
+```
+
+### Parallel Routes (Modal Pattern)
+
+Detail pages (category, thread, ticket) use **Next.js Parallel Routes** for intercepting modals:
+
+```
+app/[locale]/(analytics)/dashboard/
+  @modal/(.)category/[categoryName]/page.tsx   # Intercepted modal route
+  category/[categoryName]/page.tsx             # Full-page fallback
+  layout.tsx                                   # Must accept { children, modal } props
+```
+
+Layout must render both slots:
+```typescript
+export default function Layout({ children, modal }: {
+  children: React.ReactNode
+  modal: React.ReactNode
+}) {
+  return <>{children}{modal}</>
+}
 ```
 
 ### Data Flow
@@ -77,6 +120,28 @@ Client Component → Zustand filters (persisted to localStorage)
 - Charts use dynamic imports with `ssr: false` for code splitting
 - Ticket review updates use UPSERT pattern (rows may not exist yet) and can update two tables in one action (`ticket_reviews` + `ai_human_comparison.change_classification`)
 - Parallel fetching with `Promise.all()` for independent queries (e.g., main data + thread enrichment)
+
+### Supabase Clients
+
+Two distinct clients in `lib/supabase/`:
+
+| Client | File | Purpose |
+|--------|------|---------|
+| `createServerClient()` | `server.ts` | Service role, bypasses RLS, singleton. Used for all data queries. Guarded by `'server-only'` import. |
+| `createAuthClient()` | `server.ts` | Cookie-based, respects RLS. Used for auth operations. Requires `await cookies()`. |
+| Browser client | `client.ts` | Client-side, used only for `AuthProvider` (auth state changes). |
+
+### Server Action Pattern
+
+All Server Actions follow this structure:
+```typescript
+'use server'
+// 1. Import from page-specific query module
+// 2. Use createTimeoutPromise() for 30s timeout protection
+// 3. Promise.race([query, timeout]) for each call
+// 4. Return { success: boolean, data?, error?: string }
+// 5. Performance logging with Date.now()
+```
 
 ### Database Tables
 
@@ -115,6 +180,19 @@ Penalty-based scoring with 11 classifications (see `constants/classification-typ
 
 **Priority logic** (`isQualityRecord()`): `ai_approved = true` → Quality; else use `change_classification`.
 
+### Pagination Constants
+
+Centralized in `constants/pagination.ts` — used across queries and UI:
+
+| Constant | Value | Usage |
+|----------|-------|-------|
+| `CLIENT_BATCH_SIZE` | 60 | Records per client request |
+| `SUPABASE_BATCH_SIZE` | 500 | Server query batch size |
+| `MAX_CLIENT_RECORDS` | 1200 | Max records in memory (60 × 20 batches) |
+| `REQUEST_TIMEOUT` | 30000 | Server action timeout (ms) |
+| `MODAL_PAGE_SIZE` | 20 | Table pagination in modals |
+| `MAX_CONCURRENT_BATCHES` | 3 | Parallel batch fetching limit |
+
 ### React Query Configuration
 
 Cache settings are centralized in `lib/queries/query-config.ts`:
@@ -146,6 +224,8 @@ Combined store with 5 slices, persisted to `localStorage` key `ai-stats-storage`
 
 New slices should use `create-filter-slice.ts` factory (`filterSliceActions()`) for standard CRUD operations. Access via hooks in `lib/store/hooks/`.
 
+**Rehydration**: `onRehydrateStorage` converts date strings back to `Date` objects. `validateAndFixDateRange()` validates dates on rehydration. `partialize` excludes transient state (e.g., `searchQuery`) from persistence.
+
 ### Date Filter Mode
 
 Queries support two filter modes passed through the entire data flow:
@@ -158,12 +238,23 @@ Google OAuth via Supabase with @levhaolam.com email domain restriction. Triple-l
 
 Middleware (`middleware.ts`) handles both auth and i18n. Protected routes are under `(analytics)/` route group. Components can assume user exists on protected routes.
 
+Client-side `AuthProvider` (in `lib/auth/`) uses `supabase.auth.onAuthStateChange()` and provides `{ user, session, isLoading, signOut }` via React context.
+
 **Key files**: `middleware.ts`, `lib/auth/`, `lib/supabase/server.ts`, `lib/supabase/client.ts`
+
+### Cross-Component Refresh
+
+Custom event pattern for refreshing data across unrelated components:
+```typescript
+// Dispatch: triggerTicketsRefresh() — fires 'tickets-review-refresh' on window
+// Listen: useEffect with addEventListener in use-paginated-tickets.ts
+```
 
 ## Internationalization (i18n)
 
 - **Locales**: Russian (`ru`, default — no URL prefix) and English (`en`, prefixed)
-- **Config**: `i18n/routing.ts`
+- **Timezone**: `Asia/Jerusalem` (configured in `i18n/request.ts`)
+- **Config**: `i18n/routing.ts` (locale prefix strategy: `'as-needed'`)
 - **Translations**: `messages/en.json` and `messages/ru.json` — update BOTH when adding text
 
 **Critical**: Always use next-intl navigation wrappers:
@@ -186,9 +277,13 @@ Use `useTranslations('namespace')` in client components, `getTranslations('names
 - Spread `QUERY_CACHE_CONFIG` — don't hardcode cache/retry values
 - All Server Actions include 30s timeout protection via `REQUEST_TIMEOUT`
 
+### Supabase Types
+- Generated types don't include manually added tables (`ticket_reviews`, etc.)
+- Use `as any` on `.from('table_name')` but `satisfies` on data objects for type safety
+- RPC functions not in generated types — cast client `as any` before calling
+
 ### Ticket Review Updates
 - Use UPSERT (`onConflict: 'comparison_id'`) for `ticket_reviews` — rows may not exist
-- Supabase generated types don't include manually added tables; use `as any` on `.from()` but `satisfies` on data
 - `change_classification` lives in `ai_human_comparison`, not `ticket_reviews` — requires separate UPDATE
 - Cross-component refresh via `triggerTicketsRefresh()` custom event (`lib/hooks/use-paginated-tickets.ts`)
 
@@ -197,6 +292,7 @@ Use `useTranslations('namespace')` in client components, `getTranslations('names
 - Chart colors: `--chart-1` through `--chart-12` CSS variables (auto dark mode)
 - Status names with spaces must use `toSafeCssName()` for CSS variable compatibility
 - Component variants via `class-variance-authority`
+- Tailwind v4: no config file — styles defined via `@theme inline` in `app/globals.css`
 
 ### Charts
 - Dynamic import with `ssr: false` to reduce initial bundle:
@@ -215,13 +311,16 @@ const Chart = dynamic(
 | Performance & indexes | `docs/PERFORMANCE.md` |
 | Auth setup guide | `docs/AUTH_SETUP_GUIDE.md` |
 | Server Actions architecture | `docs/SERVER_ACTIONS_ARCHITECTURE.md` |
+| Next.js 16 best practices | `docs/NEXTJS_16_BEST_PRACTICES.md` |
 | v4.0 scoring system | `constants/classification-types.ts` |
 | Qualified agents list | `constants/qualified-agents.ts` |
 | Action types list | `constants/action-types.ts` |
+| Pagination constants | `constants/pagination.ts` |
+| Category labels | `constants/category-labels.ts` |
 | Ticket update actions | `lib/actions/ticket-update-actions.ts` |
 | Shared components | `components/shared/` (classification-selector, action-analysis-verification) |
 | Cache configuration | `lib/queries/query-config.ts` |
 | Query key factories | `lib/queries/query-keys.ts` |
 | Filter slice factory | `lib/store/create-filter-slice.ts` |
-| MCP servers | `.mcp.json` (shadcn + context7) |
+| Global styles & theme | `app/globals.css` |
 | Environment template | `.env.local.example` |

@@ -40,7 +40,7 @@ type RawRecord = {
 	thread_id: string | null
 }
 
-// Extended filters type that includes includedThreadIds (whitelist for showOnlyRequiresEditing)
+// Extended filters type that includes includedThreadIds (whitelist for requires_system_action filter)
 type ExtendedDashboardFilters = DashboardFilters & { includedThreadIds?: string[] }
 
 type DialogRecord = {
@@ -192,7 +192,7 @@ async function fetchSecondRequestTicketIds(
  * Fetch detailed stats with TypeScript aggregation
  * Replaces SQL function: get_detailed_stats_paginated
  *
- * @param filters - Dashboard filters (with optional includedThreadIds for showOnlyRequiresEditing)
+ * @param filters - Dashboard filters (with optional includedThreadIds for requires_system_action filter)
  * @param mergeMultiCategories - If true, merge categories containing commas into "Multi-category"
  * @param dateFilterMode - Date field to filter by ('created' or 'human_reply')
  */
@@ -258,7 +258,7 @@ export async function fetchDetailedStatsTS(
 
 /**
  * Wrapper server action for DetailedStatsTable
- * Handles requires_editing filter by fetching includedThreadIds
+ * Handles requires_system_action filter by fetching includedThreadIds
  *
  * @param filters - Dashboard filters
  * @param mergeMultiCategories - If true, merge categories containing commas into "Multi-category"
@@ -273,7 +273,7 @@ export async function fetchDetailedStatsWithFilter(
 	const showNeedEdit = filters.showNeedEdit ?? true
 	const showNotNeedEdit = filters.showNotNeedEdit ?? true
 
-	// Determine if we need to filter by requires_editing
+	// Determine if we need to filter by action_analysis.requires_system_action
 	let includedThreadIds: string[] | undefined = undefined
 
 	// Both false - return empty result
@@ -292,8 +292,8 @@ export async function fetchDetailedStatsWithFilter(
 
 	// Legacy support: if hideRequiresEditing is set and new filters are not used
 	if (filters.hideRequiresEditing && showNeedEdit && showNotNeedEdit) {
-		const { fetchRequiresEditingThreadIds } = await import('@/lib/supabase/helpers')
-		includedThreadIds = await fetchRequiresEditingThreadIds(supabaseServer)
+		const { fetchRequiresSystemActionThreadIds } = await import('@/lib/supabase/helpers')
+		includedThreadIds = await fetchRequiresSystemActionThreadIds(supabaseServer)
 	}
 
 	// Create extended filters with includedThreadIds
@@ -350,7 +350,7 @@ async function getTotalCount(
 	query = query.neq('email', 'api@levhaolam.com')
 	query = query.neq('email', 'samantha@levhaolam.com')
 
-	// INCLUDE ONLY thread_ids where requires_editing = true (showOnlyRequiresEditing filter)
+	// INCLUDE ONLY thread_ids matching requires_system_action filter
 	// Only apply for small arrays to avoid query size limits
 	if (includedThreadIds && includedThreadIds.length > 0 && includedThreadIds.length <= 100) {
 		query = query.in('thread_id', includedThreadIds)
@@ -404,7 +404,7 @@ async function fetchInBatches(
 			query = query.neq('email', 'api@levhaolam.com')
 			query = query.neq('email', 'samantha@levhaolam.com')
 
-			// INCLUDE ONLY thread_ids where requires_editing = true (showOnlyRequiresEditing filter)
+			// INCLUDE ONLY thread_ids matching requires_system_action filter
 			// Only apply for small arrays to avoid query size limits
 			if (includedThreadIds && includedThreadIds.length > 0 && includedThreadIds.length <= 100) {
 				query = query.in('thread_id', includedThreadIds)

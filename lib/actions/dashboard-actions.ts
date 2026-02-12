@@ -17,7 +17,7 @@ import {
 	getVersionComparison,
 } from '@/lib/supabase/queries'
 import { fetchDetailedStatsTS } from './detailed-stats-actions'
-import { fetchRequiresEditingThreadIds } from '@/lib/supabase/helpers'
+import { fetchRequiresSystemActionThreadIds } from '@/lib/supabase/helpers'
 import { supabaseServer } from '@/lib/supabase/server'
 import type {
 	CategoryDistributionResult,
@@ -60,10 +60,10 @@ export async function fetchDashboardData(
 	dateFilterMode: DateFilterMode = 'created'
 ) {
 	try {
-		// If showOnlyRequiresEditing is enabled, fetch thread_ids to INCLUDE (whitelist)
+		// If hideRequiresEditing is enabled, fetch thread_ids where action_analysis.requires_system_action = true
 		let includedThreadIds: string[] = []
 		if (filters.hideRequiresEditing) {
-			includedThreadIds = await fetchRequiresEditingThreadIds(supabaseServer)
+			includedThreadIds = await fetchRequiresSystemActionThreadIds(supabaseServer)
 		}
 
 		// Create filters with included thread_ids for queries that support it

@@ -12,7 +12,7 @@ const supabase = supabaseServer as any
  * This bypasses the 1000 row limit by aggregating on the database side
  * @param filters - Dashboard filters
  * @param dateFilterMode - Date field to filter by ('created' or 'human_reply')
- * @param includedThreadIds - Thread IDs to INCLUDE (whitelist for showOnlyRequiresEditing filter)
+ * @param includedThreadIds - Thread IDs to INCLUDE (whitelist for requires_system_action filter)
  */
 export async function getKPIData(
 	filters: DashboardFilters,

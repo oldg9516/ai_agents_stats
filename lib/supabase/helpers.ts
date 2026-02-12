@@ -18,8 +18,8 @@ export interface BatchFetchFilters {
 	requestTypes?: string[]
 	requirements?: string[]
 	dateFilterMode?: DateFilterMode
-	hideRequiresEditing?: boolean // Show only records where support_threads_data.requires_editing = true
-	includedThreadIds?: string[] // Pre-fetched thread_ids to INCLUDE (whitelist for showOnlyRequiresEditing)
+	hideRequiresEditing?: boolean // Show only records where action_analysis.requires_system_action = true
+	includedThreadIds?: string[] // Pre-fetched thread_ids to INCLUDE (whitelist for requires_system_action filter)
 }
 
 /**
@@ -212,30 +212,30 @@ export function formatDate(date: Date): string {
 }
 
 /**
- * Fetch thread_ids from support_threads_data where requires_editing = true
- * Used as whitelist when "Show Only Requires Editing" filter is enabled
- * SQL uses: thread_id = ANY(includedThreadIds) to include ONLY these records
+ * Fetch thread_ids from support_threads_data where action_analysis.requires_system_action = true
+ * Used as whitelist when "Show Only Requires System Action" filter is enabled
  *
  * @param supabase - Supabase client instance
- * @returns Array of thread_ids to INCLUDE (those that require editing)
+ * @returns Array of thread_ids to INCLUDE (those that require system action)
  */
-export async function fetchRequiresEditingThreadIds(
+export async function fetchRequiresSystemActionThreadIds(
 	supabase: SupabaseClient
 ): Promise<string[]> {
-	return fetchThreadIdsByRequiresEditing(supabase, true)
+	return fetchThreadIdsBySystemAction(supabase, true)
 }
 
 /**
- * Fetch thread_ids from support_threads_data based on requires_editing value
- * Used for filtering records by requires_editing status
+ * Fetch thread_ids from support_threads_data based on action_analysis.requires_system_action value
+ * Parses action_analysis JSON text field and filters by requires_system_action.
+ * Threads with null/missing action_analysis are treated as requires_system_action = false.
  *
  * @param supabase - Supabase client instance
- * @param requiresEditing - true to get threads that need editing, false for those that don't
+ * @param requiresSystemAction - true to get threads that need system action, false for those that don't
  * @returns Array of thread_ids
  */
-export async function fetchThreadIdsByRequiresEditing(
+export async function fetchThreadIdsBySystemAction(
 	supabase: SupabaseClient,
-	requiresEditing: boolean
+	requiresSystemAction: boolean
 ): Promise<string[]> {
 	const BATCH_SIZE = 1000
 	const results: string[] = []
@@ -244,19 +244,43 @@ export async function fetchThreadIdsByRequiresEditing(
 	let hasMore = true
 
 	while (hasMore) {
-		const { data, error } = await supabase
+		let query = supabase
 			.from('support_threads_data')
-			.select('thread_id')
-			.eq('requires_editing', requiresEditing)
+			.select('thread_id, action_analysis')
 			.range(offset, offset + BATCH_SIZE - 1)
 
+		// Optimization: when looking for requires_system_action=true, skip rows with no action_analysis
+		if (requiresSystemAction) {
+			query = query.not('action_analysis', 'is', null)
+		}
+
+		const { data, error } = await query
+
 		if (error) {
-			console.error(`❌ [fetchThreadIdsByRequiresEditing] Error (requires_editing=${requiresEditing}):`, error)
+			console.error(`❌ [fetchThreadIdsBySystemAction] Error (requiresSystemAction=${requiresSystemAction}):`, error)
 			break
 		}
 
 		if (data && data.length > 0) {
-			results.push(...data.map((d: { thread_id: string }) => d.thread_id))
+			for (const row of data) {
+				let isSystemAction = false
+				if (row.action_analysis) {
+					try {
+						const parsed = typeof row.action_analysis === 'string'
+							? JSON.parse(row.action_analysis)
+							: row.action_analysis
+						isSystemAction = parsed.requires_system_action === true
+					} catch {
+						// Parse error — treat as no system action
+					}
+				}
+
+				if (requiresSystemAction && isSystemAction) {
+					results.push(row.thread_id)
+				} else if (!requiresSystemAction && !isSystemAction) {
+					results.push(row.thread_id)
+				}
+			}
 			offset += BATCH_SIZE
 			hasMore = data.length === BATCH_SIZE
 		} else {
@@ -269,11 +293,12 @@ export async function fetchThreadIdsByRequiresEditing(
 
 /**
  * Fetch thread_ids based on showNeedEdit and showNotNeedEdit filters
+ * Uses action_analysis.requires_system_action from support_threads_data
  * Returns null if both are true (no filtering needed) or empty array if both false
  *
  * @param supabase - Supabase client instance
- * @param showNeedEdit - Show records where requires_editing = true
- * @param showNotNeedEdit - Show records where requires_editing = false
+ * @param showNeedEdit - Show records where action_analysis.requires_system_action = true
+ * @param showNotNeedEdit - Show records where action_analysis.requires_system_action is false/null
  * @returns Array of thread_ids to include, or null if no filtering needed, or empty array if nothing to show
  */
 export async function fetchFilteredThreadIds(
@@ -293,8 +318,8 @@ export async function fetchFilteredThreadIds(
 
 	// Only one is true - fetch the corresponding thread_ids
 	if (showNeedEdit) {
-		return fetchThreadIdsByRequiresEditing(supabase, true)
+		return fetchThreadIdsBySystemAction(supabase, true)
 	} else {
-		return fetchThreadIdsByRequiresEditing(supabase, false)
+		return fetchThreadIdsBySystemAction(supabase, false)
 	}
 }
