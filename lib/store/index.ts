@@ -16,6 +16,10 @@ import {
 	AgentsStatsSlice,
 } from './slices/agents-stats-slice'
 import {
+	createActionAnalysisSlice,
+	ActionAnalysisSlice,
+} from './slices/action-analysis-slice'
+import {
 	validateAndFixDateRange,
 	isDateRangeValid,
 } from '@/lib/utils/validate-date-range'
@@ -23,7 +27,7 @@ import {
 /**
  * Global store combining all slices
  */
-type StoreState = DashboardSlice & SupportSlice & TicketsReviewSlice & BacklogReportsSlice & AgentsStatsSlice
+type StoreState = DashboardSlice & SupportSlice & TicketsReviewSlice & BacklogReportsSlice & AgentsStatsSlice & ActionAnalysisSlice
 
 // Clean up invalid localStorage data on startup
 if (typeof window !== 'undefined') {
@@ -32,7 +36,7 @@ if (typeof window !== 'undefined') {
 		try {
 			const parsed = JSON.parse(stored)
 			// Check if version exists, if not - clear old data
-			if (!parsed.version || parsed.version < 10) {
+			if (!parsed.version || parsed.version < 11) {
 				localStorage.removeItem('ai-stats-storage')
 			}
 		} catch {
@@ -51,10 +55,11 @@ export const useStore = create<StoreState>()(
 				...createTicketsReviewSlice(...a),
 				...createBacklogReportsSlice(...a),
 				...createAgentsStatsSlice(...a),
+				...createActionAnalysisSlice(...a),
 			}),
 			{
 				name: 'ai-stats-storage',
-				version: 10, // Changed from 9 to 10 to fix stale date range filters
+				version: 11, // Changed from 10 to 11 to add action analysis slice
 				partialize: state => ({
 					// Persist only filter states
 					dashboardFilters: state.dashboardFilters,
@@ -63,13 +68,14 @@ export const useStore = create<StoreState>()(
 					ticketsReviewFilters: { ...state.ticketsReviewFilters, searchQuery: '' },
 					backlogReportsFilters: state.backlogReportsFilters,
 					agentStatsFilters: state.agentStatsFilters,
+					actionAnalysisFilters: state.actionAnalysisFilters,
 					isGeneratingReport: state.isGeneratingReport,
 					generationStartedAt: state.generationStartedAt,
 				}),
 				// Migration function for version changes
 				migrate: (persistedState: any, version: number) => {
 					// Force reset on version change
-					if (version !== 10) {
+					if (version !== 11) {
 						return null
 					}
 
@@ -80,6 +86,7 @@ export const useStore = create<StoreState>()(
 						'ticketsReviewFilters',
 						'backlogReportsFilters',
 						'agentStatsFilters',
+						'actionAnalysisFilters',
 					]
 
 					for (const key of filterKeys) {
@@ -109,6 +116,7 @@ export const useStore = create<StoreState>()(
 						{ key: 'ticketsReviewFilters', defaultDays: 30 },
 						{ key: 'backlogReportsFilters', defaultDays: 90 },
 						{ key: 'agentStatsFilters', defaultDays: 30 },
+						{ key: 'actionAnalysisFilters', defaultDays: 30 },
 					]
 
 					for (const { key, defaultDays } of sliceConfigs) {

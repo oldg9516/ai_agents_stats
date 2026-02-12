@@ -19,6 +19,7 @@ import {
 	IconReport,
 	IconSearch,
 	IconSettings,
+	IconTarget,
 	IconTicket,
 	IconUsers,
 } from '@tabler/icons-react'
@@ -58,6 +59,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				title: t('ticketsReview'),
 				url: '/tickets-review',
 				icon: IconTicket,
+			},
+			{
+				title: t('actionAnalysis'),
+				url: '/action-analysis',
+				icon: IconTarget,
 			},
 			{
 				title: t('requestCategories'),

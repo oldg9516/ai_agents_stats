@@ -812,6 +812,84 @@ export interface TicketsReviewFilters {
 }
 
 // ============================================================================
+// Action Analysis Quality Types
+// ============================================================================
+
+/**
+ * Action Analysis Quality page filters
+ */
+export interface ActionAnalysisFilters {
+	dateRange: {
+		from: Date
+		to: Date
+	}
+	categories: string[] // request_subtype - [] = all
+	versions: string[] // prompt_version - [] = all
+	agents: string[] // email - [] = all agents
+}
+
+/**
+ * Enriched record with both AI determination and agent verification
+ */
+export interface ActionAnalysisRecord {
+	id: number
+	created_at: string
+	request_subtype: string | null
+	request_sub_subtype: string | null
+	email: string | null
+	prompt_version: string | null
+	action_analysis: ActionAnalysis | null
+	verification: ActionAnalysisVerification | null
+}
+
+/**
+ * Aggregated stats for the Action Analysis Quality page
+ */
+export interface ActionAnalysisStats {
+	totalVerified: number
+	requiresActionCorrect: number
+	requiresActionIncorrect: number
+	requiresActionAccuracy: number
+	actionTypeCorrect: number
+	actionTypeIncorrect: number
+	actionTypeAccuracy: number
+	categoryBreakdown: CategoryActionStats[]
+	actionTypeDistribution: ActionTypeDistItem[]
+}
+
+/**
+ * Per-category accuracy stats with automation potential
+ */
+export interface CategoryActionStats {
+	category: string
+	totalVerified: number
+	requiresActionAccuracy: number
+	actionTypeAccuracy: number
+	automationScore: number
+	subSubCategoryBreakdown: SubSubCategoryStats[]
+}
+
+/**
+ * Per-sub-subcategory accuracy stats
+ */
+export interface SubSubCategoryStats {
+	subSubCategory: string
+	totalVerified: number
+	requiresActionAccuracy: number
+	actionTypeAccuracy: number
+}
+
+/**
+ * Action type distribution: AI prediction vs agent verification
+ */
+export interface ActionTypeDistItem {
+	actionType: string
+	aiCount: number
+	verifiedCorrect: number
+	verifiedIncorrect: number
+}
+
+// ============================================================================
 // Backlog Reports Types
 // ============================================================================
 
