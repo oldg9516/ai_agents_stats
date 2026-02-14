@@ -30,7 +30,6 @@ function applyFilters(
 	let q = query
 		.gte('created_at', dateRange.from.toISOString())
 		.lt('created_at', dateRange.to.toISOString())
-		.not('action_analysis_verification', 'is', null)
 		.neq('email', 'api@levhaolam.com')
 
 	if (categories.length > 0) q = q.in('request_subtype', categories)
@@ -139,7 +138,7 @@ export async function fetchActionAnalysisData(
 		}
 	}
 
-	// Step 5: Enrich and filter — only include records with BOTH action_analysis and verification
+	// Step 5: Enrich and filter — include records that have action_analysis (verification optional)
 	const enriched: ActionAnalysisRecord[] = []
 
 	for (const record of records) {
@@ -147,9 +146,9 @@ export async function fetchActionAnalysisData(
 		if (!threadId) continue
 
 		const actionAnalysis = actionAnalysisMap.get(threadId) ?? null
-		const verification = record.action_analysis_verification as ActionAnalysisVerification | null
+		if (!actionAnalysis) continue
 
-		if (!actionAnalysis || !verification) continue
+		const verification = record.action_analysis_verification as ActionAnalysisVerification | null
 
 		enriched.push({
 			id: record.id,
@@ -159,7 +158,7 @@ export async function fetchActionAnalysisData(
 			email: record.email,
 			prompt_version: record.prompt_version,
 			action_analysis: actionAnalysis,
-			verification,
+			verification: verification ?? null,
 		})
 	}
 

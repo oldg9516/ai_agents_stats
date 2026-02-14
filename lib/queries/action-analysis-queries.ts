@@ -29,6 +29,7 @@ export function computeActionAnalysisStats(
 ): ActionAnalysisStats {
 	if (records.length === 0) {
 		return {
+			totalRecords: 0,
 			totalVerified: 0,
 			requiresActionCorrect: 0,
 			requiresActionIncorrect: 0,
@@ -46,20 +47,19 @@ export function computeActionAnalysisStats(
 	let requiresActionIncorrect = 0
 	let actionTypeCorrect = 0
 	let actionTypeIncorrect = 0
+	let totalVerified = 0
 
-	// Category accumulators: Map<category, { totals and accuracy counters }>
+	// Category accumulators
 	const categoryMap = new Map<string, {
+		totalRecords: number
 		totalVerified: number
 		reqCorrect: number
-		reqIncorrect: number
 		typeCorrect: number
-		typeIncorrect: number
 		subSubMap: Map<string, {
+			totalRecords: number
 			totalVerified: number
 			reqCorrect: number
-			reqIncorrect: number
 			typeCorrect: number
-			typeIncorrect: number
 		}>
 	}>()
 
@@ -72,67 +72,30 @@ export function computeActionAnalysisStats(
 
 	for (const record of records) {
 		const { action_analysis, verification } = record
-		if (!action_analysis || !verification) continue
+		if (!action_analysis) continue
 
-		// requires_system_action accuracy
-		const reqCorrect = verification.requires_system_action_correct
-		if (reqCorrect) {
-			requiresActionCorrect++
-		} else {
-			requiresActionIncorrect++
-		}
-
-		// action_type accuracy: null/undefined corrected_action_types = AI was correct
-		const typeIsCorrect = verification.corrected_action_types == null
-		if (typeIsCorrect) {
-			actionTypeCorrect++
-		} else {
-			actionTypeIncorrect++
-		}
-
-		// Category accumulation
 		const category = record.request_subtype ?? 'Unknown'
 		let catEntry = categoryMap.get(category)
 		if (!catEntry) {
 			catEntry = {
-				totalVerified: 0,
-				reqCorrect: 0,
-				reqIncorrect: 0,
-				typeCorrect: 0,
-				typeIncorrect: 0,
+				totalRecords: 0, totalVerified: 0,
+				reqCorrect: 0, typeCorrect: 0,
 				subSubMap: new Map(),
 			}
 			categoryMap.set(category, catEntry)
 		}
-		catEntry.totalVerified++
-		if (reqCorrect) catEntry.reqCorrect++
-		else catEntry.reqIncorrect++
-		if (typeIsCorrect) catEntry.typeCorrect++
-		else catEntry.typeIncorrect++
+		catEntry.totalRecords++
 
-		// Sub-subcategory accumulation
 		const subSub = record.request_sub_subtype ?? 'N/A'
 		let subEntry = catEntry.subSubMap.get(subSub)
 		if (!subEntry) {
-			subEntry = {
-				totalVerified: 0,
-				reqCorrect: 0,
-				reqIncorrect: 0,
-				typeCorrect: 0,
-				typeIncorrect: 0,
-			}
+			subEntry = { totalRecords: 0, totalVerified: 0, reqCorrect: 0, typeCorrect: 0 }
 			catEntry.subSubMap.set(subSub, subEntry)
 		}
-		subEntry.totalVerified++
-		if (reqCorrect) subEntry.reqCorrect++
-		else subEntry.reqIncorrect++
-		if (typeIsCorrect) subEntry.typeCorrect++
-		else subEntry.typeIncorrect++
+		subEntry.totalRecords++
 
-		// Action type distribution
+		// Action type distribution — count AI predictions from all records
 		const aiTypes = action_analysis.action_type ?? []
-		const correctedTypes = verification.corrected_action_types
-
 		for (const actionType of aiTypes) {
 			let typeEntry = actionTypeMap.get(actionType)
 			if (!typeEntry) {
@@ -140,37 +103,64 @@ export function computeActionAnalysisStats(
 				actionTypeMap.set(actionType, typeEntry)
 			}
 			typeEntry.aiCount++
-
-			if (correctedTypes == null) {
-				// AI was correct — all predicted types confirmed
-				typeEntry.verifiedCorrect++
-			} else {
-				// AI was corrected — check if this type is still in corrected list
-				if (correctedTypes.includes(actionType)) {
-					typeEntry.verifiedCorrect++
-				} else {
-					typeEntry.verifiedIncorrect++
-				}
-			}
 		}
 
-		// Add corrected types that AI missed (agent added new ones)
-		if (correctedTypes) {
-			for (const correctedType of correctedTypes) {
-				if (!aiTypes.includes(correctedType)) {
-					let typeEntry = actionTypeMap.get(correctedType)
-					if (!typeEntry) {
-						typeEntry = { aiCount: 0, verifiedCorrect: 0, verifiedIncorrect: 0 }
-						actionTypeMap.set(correctedType, typeEntry)
-					}
-					// Not counted in aiCount since AI didn't predict it
+		// Accuracy metrics — only from verified records
+		if (verification) {
+			totalVerified++
+			catEntry.totalVerified++
+			subEntry.totalVerified++
+
+			const reqCorrect = verification.requires_system_action_correct
+			if (reqCorrect) {
+				requiresActionCorrect++
+				catEntry.reqCorrect++
+				subEntry.reqCorrect++
+			} else {
+				requiresActionIncorrect++
+			}
+
+			const typeIsCorrect = verification.corrected_action_types == null
+			if (typeIsCorrect) {
+				actionTypeCorrect++
+				catEntry.typeCorrect++
+				subEntry.typeCorrect++
+			} else {
+				actionTypeIncorrect++
+			}
+
+			// Verified action type distribution
+			const correctedTypes = verification.corrected_action_types
+			for (const actionType of aiTypes) {
+				const typeEntry = actionTypeMap.get(actionType)!
+				if (correctedTypes == null) {
 					typeEntry.verifiedCorrect++
+				} else {
+					if (correctedTypes.includes(actionType)) {
+						typeEntry.verifiedCorrect++
+					} else {
+						typeEntry.verifiedIncorrect++
+					}
+				}
+			}
+
+			// Add corrected types that AI missed
+			if (correctedTypes) {
+				for (const correctedType of correctedTypes) {
+					if (!aiTypes.includes(correctedType)) {
+						let typeEntry = actionTypeMap.get(correctedType)
+						if (!typeEntry) {
+							typeEntry = { aiCount: 0, verifiedCorrect: 0, verifiedIncorrect: 0 }
+							actionTypeMap.set(correctedType, typeEntry)
+						}
+						typeEntry.verifiedCorrect++
+					}
 				}
 			}
 		}
 	}
 
-	const totalVerified = records.length
+	const totalRecords = records.length
 	const requiresActionAccuracy = totalVerified > 0
 		? (requiresActionCorrect / totalVerified) * 100
 		: 0
@@ -179,28 +169,31 @@ export function computeActionAnalysisStats(
 		: 0
 
 	// Build category breakdown with automation score
-	const maxVolume = Math.max(...Array.from(categoryMap.values()).map(c => c.totalVerified), 1)
+	const maxVolume = Math.max(...Array.from(categoryMap.values()).map(c => c.totalRecords), 1)
 
 	const categoryBreakdown: CategoryActionStats[] = Array.from(categoryMap.entries())
 		.map(([category, data]) => {
 			const reqAcc = data.totalVerified > 0 ? (data.reqCorrect / data.totalVerified) * 100 : 0
 			const typeAcc = data.totalVerified > 0 ? (data.typeCorrect / data.totalVerified) * 100 : 0
-			const avgAccuracy = (reqAcc + typeAcc) / 2
-			// Automation score: weighted average of accuracy and normalized volume
-			const normalizedVolume = data.totalVerified / maxVolume
-			const automationScore = avgAccuracy * 0.7 + normalizedVolume * 100 * 0.3
+			const avgAccuracy = data.totalVerified > 0 ? (reqAcc + typeAcc) / 2 : 0
+			const normalizedVolume = data.totalRecords / maxVolume
+			const automationScore = data.totalVerified > 0
+				? avgAccuracy * 0.7 + normalizedVolume * 100 * 0.3
+				: normalizedVolume * 100 // No accuracy yet — rank by volume only
 
 			const subSubCategoryBreakdown: SubSubCategoryStats[] = Array.from(data.subSubMap.entries())
 				.map(([subSub, subData]) => ({
 					subSubCategory: subSub,
+					totalRecords: subData.totalRecords,
 					totalVerified: subData.totalVerified,
 					requiresActionAccuracy: subData.totalVerified > 0 ? (subData.reqCorrect / subData.totalVerified) * 100 : 0,
 					actionTypeAccuracy: subData.totalVerified > 0 ? (subData.typeCorrect / subData.totalVerified) * 100 : 0,
 				}))
-				.sort((a, b) => b.totalVerified - a.totalVerified)
+				.sort((a, b) => b.totalRecords - a.totalRecords)
 
 			return {
 				category,
+				totalRecords: data.totalRecords,
 				totalVerified: data.totalVerified,
 				requiresActionAccuracy: reqAcc,
 				actionTypeAccuracy: typeAcc,
@@ -208,7 +201,7 @@ export function computeActionAnalysisStats(
 				subSubCategoryBreakdown,
 			}
 		})
-		.sort((a, b) => b.automationScore - a.automationScore)
+		.sort((a, b) => b.totalRecords - a.totalRecords)
 
 	// Build action type distribution
 	const actionTypeDistribution: ActionTypeDistItem[] = Array.from(actionTypeMap.entries())
@@ -222,6 +215,7 @@ export function computeActionAnalysisStats(
 		.sort((a, b) => b.aiCount - a.aiCount)
 
 	return {
+		totalRecords,
 		totalVerified,
 		requiresActionCorrect,
 		requiresActionIncorrect,

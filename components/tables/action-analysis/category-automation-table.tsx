@@ -88,6 +88,7 @@ export const CategoryAutomationTable = memo(function CategoryAutomationTable({
 						<TableHeader>
 							<TableRow>
 								<TableHead className='w-[250px]'>{t('category')}</TableHead>
+								<TableHead className='text-right w-[80px]'>{t('total')}</TableHead>
 								<TableHead className='text-right w-[80px]'>{t('verified')}</TableHead>
 								<TableHead className='text-right w-[120px]'>{t('requiresActionAccuracy')}</TableHead>
 								<TableHead className='text-right w-[120px]'>{t('actionTypeAccuracy')}</TableHead>
@@ -124,13 +125,16 @@ export const CategoryAutomationTable = memo(function CategoryAutomationTable({
 												</div>
 											</TableCell>
 											<TableCell className='text-right font-medium'>
+												{cat.totalRecords}
+											</TableCell>
+											<TableCell className='text-right text-muted-foreground'>
 												{cat.totalVerified}
 											</TableCell>
-											<TableCell className={cn('text-right font-medium', getAccuracyColor(cat.requiresActionAccuracy))}>
-												{cat.requiresActionAccuracy.toFixed(1)}%
+											<TableCell className={cn('text-right font-medium', cat.totalVerified > 0 ? getAccuracyColor(cat.requiresActionAccuracy) : 'text-muted-foreground')}>
+												{cat.totalVerified > 0 ? `${cat.requiresActionAccuracy.toFixed(1)}%` : '—'}
 											</TableCell>
-											<TableCell className={cn('text-right font-medium', getAccuracyColor(cat.actionTypeAccuracy))}>
-												{cat.actionTypeAccuracy.toFixed(1)}%
+											<TableCell className={cn('text-right font-medium', cat.totalVerified > 0 ? getAccuracyColor(cat.actionTypeAccuracy) : 'text-muted-foreground')}>
+												{cat.totalVerified > 0 ? `${cat.actionTypeAccuracy.toFixed(1)}%` : '—'}
 											</TableCell>
 											<TableCell>
 												<div className='flex items-center gap-2'>
@@ -154,13 +158,16 @@ export const CategoryAutomationTable = memo(function CategoryAutomationTable({
 													{sub.subSubCategory}
 												</TableCell>
 												<TableCell className='text-right text-muted-foreground'>
+													{sub.totalRecords}
+												</TableCell>
+												<TableCell className='text-right text-muted-foreground'>
 													{sub.totalVerified}
 												</TableCell>
-												<TableCell className={cn('text-right', getAccuracyColor(sub.requiresActionAccuracy))}>
-													{sub.requiresActionAccuracy.toFixed(1)}%
+												<TableCell className={cn('text-right', sub.totalVerified > 0 ? getAccuracyColor(sub.requiresActionAccuracy) : 'text-muted-foreground')}>
+													{sub.totalVerified > 0 ? `${sub.requiresActionAccuracy.toFixed(1)}%` : '—'}
 												</TableCell>
-												<TableCell className={cn('text-right', getAccuracyColor(sub.actionTypeAccuracy))}>
-													{sub.actionTypeAccuracy.toFixed(1)}%
+												<TableCell className={cn('text-right', sub.totalVerified > 0 ? getAccuracyColor(sub.actionTypeAccuracy) : 'text-muted-foreground')}>
+													{sub.totalVerified > 0 ? `${sub.actionTypeAccuracy.toFixed(1)}%` : '—'}
 												</TableCell>
 												<TableCell />
 											</TableRow>

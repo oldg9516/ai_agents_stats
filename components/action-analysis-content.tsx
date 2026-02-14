@@ -120,7 +120,7 @@ export function ActionAnalysisContent() {
 		return count
 	}
 
-	const overallAccuracy = data
+	const overallAccuracy = data && data.totalVerified > 0
 		? (data.requiresActionAccuracy + data.actionTypeAccuracy) / 2
 		: 0
 
@@ -201,7 +201,7 @@ export function ActionAnalysisContent() {
 						{tCommon('error.fetchFailed')}
 					</CardContent>
 				</Card>
-			) : !data || data.totalVerified === 0 ? (
+			) : !data || data.totalRecords === 0 ? (
 				<Card>
 					<CardContent className='py-8 text-center text-muted-foreground'>
 						{t('noVerifiedData')}
@@ -211,28 +211,29 @@ export function ActionAnalysisContent() {
 				<>
 					<div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
 						<KPICard
-							title={t('totalVerified')}
-							value={data.totalVerified}
+							title={t('totalRecords')}
+							value={data.totalRecords}
 							icon={<IconChecks />}
-							tooltipContent={t('tooltipTotalVerified')}
+							description={`${data.totalVerified} ${t('verified')}`}
+							tooltipContent={t('tooltipTotalRecords')}
 						/>
 						<KPICard
 							title={t('requiresActionAccuracy')}
-							value={`${data.requiresActionAccuracy.toFixed(1)}%`}
+							value={data.totalVerified > 0 ? `${data.requiresActionAccuracy.toFixed(1)}%` : '—'}
 							icon={<IconTarget />}
-							description={`${data.requiresActionCorrect} ${t('correct')} / ${data.requiresActionIncorrect} ${t('incorrect')}`}
+							description={data.totalVerified > 0 ? `${data.requiresActionCorrect} ${t('correct')} / ${data.requiresActionIncorrect} ${t('incorrect')}` : t('noVerifiedYet')}
 							tooltipContent={t('tooltipRequiresAction')}
 						/>
 						<KPICard
 							title={t('actionTypeAccuracy')}
-							value={`${data.actionTypeAccuracy.toFixed(1)}%`}
+							value={data.totalVerified > 0 ? `${data.actionTypeAccuracy.toFixed(1)}%` : '—'}
 							icon={<IconBolt />}
-							description={`${data.actionTypeCorrect} ${t('correct')} / ${data.actionTypeIncorrect} ${t('incorrect')}`}
+							description={data.totalVerified > 0 ? `${data.actionTypeCorrect} ${t('correct')} / ${data.actionTypeIncorrect} ${t('incorrect')}` : t('noVerifiedYet')}
 							tooltipContent={t('tooltipActionType')}
 						/>
 						<KPICard
 							title={t('overallAccuracy')}
-							value={`${overallAccuracy.toFixed(1)}%`}
+							value={data.totalVerified > 0 ? `${overallAccuracy.toFixed(1)}%` : '—'}
 							icon={<IconActivity />}
 							tooltipContent={t('tooltipOverall')}
 						/>

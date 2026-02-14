@@ -846,7 +846,8 @@ export interface ActionAnalysisRecord {
  * Aggregated stats for the Action Analysis Quality page
  */
 export interface ActionAnalysisStats {
-	totalVerified: number
+	totalRecords: number // All records with action_analysis
+	totalVerified: number // Records with both action_analysis and verification
 	requiresActionCorrect: number
 	requiresActionIncorrect: number
 	requiresActionAccuracy: number
@@ -862,7 +863,8 @@ export interface ActionAnalysisStats {
  */
 export interface CategoryActionStats {
 	category: string
-	totalVerified: number
+	totalRecords: number // All records with action_analysis
+	totalVerified: number // Records with verification
 	requiresActionAccuracy: number
 	actionTypeAccuracy: number
 	automationScore: number
@@ -874,6 +876,7 @@ export interface CategoryActionStats {
  */
 export interface SubSubCategoryStats {
 	subSubCategory: string
+	totalRecords: number
 	totalVerified: number
 	requiresActionAccuracy: number
 	actionTypeAccuracy: number
