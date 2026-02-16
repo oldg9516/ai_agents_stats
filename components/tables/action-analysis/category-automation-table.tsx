@@ -16,7 +16,6 @@ import {
 	TableRow,
 } from '@/components/ui/table'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
-import { Progress } from '@/components/ui/progress'
 import type { CategoryActionStats } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react'
@@ -33,21 +32,12 @@ function getAccuracyColor(accuracy: number): string {
 	return 'text-red-600 dark:text-red-400'
 }
 
-function getProgressColor(accuracy: number): string {
-	if (accuracy >= 90) return '[&>div]:bg-green-500'
-	if (accuracy >= 70) return '[&>div]:bg-yellow-500'
-	return '[&>div]:bg-red-500'
-}
-
 /**
- * Category Automation Potential Table
+ * Category Breakdown Table
  *
- * Shows per-category accuracy stats with:
+ * Shows per-category stats:
+ * - Total tickets, requires_action true/false, verified count, accuracy
  * - Expandable sub-subcategory rows
- * - Visual automation score bar
- * - Color-coded accuracy values
- *
- * Memoized to prevent unnecessary re-renders (rerender-memo)
  */
 export const CategoryAutomationTable = memo(function CategoryAutomationTable({
 	data,
@@ -67,19 +57,17 @@ export const CategoryAutomationTable = memo(function CategoryAutomationTable({
 		})
 	}
 
-	const maxScore = Math.max(...data.map(d => d.automationScore), 1)
-
 	return (
 		<Card>
 			<CardHeader>
 				<div className='flex items-center gap-1.5'>
 					<CardTitle className='text-lg sm:text-xl'>
-						{t('automationPotential')}
+						{t('categoryBreakdown')}
 					</CardTitle>
-					<InfoTooltip content={t('tooltipAutomationScore')} />
+					<InfoTooltip content={t('tooltipCategoryBreakdown')} />
 				</div>
 				<CardDescription className='text-sm'>
-					{t('categoryBreakdown')}
+					{t('tableDescription')}
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
@@ -89,10 +77,11 @@ export const CategoryAutomationTable = memo(function CategoryAutomationTable({
 							<TableRow>
 								<TableHead className='w-[250px]'>{t('category')}</TableHead>
 								<TableHead className='text-right w-[80px]'>{t('total')}</TableHead>
+								<TableHead className='text-right w-[80px]'>{t('true')}</TableHead>
+								<TableHead className='text-right w-[80px]'>{t('false')}</TableHead>
 								<TableHead className='text-right w-[80px]'>{t('verified')}</TableHead>
 								<TableHead className='text-right w-[120px]'>{t('requiresActionAccuracy')}</TableHead>
 								<TableHead className='text-right w-[120px]'>{t('actionTypeAccuracy')}</TableHead>
-								<TableHead className='w-[200px]'>{t('automationScore')}</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
@@ -128,6 +117,12 @@ export const CategoryAutomationTable = memo(function CategoryAutomationTable({
 												{cat.totalRecords}
 											</TableCell>
 											<TableCell className='text-right text-muted-foreground'>
+												{cat.requiresActionTrue}
+											</TableCell>
+											<TableCell className='text-right text-muted-foreground'>
+												{cat.requiresActionFalse}
+											</TableCell>
+											<TableCell className='text-right text-muted-foreground'>
 												{cat.totalVerified}
 											</TableCell>
 											<TableCell className={cn('text-right font-medium', cat.totalVerified > 0 ? getAccuracyColor(cat.requiresActionAccuracy) : 'text-muted-foreground')}>
@@ -135,17 +130,6 @@ export const CategoryAutomationTable = memo(function CategoryAutomationTable({
 											</TableCell>
 											<TableCell className={cn('text-right font-medium', cat.totalVerified > 0 ? getAccuracyColor(cat.actionTypeAccuracy) : 'text-muted-foreground')}>
 												{cat.totalVerified > 0 ? `${cat.actionTypeAccuracy.toFixed(1)}%` : '—'}
-											</TableCell>
-											<TableCell>
-												<div className='flex items-center gap-2'>
-													<Progress
-														value={(cat.automationScore / maxScore) * 100}
-														className={cn('h-2 flex-1', getProgressColor(cat.automationScore / maxScore * 100))}
-													/>
-													<span className='text-xs text-muted-foreground w-10 text-right'>
-														{cat.automationScore.toFixed(0)}
-													</span>
-												</div>
 											</TableCell>
 										</TableRow>
 										{/* Expandable sub-subcategory rows */}
@@ -161,14 +145,13 @@ export const CategoryAutomationTable = memo(function CategoryAutomationTable({
 													{sub.totalRecords}
 												</TableCell>
 												<TableCell className='text-right text-muted-foreground'>
-													{sub.totalVerified}
+													{sub.requiresActionTrue}
 												</TableCell>
-												<TableCell className={cn('text-right', sub.totalVerified > 0 ? getAccuracyColor(sub.requiresActionAccuracy) : 'text-muted-foreground')}>
-													{sub.totalVerified > 0 ? `${sub.requiresActionAccuracy.toFixed(1)}%` : '—'}
+												<TableCell className='text-right text-muted-foreground'>
+													{sub.requiresActionFalse}
 												</TableCell>
-												<TableCell className={cn('text-right', sub.totalVerified > 0 ? getAccuracyColor(sub.actionTypeAccuracy) : 'text-muted-foreground')}>
-													{sub.totalVerified > 0 ? `${sub.actionTypeAccuracy.toFixed(1)}%` : '—'}
-												</TableCell>
+												<TableCell />
+												<TableCell />
 												<TableCell />
 											</TableRow>
 										))}

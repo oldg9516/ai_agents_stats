@@ -15,7 +15,6 @@ export function useActionAnalysisFilters() {
 			setDateRange: state.setActionAnalysisDateRange,
 			setCategories: state.setActionAnalysisCategories,
 			setVersions: state.setActionAnalysisVersions,
-			setAgents: state.setActionAnalysisAgents,
 			resetFilters: state.resetActionAnalysisFilters,
 			updateFilters: state.updateActionAnalysisFilters,
 		}))

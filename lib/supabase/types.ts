@@ -825,20 +825,19 @@ export interface ActionAnalysisFilters {
 	}
 	categories: string[] // request_subtype - [] = all
 	versions: string[] // prompt_version - [] = all
-	agents: string[] // email - [] = all agents
 }
 
 /**
- * Enriched record with both AI determination and agent verification
+ * Record from support_threads_data with parsed action_analysis
+ * and optional verification from ticket_reviews
  */
 export interface ActionAnalysisRecord {
-	id: number
+	thread_id: string
 	created_at: string
 	request_subtype: string | null
 	request_sub_subtype: string | null
-	email: string | null
 	prompt_version: string | null
-	action_analysis: ActionAnalysis | null
+	action_analysis: ActionAnalysis
 	verification: ActionAnalysisVerification | null
 }
 
@@ -846,50 +845,46 @@ export interface ActionAnalysisRecord {
  * Aggregated stats for the Action Analysis Quality page
  */
 export interface ActionAnalysisStats {
-	totalRecords: number // All records with action_analysis
-	totalVerified: number // Records with both action_analysis and verification
-	requiresActionCorrect: number
-	requiresActionIncorrect: number
-	requiresActionAccuracy: number
-	actionTypeCorrect: number
-	actionTypeIncorrect: number
-	actionTypeAccuracy: number
+	totalRecords: number // All tickets with action_analysis
+	requiresActionTrue: number // AI determined requires_system_action = true
+	requiresActionFalse: number // AI determined requires_system_action = false
+	totalVerified: number // Tickets verified by qualified agent
+	requiresActionAccuracy: number // Accuracy from verified subset
+	actionTypeAccuracy: number // Accuracy from verified subset
 	categoryBreakdown: CategoryActionStats[]
 	actionTypeDistribution: ActionTypeDistItem[]
 }
 
 /**
- * Per-category accuracy stats with automation potential
+ * Per-category stats
  */
 export interface CategoryActionStats {
 	category: string
-	totalRecords: number // All records with action_analysis
-	totalVerified: number // Records with verification
+	totalRecords: number
+	requiresActionTrue: number
+	requiresActionFalse: number
+	totalVerified: number
 	requiresActionAccuracy: number
 	actionTypeAccuracy: number
-	automationScore: number
 	subSubCategoryBreakdown: SubSubCategoryStats[]
 }
 
 /**
- * Per-sub-subcategory accuracy stats
+ * Per-sub-subcategory stats
  */
 export interface SubSubCategoryStats {
 	subSubCategory: string
 	totalRecords: number
-	totalVerified: number
-	requiresActionAccuracy: number
-	actionTypeAccuracy: number
+	requiresActionTrue: number
+	requiresActionFalse: number
 }
 
 /**
- * Action type distribution: AI prediction vs agent verification
+ * Action type distribution from AI predictions
  */
 export interface ActionTypeDistItem {
 	actionType: string
-	aiCount: number
-	verifiedCorrect: number
-	verifiedIncorrect: number
+	count: number
 }
 
 // ============================================================================

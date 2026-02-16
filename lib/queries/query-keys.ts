@@ -95,7 +95,6 @@ export const actionAnalysisKeys = {
 				to: filters.dateRange.to.toISOString(),
 				categories: filters.categories.sort(),
 				versions: filters.versions.sort(),
-				agents: filters.agents.sort(),
 			},
 		] as const,
 }

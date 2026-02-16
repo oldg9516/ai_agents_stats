@@ -53,10 +53,10 @@ const CategoryAutomationTable = dynamic(
  * Action Analysis Content — main client component
  *
  * Layout:
- * 1. Date range + filter sheet
- * 2. KPI cards (4)
+ * 1. Date range + filter sheet (categories, versions)
+ * 2. KPI cards (4): total, requires_action true/false, verified, accuracy
  * 3. Action Type Distribution chart
- * 4. Category Automation Potential table
+ * 4. Category breakdown table
  */
 export function ActionAnalysisContent() {
 	const t = useTranslations('actionAnalysis')
@@ -67,7 +67,6 @@ export function ActionAnalysisContent() {
 		setDateRange,
 		setCategories,
 		setVersions,
-		setAgents,
 		resetFilters,
 	} = useActionAnalysisFilters()
 
@@ -86,18 +85,15 @@ export function ActionAnalysisContent() {
 	// Local filter state for sheet (deferred apply)
 	const [localCategories, setLocalCategories] = useState(filters.categories)
 	const [localVersions, setLocalVersions] = useState(filters.versions)
-	const [localAgents, setLocalAgents] = useState(filters.agents)
 
 	const handleApplyFilters = () => {
 		setCategories(localCategories)
 		setVersions(localVersions)
-		setAgents(localAgents)
 	}
 
 	const handleResetFilters = () => {
 		setLocalCategories([])
 		setLocalVersions([])
-		setLocalAgents([])
 		resetFilters()
 	}
 
@@ -106,7 +102,6 @@ export function ActionAnalysisContent() {
 		if (open) {
 			setLocalCategories(filters.categories)
 			setLocalVersions(filters.versions)
-			setLocalAgents(filters.agents)
 		}
 	}
 
@@ -115,14 +110,9 @@ export function ActionAnalysisContent() {
 		if (filterOptions) {
 			if (filters.categories.length > 0 && filters.categories.length < filterOptions.categories.length) count++
 			if (filters.versions.length > 0 && filters.versions.length < filterOptions.versions.length) count++
-			if (filters.agents.length > 0 && filters.agents.length < filterOptions.agents.length) count++
 		}
 		return count
 	}
-
-	const overallAccuracy = data && data.totalVerified > 0
-		? (data.requiresActionAccuracy + data.actionTypeAccuracy) / 2
-		: 0
 
 	return (
 		<div className='flex flex-col gap-4 py-4 md:gap-6 md:py-6 px-4 lg:px-6'>
@@ -152,13 +142,6 @@ export function ActionAnalysisContent() {
 												options={filterOptions.versions}
 												selected={localVersions}
 												onChange={setLocalVersions}
-											/>
-											<MultiSelectFilter
-												label={tFilters('agents')}
-												options={filterOptions.agents}
-												selected={localAgents}
-												onChange={setLocalAgents}
-												searchable
 											/>
 										</>
 									) : (
@@ -214,27 +197,26 @@ export function ActionAnalysisContent() {
 							title={t('totalRecords')}
 							value={data.totalRecords}
 							icon={<IconChecks />}
-							description={`${data.totalVerified} ${t('verified')}`}
 							tooltipContent={t('tooltipTotalRecords')}
 						/>
 						<KPICard
-							title={t('requiresActionAccuracy')}
-							value={data.totalVerified > 0 ? `${data.requiresActionAccuracy.toFixed(1)}%` : '—'}
+							title={t('requiresAction')}
+							value={data.requiresActionTrue}
 							icon={<IconTarget />}
-							description={data.totalVerified > 0 ? `${data.requiresActionCorrect} ${t('correct')} / ${data.requiresActionIncorrect} ${t('incorrect')}` : t('noVerifiedYet')}
+							description={`${t('true')}: ${data.requiresActionTrue} / ${t('false')}: ${data.requiresActionFalse}`}
 							tooltipContent={t('tooltipRequiresAction')}
 						/>
 						<KPICard
-							title={t('actionTypeAccuracy')}
-							value={data.totalVerified > 0 ? `${data.actionTypeAccuracy.toFixed(1)}%` : '—'}
+							title={t('verified')}
+							value={data.totalVerified}
 							icon={<IconBolt />}
-							description={data.totalVerified > 0 ? `${data.actionTypeCorrect} ${t('correct')} / ${data.actionTypeIncorrect} ${t('incorrect')}` : t('noVerifiedYet')}
-							tooltipContent={t('tooltipActionType')}
+							tooltipContent={t('tooltipTotalVerified')}
 						/>
 						<KPICard
 							title={t('overallAccuracy')}
-							value={data.totalVerified > 0 ? `${overallAccuracy.toFixed(1)}%` : '—'}
+							value={data.totalVerified > 0 ? `${((data.requiresActionAccuracy + data.actionTypeAccuracy) / 2).toFixed(1)}%` : '—'}
 							icon={<IconActivity />}
+							description={data.totalVerified > 0 ? `${t('requiresActionAccuracy')}: ${data.requiresActionAccuracy.toFixed(0)}% / ${t('actionTypeAccuracy')}: ${data.actionTypeAccuracy.toFixed(0)}%` : t('noVerifiedYet')}
 							tooltipContent={t('tooltipOverall')}
 						/>
 					</div>
@@ -244,7 +226,7 @@ export function ActionAnalysisContent() {
 						<ActionTypeAccuracyChart data={data.actionTypeDistribution} />
 					)}
 
-					{/* Category Automation Potential Table */}
+					{/* Category Breakdown Table */}
 					{data.categoryBreakdown.length > 0 && (
 						<CategoryAutomationTable data={data.categoryBreakdown} />
 					)}

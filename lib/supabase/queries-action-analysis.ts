@@ -1,9 +1,13 @@
 /**
  * Action Analysis Quality Database Queries
  *
- * Fetches records that have both AI action_analysis and agent verification
- * from ai_comparison_with_reviews VIEW + support_threads_data enrichment.
- * Used for measuring accuracy of AI action determination.
+ * Primary source: support_threads_data (where action_analysis lives)
+ * Verification: ai_comparison_with_reviews VIEW (action_analysis_verification from ticket_reviews)
+ *
+ * Flow:
+ * 1. Query support_threads_data where action_analysis IS NOT NULL
+ * 2. Batch fetch verification data from ai_comparison_with_reviews by thread_id
+ * 3. Return enriched records
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -15,47 +19,30 @@ import type {
 } from './types'
 
 const BATCH_SIZE = 1000
-const THREAD_BATCH_SIZE = 500
 
 /**
- * Build filter conditions for a query on ai_comparison_with_reviews
- */
-function applyFilters(
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	query: any,
-	filters: ActionAnalysisFilters
-) {
-	const { dateRange, categories, versions, agents } = filters
-
-	let q = query
-		.gte('created_at', dateRange.from.toISOString())
-		.lt('created_at', dateRange.to.toISOString())
-		.neq('email', 'api@levhaolam.com')
-
-	if (categories.length > 0) q = q.in('request_subtype', categories)
-	if (versions.length > 0) q = q.in('prompt_version', versions)
-	if (agents.length > 0) q = q.in('email', agents)
-
-	return q
-}
-
-/**
- * Fetch verified action analysis records
+ * Fetch action analysis records from support_threads_data
  *
- * 1. Query ai_comparison_with_reviews VIEW for records with verification
- * 2. Batch fetch support_threads_data for action_analysis + request_sub_subtype
- * 3. Parse action_analysis JSON text
- * 4. Return enriched records
+ * 1. Query support_threads_data where action_analysis is not null
+ * 2. Batch fetch verification from ai_comparison_with_reviews
+ * 3. Return enriched records
  */
 export async function fetchActionAnalysisData(
 	supabase: SupabaseClient,
 	filters: ActionAnalysisFilters
 ): Promise<ActionAnalysisRecord[]> {
-	// Step 1: Get total count
-	const countQuery = applyFilters(
-		supabase.from('ai_comparison_with_reviews').select('id', { count: 'exact', head: true }),
-		filters
-	)
+	const { dateRange, categories, versions } = filters
+
+	// Step 1: Count records in support_threads_data with action_analysis
+	let countQuery = (supabase as any)
+		.from('support_threads_data')
+		.select('thread_id', { count: 'exact', head: true })
+		.not('action_analysis', 'is', null)
+		.gte('created_at', dateRange.from.toISOString())
+		.lt('created_at', dateRange.to.toISOString())
+
+	if (categories.length > 0) countQuery = countQuery.in('request_subtype', categories)
+	if (versions.length > 0) countQuery = countQuery.in('prompt_version', versions)
 
 	const { count, error: countError } = await countQuery
 	if (countError) throw countError
@@ -63,24 +50,22 @@ export async function fetchActionAnalysisData(
 	const totalRecords = count ?? 0
 	if (totalRecords === 0) return []
 
-	// Step 2: Fetch records in batches (bypasses Supabase 1000-row default limit)
+	// Step 2: Fetch records in batches
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const records: any[] = []
 	const numBatches = Math.ceil(totalRecords / BATCH_SIZE)
 
 	for (let i = 0; i < numBatches; i++) {
-		const batchQuery = applyFilters(
-			supabase.from('ai_comparison_with_reviews').select(`
-				id,
-				created_at,
-				request_subtype,
-				email,
-				prompt_version,
-				thread_id,
-				action_analysis_verification
-			`),
-			filters
-		).range(i * BATCH_SIZE, (i + 1) * BATCH_SIZE - 1)
+		let batchQuery = (supabase as any)
+			.from('support_threads_data')
+			.select('thread_id, request_subtype, request_sub_subtype, prompt_version, created_at, action_analysis')
+			.not('action_analysis', 'is', null)
+			.gte('created_at', dateRange.from.toISOString())
+			.lt('created_at', dateRange.to.toISOString())
+			.range(i * BATCH_SIZE, (i + 1) * BATCH_SIZE - 1)
+
+		if (categories.length > 0) batchQuery = batchQuery.in('request_subtype', categories)
+		if (versions.length > 0) batchQuery = batchQuery.in('prompt_version', versions)
 
 		const { data: batchData, error: batchError } = await batchQuery
 		if (batchError) throw batchError
@@ -89,76 +74,55 @@ export async function fetchActionAnalysisData(
 
 	if (records.length === 0) return []
 
-	// Step 3: Batch fetch support_threads_data for action_analysis enrichment
-	const threadIds = records
-		.map((r: { thread_id: string | null }) => r.thread_id)
-		.filter(Boolean) as string[]
-
-	if (threadIds.length === 0) return []
-
+	// Step 3: Batch fetch verification data from ai_comparison_with_reviews
+	const threadIds = records.map((r: { thread_id: string }) => r.thread_id)
 	const uniqueThreadIds = [...new Set(threadIds)]
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const allThreadsData: any[] = []
+	const verificationMap = new Map<string, ActionAnalysisVerification>()
 
-	for (let i = 0; i < uniqueThreadIds.length; i += THREAD_BATCH_SIZE) {
-		const batch = uniqueThreadIds.slice(i, i + THREAD_BATCH_SIZE)
-		const { data: batchData, error: batchError } = await supabase
-			.from('support_threads_data')
-			.select('thread_id, action_analysis, request_sub_subtype')
+	for (let i = 0; i < uniqueThreadIds.length; i += BATCH_SIZE) {
+		const batch = uniqueThreadIds.slice(i, i + BATCH_SIZE)
+		const { data: verData, error: verError } = await (supabase as any)
+			.from('ai_comparison_with_reviews')
+			.select('thread_id, action_analysis_verification')
 			.in('thread_id', batch)
+			.not('action_analysis_verification', 'is', null)
 
-		if (batchError) {
-			console.error('[ActionAnalysis] Error fetching thread data batch:', batchError)
+		if (verError) {
+			console.error('[ActionAnalysis] Error fetching verification batch:', verError)
 			continue
 		}
-		if (batchData) allThreadsData.push(...batchData)
-	}
-
-	// Step 4: Build Maps for O(1) lookups (js-index-maps)
-	const actionAnalysisMap = new Map<string, ActionAnalysis | null>()
-	const subSubTypeMap = new Map<string, string | null>()
-
-	for (const thread of allThreadsData) {
-		if (!thread.thread_id) continue
-
-		if (thread.request_sub_subtype) {
-			subSubTypeMap.set(thread.thread_id, thread.request_sub_subtype)
-		}
-
-		if (thread.action_analysis) {
-			try {
-				const parsed = typeof thread.action_analysis === 'string'
-					? JSON.parse(thread.action_analysis)
-					: thread.action_analysis
-				actionAnalysisMap.set(thread.thread_id, parsed)
-			} catch (e) {
-				console.error('[ActionAnalysis] Error parsing action_analysis JSON:', e)
-				actionAnalysisMap.set(thread.thread_id, null)
+		if (verData) {
+			for (const row of verData) {
+				if (row.thread_id && row.action_analysis_verification) {
+					verificationMap.set(row.thread_id, row.action_analysis_verification)
+				}
 			}
 		}
 	}
 
-	// Step 5: Enrich and filter — include records that have action_analysis (verification optional)
+	// Step 4: Build enriched records
 	const enriched: ActionAnalysisRecord[] = []
 
 	for (const record of records) {
-		const threadId = record.thread_id as string | null
-		if (!threadId) continue
+		let actionAnalysis: ActionAnalysis | null = null
+		try {
+			actionAnalysis = typeof record.action_analysis === 'string'
+				? JSON.parse(record.action_analysis)
+				: record.action_analysis
+		} catch {
+			continue
+		}
 
-		const actionAnalysis = actionAnalysisMap.get(threadId) ?? null
 		if (!actionAnalysis) continue
 
-		const verification = record.action_analysis_verification as ActionAnalysisVerification | null
-
 		enriched.push({
-			id: record.id,
+			thread_id: record.thread_id,
 			created_at: record.created_at,
 			request_subtype: record.request_subtype,
-			request_sub_subtype: subSubTypeMap.get(threadId) ?? null,
-			email: record.email,
+			request_sub_subtype: record.request_sub_subtype ?? null,
 			prompt_version: record.prompt_version,
 			action_analysis: actionAnalysis,
-			verification: verification ?? null,
+			verification: verificationMap.get(record.thread_id) ?? null,
 		})
 	}
 

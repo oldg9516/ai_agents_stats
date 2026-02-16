@@ -3,8 +3,8 @@
 /**
  * Action Analysis Quality React Query Hook
  *
- * Fetches verified action analysis records and computes
- * aggregated stats for KPIs, charts, and category breakdown.
+ * Fetches action analysis records from support_threads_data
+ * and computes aggregated stats for KPIs, charts, and category breakdown.
  */
 
 import { useQuery } from '@tanstack/react-query'
@@ -30,174 +30,119 @@ export function computeActionAnalysisStats(
 	if (records.length === 0) {
 		return {
 			totalRecords: 0,
+			requiresActionTrue: 0,
+			requiresActionFalse: 0,
 			totalVerified: 0,
-			requiresActionCorrect: 0,
-			requiresActionIncorrect: 0,
 			requiresActionAccuracy: 0,
-			actionTypeCorrect: 0,
-			actionTypeIncorrect: 0,
 			actionTypeAccuracy: 0,
 			categoryBreakdown: [],
 			actionTypeDistribution: [],
 		}
 	}
 
-	// Single pass: compute global metrics + category accumulators + action type accumulators
-	let requiresActionCorrect = 0
-	let requiresActionIncorrect = 0
-	let actionTypeCorrect = 0
-	let actionTypeIncorrect = 0
+	let requiresActionTrue = 0
+	let requiresActionFalse = 0
 	let totalVerified = 0
+	let reqAccCorrect = 0
+	let typeAccCorrect = 0
 
 	// Category accumulators
 	const categoryMap = new Map<string, {
 		totalRecords: number
+		reqTrue: number
+		reqFalse: number
 		totalVerified: number
-		reqCorrect: number
-		typeCorrect: number
+		reqAccCorrect: number
+		typeAccCorrect: number
 		subSubMap: Map<string, {
 			totalRecords: number
-			totalVerified: number
-			reqCorrect: number
-			typeCorrect: number
+			reqTrue: number
+			reqFalse: number
 		}>
 	}>()
 
-	// Action type accumulators: Map<actionType, { aiCount, correct, incorrect }>
-	const actionTypeMap = new Map<string, {
-		aiCount: number
-		verifiedCorrect: number
-		verifiedIncorrect: number
-	}>()
+	// Action type distribution
+	const actionTypeMap = new Map<string, number>()
 
 	for (const record of records) {
 		const { action_analysis, verification } = record
-		if (!action_analysis) continue
 
+		// requires_system_action distribution
+		if (action_analysis.requires_system_action) {
+			requiresActionTrue++
+		} else {
+			requiresActionFalse++
+		}
+
+		// Category accumulation
 		const category = record.request_subtype ?? 'Unknown'
 		let catEntry = categoryMap.get(category)
 		if (!catEntry) {
 			catEntry = {
-				totalRecords: 0, totalVerified: 0,
-				reqCorrect: 0, typeCorrect: 0,
+				totalRecords: 0, reqTrue: 0, reqFalse: 0,
+				totalVerified: 0, reqAccCorrect: 0, typeAccCorrect: 0,
 				subSubMap: new Map(),
 			}
 			categoryMap.set(category, catEntry)
 		}
 		catEntry.totalRecords++
+		if (action_analysis.requires_system_action) catEntry.reqTrue++
+		else catEntry.reqFalse++
 
+		// Sub-subcategory accumulation
 		const subSub = record.request_sub_subtype ?? 'N/A'
 		let subEntry = catEntry.subSubMap.get(subSub)
 		if (!subEntry) {
-			subEntry = { totalRecords: 0, totalVerified: 0, reqCorrect: 0, typeCorrect: 0 }
+			subEntry = { totalRecords: 0, reqTrue: 0, reqFalse: 0 }
 			catEntry.subSubMap.set(subSub, subEntry)
 		}
 		subEntry.totalRecords++
+		if (action_analysis.requires_system_action) subEntry.reqTrue++
+		else subEntry.reqFalse++
 
-		// Action type distribution — count AI predictions from all records
+		// Action type distribution (from all records)
 		const aiTypes = action_analysis.action_type ?? []
 		for (const actionType of aiTypes) {
-			let typeEntry = actionTypeMap.get(actionType)
-			if (!typeEntry) {
-				typeEntry = { aiCount: 0, verifiedCorrect: 0, verifiedIncorrect: 0 }
-				actionTypeMap.set(actionType, typeEntry)
-			}
-			typeEntry.aiCount++
+			actionTypeMap.set(actionType, (actionTypeMap.get(actionType) ?? 0) + 1)
 		}
 
-		// Accuracy metrics — only from verified records
+		// Accuracy — only from verified records
 		if (verification) {
 			totalVerified++
 			catEntry.totalVerified++
-			subEntry.totalVerified++
 
-			const reqCorrect = verification.requires_system_action_correct
-			if (reqCorrect) {
-				requiresActionCorrect++
-				catEntry.reqCorrect++
-				subEntry.reqCorrect++
-			} else {
-				requiresActionIncorrect++
-			}
+			if (verification.requires_system_action_correct) reqAccCorrect++
+			if (verification.corrected_action_types == null) typeAccCorrect++
 
-			const typeIsCorrect = verification.corrected_action_types == null
-			if (typeIsCorrect) {
-				actionTypeCorrect++
-				catEntry.typeCorrect++
-				subEntry.typeCorrect++
-			} else {
-				actionTypeIncorrect++
-			}
-
-			// Verified action type distribution
-			const correctedTypes = verification.corrected_action_types
-			for (const actionType of aiTypes) {
-				const typeEntry = actionTypeMap.get(actionType)!
-				if (correctedTypes == null) {
-					typeEntry.verifiedCorrect++
-				} else {
-					if (correctedTypes.includes(actionType)) {
-						typeEntry.verifiedCorrect++
-					} else {
-						typeEntry.verifiedIncorrect++
-					}
-				}
-			}
-
-			// Add corrected types that AI missed
-			if (correctedTypes) {
-				for (const correctedType of correctedTypes) {
-					if (!aiTypes.includes(correctedType)) {
-						let typeEntry = actionTypeMap.get(correctedType)
-						if (!typeEntry) {
-							typeEntry = { aiCount: 0, verifiedCorrect: 0, verifiedIncorrect: 0 }
-							actionTypeMap.set(correctedType, typeEntry)
-						}
-						typeEntry.verifiedCorrect++
-					}
-				}
-			}
+			if (verification.requires_system_action_correct) catEntry.reqAccCorrect++
+			if (verification.corrected_action_types == null) catEntry.typeAccCorrect++
 		}
 	}
 
 	const totalRecords = records.length
-	const requiresActionAccuracy = totalVerified > 0
-		? (requiresActionCorrect / totalVerified) * 100
-		: 0
-	const actionTypeAccuracy = totalVerified > 0
-		? (actionTypeCorrect / totalVerified) * 100
-		: 0
+	const requiresActionAccuracy = totalVerified > 0 ? (reqAccCorrect / totalVerified) * 100 : 0
+	const actionTypeAccuracy = totalVerified > 0 ? (typeAccCorrect / totalVerified) * 100 : 0
 
-	// Build category breakdown with automation score
-	const maxVolume = Math.max(...Array.from(categoryMap.values()).map(c => c.totalRecords), 1)
-
+	// Build category breakdown
 	const categoryBreakdown: CategoryActionStats[] = Array.from(categoryMap.entries())
 		.map(([category, data]) => {
-			const reqAcc = data.totalVerified > 0 ? (data.reqCorrect / data.totalVerified) * 100 : 0
-			const typeAcc = data.totalVerified > 0 ? (data.typeCorrect / data.totalVerified) * 100 : 0
-			const avgAccuracy = data.totalVerified > 0 ? (reqAcc + typeAcc) / 2 : 0
-			const normalizedVolume = data.totalRecords / maxVolume
-			const automationScore = data.totalVerified > 0
-				? avgAccuracy * 0.7 + normalizedVolume * 100 * 0.3
-				: normalizedVolume * 100 // No accuracy yet — rank by volume only
-
 			const subSubCategoryBreakdown: SubSubCategoryStats[] = Array.from(data.subSubMap.entries())
 				.map(([subSub, subData]) => ({
 					subSubCategory: subSub,
 					totalRecords: subData.totalRecords,
-					totalVerified: subData.totalVerified,
-					requiresActionAccuracy: subData.totalVerified > 0 ? (subData.reqCorrect / subData.totalVerified) * 100 : 0,
-					actionTypeAccuracy: subData.totalVerified > 0 ? (subData.typeCorrect / subData.totalVerified) * 100 : 0,
+					requiresActionTrue: subData.reqTrue,
+					requiresActionFalse: subData.reqFalse,
 				}))
 				.sort((a, b) => b.totalRecords - a.totalRecords)
 
 			return {
 				category,
 				totalRecords: data.totalRecords,
+				requiresActionTrue: data.reqTrue,
+				requiresActionFalse: data.reqFalse,
 				totalVerified: data.totalVerified,
-				requiresActionAccuracy: reqAcc,
-				actionTypeAccuracy: typeAcc,
-				automationScore,
+				requiresActionAccuracy: data.totalVerified > 0 ? (data.reqAccCorrect / data.totalVerified) * 100 : 0,
+				actionTypeAccuracy: data.totalVerified > 0 ? (data.typeAccCorrect / data.totalVerified) * 100 : 0,
 				subSubCategoryBreakdown,
 			}
 		})
@@ -205,23 +150,16 @@ export function computeActionAnalysisStats(
 
 	// Build action type distribution
 	const actionTypeDistribution: ActionTypeDistItem[] = Array.from(actionTypeMap.entries())
-		.map(([actionType, data]) => ({
-			actionType,
-			aiCount: data.aiCount,
-			verifiedCorrect: data.verifiedCorrect,
-			verifiedIncorrect: data.verifiedIncorrect,
-		}))
+		.map(([actionType, count]) => ({ actionType, count }))
 		.filter(item => item.actionType !== 'none')
-		.sort((a, b) => b.aiCount - a.aiCount)
+		.sort((a, b) => b.count - a.count)
 
 	return {
 		totalRecords,
+		requiresActionTrue,
+		requiresActionFalse,
 		totalVerified,
-		requiresActionCorrect,
-		requiresActionIncorrect,
 		requiresActionAccuracy,
-		actionTypeCorrect,
-		actionTypeIncorrect,
 		actionTypeAccuracy,
 		categoryBreakdown,
 		actionTypeDistribution,
@@ -230,9 +168,6 @@ export function computeActionAnalysisStats(
 
 /**
  * React Query hook for action analysis data
- *
- * Fetches raw records via server action, then computes
- * aggregated stats client-side for display.
  */
 export function useActionAnalysisData(filters: ActionAnalysisFilters) {
 	const query = useQuery({

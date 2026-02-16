@@ -7,7 +7,6 @@ function getDefaultActionAnalysisFilters(): ActionAnalysisFilters {
 		dateRange: getDefaultDateRange(30),
 		categories: [],
 		versions: [],
-		agents: [],
 	}
 }
 
@@ -16,7 +15,6 @@ export interface ActionAnalysisSlice {
 	setActionAnalysisDateRange: (from: Date, to: Date) => void
 	setActionAnalysisCategories: (categories: string[]) => void
 	setActionAnalysisVersions: (versions: string[]) => void
-	setActionAnalysisAgents: (agents: string[]) => void
 	resetActionAnalysisFilters: () => void
 	updateActionAnalysisFilters: (filters: Partial<ActionAnalysisFilters>) => void
 }
@@ -34,7 +32,6 @@ export const createActionAnalysisSlice: StateCreator<
 		setActionAnalysisDateRange: ops.setDateRange,
 		setActionAnalysisCategories: v => ops.setField('categories', v),
 		setActionAnalysisVersions: v => ops.setField('versions', v),
-		setActionAnalysisAgents: v => ops.setField('agents', v),
 		resetActionAnalysisFilters: ops.resetFilters,
 		updateActionAnalysisFilters: ops.updateFilters,
 	}

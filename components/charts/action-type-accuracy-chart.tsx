@@ -16,32 +16,24 @@ import { InfoTooltip } from '@/components/ui/info-tooltip'
 import type { ActionTypeDistItem } from '@/lib/supabase/types'
 import { useTranslations } from 'next-intl'
 import { memo, useMemo } from 'react'
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Legend } from 'recharts'
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 
 interface ActionTypeAccuracyChartProps {
 	data: ActionTypeDistItem[]
 }
 
 const chartConfig: ChartConfig = {
-	correct: {
-		label: 'Correct',
-		color: 'var(--chart-7)',
-	},
-	incorrect: {
-		label: 'Incorrect',
+	count: {
+		label: 'Count',
 		color: 'var(--chart-4)',
 	},
 }
 
 /**
- * Action Type Accuracy Chart
+ * Action Type Distribution Chart
  *
- * Stacked horizontal bar chart showing per action type:
- * - Green portion: agent confirmed (correct)
- * - Red portion: agent corrected (incorrect)
- * - Total bar length = AI predicted count
- *
- * Memoized to prevent unnecessary re-renders (rerender-memo)
+ * Horizontal bar chart showing how many times AI predicted each action type.
+ * Data from support_threads_data.action_analysis.action_type.
  */
 export const ActionTypeAccuracyChart = memo(function ActionTypeAccuracyChart({
 	data,
@@ -49,17 +41,10 @@ export const ActionTypeAccuracyChart = memo(function ActionTypeAccuracyChart({
 	const t = useTranslations('actionAnalysis')
 
 	const chartData = useMemo(() =>
-		data.map(item => {
-			const total = item.verifiedCorrect + item.verifiedIncorrect
-			const accuracy = total > 0 ? (item.verifiedCorrect / total) * 100 : 0
-			return {
-				actionType: item.actionType.replace(/_/g, ' '),
-				correct: item.verifiedCorrect,
-				incorrect: item.verifiedIncorrect,
-				total,
-				accuracy,
-			}
-		}),
+		data.map(item => ({
+			actionType: item.actionType.replace(/_/g, ' '),
+			count: item.count,
+		})),
 		[data]
 	)
 
@@ -77,7 +62,7 @@ export const ActionTypeAccuracyChart = memo(function ActionTypeAccuracyChart({
 					<InfoTooltip content={t('tooltipActionType')} />
 				</div>
 				<CardDescription className='text-sm'>
-					{t('description')}
+					{t('chartDescription')}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className='overflow-hidden'>
@@ -105,50 +90,18 @@ export const ActionTypeAccuracyChart = memo(function ActionTypeAccuracyChart({
 								if (!item) return null
 								return (
 									<div className='rounded-lg border bg-background p-3 shadow-md'>
-										<p className='mb-2 font-medium'>{item.actionType}</p>
-										<div className='flex flex-col gap-1 text-sm'>
-											<div className='flex items-center justify-between gap-4'>
-												<span className='text-muted-foreground'>{t('total')}:</span>
-												<span className='font-medium'>{item.total}</span>
-											</div>
-											<div className='flex items-center justify-between gap-4'>
-												<div className='flex items-center gap-1.5'>
-													<span className='size-2.5 rounded-full' style={{ backgroundColor: chartConfig.correct.color }} />
-													<span className='text-muted-foreground'>{t('agentConfirmed')}:</span>
-												</div>
-												<span className='font-medium'>{item.correct}</span>
-											</div>
-											<div className='flex items-center justify-between gap-4'>
-												<div className='flex items-center gap-1.5'>
-													<span className='size-2.5 rounded-full' style={{ backgroundColor: chartConfig.incorrect.color }} />
-													<span className='text-muted-foreground'>{t('agentCorrected')}:</span>
-												</div>
-												<span className='font-medium'>{item.incorrect}</span>
-											</div>
-											<div className='mt-1 flex items-center justify-between gap-4 border-t pt-1'>
-												<span className='text-muted-foreground'>{t('accuracy')}:</span>
-												<span className='font-semibold'>{item.accuracy.toFixed(1)}%</span>
-											</div>
+										<p className='mb-1 font-medium'>{item.actionType}</p>
+										<div className='text-sm'>
+											<span className='text-muted-foreground'>{t('total')}: </span>
+											<span className='font-medium'>{item.count}</span>
 										</div>
 									</div>
 								)
 							}}
 						/>
-						<Legend
-							formatter={(value: string) =>
-								value === 'correct' ? t('agentConfirmed') : t('agentCorrected')
-							}
-						/>
 						<Bar
-							dataKey='correct'
-							stackId='stack'
-							fill={chartConfig.correct.color}
-							radius={[0, 0, 0, 0]}
-						/>
-						<Bar
-							dataKey='incorrect'
-							stackId='stack'
-							fill={chartConfig.incorrect.color}
+							dataKey='count'
+							fill={chartConfig.count.color}
 							radius={[0, 4, 4, 0]}
 						/>
 					</BarChart>
