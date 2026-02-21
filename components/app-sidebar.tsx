@@ -19,6 +19,7 @@ import {
 	IconReport,
 	IconSearch,
 	IconSettings,
+	IconRobot,
 	IconTarget,
 	IconTicket,
 	IconUsers,
@@ -64,6 +65,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				title: t('actionAnalysis'),
 				url: '/action-analysis',
 				icon: IconTarget,
+			},
+			{
+				title: t('automationOverview'),
+				url: '/automation-overview',
+				icon: IconRobot,
 			},
 			{
 				title: t('requestCategories'),

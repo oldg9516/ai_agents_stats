@@ -888,6 +888,69 @@ export interface ActionTypeDistItem {
 }
 
 // ============================================================================
+// Automation Overview Types
+// ============================================================================
+
+/**
+ * Automation Overview page filters
+ */
+export interface AutomationOverviewFilters {
+	dateRange: {
+		from: Date
+		to: Date
+	}
+	categories: string[] // request_subtype - [] = all
+	versions: string[] // prompt_version - [] = all
+}
+
+/**
+ * Record from support_threads_data with action_analysis + is_outstanding
+ */
+export interface AutomationOverviewRecord {
+	thread_id: string
+	created_at: string
+	request_subtype: string | null
+	request_sub_subtype: string | null
+	prompt_version: string | null
+	action_analysis: ActionAnalysis
+	is_outstanding: boolean | null
+}
+
+/**
+ * Aggregated stats for the Automation Overview page
+ */
+export interface AutomationOverviewStats {
+	totalRecords: number
+	autoReplyCount: number
+	draftCount: number
+	autoReplyRate: number // percentage
+	categoryBreakdown: CategoryAutomationOverviewStats[]
+}
+
+/**
+ * Per-category automation stats
+ */
+export interface CategoryAutomationOverviewStats {
+	category: string
+	totalRecords: number
+	autoReplyCount: number
+	draftCount: number
+	autoReplyRate: number // percentage
+	ruleSource: string // 'is_outstanding' | 'requires_system_action'
+	subSubCategoryBreakdown: SubSubAutomationOverviewStats[]
+}
+
+/**
+ * Per-sub-subcategory automation stats
+ */
+export interface SubSubAutomationOverviewStats {
+	subSubCategory: string
+	totalRecords: number
+	autoReplyCount: number
+	draftCount: number
+}
+
+// ============================================================================
 // Backlog Reports Types
 // ============================================================================
 

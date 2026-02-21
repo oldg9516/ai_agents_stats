@@ -9,6 +9,7 @@
 		"requestCategories": "Request Categories",
 		"ticketsReview": "Tickets Review",
 		"actionAnalysis": "Action Analysis",
+		"automationOverview": "Automation Overview",
 		"backlogReports": "Backlog Reports",
 		"agentsStats": "Agent Statistics",
 		"aiChat": "AI Chat",
@@ -1398,5 +1399,26 @@
 		"tooltipActionType": "How often AI correctly identifies the type of system action",
 		"tooltipOverall": "Combined accuracy of action detection and action type from verified tickets",
 		"tooltipCategoryBreakdown": "Per-category distribution of requires_system_action true/false and verification stats"
+	},
+	"automationOverview": {
+		"title": "Automation Overview",
+		"description": "Auto-reply vs draft statistics based on subcategory rules",
+		"totalTickets": "Total Tickets",
+		"autoReply": "Auto-Reply",
+		"draft": "Draft",
+		"noData": "No tickets with action analysis found for the selected period",
+		"chartTitle": "Auto-Reply vs Draft by Category",
+		"chartDescription": "Stacked distribution of auto-reply and draft tickets per category",
+		"tableTitle": "Category Breakdown",
+		"tableDescription": "Auto-reply vs draft stats per category with expandable sub-subcategories",
+		"category": "Category",
+		"rule": "Rule",
+		"total": "Total",
+		"rate": "Auto %",
+		"tooltipTotalTickets": "Total tickets with AI action analysis",
+		"tooltipAutoReply": "Tickets sent automatically without manual review",
+		"tooltipDraft": "Tickets that required manual review before sending",
+		"tooltipChart": "Visual breakdown of auto-reply vs draft per category. Green = auto-reply, pink = draft",
+		"tooltipTable": "Per-category stats. Rule column shows which field determines auto-reply status"
 	}
 }

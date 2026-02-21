@@ -20,6 +20,10 @@ import {
 	ActionAnalysisSlice,
 } from './slices/action-analysis-slice'
 import {
+	createAutomationOverviewSlice,
+	AutomationOverviewSlice,
+} from './slices/automation-overview-slice'
+import {
 	validateAndFixDateRange,
 	isDateRangeValid,
 } from '@/lib/utils/validate-date-range'
@@ -27,7 +31,7 @@ import {
 /**
  * Global store combining all slices
  */
-type StoreState = DashboardSlice & SupportSlice & TicketsReviewSlice & BacklogReportsSlice & AgentsStatsSlice & ActionAnalysisSlice
+type StoreState = DashboardSlice & SupportSlice & TicketsReviewSlice & BacklogReportsSlice & AgentsStatsSlice & ActionAnalysisSlice & AutomationOverviewSlice
 
 // Clean up invalid localStorage data on startup
 if (typeof window !== 'undefined') {
@@ -36,7 +40,7 @@ if (typeof window !== 'undefined') {
 		try {
 			const parsed = JSON.parse(stored)
 			// Check if version exists, if not - clear old data
-			if (!parsed.version || parsed.version < 11) {
+			if (!parsed.version || parsed.version < 12) {
 				localStorage.removeItem('ai-stats-storage')
 			}
 		} catch {
@@ -56,10 +60,11 @@ export const useStore = create<StoreState>()(
 				...createBacklogReportsSlice(...a),
 				...createAgentsStatsSlice(...a),
 				...createActionAnalysisSlice(...a),
+				...createAutomationOverviewSlice(...a),
 			}),
 			{
 				name: 'ai-stats-storage',
-				version: 11, // Changed from 10 to 11 to add action analysis slice
+				version: 12, // Changed from 11 to 12 to add automation overview slice
 				partialize: state => ({
 					// Persist only filter states
 					dashboardFilters: state.dashboardFilters,
@@ -69,13 +74,14 @@ export const useStore = create<StoreState>()(
 					backlogReportsFilters: state.backlogReportsFilters,
 					agentStatsFilters: state.agentStatsFilters,
 					actionAnalysisFilters: state.actionAnalysisFilters,
+					automationOverviewFilters: state.automationOverviewFilters,
 					isGeneratingReport: state.isGeneratingReport,
 					generationStartedAt: state.generationStartedAt,
 				}),
 				// Migration function for version changes
 				migrate: (persistedState: any, version: number) => {
 					// Force reset on version change
-					if (version !== 11) {
+					if (version !== 12) {
 						return null
 					}
 
@@ -87,6 +93,7 @@ export const useStore = create<StoreState>()(
 						'backlogReportsFilters',
 						'agentStatsFilters',
 						'actionAnalysisFilters',
+						'automationOverviewFilters',
 					]
 
 					for (const key of filterKeys) {
@@ -117,6 +124,7 @@ export const useStore = create<StoreState>()(
 						{ key: 'backlogReportsFilters', defaultDays: 90 },
 						{ key: 'agentStatsFilters', defaultDays: 30 },
 						{ key: 'actionAnalysisFilters', defaultDays: 30 },
+						{ key: 'automationOverviewFilters', defaultDays: 30 },
 					]
 
 					for (const { key, defaultDays } of sliceConfigs) {

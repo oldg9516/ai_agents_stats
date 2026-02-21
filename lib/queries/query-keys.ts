@@ -5,7 +5,7 @@
  * and to prevent key collisions
  */
 
-import type { ActionAnalysisFilters, DashboardFilters, SupportFilters } from '@/lib/supabase/types'
+import type { ActionAnalysisFilters, AutomationOverviewFilters, DashboardFilters, SupportFilters } from '@/lib/supabase/types'
 
 /**
  * Dashboard query keys
@@ -100,10 +100,28 @@ export const actionAnalysisKeys = {
 }
 
 /**
+ * Automation Overview query keys
+ */
+export const automationOverviewKeys = {
+	all: ['automation-overview'] as const,
+	data: (filters: AutomationOverviewFilters) =>
+		[
+			...automationOverviewKeys.all,
+			{
+				from: filters.dateRange.from.toISOString(),
+				to: filters.dateRange.to.toISOString(),
+				categories: filters.categories.sort(),
+				versions: filters.versions.sort(),
+			},
+		] as const,
+}
+
+/**
  * Combined query keys object for easy access
  */
 export const queryKeys = {
 	dashboard: dashboardKeys,
 	support: supportKeys,
 	actionAnalysis: actionAnalysisKeys,
+	automationOverview: automationOverviewKeys,
 } as const
