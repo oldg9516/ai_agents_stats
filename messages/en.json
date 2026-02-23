@@ -1415,6 +1415,7 @@
 		"rule": "Rule",
 		"total": "Total",
 		"rate": "Auto %",
+		"goodAiResponse": "Good AI",
 		"tooltipTotalTickets": "Total tickets with AI action analysis",
 		"tooltipAutoReply": "Tickets sent automatically without manual review",
 		"tooltipDraft": "Tickets that required manual review before sending",

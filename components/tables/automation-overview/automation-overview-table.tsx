@@ -83,6 +83,7 @@ export const AutomationOverviewTable = memo(function AutomationOverviewTable({
 								<TableHead className='text-right w-[100px]'>{t('autoReply')}</TableHead>
 								<TableHead className='text-right w-[80px]'>{t('draft')}</TableHead>
 								<TableHead className='text-right w-[90px]'>{t('rate')}</TableHead>
+								<TableHead className='text-right w-[120px]'>{t('goodAiResponse')}</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
@@ -138,6 +139,17 @@ export const AutomationOverviewTable = memo(function AutomationOverviewTable({
 											<TableCell className={cn('text-right font-medium', getRateColor(cat.autoReplyRate))}>
 												{cat.autoReplyRate.toFixed(1)}%
 											</TableCell>
+											<TableCell className='text-right'>
+												{(() => {
+													if (cat.evaluableCount === 0) return <span className='text-muted-foreground'>—</span>
+													const pct = (cat.goodAiCount / cat.evaluableCount) * 100
+													return (
+														<span className={cn('font-medium', getRateColor(pct))}>
+															{cat.goodAiCount} ({pct.toFixed(1)}%)
+														</span>
+													)
+												})()}
+											</TableCell>
 										</TableRow>
 										{/* Expandable sub-subcategory rows */}
 										{isExpanded && cat.subSubCategoryBreakdown.map(sub => {
@@ -162,6 +174,17 @@ export const AutomationOverviewTable = memo(function AutomationOverviewTable({
 													</TableCell>
 													<TableCell className={cn('text-right text-muted-foreground', getRateColor(subRate))}>
 														{subRate.toFixed(1)}%
+													</TableCell>
+													<TableCell className='text-right text-muted-foreground'>
+														{(() => {
+															if (sub.evaluableCount === 0) return <span>—</span>
+															const pct = (sub.goodAiCount / sub.evaluableCount) * 100
+															return (
+																<span className={getRateColor(pct)}>
+																	{sub.goodAiCount} ({pct.toFixed(1)}%)
+																</span>
+															)
+														})()}
 													</TableCell>
 												</TableRow>
 											)

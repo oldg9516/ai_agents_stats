@@ -914,6 +914,7 @@ export interface AutomationOverviewRecord {
 	prompt_version: string | null
 	action_analysis: ActionAnalysis
 	is_outstanding: boolean | null
+	changed: boolean | null // from ai_human_comparison (null = no match)
 }
 
 /**
@@ -937,6 +938,8 @@ export interface CategoryAutomationOverviewStats {
 	draftCount: number
 	autoReplyRate: number // percentage
 	ruleSource: string // 'is_outstanding' | 'requires_system_action'
+	goodAiCount: number // changed === false (good AI response)
+	evaluableCount: number // records with match in ai_human_comparison (changed !== null)
 	subSubCategoryBreakdown: SubSubAutomationOverviewStats[]
 }
 
@@ -948,6 +951,8 @@ export interface SubSubAutomationOverviewStats {
 	totalRecords: number
 	autoReplyCount: number
 	draftCount: number
+	goodAiCount: number
+	evaluableCount: number
 }
 
 // ============================================================================

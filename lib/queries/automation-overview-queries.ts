@@ -44,10 +44,14 @@ export function computeAutomationOverviewStats(
 		totalRecords: number
 		autoReplyCount: number
 		draftCount: number
+		goodAiCount: number
+		evaluableCount: number
 		subSubMap: Map<string, {
 			totalRecords: number
 			autoReplyCount: number
 			draftCount: number
+			goodAiCount: number
+			evaluableCount: number
 		}>
 	}>()
 
@@ -60,7 +64,11 @@ export function computeAutomationOverviewStats(
 			draftCount++
 		}
 
-		// Category accumulation
+		// Quality tracking: changed !== null means record has a match in ai_human_comparison
+		// changed === false means human didn't change AI output (good quality)
+		const isEvaluable = record.changed !== null
+		const isGoodAi = record.changed === false
+
 		const category = record.request_subtype ?? 'Unknown'
 		let catEntry = categoryMap.get(category)
 		if (!catEntry) {
@@ -68,6 +76,8 @@ export function computeAutomationOverviewStats(
 				totalRecords: 0,
 				autoReplyCount: 0,
 				draftCount: 0,
+				goodAiCount: 0,
+				evaluableCount: 0,
 				subSubMap: new Map(),
 			}
 			categoryMap.set(category, catEntry)
@@ -75,17 +85,21 @@ export function computeAutomationOverviewStats(
 		catEntry.totalRecords++
 		if (status === 'auto_reply') catEntry.autoReplyCount++
 		else catEntry.draftCount++
+		if (isEvaluable) catEntry.evaluableCount++
+		if (isGoodAi) catEntry.goodAiCount++
 
 		// Sub-subcategory accumulation
 		const subSub = record.request_sub_subtype ?? 'N/A'
 		let subEntry = catEntry.subSubMap.get(subSub)
 		if (!subEntry) {
-			subEntry = { totalRecords: 0, autoReplyCount: 0, draftCount: 0 }
+			subEntry = { totalRecords: 0, autoReplyCount: 0, draftCount: 0, goodAiCount: 0, evaluableCount: 0 }
 			catEntry.subSubMap.set(subSub, subEntry)
 		}
 		subEntry.totalRecords++
 		if (status === 'auto_reply') subEntry.autoReplyCount++
 		else subEntry.draftCount++
+		if (isEvaluable) subEntry.evaluableCount++
+		if (isGoodAi) subEntry.goodAiCount++
 	}
 
 	const totalRecords = records.length
@@ -100,6 +114,8 @@ export function computeAutomationOverviewStats(
 					totalRecords: subData.totalRecords,
 					autoReplyCount: subData.autoReplyCount,
 					draftCount: subData.draftCount,
+					goodAiCount: subData.goodAiCount,
+					evaluableCount: subData.evaluableCount,
 				}))
 				.sort((a, b) => b.totalRecords - a.totalRecords)
 
@@ -110,6 +126,8 @@ export function computeAutomationOverviewStats(
 				draftCount: data.draftCount,
 				autoReplyRate: data.totalRecords > 0 ? (data.autoReplyCount / data.totalRecords) * 100 : 0,
 				ruleSource: getRuleSourceForCategory(category),
+				goodAiCount: data.goodAiCount,
+				evaluableCount: data.evaluableCount,
 				subSubCategoryBreakdown,
 			}
 		})

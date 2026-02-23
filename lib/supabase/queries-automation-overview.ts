@@ -5,6 +5,8 @@
  * Fields: thread_id, request_subtype, request_sub_subtype, prompt_version,
  *         created_at, action_analysis (JSON), is_outstanding (boolean)
  *
+ * Enriched with ai_human_comparison.changed for quality metrics
+ *
  * Filter: action_analysis IS NOT NULL
  */
 
@@ -12,12 +14,11 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { ActionAnalysis, AutomationOverviewFilters, AutomationOverviewRecord } from './types'
 
 const BATCH_SIZE = 1000
+const QUALITY_BATCH_SIZE = 500
 
 /**
  * Fetch automation overview records from support_threads_data
- *
- * Selects records where action_analysis is not null,
- * including is_outstanding for retention rule logic.
+ * and enrich with quality data (changed field) from ai_human_comparison
  */
 export async function fetchAutomationOverviewData(
 	supabase: SupabaseClient,
@@ -88,8 +89,59 @@ export async function fetchAutomationOverviewData(
 			prompt_version: record.prompt_version,
 			action_analysis: actionAnalysis,
 			is_outstanding: record.is_outstanding ?? null,
+			changed: null,
 		})
 	}
 
+	// Step 4: Fetch quality data (changed field) from ai_human_comparison by thread_id
+	const threadIds = enriched.map(r => r.thread_id)
+	const changedMap = await fetchChangedByThreadIds(supabase, threadIds)
+
+	// Merge quality data into records
+	for (const record of enriched) {
+		const changed = changedMap.get(record.thread_id)
+		if (changed !== undefined) {
+			record.changed = changed
+		}
+	}
+
 	return enriched
+}
+
+/**
+ * Fetch `changed` field from ai_human_comparison for given thread_ids, in batches.
+ * changed = false means AI response was good (human didn't change it)
+ * changed = true means AI response needed changes
+ * undefined means no match found in ai_human_comparison
+ */
+async function fetchChangedByThreadIds(
+	supabase: SupabaseClient,
+	threadIds: string[]
+): Promise<Map<string, boolean | null>> {
+	const result = new Map<string, boolean | null>()
+	if (threadIds.length === 0) return result
+
+	const uniqueIds = [...new Set(threadIds)]
+
+	for (let i = 0; i < uniqueIds.length; i += QUALITY_BATCH_SIZE) {
+		const batch = uniqueIds.slice(i, i + QUALITY_BATCH_SIZE)
+
+		const { data, error } = await (supabase as any)
+			.from('ai_human_comparison')
+			.select('thread_id, changed')
+			.in('thread_id', batch)
+
+		if (error) {
+			console.error('Error fetching quality data:', error)
+			continue
+		}
+
+		if (data) {
+			for (const row of data) {
+				result.set(row.thread_id, row.changed ?? null)
+			}
+		}
+	}
+
+	return result
 }

@@ -213,10 +213,10 @@ export function AutomationOverviewContent() {
 						/>
 					</div>
 
-					{/* Stacked Bar Chart */}
-					{data.categoryBreakdown.length > 0 && (
+					{/* Stacked Bar Chart — hidden, duplicates table data */}
+					{/* {data.categoryBreakdown.length > 0 && (
 						<AutomationDistributionChart data={data.categoryBreakdown} />
-					)}
+					)} */}
 
 					{/* Category Breakdown Table */}
 					{data.categoryBreakdown.length > 0 && (
