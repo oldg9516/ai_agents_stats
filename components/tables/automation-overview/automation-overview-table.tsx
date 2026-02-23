@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/table'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { Badge } from '@/components/ui/badge'
+import { LAUNCHED_CATEGORIES } from '@/constants/automation-rules'
 import type { CategoryAutomationOverviewStats } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react'
@@ -89,13 +90,15 @@ export const AutomationOverviewTable = memo(function AutomationOverviewTable({
 								const isExpanded = expandedCategories.has(cat.category)
 								const hasSubCategories = cat.subSubCategoryBreakdown.length > 0
 									&& !(cat.subSubCategoryBreakdown.length === 1 && cat.subSubCategoryBreakdown[0].subSubCategory === 'N/A')
+								const isLaunched = LAUNCHED_CATEGORIES.includes(cat.category)
 
 								return (
 									<Fragment key={cat.category}>
 										<TableRow
 											className={cn(
 												hasSubCategories && 'cursor-pointer hover:bg-muted/50',
-												isExpanded && 'bg-muted/30'
+												isExpanded && 'bg-muted/30',
+												isLaunched && 'bg-purple-50/50 dark:bg-purple-950/20'
 											)}
 											onClick={() => hasSubCategories && toggleCategory(cat.category)}
 										>
@@ -111,6 +114,11 @@ export const AutomationOverviewTable = memo(function AutomationOverviewTable({
 														<span className='w-4' />
 													)}
 													<span className='truncate'>{cat.category}</span>
+													{isLaunched && (
+														<Badge className='ml-1 bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 text-[10px] px-1.5 py-0'>
+															{t('launched')}
+														</Badge>
+													)}
 												</div>
 											</TableCell>
 											<TableCell>

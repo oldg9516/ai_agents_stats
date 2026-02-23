@@ -50,6 +50,17 @@ export const AUTOMATION_RULES: AutomationRule[] = [
 export type AutomationStatus = 'auto_reply' | 'draft'
 
 /**
+ * Subcategories currently launched in production (auto-reply enabled).
+ */
+export const LAUNCHED_CATEGORIES: string[] = [
+	'shipping_or_delivery_question',
+	'retention_primary_request',
+	'gratitude',
+	'customization_request',
+	'damaged_or_leaking_item_report',
+]
+
+/**
  * Determine whether a ticket was auto-reply or draft.
  *
  * Checks AUTOMATION_RULES in order; if none match, falls back to

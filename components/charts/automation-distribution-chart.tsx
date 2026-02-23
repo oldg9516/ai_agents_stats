@@ -13,6 +13,7 @@ import {
 	type ChartConfig,
 } from '@/components/ui/chart'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
+import { LAUNCHED_CATEGORIES } from '@/constants/automation-rules'
 import type { CategoryAutomationOverviewStats } from '@/lib/supabase/types'
 import { useTranslations } from 'next-intl'
 import { memo, useMemo } from 'react'
@@ -48,10 +49,19 @@ export const AutomationDistributionChart = memo(
 			() =>
 				data.map(item => ({
 					category: item.category.replace(/_/g, ' '),
+					rawCategory: item.category,
 					autoReplyCount: item.autoReplyCount,
 					draftCount: item.draftCount,
 				})),
 			[data],
+		)
+
+		const launchedSet = useMemo(
+			() =>
+				new Set(
+					LAUNCHED_CATEGORIES.map(c => c.replace(/_/g, ' ')),
+				),
+			[],
 		)
 
 		if (chartData.length === 0) return null
@@ -90,7 +100,23 @@ export const AutomationDistributionChart = memo(
 								tickLine={false}
 								axisLine={false}
 								width={180}
-								tick={{ fontSize: 12 }}
+								tick={(props: { x: number; y: number; payload: { value: string } }) => {
+									const isLaunched = launchedSet.has(props.payload.value)
+									return (
+										<text
+											x={props.x}
+											y={props.y}
+											textAnchor='end'
+											dominantBaseline='middle'
+											fontSize={12}
+											fontWeight={isLaunched ? 600 : 400}
+											fill={isLaunched ? '#7B3FA0' : 'currentColor'}
+										>
+											{props.payload.value}
+											{isLaunched ? ' ●' : ''}
+										</text>
+									)
+								}}
 							/>
 							<ChartTooltip
 								cursor={false}

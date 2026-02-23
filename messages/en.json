@@ -1419,6 +1419,7 @@
 		"tooltipAutoReply": "Tickets sent automatically without manual review",
 		"tooltipDraft": "Tickets that required manual review before sending",
 		"tooltipChart": "Visual breakdown of auto-reply vs draft per category. Green = auto-reply, pink = draft",
-		"tooltipTable": "Per-category stats. Rule column shows which field determines auto-reply status"
+		"tooltipTable": "Per-category stats. Rule column shows which field determines auto-reply status",
+		"launched": "Live"
 	}
 }
