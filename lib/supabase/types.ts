@@ -925,6 +925,11 @@ export interface AutomationOverviewStats {
 	autoReplyCount: number
 	draftCount: number
 	autoReplyRate: number // percentage
+	/** Counts only for LAUNCHED_CATEGORIES (live in production) */
+	launchedTotalRecords: number
+	launchedAutoReplyCount: number
+	launchedDraftCount: number
+	launchedAutoReplyRate: number
 	categoryBreakdown: CategoryAutomationOverviewStats[]
 }
 

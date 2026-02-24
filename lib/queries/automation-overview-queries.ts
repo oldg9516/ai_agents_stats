@@ -11,7 +11,7 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchAutomationOverviewPageData } from '@/lib/actions/automation-overview-actions'
 import { QUERY_CACHE_CONFIG } from '@/lib/queries/query-config'
 import { automationOverviewKeys } from '@/lib/queries/query-keys'
-import { resolveAutomationStatus, getRuleSourceForCategory } from '@/constants/automation-rules'
+import { resolveAutomationStatus, getRuleSourceForCategory, LAUNCHED_CATEGORIES } from '@/constants/automation-rules'
 import type {
 	AutomationOverviewFilters,
 	AutomationOverviewRecord,
@@ -32,12 +32,20 @@ export function computeAutomationOverviewStats(
 			autoReplyCount: 0,
 			draftCount: 0,
 			autoReplyRate: 0,
+			launchedTotalRecords: 0,
+			launchedAutoReplyCount: 0,
+			launchedDraftCount: 0,
+			launchedAutoReplyRate: 0,
 			categoryBreakdown: [],
 		}
 	}
 
+	const launchedSet = new Set(LAUNCHED_CATEGORIES)
+
 	let autoReplyCount = 0
 	let draftCount = 0
+	let launchedAutoReplyCount = 0
+	let launchedDraftCount = 0
 
 	// Category accumulators
 	const categoryMap = new Map<string, {
@@ -57,11 +65,14 @@ export function computeAutomationOverviewStats(
 
 	for (const record of records) {
 		const { status } = resolveAutomationStatus(record)
+		const isLaunched = record.request_subtype != null && launchedSet.has(record.request_subtype)
 
 		if (status === 'auto_reply') {
 			autoReplyCount++
+			if (isLaunched) launchedAutoReplyCount++
 		} else {
 			draftCount++
+			if (isLaunched) launchedDraftCount++
 		}
 
 		// Quality tracking: changed !== null means record has a match in ai_human_comparison
@@ -133,11 +144,17 @@ export function computeAutomationOverviewStats(
 		})
 		.sort((a, b) => b.totalRecords - a.totalRecords)
 
+	const launchedTotalRecords = launchedAutoReplyCount + launchedDraftCount
+
 	return {
 		totalRecords,
 		autoReplyCount,
 		draftCount,
 		autoReplyRate,
+		launchedTotalRecords,
+		launchedAutoReplyCount,
+		launchedDraftCount,
+		launchedAutoReplyRate: launchedTotalRecords > 0 ? (launchedAutoReplyCount / launchedTotalRecords) * 100 : 0,
 		categoryBreakdown,
 	}
 }

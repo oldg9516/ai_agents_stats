@@ -1141,6 +1141,16 @@
 	"chat": {
 		"title": "AI Analytics Assistant",
 		"subtitle": "Ask questions about your support data",
+		"modeToggle": {
+			"classic": "Classic",
+			"dash": "Dash AI"
+		},
+		"dash": {
+			"title": "Dash AI",
+			"subtitle": "Self-learning SQL analytics",
+			"initial": "Ask me anything about your support data. I can write SQL queries, analyze trends, and learn from our conversations.",
+			"placeholder": "Ask about your data..."
+		},
 		"newChat": "New Chat",
 		"emptyTitle": "Ask anything about your data",
 		"emptyDescription": "I can help you analyze support tickets, generate reports, build charts, and answer questions about your statistics.",
@@ -1421,6 +1431,7 @@
 		"tooltipDraft": "Tickets that required manual review before sending",
 		"tooltipChart": "Visual breakdown of auto-reply vs draft per category. Green = auto-reply, pink = draft",
 		"tooltipTable": "Per-category stats. Rule column shows which field determines auto-reply status",
-		"launched": "Live"
+		"launched": "Live",
+		"allCategories": "All"
 	}
 }
