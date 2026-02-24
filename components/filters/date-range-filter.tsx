@@ -151,7 +151,10 @@ export function DateRangeFilter({
 			return ''
 		}
 		try {
-			return date.toISOString().split('T')[0]
+			const year = date.getFullYear()
+			const month = String(date.getMonth() + 1).padStart(2, '0')
+			const day = String(date.getDate()).padStart(2, '0')
+			return `${year}-${month}-${day}`
 		} catch {
 			return ''
 		}
@@ -159,17 +162,17 @@ export function DateRangeFilter({
 
 	// Handle input change (update pending state only)
 	const handleFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const newFrom = new Date(e.target.value)
+		const [year, month, day] = e.target.value.split('-').map(Number)
+		const newFrom = new Date(year, month - 1, day, 0, 0, 0, 0)
 		if (!isNaN(newFrom.getTime())) {
-			newFrom.setHours(0, 0, 0, 0)
 			setPendingFrom(newFrom)
 		}
 	}
 
 	const handleToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const newTo = new Date(e.target.value)
+		const [year, month, day] = e.target.value.split('-').map(Number)
+		const newTo = new Date(year, month - 1, day, 23, 59, 59, 999)
 		if (!isNaN(newTo.getTime())) {
-			newTo.setHours(23, 59, 59, 999)
 			setPendingTo(newTo)
 		}
 	}
