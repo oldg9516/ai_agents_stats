@@ -161,6 +161,7 @@ export function DateRangeFilter({
 	const handleFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const newFrom = new Date(e.target.value)
 		if (!isNaN(newFrom.getTime())) {
+			newFrom.setHours(0, 0, 0, 0)
 			setPendingFrom(newFrom)
 		}
 	}
@@ -168,6 +169,7 @@ export function DateRangeFilter({
 	const handleToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const newTo = new Date(e.target.value)
 		if (!isNaN(newTo.getTime())) {
+			newTo.setHours(23, 59, 59, 999)
 			setPendingTo(newTo)
 		}
 	}
