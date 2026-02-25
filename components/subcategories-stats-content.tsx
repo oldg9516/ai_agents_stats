@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { endOfTodayInIsrael, startOfNDaysAgoInIsrael } from '@/lib/utils/date-tz'
 import { fetchSubcategoriesData } from '@/lib/actions/subcategories-actions'
 import { fetchFilterOptions } from '@/lib/actions/dashboard-actions'
 import type { CategoryGroup } from '@/lib/supabase/queries-subcategories'
@@ -28,8 +29,8 @@ export function SubcategoriesStatsContent() {
 
 	// Filters
 	const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
-		from: new Date(new Date().setDate(new Date().getDate() - 30)),
-		to: new Date(),
+		from: startOfNDaysAgoInIsrael(29),
+		to: endOfTodayInIsrael(),
 	})
 	const [selectedVersions, setSelectedVersions] = useState<string[]>([])
 	const [selectedAgents, setSelectedAgents] = useState<string[]>([])

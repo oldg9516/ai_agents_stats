@@ -1,4 +1,4 @@
-import { endOfDay, startOfDay, subDays } from 'date-fns'
+import { endOfTodayInIsrael, startOfNDaysAgoInIsrael } from '@/lib/utils/date-tz'
 import { supabaseServer } from '../server'
 import type { DashboardFilters, FilterOptions } from '../types'
 
@@ -76,11 +76,11 @@ export async function getFilterOptions(dateRange?: {
  * Get default filters (Last 30 days, all versions, all categories)
  */
 export function getDefaultFilters(): DashboardFilters {
-	const to = endOfDay(new Date())
-	const from = startOfDay(subDays(to, 30))
-
 	return {
-		dateRange: { from, to },
+		dateRange: {
+			from: startOfNDaysAgoInIsrael(29),
+			to: endOfTodayInIsrael(),
+		},
 		versions: [],
 		categories: [],
 		agents: [],

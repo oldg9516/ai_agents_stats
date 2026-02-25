@@ -24,7 +24,7 @@ import type {
   CategoryAgentStats,
   CategoryRecord,
 } from '@/lib/supabase/types'
-import { subDays } from 'date-fns'
+import { endOfTodayInIsrael, startOfNDaysAgoInIsrael } from '@/lib/utils/date-tz'
 
 /**
  * Fetch complete category detail data
@@ -48,8 +48,8 @@ export async function fetchCategoryDetail(
   // Default filters
   const defaultFilters: CategoryFilters = {
     dateRange: {
-      from: subDays(new Date(), 30), // Last 30 days by default
-      to: new Date(),
+      from: startOfNDaysAgoInIsrael(29),
+      to: endOfTodayInIsrael(),
     },
     versions: [], // All versions
     agents: [], // All agents (no filter)
@@ -97,8 +97,8 @@ export async function fetchCategoryKPIs(
 
   const defaultFilters: CategoryFilters = {
     dateRange: {
-      from: subDays(new Date(), 30),
-      to: new Date(),
+      from: startOfNDaysAgoInIsrael(29),
+      to: endOfTodayInIsrael(),
     },
     versions: [],
     agents: [], // All agents (no filter)
@@ -127,8 +127,8 @@ export async function fetchCategoryTrends(
 
   const defaultFilters: CategoryFilters = {
     dateRange: {
-      from: subDays(new Date(), 84), // Last 12 weeks
-      to: new Date(),
+      from: startOfNDaysAgoInIsrael(83), // Last 12 weeks
+      to: endOfTodayInIsrael(),
     },
     versions: [],
     agents: [], // All agents (no filter)
@@ -157,8 +157,8 @@ export async function fetchCategoryVersions(
 
   const defaultFilters: CategoryFilters = {
     dateRange: {
-      from: subDays(new Date(), 30),
-      to: new Date(),
+      from: startOfNDaysAgoInIsrael(29),
+      to: endOfTodayInIsrael(),
     },
     versions: [],
     agents: [], // All agents (no filter)
@@ -187,8 +187,8 @@ export async function fetchCategoryAgents(
 
   const defaultFilters: CategoryFilters = {
     dateRange: {
-      from: subDays(new Date(), 30),
-      to: new Date(),
+      from: startOfNDaysAgoInIsrael(29),
+      to: endOfTodayInIsrael(),
     },
     versions: [],
     agents: [], // All agents (no filter)
@@ -218,8 +218,8 @@ export async function fetchCategoryRecordsPage(
 
   const defaultFilters: CategoryFilters = {
     dateRange: {
-      from: subDays(new Date(), 30),
-      to: new Date(),
+      from: startOfNDaysAgoInIsrael(29),
+      to: endOfTodayInIsrael(),
     },
     versions: [],
     agents: [], // All agents (no filter)

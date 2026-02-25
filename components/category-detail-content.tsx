@@ -30,7 +30,8 @@ import {
 	IconTrendingDown,
 	IconTrendingUp,
 } from '@tabler/icons-react'
-import { format, subDays } from 'date-fns'
+import { format } from 'date-fns'
+import { endOfTodayInIsrael, startOfNDaysAgoInIsrael } from '@/lib/utils/date-tz'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -72,8 +73,8 @@ export function CategoryDetailContent({
 	const [isLoading, setIsLoading] = useState(!initialData)
 	const [filters, setFilters] = useState<CategoryFilters>({
 		dateRange: {
-			from: subDays(new Date(), 30),
-			to: new Date(),
+			from: startOfNDaysAgoInIsrael(29),
+			to: endOfTodayInIsrael(),
 		},
 		versions: [],
 		agents: [], // All agents (no filter)
@@ -106,8 +107,8 @@ export function CategoryDetailContent({
 	const handleResetFilters = () => {
 		setFilters({
 			dateRange: {
-				from: subDays(new Date(), 30),
-				to: new Date(),
+				from: startOfNDaysAgoInIsrael(29),
+				to: endOfTodayInIsrael(),
 			},
 			versions: [],
 			agents: [], // All agents (no filter)

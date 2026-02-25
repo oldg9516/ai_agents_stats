@@ -3,6 +3,7 @@
 import { RequestCategoriesTable } from '@/components/tables/request-categories-table'
 import { DateRangeFilter } from '@/components/filters/date-range-filter'
 import { useState } from 'react'
+import { endOfTodayInIsrael, startOfNDaysAgoInIsrael } from '@/lib/utils/date-tz'
 
 /**
  * Request Categories Content - Client Component
@@ -11,14 +12,9 @@ import { useState } from 'react'
  * Filterable by date range
  */
 export function RequestCategoriesContent() {
-	// Date range state - default to last 30 days
-	const defaultTo = new Date()
-	const defaultFrom = new Date()
-	defaultFrom.setDate(defaultFrom.getDate() - 30)
-
 	const [dateRange, setDateRange] = useState({
-		from: defaultFrom,
-		to: defaultTo,
+		from: startOfNDaysAgoInIsrael(29),
+		to: endOfTodayInIsrael(),
 	})
 
 	// Handle date range change from DateRangeFilter
