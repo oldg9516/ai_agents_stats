@@ -5,6 +5,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { fetchMinCreatedDate } from '@/lib/actions/dashboard-actions'
 import type { DateFilterMode } from '@/lib/supabase/types'
+import {
+	formatDateInIsraelTZ,
+	parseDateInIsraelTZ,
+	endOfTodayInIsrael,
+	startOfNDaysAgoInIsrael,
+} from '@/lib/utils/date-tz'
 import { IconLoader2 } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
@@ -86,92 +92,57 @@ export function DateRangeFilter({
 		return result
 	}
 
-	// Quick date range handlers
+	// Quick date range handlers — all using Israel timezone
 	const setLast7Days = () => {
-		const end = new Date()
-		end.setHours(23, 59, 59, 999) // End of today
-		const start = new Date()
-		start.setDate(end.getDate() - 6) // Today + 6 days back = 7 days total
-		start.setHours(0, 0, 0, 0) // Start of day
-		onChange(start, end)
+		onChange(startOfNDaysAgoInIsrael(6), endOfTodayInIsrael())
 	}
 
 	const setLast30Days = () => {
-		const end = new Date()
-		end.setHours(23, 59, 59, 999) // End of today
-		const start = new Date()
-		start.setDate(end.getDate() - 29) // Today + 29 days back = 30 days total
-		start.setHours(0, 0, 0, 0) // Start of day
-		onChange(start, end)
+		onChange(startOfNDaysAgoInIsrael(29), endOfTodayInIsrael())
 	}
 
 	const setLast3Months = () => {
-		const end = new Date()
-		end.setHours(23, 59, 59, 999) // End of today
-		const start = new Date()
-		start.setMonth(end.getMonth() - 3)
-		start.setDate(end.getDate() + 1) // Adjust to include today
-		start.setHours(0, 0, 0, 0) // Start of day
-
-		const diffDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-		
-
-		onChange(start, end)
+		onChange(startOfNDaysAgoInIsrael(89), endOfTodayInIsrael())
 	}
 
 	const setAllTime = async () => {
 		setIsLoadingAllTime(true)
 		try {
-			const end = new Date()
-			end.setHours(23, 59, 59, 999) // End of today
-			const start = await fetchMinCreatedDate()
-			start.setHours(0, 0, 0, 0) // Start of day
-
-			const diffDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-			
-
+			const end = endOfTodayInIsrael()
+			const minDate = await fetchMinCreatedDate()
+			// Convert the server's min date to Israel start-of-day
+			const start = parseDateInIsraelTZ(formatDateInIsraelTZ(minDate), false)
 			onChange(start, end)
 		} catch (error) {
 			console.error('Error fetching min date:', error)
-			// Fallback to hardcoded date
-			const end = new Date()
-			end.setHours(23, 59, 59, 999)
-			const start = new Date('2020-01-01')
-			start.setHours(0, 0, 0, 0)
+			const end = endOfTodayInIsrael()
+			const start = parseDateInIsraelTZ('2020-01-01', false)
 			onChange(start, end)
 		} finally {
 			setIsLoadingAllTime(false)
 		}
 	}
 
-	// Format date for input (stable on server and client)
+	// Format date for input in Israel timezone
 	const formatDateForInput = (date: Date) => {
-		if (!isClient) {
-			// Return a stable value during SSR to avoid hydration mismatch
-			return ''
-		}
+		if (!isClient) return ''
 		try {
-			const year = date.getFullYear()
-			const month = String(date.getMonth() + 1).padStart(2, '0')
-			const day = String(date.getDate()).padStart(2, '0')
-			return `${year}-${month}-${day}`
+			return formatDateInIsraelTZ(date)
 		} catch {
 			return ''
 		}
 	}
 
-	// Handle input change (update pending state only)
+	// Handle input change — parse as Israel timezone start/end of day
 	const handleFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const [year, month, day] = e.target.value.split('-').map(Number)
-		const newFrom = new Date(year, month - 1, day, 0, 0, 0, 0)
+		const newFrom = parseDateInIsraelTZ(e.target.value, false)
 		if (!isNaN(newFrom.getTime())) {
 			setPendingFrom(newFrom)
 		}
 	}
 
 	const handleToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const [year, month, day] = e.target.value.split('-').map(Number)
-		const newTo = new Date(year, month - 1, day, 23, 59, 59, 999)
+		const newTo = parseDateInIsraelTZ(e.target.value, true)
 		if (!isNaN(newTo.getTime())) {
 			setPendingTo(newTo)
 		}
@@ -282,7 +253,7 @@ export function DateRangeFilter({
 							value={formatDateForInput(pendingTo)}
 							onChange={handleToChange}
 							min={formatDateForInput(pendingFrom)}
-							max={formatDateForInput(new Date())}
+							max={formatDateForInput(endOfTodayInIsrael())}
 							className='h-9 text-xs w-auto'
 						/>
 					</div>

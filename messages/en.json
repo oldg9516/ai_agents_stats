@@ -1432,6 +1432,7 @@
 		"tooltipChart": "Visual breakdown of auto-reply vs draft per category. Green = auto-reply, pink = draft",
 		"tooltipTable": "Per-category stats. Rule column shows which field determines auto-reply status",
 		"launched": "Live",
-		"allCategories": "All"
+		"allCategories": "All",
+		"tickets": "tickets"
 	}
 }

@@ -12,16 +12,17 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { endOfTodayInIsrael, startOfNDaysAgoInIsrael } from '@/lib/utils/date-tz'
+
 /**
  * Creates a default date range: from N days ago (start of day) to end of today.
+ * Dates are computed in Israel timezone (Asia/Jerusalem) — the business timezone.
  */
 export function getDefaultDateRange(days: number): { from: Date; to: Date } {
-	const to = new Date()
-	to.setHours(23, 59, 59, 999)
-	const from = new Date()
-	from.setDate(from.getDate() - days)
-	from.setHours(0, 0, 0, 0)
-	return { from, to }
+	return {
+		from: startOfNDaysAgoInIsrael(days - 1),
+		to: endOfTodayInIsrael(),
+	}
 }
 
 type WithDateRange = { dateRange: { from: Date; to: Date } }

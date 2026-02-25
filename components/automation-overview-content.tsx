@@ -192,22 +192,22 @@ export function AutomationOverviewContent() {
 				<>
 					<div className='grid gap-4 md:grid-cols-3'>
 						<KPICard
-							title={t('totalTickets')}
+							title={`${t('totalTickets')} (${data.launchedUniqueTicketCount} ${t('tickets')})`}
 							value={data.launchedTotalRecords}
 							icon={<IconChecks />}
-							description={`${t('allCategories')}: ${data.totalRecords}`}
+							description={`${t('allCategories')}: ${data.totalRecords} (${data.uniqueTicketCount} ${t('tickets')})`}
 							tooltipContent={t('tooltipTotalTickets')}
 						/>
 						<KPICard
 							title={t('autoReply')}
-							value={data.launchedAutoReplyCount}
+							value={`${data.launchedAutoReplyCount} (${data.launchedAutoReplyUniqueTicketCount ?? 0} ${t('tickets')})`}
 							icon={<IconMailForward />}
 							description={`${data.launchedAutoReplyRate.toFixed(1)}% · ${t('allCategories')}: ${data.autoReplyCount} (${data.autoReplyRate.toFixed(1)}%)`}
 							tooltipContent={t('tooltipAutoReply')}
 						/>
 						<KPICard
 							title={t('draft')}
-							value={data.launchedDraftCount}
+							value={`${data.launchedDraftCount} (${data.launchedDraftUniqueTicketCount ?? 0} ${t('tickets')})`}
 							icon={<IconFileText />}
 							description={`${data.launchedTotalRecords > 0 ? ((data.launchedDraftCount / data.launchedTotalRecords) * 100).toFixed(1) : 0}% · ${t('allCategories')}: ${data.draftCount}`}
 							tooltipContent={t('tooltipDraft')}

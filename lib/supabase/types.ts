@@ -908,6 +908,7 @@ export interface AutomationOverviewFilters {
  */
 export interface AutomationOverviewRecord {
 	thread_id: string
+	ticket_id: number | null
 	created_at: string
 	request_subtype: string | null
 	request_sub_subtype: string | null
@@ -930,6 +931,11 @@ export interface AutomationOverviewStats {
 	launchedAutoReplyCount: number
 	launchedDraftCount: number
 	launchedAutoReplyRate: number
+	/** Unique ticket counts (one ticket can have multiple threads) */
+	uniqueTicketCount: number
+	launchedUniqueTicketCount: number
+	launchedAutoReplyUniqueTicketCount: number
+	launchedDraftUniqueTicketCount: number
 	categoryBreakdown: CategoryAutomationOverviewStats[]
 }
 

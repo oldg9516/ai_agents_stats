@@ -50,7 +50,7 @@ export async function fetchAutomationOverviewData(
 	for (let i = 0; i < numBatches; i++) {
 		let batchQuery = (supabase as any)
 			.from('support_threads_data')
-			.select('thread_id, request_subtype, request_sub_subtype, prompt_version, created_at, action_analysis, is_outstanding')
+			.select('thread_id, ticket_id, request_subtype, request_sub_subtype, prompt_version, created_at, action_analysis, is_outstanding')
 			.not('action_analysis', 'is', null)
 			.gte('created_at', dateRange.from.toISOString())
 			.lt('created_at', dateRange.to.toISOString())
@@ -83,6 +83,7 @@ export async function fetchAutomationOverviewData(
 
 		enriched.push({
 			thread_id: record.thread_id,
+			ticket_id: record.ticket_id ?? null,
 			created_at: record.created_at,
 			request_subtype: record.request_subtype,
 			request_sub_subtype: record.request_sub_subtype ?? null,

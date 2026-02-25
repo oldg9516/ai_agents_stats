@@ -36,6 +36,10 @@ export function computeAutomationOverviewStats(
 			launchedAutoReplyCount: 0,
 			launchedDraftCount: 0,
 			launchedAutoReplyRate: 0,
+			uniqueTicketCount: 0,
+			launchedUniqueTicketCount: 0,
+			launchedAutoReplyUniqueTicketCount: 0,
+			launchedDraftUniqueTicketCount: 0,
 			categoryBreakdown: [],
 		}
 	}
@@ -46,6 +50,10 @@ export function computeAutomationOverviewStats(
 	let draftCount = 0
 	let launchedAutoReplyCount = 0
 	let launchedDraftCount = 0
+	const allTicketIds = new Set<number>()
+	const launchedTicketIds = new Set<number>()
+	const launchedAutoReplyTicketIds = new Set<number>()
+	const launchedDraftTicketIds = new Set<number>()
 
 	// Category accumulators
 	const categoryMap = new Map<string, {
@@ -73,6 +81,15 @@ export function computeAutomationOverviewStats(
 		} else {
 			draftCount++
 			if (isLaunched) launchedDraftCount++
+		}
+
+		if (record.ticket_id != null) {
+			allTicketIds.add(record.ticket_id)
+			if (isLaunched) {
+				launchedTicketIds.add(record.ticket_id)
+				if (status === 'auto_reply') launchedAutoReplyTicketIds.add(record.ticket_id)
+				else launchedDraftTicketIds.add(record.ticket_id)
+			}
 		}
 
 		// Quality tracking: changed !== null means record has a match in ai_human_comparison
@@ -155,6 +172,10 @@ export function computeAutomationOverviewStats(
 		launchedAutoReplyCount,
 		launchedDraftCount,
 		launchedAutoReplyRate: launchedTotalRecords > 0 ? (launchedAutoReplyCount / launchedTotalRecords) * 100 : 0,
+		uniqueTicketCount: allTicketIds.size,
+		launchedUniqueTicketCount: launchedTicketIds.size,
+		launchedAutoReplyUniqueTicketCount: launchedAutoReplyTicketIds.size,
+		launchedDraftUniqueTicketCount: launchedDraftTicketIds.size,
 		categoryBreakdown,
 	}
 }
