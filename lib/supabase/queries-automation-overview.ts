@@ -7,7 +7,7 @@
  *
  * Enriched with ai_human_comparison.changed for quality metrics
  *
- * Filter: action_analysis IS NOT NULL
+ * Filter: action_analysis IS NOT NULL AND status = 'ZOHO draft created'
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -31,6 +31,7 @@ export async function fetchAutomationOverviewData(
 		.from('support_threads_data')
 		.select('thread_id', { count: 'exact', head: true })
 		.not('action_analysis', 'is', null)
+		.eq('status', 'ZOHO draft created')
 		.gte('created_at', dateRange.from.toISOString())
 		.lt('created_at', dateRange.to.toISOString())
 
@@ -52,6 +53,7 @@ export async function fetchAutomationOverviewData(
 			.from('support_threads_data')
 			.select('thread_id, ticket_id, request_subtype, request_sub_subtype, prompt_version, created_at, action_analysis, is_outstanding')
 			.not('action_analysis', 'is', null)
+			.eq('status', 'ZOHO draft created')
 			.gte('created_at', dateRange.from.toISOString())
 			.lt('created_at', dateRange.to.toISOString())
 			.range(i * BATCH_SIZE, (i + 1) * BATCH_SIZE - 1)
