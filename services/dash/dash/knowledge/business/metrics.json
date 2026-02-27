@@ -1,0 +1,36 @@
+{
+  "metrics": {
+    "quality_rate": "Percentage of records where ticket_reviews.ai_approved=true OR change_classification is in the 'Good' group (PERFECT_MATCH, STYLISTIC_EDIT, STRUCTURAL_FIX, TONAL_MISALIGNMENT). Note: ai_approved lives in ticket_reviews table, NOT in ai_human_comparison. Use the VIEW ai_comparison_with_reviews or JOIN. Formula: COUNT(good) / COUNT(total) * 100",
+    "quality_score": "Penalty-based score per record: PERFECT_MATCH=100, STYLISTIC_EDIT=98, STRUCTURAL_FIX=95, TONAL_MISALIGNMENT=90, CONFUSING_VERBOSITY=85, MINOR_INFO_GAP=80, MAJOR_FUNCTIONAL_OMISSION=50, CRITICAL_FACT_ERROR=0. Average across records gives the overall score.",
+    "approval_rate": "Percentage of records where ticket_reviews.ai_approved=true out of all reviewed records. ai_approved is in ticket_reviews, not ai_human_comparison.",
+    "review_completion_rate": "Percentage of ticket_reviews with review_status='processed'",
+    "changed_rate_legacy": "Legacy v3.x metric: percentage of records where changed=true (human edited AI output)"
+  },
+  "business_rules": {
+    "quality_priority": "If ticket_reviews.ai_approved=true, the record counts as 'Quality' regardless of change_classification value. IMPORTANT: ai_approved is in ticket_reviews table, NOT ai_human_comparison. Use JOIN or the VIEW ai_comparison_with_reviews.",
+    "excluded_classifications": "EXCL_WORKFLOW_SHIFT, EXCL_DATA_DISCREPANCY, HUMAN_INCOMPLETE are excluded from quality scoring — do NOT include them in quality calculations",
+    "classification_case": "All change_classification values are UPPERCASE with underscores: PERFECT_MATCH, STYLISTIC_EDIT, etc. Never lowercase.",
+    "review_status_case": "ticket_reviews.review_status values are lowercase: 'processed', 'unprocessed'",
+    "qualified_agents": "Only specific agents (defined in the application) can perform ticket reviews. Their emails are stored in the email column.",
+    "date_timezone": "All timestamps are in UTC. For display, use AT TIME ZONE 'Asia/Jerusalem' to convert to Israel local time.",
+    "scoring_groups": {
+      "good": ["PERFECT_MATCH", "STYLISTIC_EDIT", "STRUCTURAL_FIX", "TONAL_MISALIGNMENT"],
+      "needs_work": ["CONFUSING_VERBOSITY", "MINOR_INFO_GAP"],
+      "critical": ["MAJOR_FUNCTIONAL_OMISSION", "CRITICAL_FACT_ERROR"],
+      "excluded": ["EXCL_WORKFLOW_SHIFT", "EXCL_DATA_DISCREPANCY", "HUMAN_INCOMPLETE"]
+    }
+  },
+  "common_gotchas": [
+    "action_analysis_verification in ticket_reviews is JSONB — use ->>'key' for text access, ->'key' for JSON object access",
+    "ai_human_comparison.change_classification can be NULL — always filter with IS NOT NULL when aggregating classifications",
+    "ticket_reviews.ai_approved can be NULL (not yet reviewed), true, or false — use COALESCE or IS TRUE / IS NOT TRUE filters. This column is in ticket_reviews, not ai_human_comparison!",
+    "Use ROUND() for all decimal/percentage results for readability",
+    "Always use LIMIT 50 by default for large result sets unless user asks for all",
+    "The VIEW ai_comparison_with_reviews provides a pre-joined view of ai_human_comparison LEFT JOIN ticket_reviews",
+    "Dates are timestamptz — use AT TIME ZONE 'Asia/Jerusalem' for local time display in Israel",
+    "For quality scoring, always exclude records where change_classification starts with 'EXCL_' or equals 'HUMAN_INCOMPLETE'",
+    "When calculating percentages, use NULLIF(denominator, 0) to avoid division by zero",
+    "request_subtype contains the category name — this is the main grouping field for category analysis",
+    "prompt_version contains version identifiers like 'v3', 'v4' etc. — used for version comparison"
+  ]
+}

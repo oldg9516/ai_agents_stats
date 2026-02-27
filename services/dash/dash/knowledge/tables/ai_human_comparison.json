@@ -1,0 +1,43 @@
+{
+  "table_name": "ai_human_comparison",
+  "description": "Primary table for AI quality metrics. Each row compares an AI-generated reply with a human agent's reply for a customer support request. Tracks whether the human changed the AI output and classifies the type of change.",
+  "columns": [
+    {"name": "id", "type": "bigint", "description": "Primary key, auto-increment"},
+    {"name": "created_at", "type": "timestamptz", "description": "When the record was created (default: now())"},
+    {"name": "status", "type": "text", "description": "Record processing status"},
+    {"name": "thread_id", "type": "text", "description": "Support thread identifier"},
+    {"name": "full_request", "type": "text", "description": "Full text of the customer request"},
+    {"name": "subscription_info", "type": "jsonb", "description": "Subscription details (JSONB). Use ->>'key' for text access."},
+    {"name": "tracking_info", "type": "jsonb", "description": "Tracking/shipping details (JSONB). Use ->>'key' for text access."},
+    {"name": "human_reply", "type": "text", "description": "The human agent's final reply (may include edits to AI output)"},
+    {"name": "ai_reply", "type": "text", "description": "The AI-generated reply"},
+    {"name": "ai_reply_date", "type": "timestamptz", "description": "When the AI reply was generated"},
+    {"name": "human_reply_date", "type": "timestamptz", "description": "When the human agent replied"},
+    {"name": "comment", "type": "text", "description": "Internal comment about the comparison"},
+    {"name": "request_subtype", "type": "text", "description": "Request category (e.g., billing, shipping, general). Main grouping field for category analysis."},
+    {"name": "email", "type": "text", "description": "Email of the human agent/reviewer"},
+    {"name": "changes", "type": "jsonb", "description": "Detailed changes made by human (JSONB). Use ->>'key' for text access."},
+    {"name": "updated_at", "type": "timestamptz", "description": "Last update timestamp"},
+    {"name": "ticket_id", "type": "text", "description": "Support ticket identifier"},
+    {"name": "human_reply_original", "type": "text", "description": "Original human reply before any modifications"},
+    {"name": "check_count", "type": "bigint", "description": "Number of times this record was checked/verified"},
+    {"name": "changed", "type": "boolean", "description": "Legacy v3.x field. True if human changed the AI output."},
+    {"name": "last_checked_at", "type": "timestamptz", "description": "When this record was last checked"},
+    {"name": "improvement_suggestions", "type": "jsonb", "description": "AI-generated improvement suggestions (JSONB)"},
+    {"name": "similarity_score", "type": "bigint", "description": "Similarity score between AI and human replies"},
+    {"name": "prompt_version", "type": "text", "description": "Version of the AI prompt used (e.g., 'v3', 'v4'). Used for version comparison analysis."},
+    {"name": "change_classification", "type": "text", "description": "v4.0 penalty-based classification. Values: PERFECT_MATCH, STYLISTIC_EDIT, STRUCTURAL_FIX, TONAL_MISALIGNMENT, CONFUSING_VERBOSITY, MINOR_INFO_GAP, MAJOR_FUNCTIONAL_OMISSION, CRITICAL_FACT_ERROR, EXCL_WORKFLOW_SHIFT, EXCL_DATA_DISCREPANCY, HUMAN_INCOMPLETE. ALL UPPERCASE with underscores."},
+    {"name": "root_cause", "type": "text", "description": "Root cause analysis of the change"},
+    {"name": "draft_update_count", "type": "integer", "description": "Number of draft updates for this record"}
+  ],
+  "use_cases": [
+    "Quality score analysis by category (request_subtype)",
+    "Prompt version performance comparison",
+    "Reviewer workload analysis (by email)",
+    "Quality trends over time (created_at)",
+    "Classification distribution analysis",
+    "AI approval rate tracking",
+    "Similarity score analysis"
+  ],
+  "data_quality_notes": "change_classification values are ALL_CAPS with underscores (e.g., 'PERFECT_MATCH' not 'perfect_match'). ai_approved field does NOT exist in this table — it exists in ticket_reviews. changed is the legacy boolean field. Classifications starting with 'EXCL_' and 'HUMAN_INCOMPLETE' are excluded from quality scoring. JSONB fields (subscription_info, tracking_info, changes, improvement_suggestions) require ->>'key' syntax. Can be NULL: change_classification, prompt_version, email, most text fields."
+}

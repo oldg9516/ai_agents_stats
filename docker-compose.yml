@@ -1,0 +1,46 @@
+services:
+  dash:
+    build:
+      context: .
+      dockerfile: services/dash/Dockerfile
+    ports:
+      - "9000:9000"
+    env_file:
+      - .env
+    environment:
+      - AGENT_DB_URL=${DASH_AGENT_DB_URL}
+      - DATA_DB_URL=${DASH_DATA_DB_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PORT=9000
+      - AGENT_MODE=full
+      - AGENT_ID=dash
+      - KNOWLEDGE_TABLE_PREFIX=dash
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  dash-test:
+    build:
+      context: .
+      dockerfile: services/dash/Dockerfile
+    ports:
+      - "9001:9001"
+    env_file:
+      - .env
+    environment:
+      - AGENT_DB_URL=${DASH_AGENT_DB_URL}
+      - DATA_DB_URL=${DASH_TEST_DATA_DB_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PORT=9001
+      - AGENT_MODE=generic
+      - AGENT_ID=dash-test
+      - KNOWLEDGE_TABLE_PREFIX=dash_test
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped

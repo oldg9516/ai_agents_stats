@@ -1143,13 +1143,20 @@
 		"subtitle": "Ask questions about your support data",
 		"modeToggle": {
 			"classic": "Classic",
-			"dash": "Dash AI"
+			"dash": "Dash AI",
+			"dash-test": "Test DB"
 		},
 		"dash": {
 			"title": "Dash AI",
 			"subtitle": "Self-learning SQL analytics",
 			"initial": "Ask me anything about your support data. I can write SQL queries, analyze trends, and learn from our conversations.",
 			"placeholder": "Ask about your data..."
+		},
+		"dashTest": {
+			"title": "Test DB",
+			"subtitle": "External database agent",
+			"initial": "Ask me anything about the test database. I'll discover the schema and write SQL queries for you.",
+			"placeholder": "Ask about the data..."
 		},
 		"newChat": "New Chat",
 		"emptyTitle": "Ask anything about your data",

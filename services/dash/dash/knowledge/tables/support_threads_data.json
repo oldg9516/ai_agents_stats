@@ -1,0 +1,41 @@
+{
+  "table_name": "support_threads_data",
+  "description": "Support thread operations and AI draft data. Each row represents a support thread with customer request details, requirements flags, AI-generated draft reply, and processing status. Can be joined with ai_human_comparison for quality analysis.",
+  "columns": [
+    {"name": "thread_id", "type": "varchar", "description": "Primary key. Unique identifier for the support thread."},
+    {"name": "ticket_id", "type": "varchar", "description": "Associated support ticket identifier. NOT NULL."},
+    {"name": "request_type", "type": "varchar", "description": "Type of support request"},
+    {"name": "requires_reply", "type": "boolean", "description": "Whether this thread requires a reply to the customer"},
+    {"name": "requires_identification", "type": "boolean", "description": "Whether customer identification is needed"},
+    {"name": "requires_editing", "type": "boolean", "description": "Whether the AI draft needs editing"},
+    {"name": "requires_subscription_info", "type": "boolean", "description": "Whether subscription info is needed"},
+    {"name": "requires_tracking_info", "type": "boolean", "description": "Whether tracking/shipping info is needed"},
+    {"name": "requires_box_contents_info", "type": "boolean", "description": "Whether box contents info is needed"},
+    {"name": "user", "type": "text", "description": "User/agent handling the thread"},
+    {"name": "status", "type": "varchar", "description": "Current thread status"},
+    {"name": "identification", "type": "text", "description": "Customer identification details"},
+    {"name": "subscription_info", "type": "text", "description": "Subscription information (text, not JSONB)"},
+    {"name": "tracking_info", "type": "text", "description": "Tracking/shipping information (text)"},
+    {"name": "box_contents_info", "type": "text", "description": "Box contents information"},
+    {"name": "ai_draft_reply", "type": "text", "description": "AI-generated draft response to the customer"},
+    {"name": "full_request", "type": "text", "description": "Full text of the customer request"},
+    {"name": "request_subtype", "type": "varchar", "description": "Request sub-category for detailed analysis"},
+    {"name": "prompt_version", "type": "text", "description": "Prompt version used for AI draft generation"},
+    {"name": "created_at", "type": "timestamptz", "description": "When the thread record was created (default: now()). NOT NULL."},
+    {"name": "thread_date", "type": "timestamptz", "description": "Original thread creation date from the ticketing system"},
+    {"name": "request_sub_subtype", "type": "text", "description": "More granular sub-sub-category"},
+    {"name": "action_analysis", "type": "text", "description": "JSON output from Action Analysis agent: requires_system_action, action_type, details. Stored as text (not JSONB)."},
+    {"name": "is_outstanding", "type": "boolean", "description": "Whether this thread is flagged as outstanding/notable"},
+    {"name": "outstanding_trigger", "type": "text", "description": "What triggered the outstanding flag"}
+  ],
+  "use_cases": [
+    "Support volume analysis (count threads by period)",
+    "Thread status distribution",
+    "AI draft coverage (% threads with ai_draft_reply)",
+    "Requirements analysis (which requires_* flags are most common)",
+    "Request type/subtype breakdown",
+    "Outstanding thread tracking",
+    "Action analysis statistics"
+  ],
+  "data_quality_notes": "Primary key is thread_id (varchar), not an auto-increment. action_analysis is stored as TEXT (not JSONB) — use JSON parsing functions if needed. Multiple boolean requires_* columns indicate what information is needed. status values vary — use introspect_schema to check current values. Can be joined with ai_human_comparison via thread_id for quality metrics."
+}

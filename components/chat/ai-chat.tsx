@@ -34,10 +34,11 @@ import { ChatMessageDisplay, LoadingMessage } from './chat-message'
 
 interface AIChatProps {
 	webhookUrl: string
+	toggleSlot?: React.ReactNode
 	className?: string
 }
 
-export function AIChat({ webhookUrl, className = '' }: AIChatProps) {
+export function AIChat({ webhookUrl, toggleSlot, className = '' }: AIChatProps) {
 	const t = useTranslations('chat')
 	const [inputValue, setInputValue] = useState('')
 	const [showHistory, setShowHistory] = useState(false)
@@ -322,15 +323,18 @@ export function AIChat({ webhookUrl, className = '' }: AIChatProps) {
 							<p className='text-xs text-muted-foreground'>{t('subtitle')}</p>
 						</div>
 					</div>
-					<Button
-						variant='ghost'
-						size='sm'
-						onClick={handleNewChat}
-						className='flex items-center space-x-2'
-					>
-						<IconPlus className='w-4 h-4' />
-						<span>{t('newChat')}</span>
-					</Button>
+					<div className='flex items-center gap-3'>
+						{toggleSlot}
+						<Button
+							variant='ghost'
+							size='sm'
+							onClick={handleNewChat}
+							className='flex items-center space-x-2'
+						>
+							<IconPlus className='w-4 h-4' />
+							<span>{t('newChat')}</span>
+						</Button>
+					</div>
 				</div>
 
 				{/* Messages Area */}

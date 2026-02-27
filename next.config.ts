@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
 	},
 	// Enable compression
 	compress: true,
+	// CopilotKit runtime uses pino which has Node.js-only deps
+	serverExternalPackages: ['@copilotkit/runtime', 'pino', 'thread-stream'],
 	// Optimize package imports to reduce bundle size
 	experimental: {
 		optimizePackageImports: [

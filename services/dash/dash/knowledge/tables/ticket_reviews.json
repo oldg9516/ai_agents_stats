@@ -1,0 +1,24 @@
+{
+  "table_name": "ticket_reviews",
+  "description": "Qualified agent review data for tickets. Each row is a review decision by a qualified agent for a specific ai_human_comparison record. Foreign key to ai_human_comparison via comparison_id. Uses UPSERT on comparison_id.",
+  "columns": [
+    {"name": "id", "type": "bigint", "description": "Primary key, auto-increment"},
+    {"name": "comparison_id", "type": "bigint", "description": "Foreign key to ai_human_comparison.id. Unique constraint for UPSERT. NOT NULL."},
+    {"name": "review_status", "type": "text", "description": "Review state. Values: 'processed' or 'unprocessed' (lowercase). Default: 'unprocessed'."},
+    {"name": "ai_approved", "type": "boolean", "description": "Whether the qualified agent approved the AI output without changes. True = high quality AI output."},
+    {"name": "reviewer_name", "type": "text", "description": "Name of the qualified agent who performed the review"},
+    {"name": "manual_comment", "type": "text", "description": "Free-text comment from the reviewer"},
+    {"name": "requires_editing_correct", "type": "boolean", "description": "Whether the editing requirement was correctly identified"},
+    {"name": "action_analysis_verification", "type": "jsonb", "description": "JSONB field with verification data for action analysis. Use ->>'key' for text access, ->'key' for JSON object access."},
+    {"name": "created_at", "type": "timestamptz", "description": "When the review was created (default: now())"},
+    {"name": "updated_at", "type": "timestamptz", "description": "When the review was last updated (default: now())"}
+  ],
+  "use_cases": [
+    "Qualified agent review statistics",
+    "Review completion rate (processed vs unprocessed)",
+    "AI approval rate by reviewer",
+    "Review status tracking over time",
+    "Action analysis verification accuracy"
+  ],
+  "data_quality_notes": "review_status values are LOWERCASE: 'processed', 'unprocessed'. action_analysis_verification is JSONB — use ->>'key' for text access. comparison_id is a foreign key to ai_human_comparison.id with a unique constraint. There is a VIEW called ai_comparison_with_reviews that LEFT JOINs ai_human_comparison with ticket_reviews on comparison_id = ai_human_comparison.id. JOIN example: SELECT * FROM ai_human_comparison a LEFT JOIN ticket_reviews t ON t.comparison_id = a.id"
+}

@@ -1,0 +1,49 @@
+services:
+  pgvector:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: dash_agent
+      POSTGRES_USER: dash
+      POSTGRES_PASSWORD: dash_local_pwd
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dash -d dash_agent"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  agent:
+    build: ./backend
+    ports:
+      - "${AGENT_PORT:-9000}:${AGENT_PORT:-9000}"
+    environment:
+      - AGENT_DB_URL=${AGENT_DB_URL:-postgresql+psycopg://dash:dash_local_pwd@pgvector:5432/dash_agent?options=-csearch_path%3Ddash,public}
+      - DATA_DB_URL=${DATA_DB_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PORT=${AGENT_PORT:-9000}
+    depends_on:
+      pgvector:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${AGENT_PORT:-9000}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "${FRONTEND_PORT:-3001}:3000"
+    environment:
+      - DASH_BACKEND_URL=http://agent:${AGENT_PORT:-9000}
+    depends_on:
+      agent:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:

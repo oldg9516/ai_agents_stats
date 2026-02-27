@@ -1,2 +1,7 @@
 export { AIChat, ChatPage, ChatSidebar } from './ai-chat'
+export { AIChatWithToggle } from './ai-chat-with-toggle'
+export { DashChat } from './dash-chat'
+export { DashChatLazy } from './dash-chat-dynamic'
+export { DashTestChat } from './dash-test-chat'
+export { DashTestChatLazy } from './dash-test-chat-dynamic'
 export { ChatMessageDisplay, LoadingMessage, ChartDisplay, TableDisplay, CodeDisplay } from './chat-message'
