@@ -58,6 +58,8 @@ export const LAUNCHED_CATEGORIES: string[] = [
 	'gratitude',
 	'customization_request',
 	'damaged_or_leaking_item_report',
+	'recipient_or_address_change',
+	'payment_question',
 ]
 
 /**
