@@ -36,7 +36,7 @@ export interface AutomationRule {
 export const AUTOMATION_RULES: AutomationRule[] = [
 	{
 		categories: ['retention_primary_request', 'retention_repeated_request'],
-		isDraft: (r) => r.is_outstanding === true,
+		isDraft: r => r.is_outstanding === true,
 		ruleSource: 'is_outstanding',
 	},
 	// Add new rules here as needed:
@@ -60,6 +60,8 @@ export const LAUNCHED_CATEGORIES: string[] = [
 	'damaged_or_leaking_item_report',
 	'recipient_or_address_change',
 	'payment_question',
+	'frequency_change_request',
+	'skip_or_pause_request',
 ]
 
 /**
@@ -69,10 +71,13 @@ export const LAUNCHED_CATEGORIES: string[] = [
  * requires_system_action from action_analysis.
  */
 export function resolveAutomationStatus(
-	record: AutomationRuleRecord & { request_subtype: string | null }
+	record: AutomationRuleRecord & { request_subtype: string | null },
 ): { status: AutomationStatus; ruleSource: string } {
 	for (const rule of AUTOMATION_RULES) {
-		if (record.request_subtype && rule.categories.includes(record.request_subtype)) {
+		if (
+			record.request_subtype &&
+			rule.categories.includes(record.request_subtype)
+		) {
 			return {
 				status: rule.isDraft(record) ? 'draft' : 'auto_reply',
 				ruleSource: rule.ruleSource,
@@ -92,7 +97,9 @@ export function resolveAutomationStatus(
  * Get the rule source for a given subcategory (without needing a full record).
  * Useful for displaying which field determines the status in UI.
  */
-export function getRuleSourceForCategory(requestSubtype: string | null): string {
+export function getRuleSourceForCategory(
+	requestSubtype: string | null,
+): string {
 	if (!requestSubtype) return 'requires_system_action'
 	for (const rule of AUTOMATION_RULES) {
 		if (rule.categories.includes(requestSubtype)) {
