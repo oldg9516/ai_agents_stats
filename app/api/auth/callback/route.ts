@@ -2,11 +2,30 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse, type NextRequest } from 'next/server'
 
+/** Validate redirect path to prevent open redirect attacks */
+function getSafeRedirectPath(next: string | null, locale: string): string {
+  const fallback = `/${locale}/dashboard`
+  if (!next) return fallback
+
+  // Must start with / and must NOT start with // (protocol-relative URL)
+  if (!next.startsWith('/') || next.startsWith('//')) return fallback
+
+  // Decode and re-check to prevent encoded bypasses like /%2f%2f
+  try {
+    const decoded = decodeURIComponent(next)
+    if (decoded.startsWith('//') || decoded.includes('://')) return fallback
+  } catch {
+    return fallback
+  }
+
+  return next
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/dashboard'
   const locale = searchParams.get('locale') ?? 'ru'
+  const redirectPath = getSafeRedirectPath(searchParams.get('next'), locale)
 
   if (code) {
     const cookieStore = await cookies()
@@ -51,9 +70,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(new URL(`/${locale}/unauthorized`, origin))
       }
 
-      // Redirect to intended destination
-      const redirectUrl = next.startsWith('/') ? next : `/${locale}/dashboard`
-      return NextResponse.redirect(new URL(redirectUrl, origin))
+      // Redirect to intended destination (validated above)
+      return NextResponse.redirect(new URL(redirectPath, origin))
     }
   }
 

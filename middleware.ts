@@ -17,13 +17,21 @@ function isPublicRoute(pathWithoutLocale: string): boolean {
   )
 }
 
+// Static file extensions that should skip middleware
+const STATIC_EXTENSIONS = [
+  '.js', '.css', '.map', '.json',
+  '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.webp', '.avif',
+  '.woff', '.woff2', '.ttf', '.eot',
+  '.xml', '.txt', '.robots',
+]
+
 // Check if path should skip middleware entirely
 function shouldSkipMiddleware(pathname: string): boolean {
   return (
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon') ||
-    pathname.includes('.')
+    STATIC_EXTENSIONS.some(ext => pathname.endsWith(ext))
   )
 }
 

@@ -16,8 +16,6 @@ import { useParams, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 
 const isDev = process.env.NODE_ENV === 'development'
-const DEV_EMAIL = process.env.NEXT_PUBLIC_DEV_LOGIN || ''
-const DEV_PASSWORD = process.env.NEXT_PUBLIC_DEV_PASSWORD || ''
 
 function GoogleIcon({ className }: { className?: string }) {
 	return (
@@ -50,9 +48,14 @@ export default function LoginPage() {
 	const redirectTo = searchParams.get('redirect')
 	const error = searchParams.get('error')
 
-	// Dev mode state - pre-fill from env vars
-	const [devEmail, setDevEmail] = useState(DEV_EMAIL)
-	const [devPassword, setDevPassword] = useState(DEV_PASSWORD)
+	// Dev mode state — NEXT_PUBLIC_DEV_* only exist in development,
+	// tree-shaken from production bundle since isDev is a compile-time constant
+	const [devEmail, setDevEmail] = useState(
+		isDev ? process.env.NEXT_PUBLIC_DEV_LOGIN || '' : ''
+	)
+	const [devPassword, setDevPassword] = useState(
+		isDev ? process.env.NEXT_PUBLIC_DEV_PASSWORD || '' : ''
+	)
 	const [devLoading, setDevLoading] = useState(false)
 	const [devError, setDevError] = useState<string | null>(null)
 
@@ -76,17 +79,20 @@ export default function LoginPage() {
 			setDevLoading(false)
 			setDevError(error.message)
 		} else {
-			// Redirect on success
+			// Redirect on success — only allow relative paths
 			const destination = redirectTo || `/${locale}/dashboard`
-			window.location.href = destination
+			const safeDestination =
+				destination.startsWith('/') && !destination.startsWith('//')
+					? destination
+					: `/${locale}/dashboard`
+			window.location.href = safeDestination
 		}
 	}
 
 	const handleGoogleSignIn = async () => {
 		const origin = window.location.origin
-		const redirectUrl = `${origin}/api/auth/callback?locale=${locale}&next=${
-			redirectTo || `/${locale}/dashboard`
-		}`
+		const next = redirectTo || `/${locale}/dashboard`
+		const redirectUrl = `${origin}/api/auth/callback?locale=${locale}&next=${encodeURIComponent(next)}`
 
 		await supabase.auth.signInWithOAuth({
 			provider: 'google',
