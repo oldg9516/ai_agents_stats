@@ -20,6 +20,7 @@ import {
 	IconSearch,
 	IconSettings,
 	IconRobot,
+	IconTestPipe,
 	IconTarget,
 	IconTicket,
 	IconUsers,
@@ -70,6 +71,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				title: t('automationOverview'),
 				url: '/automation-overview',
 				icon: IconRobot,
+			},
+			{
+				title: t('evalDashboard'),
+				url: '/eval-dashboard',
+				icon: IconTestPipe,
 			},
 			{
 				title: t('requestCategories'),

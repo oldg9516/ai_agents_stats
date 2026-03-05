@@ -11,6 +11,7 @@
 		"actionAnalysis": "Action Analysis",
 		"automationOverview": "Automation Overview",
 		"backlogReports": "Backlog Reports",
+		"evalDashboard": "Eval Dashboard",
 		"agentsStats": "Agent Statistics",
 		"aiChat": "AI Chat",
 		"documentation": "Documentation",
@@ -1143,8 +1144,7 @@
 		"subtitle": "Ask questions about your support data",
 		"modeToggle": {
 			"classic": "Classic",
-			"dash": "Dash AI",
-			"dash-test": "Test DB"
+			"dash": "Dash AI"
 		},
 		"dash": {
 			"title": "Dash AI",
@@ -1416,6 +1416,32 @@
 		"tooltipActionType": "How often AI correctly identifies the type of system action",
 		"tooltipOverall": "Combined accuracy of action detection and action type from verified tickets",
 		"tooltipCategoryBreakdown": "Per-category distribution of requires_system_action true/false and verification stats"
+	},
+	"evalDashboard": {
+		"title": "Eval Dashboard",
+		"description": "Intent readiness evaluation for automation decisions",
+		"table": {
+			"title": "Intent Readiness",
+			"intent": "Intent",
+			"tickets": "Tickets",
+			"criticalErrorRate": "Critical Error %",
+			"safeToSendRate": "Safe to Send %",
+			"systemActionBlock": "System Block %",
+			"autoSend": "Auto-send",
+			"status": "Status"
+		},
+		"diagnostics": {
+			"title": "Intent Diagnostics",
+			"totalRecords": "Total records",
+			"failureOrigin": "Failure Origin",
+			"errorShape": "Error Shape",
+			"fixability": "Fixability",
+			"confidence": "Confidence",
+			"overrideDetails": "Override Details",
+			"signal": "Signal",
+			"followed": "Followed",
+			"overridden": "Overridden"
+		}
 	},
 	"automationOverview": {
 		"title": "Automation Overview",

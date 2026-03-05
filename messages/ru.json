@@ -11,6 +11,7 @@
 		"actionAnalysis": "Анализ действий",
 		"automationOverview": "Обзор автоматизации",
 		"backlogReports": "Отчёты бэклога",
+		"evalDashboard": "Оценка интентов",
 		"agentsStats": "Статистика агентов",
 		"aiChat": "AI Чат",
 		"documentation": "Документация",
@@ -1143,8 +1144,7 @@
 		"subtitle": "Задавайте вопросы о ваших данных поддержки",
 		"modeToggle": {
 			"classic": "Классический",
-			"dash": "Dash AI",
-			"dash-test": "Тест БД"
+			"dash": "Dash AI"
 		},
 		"dash": {
 			"title": "Dash AI",
@@ -1416,6 +1416,32 @@
 		"tooltipActionType": "Как часто AI верно определяет тип системного действия",
 		"tooltipOverall": "Комбинированная точность определения действия и типа из проверенных тикетов",
 		"tooltipCategoryBreakdown": "Распределение requires_system_action true/false и статистика проверки по категориям"
+	},
+	"evalDashboard": {
+		"title": "Оценка интентов",
+		"description": "Оценка готовности интентов к автоматизации",
+		"table": {
+			"title": "Готовность интентов",
+			"intent": "Интент",
+			"tickets": "Тикеты",
+			"criticalErrorRate": "Крит. ошибки %",
+			"safeToSendRate": "Безопасно %",
+			"systemActionBlock": "Блок системы %",
+			"autoSend": "Авто-отправка",
+			"status": "Статус"
+		},
+		"diagnostics": {
+			"title": "Диагностика интента",
+			"totalRecords": "Всего записей",
+			"failureOrigin": "Источник сбоя",
+			"errorShape": "Тип ошибки",
+			"fixability": "Исправимость",
+			"confidence": "Уверенность",
+			"overrideDetails": "Переопределения",
+			"signal": "Сигнал",
+			"followed": "Выполнено",
+			"overridden": "Переопределено"
+		}
 	},
 	"automationOverview": {
 		"title": "Обзор автоматизации",

@@ -6,6 +6,7 @@
  */
 
 import type { ActionAnalysisFilters, AutomationOverviewFilters, DashboardFilters, SupportFilters } from '@/lib/supabase/types'
+import type { EvalFilters } from '@/lib/supabase/queries-eval'
 
 /**
  * Dashboard query keys
@@ -117,6 +118,33 @@ export const automationOverviewKeys = {
 }
 
 /**
+ * Eval Dashboard query keys
+ */
+export const evalKeys = {
+	all: ['eval'] as const,
+	intentTable: (filters: EvalFilters) =>
+		[
+			...evalKeys.all,
+			'intent-table',
+			{
+				from: filters.dateRange.from.toISOString(),
+				to: filters.dateRange.to.toISOString(),
+				categories: filters.categories.sort(),
+			},
+		] as const,
+	intentDiagnostics: (filters: EvalFilters, intentId: string) =>
+		[
+			...evalKeys.all,
+			'intent-diagnostics',
+			intentId,
+			{
+				from: filters.dateRange.from.toISOString(),
+				to: filters.dateRange.to.toISOString(),
+			},
+		] as const,
+}
+
+/**
  * Combined query keys object for easy access
  */
 export const queryKeys = {
@@ -124,4 +152,5 @@ export const queryKeys = {
 	support: supportKeys,
 	actionAnalysis: actionAnalysisKeys,
 	automationOverview: automationOverviewKeys,
+	eval: evalKeys,
 } as const
