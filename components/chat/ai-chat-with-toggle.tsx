@@ -4,12 +4,11 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AIChat } from './ai-chat'
 import { DashChatLazy } from './dash-chat-dynamic'
-import { DashTestChatLazy } from './dash-test-chat-dynamic'
 
-type ChatMode = 'classic' | 'dash' | 'dash-test'
+type ChatMode = 'classic' | 'dash'
 
 const STORAGE_KEY = 'ai-chat-mode'
-const MODES: ChatMode[] = ['classic', 'dash', 'dash-test']
+const MODES: ChatMode[] = ['classic', 'dash']
 
 interface AIChatWithToggleProps {
 	webhookUrl: string
@@ -59,10 +58,6 @@ export function AIChatWithToggle({
 			))}
 		</div>
 	), [mode, handleModeChange, t])
-
-	if (mode === 'dash-test') {
-		return <DashTestChatLazy toggleSlot={toggle} className={className} />
-	}
 
 	if (mode === 'dash') {
 		return <DashChatLazy toggleSlot={toggle} className={className} />
