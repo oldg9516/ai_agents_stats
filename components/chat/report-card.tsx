@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { ReportPreview, setReportChatContext } from '@/types/chat'
 import { IconFileText, IconChartBar, IconListDetails } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/routing'
 import { useParams } from 'next/navigation'
 
 interface ReportCardProps {

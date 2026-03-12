@@ -35,7 +35,7 @@ import { IconCheck, IconExternalLink, IconX } from '@tabler/icons-react'
 import { format } from 'date-fns'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/routing'
 
 interface ThreadDetailModalProps {
 	thread: SupportThread & {

@@ -2,7 +2,8 @@
 
 import { useBacklogReportDetail } from '@/lib/queries/backlog-reports-queries'
 import { useTranslations } from 'next-intl'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter } from '@/i18n/routing'
+import { useParams } from 'next/navigation'
 import { Button } from './ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'

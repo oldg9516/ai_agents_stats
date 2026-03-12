@@ -84,7 +84,7 @@ export async function GET() {
 	const text = await resp.text()
 	if (!resp.ok) {
 		console.error('Dash backend error:', resp.status, text)
-		return NextResponse.json({ error: text || 'Backend error' }, { status: resp.status })
+		return NextResponse.json({ error: 'Backend request failed' }, { status: resp.status })
 	}
 	try {
 		return NextResponse.json(JSON.parse(text), { status: resp.status })
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
 	const text = await resp.text()
 	if (!resp.ok) {
 		console.error('Dash backend error:', resp.status, text)
-		return NextResponse.json({ error: text || 'Backend error' }, { status: resp.status })
+		return NextResponse.json({ error: 'Backend request failed' }, { status: resp.status })
 	}
 	try {
 		return NextResponse.json(JSON.parse(text), { status: resp.status })

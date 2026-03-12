@@ -2,7 +2,8 @@
 
 import type { BacklogReport, CategoryStats, MainPattern } from '@/lib/supabase/types'
 import { useTranslations } from 'next-intl'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter } from '@/i18n/routing'
+import { useParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'

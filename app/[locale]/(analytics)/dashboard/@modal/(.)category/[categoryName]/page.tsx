@@ -33,13 +33,13 @@ export default async function CategoryModalPage({ params }: CategoryModalPagePro
 	const categoryName = decodedParam
 
 	// Validate at least one category exists
-	const exists = await checkCategoryExists(categories[0])
-	if (!exists) {
+	const existsResult = await checkCategoryExists(categories[0])
+	if (!existsResult.success || !existsResult.data) {
 		notFound()
 	}
 
 	// Fetch initial data with default filters
-	const initialData = await fetchCategoryDetail(
+	const result = await fetchCategoryDetail(
 		categories,
 		{
 			dateRange: {
@@ -52,5 +52,9 @@ export default async function CategoryModalPage({ params }: CategoryModalPagePro
 		{ page: 0, pageSize: 20 }
 	)
 
-	return <CategoryDetailModal categoryName={categoryName} initialData={initialData} />
+	if (!result.success) {
+		notFound()
+	}
+
+	return <CategoryDetailModal categoryName={categoryName} initialData={result.data} />
 }

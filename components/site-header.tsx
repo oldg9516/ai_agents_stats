@@ -4,7 +4,7 @@ import { LanguageSwitcher } from '@/components/language-switcher'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { useTranslations } from 'next-intl'
-import { usePathname } from 'next/navigation'
+import { usePathname } from '@/i18n/routing'
 
 const PAGE_TITLE_KEYS: Record<string, string> = {
 	'/': 'common.home',

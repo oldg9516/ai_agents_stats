@@ -41,7 +41,7 @@
 	"dashboard": {
 		"scoringMode": {
 			"label": "Расчёт",
-			"legacy": "Legacy",
+			"legacy": "Устаревшая",
 			"new": "Новый"
 		},
 		"categoryMode": {
@@ -405,7 +405,7 @@
 			"description": "Главная страница аналитики, показывающая метрики качества AI-агентов, тренды и разбивку производительности.",
 			"scoringMode": {
 				"label": "Расчёт",
-				"legacy": "Legacy",
+				"legacy": "Устаревшая",
 				"new": "Новый"
 			},
 			"kpis": {
@@ -1389,6 +1389,7 @@
 		"change_frequency": "Изменить частоту подписки",
 		"process_refund": "Оформить возврат",
 		"update_recipient": "Обновить получателя",
+		"box_reshipment": "Повторная отправка посылки",
 		"other_system_action": "Другое системное действие"
 	},
 	"actionAnalysis": {

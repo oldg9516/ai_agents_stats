@@ -5,7 +5,7 @@
  * and to prevent key collisions
  */
 
-import type { ActionAnalysisFilters, AutomationOverviewFilters, DashboardFilters, SupportFilters } from '@/lib/supabase/types'
+import type { ActionAnalysisFilters, AutomationOverviewFilters, BacklogReportsFilters, DashboardFilters, SupportFilters } from '@/lib/supabase/types'
 import type { EvalFilters } from '@/lib/supabase/queries-eval'
 
 /**
@@ -145,6 +145,27 @@ export const evalKeys = {
 }
 
 /**
+ * Backlog Reports query keys
+ */
+export const backlogReportsKeys = {
+	all: ['backlog-reports'] as const,
+	list: (filters: BacklogReportsFilters, page: number) =>
+		[
+			...backlogReportsKeys.all,
+			{
+				from: filters.dateRange.from.toISOString(),
+				to: filters.dateRange.to.toISOString(),
+				periodDays: filters.periodDays,
+				minTickets: filters.minTickets,
+				searchQuery: filters.searchQuery,
+				page,
+			},
+		] as const,
+	detail: (reportId: string) => ['backlog-report', reportId] as const,
+	latestTimestamp: ['backlog-reports', 'latest-timestamp'] as const,
+}
+
+/**
  * Combined query keys object for easy access
  */
 export const queryKeys = {
@@ -153,4 +174,5 @@ export const queryKeys = {
 	actionAnalysis: actionAnalysisKeys,
 	automationOverview: automationOverviewKeys,
 	eval: evalKeys,
+	backlogReports: backlogReportsKeys,
 } as const

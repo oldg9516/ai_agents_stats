@@ -32,7 +32,6 @@ const nextConfig: NextConfig = {
 		optimizePackageImports: [
 			'@radix-ui/react-dialog',
 			'@radix-ui/react-select',
-			'@radix-ui/react-popover',
 			'@radix-ui/react-dropdown-menu',
 			'@nivo/sankey',
 			'@nivo/heatmap',

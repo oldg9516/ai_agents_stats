@@ -1389,6 +1389,7 @@
 		"change_frequency": "Change frequency",
 		"process_refund": "Process refund",
 		"update_recipient": "Update recipient",
+		"box_reshipment": "Box reshipment",
 		"other_system_action": "Other system action"
 	},
 	"actionAnalysis": {

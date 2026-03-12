@@ -7,6 +7,7 @@ export const ACTION_TYPES = [
 	'change_frequency',
 	'process_refund',
 	'update_recipient',
+	'box_reshipment',
 	'other_system_action',
 ] as const
 

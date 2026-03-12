@@ -7,7 +7,7 @@
  * Used by Parallel Routes to display category without leaving the dashboard
  */
 
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
 import {
 	Dialog,

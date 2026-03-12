@@ -30,13 +30,13 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 	const categoryName = decodedParam
 
 	// Validate at least one category exists
-	const exists = await checkCategoryExists(categories[0])
-	if (!exists) {
+	const existsResult = await checkCategoryExists(categories[0])
+	if (!existsResult.success || !existsResult.data) {
 		notFound()
 	}
 
 	// Fetch initial data with default filters
-	const initialData = await fetchCategoryDetail(
+	const result = await fetchCategoryDetail(
 		categories,
 		{
 			dateRange: {
@@ -49,9 +49,13 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 		{ page: 0, pageSize: 20 }
 	)
 
+	if (!result.success) {
+		notFound()
+	}
+
 	return (
 		<div className='container mx-auto p-6'>
-			<CategoryDetailContent categoryName={categoryName} isModal={false} initialData={initialData} />
+			<CategoryDetailContent categoryName={categoryName} isModal={false} initialData={result.data} />
 		</div>
 	)
 }

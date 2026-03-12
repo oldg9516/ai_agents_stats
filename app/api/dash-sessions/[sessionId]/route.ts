@@ -73,6 +73,8 @@ export async function PATCH(
 		return NextResponse.json({ error: auth.error }, { status: 401 })
 
 	const { sessionId } = await params
+	if (!/^[a-zA-Z0-9\-_]+$/.test(sessionId))
+		return NextResponse.json({ error: 'Invalid session ID' }, { status: 400 })
 	const body = await request.json()
 
 	const resp = await fetch(`${DASH_BACKEND_URL}/api/sessions/${sessionId}`, {
@@ -80,8 +82,17 @@ export async function PATCH(
 		headers: { 'Content-Type': 'application/json', ...dashHeaders(auth.email!) },
 		body: JSON.stringify(body),
 	})
-	const data = await resp.json()
-	return NextResponse.json(data, { status: resp.status })
+	try {
+		const data = await resp.json()
+		if (!resp.ok) {
+			console.error('Dash backend error:', resp.status, data)
+			return NextResponse.json({ error: 'Backend request failed' }, { status: resp.status })
+		}
+		return NextResponse.json(data, { status: resp.status })
+	} catch {
+		console.error('Dash backend non-JSON response for PATCH session:', sessionId)
+		return NextResponse.json({ error: 'Invalid backend response' }, { status: 502 })
+	}
 }
 
 /**
@@ -96,11 +107,22 @@ export async function DELETE(
 		return NextResponse.json({ error: auth.error }, { status: 401 })
 
 	const { sessionId } = await params
+	if (!/^[a-zA-Z0-9\-_]+$/.test(sessionId))
+		return NextResponse.json({ error: 'Invalid session ID' }, { status: 400 })
 
 	const resp = await fetch(`${DASH_BACKEND_URL}/api/sessions/${sessionId}`, {
 		method: 'DELETE',
 		headers: dashHeaders(auth.email!),
 	})
-	const data = await resp.json()
-	return NextResponse.json(data, { status: resp.status })
+	try {
+		const data = await resp.json()
+		if (!resp.ok) {
+			console.error('Dash backend error:', resp.status, data)
+			return NextResponse.json({ error: 'Backend request failed' }, { status: resp.status })
+		}
+		return NextResponse.json(data, { status: resp.status })
+	} catch {
+		console.error('Dash backend non-JSON response for DELETE session:', sessionId)
+		return NextResponse.json({ error: 'Invalid backend response' }, { status: 502 })
+	}
 }

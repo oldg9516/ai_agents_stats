@@ -51,7 +51,7 @@ import { IconCheck, IconExternalLink, IconChevronLeft, IconChevronRight } from '
 import { format } from 'date-fns'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/routing'
 import { useState } from 'react'
 import { toast } from 'sonner'
 

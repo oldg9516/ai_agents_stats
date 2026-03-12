@@ -8,6 +8,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { fetchTicketsByScoreGroup } from '@/lib/actions/score-group-actions'
+import { QUERY_CACHE_CONFIG } from '@/lib/queries/query-config'
 import type { ScoreGroup } from '@/constants/classification-types'
 import type { DateFilterMode, TicketReviewRecord } from '@/lib/supabase/types'
 
@@ -85,10 +86,9 @@ export function useScoreGroupTickets(
 			})
 		},
 		enabled: isEnabled,
-		staleTime: 2 * 60 * 1000, // 2 minutes
+		...QUERY_CACHE_CONFIG,
+		staleTime: 2 * 60 * 1000, // 2 minutes - shorter for modal data
 		gcTime: 10 * 60 * 1000, // 10 minutes
-		retry: 2,
-		retryDelay: 1000,
 	})
 
 	const total = query.data?.total ?? 0

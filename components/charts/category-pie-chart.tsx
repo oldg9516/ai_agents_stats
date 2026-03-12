@@ -18,7 +18,7 @@ import { getCategoryLabel } from '@/constants/category-labels'
 import type { CategoryDistributionResult } from '@/lib/supabase/types'
 import { useMemo, useState, useRef, useEffect, memo, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/routing'
 import { Label, Pie, PieChart, Cell } from 'recharts'
 
 /**

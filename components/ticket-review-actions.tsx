@@ -28,7 +28,7 @@ import { ActionAnalysisVerificationSection } from '@/components/shared/action-an
 import { ClassificationSelector } from '@/components/shared/classification-selector'
 import type { ActionAnalysis, ActionAnalysisVerification } from '@/lib/supabase/types'
 import { IconCheck } from '@tabler/icons-react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/routing'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslations } from 'next-intl'

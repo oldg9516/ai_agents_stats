@@ -12,23 +12,9 @@ import {
 } from '@/lib/actions/backlog-reports-actions'
 import type { BacklogReport, BacklogReportsFilters } from '@/lib/supabase/types'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { QUERY_CACHE_CONFIG, QUERY_CACHE_CONFIG_EXTENDED } from './query-config'
+import { backlogReportsKeys } from './query-keys'
 
-/**
- * Generate query key for backlog reports list
- */
-function getReportsQueryKey(filters: BacklogReportsFilters, page: number) {
-	return [
-		'backlog-reports',
-		{
-			from: filters.dateRange.from.toISOString(),
-			to: filters.dateRange.to.toISOString(),
-			periodDays: filters.periodDays,
-			minTickets: filters.minTickets,
-			searchQuery: filters.searchQuery,
-			page,
-		},
-	] as const
-}
 
 /**
  * Hook for fetching paginated list of backlog reports
@@ -44,7 +30,7 @@ export function useBacklogReports(
 	isFetching: boolean
 } {
 	const query = useQuery({
-		queryKey: getReportsQueryKey(filters, page),
+		queryKey: backlogReportsKeys.list(filters, page),
 		queryFn: async () => {
 			const result = await fetchBacklogReports(filters, page)
 			if (!result.success || !result.data) {
@@ -52,8 +38,8 @@ export function useBacklogReports(
 			}
 			return result.data
 		},
+		...QUERY_CACHE_CONFIG,
 		staleTime: 1 * 60 * 1000, // 1 minute - short but not zero to avoid excessive requests
-		gcTime: 15 * 60 * 1000, // 15 minutes
 	})
 
 	return {
@@ -75,7 +61,7 @@ export function useBacklogReportDetail(reportId: string): {
 	refetch: () => void
 } {
 	const query = useQuery({
-		queryKey: ['backlog-report', reportId],
+		queryKey: backlogReportsKeys.detail(reportId),
 		queryFn: async () => {
 			const result = await fetchBacklogReportById(reportId)
 			if (!result.success || !result.data) {
@@ -83,8 +69,7 @@ export function useBacklogReportDetail(reportId: string): {
 			}
 			return result.data
 		},
-		staleTime: 10 * 60 * 1000, // 10 minutes - reports don't change
-		gcTime: 30 * 60 * 1000, // 30 minutes
+		...QUERY_CACHE_CONFIG_EXTENDED, // 10min stale, 30min gc - reports don't change
 		enabled: !!reportId,
 	})
 
@@ -106,7 +91,7 @@ export function useGenerateReport() {
 		mutationFn: generateReport,
 		onSuccess: () => {
 			// Invalidate the list to trigger refetch when new report appears
-			queryClient.invalidateQueries({ queryKey: ['backlog-reports'] })
+			queryClient.invalidateQueries({ queryKey: backlogReportsKeys.all })
 		},
 	})
 }
@@ -117,7 +102,7 @@ export function useGenerateReport() {
  */
 export function useLatestReportTimestamp(enabled: boolean = false) {
 	return useQuery({
-		queryKey: ['backlog-reports', 'latest-timestamp'],
+		queryKey: backlogReportsKeys.latestTimestamp,
 		queryFn: async () => {
 			const result = await fetchLatestReportTimestamp()
 			if (!result.success) {
@@ -127,6 +112,7 @@ export function useLatestReportTimestamp(enabled: boolean = false) {
 		},
 		enabled,
 		refetchInterval: enabled ? 30000 : false, // Poll every 30 seconds when enabled
+		...QUERY_CACHE_CONFIG,
 		staleTime: 0, // Always fetch fresh data when polling
 	})
 }

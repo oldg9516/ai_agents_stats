@@ -1,7 +1,7 @@
 'use client'
 
 import { type Icon } from '@tabler/icons-react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter, usePathname } from '@/i18n/routing'
 
 import {
 	SidebarGroup,

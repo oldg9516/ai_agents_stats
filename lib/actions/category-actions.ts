@@ -26,6 +26,8 @@ import type {
 } from '@/lib/supabase/types'
 import { endOfTodayInIsrael, startOfNDaysAgoInIsrael } from '@/lib/utils/date-tz'
 
+type ActionResult<T> = { success: true; data: T } | { success: false; error: string }
+
 /**
  * Fetch complete category detail data
  * Supports single category or multiple categories (array)
@@ -34,52 +36,60 @@ export async function fetchCategoryDetail(
   categories: string | string[],
   filters?: Partial<CategoryFilters>,
   pagination?: { page: number; pageSize: number }
-): Promise<CategoryDetailData> {
-  // Normalize to array
-  const categoryArray = Array.isArray(categories) ? categories : [categories]
-  const categoryName = categoryArray.join(',') // For display
+): Promise<ActionResult<CategoryDetailData>> {
+  try {
+    // Normalize to array
+    const categoryArray = Array.isArray(categories) ? categories : [categories]
+    const categoryName = categoryArray.join(',') // For display
 
-  // Check if first category exists (basic validation)
-  const exists = await categoryExists(categoryArray[0])
-  if (!exists) {
-    throw new Error(`Category "${categoryArray[0]}" not found`)
-  }
+    // Check if first category exists (basic validation)
+    const exists = await categoryExists(categoryArray[0])
+    if (!exists) {
+      return { success: false, error: `Category "${categoryArray[0]}" not found` }
+    }
 
-  // Default filters
-  const defaultFilters: CategoryFilters = {
-    dateRange: {
-      from: startOfNDaysAgoInIsrael(29),
-      to: endOfTodayInIsrael(),
-    },
-    versions: [], // All versions
-    agents: [], // All agents (no filter)
-  }
+    // Default filters
+    const defaultFilters: CategoryFilters = {
+      dateRange: {
+        from: startOfNDaysAgoInIsrael(29),
+        to: endOfTodayInIsrael(),
+      },
+      versions: [], // All versions
+      agents: [], // All agents (no filter)
+    }
 
-  const appliedFilters: CategoryFilters = {
-    dateRange: filters?.dateRange || defaultFilters.dateRange,
-    versions: filters?.versions || defaultFilters.versions,
-    agents: filters?.agents || defaultFilters.agents,
-  }
+    const appliedFilters: CategoryFilters = {
+      dateRange: filters?.dateRange || defaultFilters.dateRange,
+      versions: filters?.versions || defaultFilters.versions,
+      agents: filters?.agents || defaultFilters.agents,
+    }
 
-  const defaultPagination = { page: 0, pageSize: 50 }
-  const appliedPagination = pagination || defaultPagination
+    const defaultPagination = { page: 0, pageSize: 50 }
+    const appliedPagination = pagination || defaultPagination
 
-  // Fetch all data in parallel for performance
-  const [kpis, weeklyTrends, versionStats, agentStats, records] = await Promise.all([
-    getCategoryKPIData(categoryArray, appliedFilters),
-    getCategoryWeeklyTrends(categoryArray, appliedFilters),
-    getCategoryVersionStats(categoryArray, appliedFilters),
-    getCategoryAgentStats(categoryArray, appliedFilters),
-    getCategoryRecords(categoryArray, appliedFilters, appliedPagination),
-  ])
+    // Fetch all data in parallel for performance
+    const [kpis, weeklyTrends, versionStats, agentStats, records] = await Promise.all([
+      getCategoryKPIData(categoryArray, appliedFilters),
+      getCategoryWeeklyTrends(categoryArray, appliedFilters),
+      getCategoryVersionStats(categoryArray, appliedFilters),
+      getCategoryAgentStats(categoryArray, appliedFilters),
+      getCategoryRecords(categoryArray, appliedFilters, appliedPagination),
+    ])
 
-  return {
-    categoryName, // Display name (comma-separated if multiple)
-    kpis,
-    weeklyTrends,
-    versionStats,
-    agentStats,
-    records,
+    return {
+      success: true,
+      data: {
+        categoryName, // Display name (comma-separated if multiple)
+        kpis,
+        weeklyTrends,
+        versionStats,
+        agentStats,
+        records,
+      },
+    }
+  } catch (error) {
+    console.error('fetchCategoryDetail failed:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
 }
 
@@ -89,28 +99,33 @@ export async function fetchCategoryDetail(
 export async function fetchCategoryKPIs(
   categoryName: string,
   filters?: Partial<CategoryFilters>
-): Promise<CategoryKPIData> {
-  const exists = await categoryExists(categoryName)
-  if (!exists) {
-    throw new Error(`Category "${categoryName}" not found`)
-  }
+): Promise<ActionResult<CategoryKPIData>> {
+  try {
+    const exists = await categoryExists(categoryName)
+    if (!exists) {
+      return { success: false, error: `Category "${categoryName}" not found` }
+    }
 
-  const defaultFilters: CategoryFilters = {
-    dateRange: {
-      from: startOfNDaysAgoInIsrael(29),
-      to: endOfTodayInIsrael(),
-    },
-    versions: [],
-    agents: [], // All agents (no filter)
-  }
+    const defaultFilters: CategoryFilters = {
+      dateRange: {
+        from: startOfNDaysAgoInIsrael(29),
+        to: endOfTodayInIsrael(),
+      },
+      versions: [],
+      agents: [], // All agents (no filter)
+    }
 
-  const appliedFilters: CategoryFilters = {
-    dateRange: filters?.dateRange || defaultFilters.dateRange,
-    versions: filters?.versions || defaultFilters.versions,
-    agents: filters?.agents || defaultFilters.agents,
-  }
+    const appliedFilters: CategoryFilters = {
+      dateRange: filters?.dateRange || defaultFilters.dateRange,
+      versions: filters?.versions || defaultFilters.versions,
+      agents: filters?.agents || defaultFilters.agents,
+    }
 
-  return getCategoryKPIData([categoryName], appliedFilters)
+    return { success: true, data: await getCategoryKPIData([categoryName], appliedFilters) }
+  } catch (error) {
+    console.error('fetchCategoryKPIs failed:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
 }
 
 /**
@@ -119,28 +134,33 @@ export async function fetchCategoryKPIs(
 export async function fetchCategoryTrends(
   categoryName: string,
   filters?: Partial<CategoryFilters>
-): Promise<CategoryWeeklyTrend[]> {
-  const exists = await categoryExists(categoryName)
-  if (!exists) {
-    throw new Error(`Category "${categoryName}" not found`)
-  }
+): Promise<ActionResult<CategoryWeeklyTrend[]>> {
+  try {
+    const exists = await categoryExists(categoryName)
+    if (!exists) {
+      return { success: false, error: `Category "${categoryName}" not found` }
+    }
 
-  const defaultFilters: CategoryFilters = {
-    dateRange: {
-      from: startOfNDaysAgoInIsrael(83), // Last 12 weeks
-      to: endOfTodayInIsrael(),
-    },
-    versions: [],
-    agents: [], // All agents (no filter)
-  }
+    const defaultFilters: CategoryFilters = {
+      dateRange: {
+        from: startOfNDaysAgoInIsrael(83), // Last 12 weeks
+        to: endOfTodayInIsrael(),
+      },
+      versions: [],
+      agents: [], // All agents (no filter)
+    }
 
-  const appliedFilters: CategoryFilters = {
-    dateRange: filters?.dateRange || defaultFilters.dateRange,
-    versions: filters?.versions || defaultFilters.versions,
-    agents: filters?.agents || defaultFilters.agents,
-  }
+    const appliedFilters: CategoryFilters = {
+      dateRange: filters?.dateRange || defaultFilters.dateRange,
+      versions: filters?.versions || defaultFilters.versions,
+      agents: filters?.agents || defaultFilters.agents,
+    }
 
-  return getCategoryWeeklyTrends([categoryName], appliedFilters)
+    return { success: true, data: await getCategoryWeeklyTrends([categoryName], appliedFilters) }
+  } catch (error) {
+    console.error('fetchCategoryTrends failed:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
 }
 
 /**
@@ -149,28 +169,33 @@ export async function fetchCategoryTrends(
 export async function fetchCategoryVersions(
   categoryName: string,
   filters?: Partial<CategoryFilters>
-): Promise<CategoryVersionStats[]> {
-  const exists = await categoryExists(categoryName)
-  if (!exists) {
-    throw new Error(`Category "${categoryName}" not found`)
-  }
+): Promise<ActionResult<CategoryVersionStats[]>> {
+  try {
+    const exists = await categoryExists(categoryName)
+    if (!exists) {
+      return { success: false, error: `Category "${categoryName}" not found` }
+    }
 
-  const defaultFilters: CategoryFilters = {
-    dateRange: {
-      from: startOfNDaysAgoInIsrael(29),
-      to: endOfTodayInIsrael(),
-    },
-    versions: [],
-    agents: [], // All agents (no filter)
-  }
+    const defaultFilters: CategoryFilters = {
+      dateRange: {
+        from: startOfNDaysAgoInIsrael(29),
+        to: endOfTodayInIsrael(),
+      },
+      versions: [],
+      agents: [], // All agents (no filter)
+    }
 
-  const appliedFilters: CategoryFilters = {
-    dateRange: filters?.dateRange || defaultFilters.dateRange,
-    versions: filters?.versions || defaultFilters.versions,
-    agents: filters?.agents || defaultFilters.agents,
-  }
+    const appliedFilters: CategoryFilters = {
+      dateRange: filters?.dateRange || defaultFilters.dateRange,
+      versions: filters?.versions || defaultFilters.versions,
+      agents: filters?.agents || defaultFilters.agents,
+    }
 
-  return getCategoryVersionStats([categoryName], appliedFilters)
+    return { success: true, data: await getCategoryVersionStats([categoryName], appliedFilters) }
+  } catch (error) {
+    console.error('fetchCategoryVersions failed:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
 }
 
 /**
@@ -179,28 +204,33 @@ export async function fetchCategoryVersions(
 export async function fetchCategoryAgents(
   categoryName: string,
   filters?: Partial<CategoryFilters>
-): Promise<CategoryAgentStats[]> {
-  const exists = await categoryExists(categoryName)
-  if (!exists) {
-    throw new Error(`Category "${categoryName}" not found`)
-  }
+): Promise<ActionResult<CategoryAgentStats[]>> {
+  try {
+    const exists = await categoryExists(categoryName)
+    if (!exists) {
+      return { success: false, error: `Category "${categoryName}" not found` }
+    }
 
-  const defaultFilters: CategoryFilters = {
-    dateRange: {
-      from: startOfNDaysAgoInIsrael(29),
-      to: endOfTodayInIsrael(),
-    },
-    versions: [],
-    agents: [], // All agents (no filter)
-  }
+    const defaultFilters: CategoryFilters = {
+      dateRange: {
+        from: startOfNDaysAgoInIsrael(29),
+        to: endOfTodayInIsrael(),
+      },
+      versions: [],
+      agents: [], // All agents (no filter)
+    }
 
-  const appliedFilters: CategoryFilters = {
-    dateRange: filters?.dateRange || defaultFilters.dateRange,
-    versions: filters?.versions || defaultFilters.versions,
-    agents: filters?.agents || defaultFilters.agents,
-  }
+    const appliedFilters: CategoryFilters = {
+      dateRange: filters?.dateRange || defaultFilters.dateRange,
+      versions: filters?.versions || defaultFilters.versions,
+      agents: filters?.agents || defaultFilters.agents,
+    }
 
-  return getCategoryAgentStats([categoryName], appliedFilters)
+    return { success: true, data: await getCategoryAgentStats([categoryName], appliedFilters) }
+  } catch (error) {
+    console.error('fetchCategoryAgents failed:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
 }
 
 /**
@@ -210,36 +240,46 @@ export async function fetchCategoryRecordsPage(
   categoryName: string,
   filters?: Partial<CategoryFilters>,
   pagination?: { page: number; pageSize: number }
-): Promise<{ data: CategoryRecord[]; total: number }> {
-  const exists = await categoryExists(categoryName)
-  if (!exists) {
-    throw new Error(`Category "${categoryName}" not found`)
+): Promise<ActionResult<{ data: CategoryRecord[]; total: number }>> {
+  try {
+    const exists = await categoryExists(categoryName)
+    if (!exists) {
+      return { success: false, error: `Category "${categoryName}" not found` }
+    }
+
+    const defaultFilters: CategoryFilters = {
+      dateRange: {
+        from: startOfNDaysAgoInIsrael(29),
+        to: endOfTodayInIsrael(),
+      },
+      versions: [],
+      agents: [], // All agents (no filter)
+    }
+
+    const appliedFilters: CategoryFilters = {
+      dateRange: filters?.dateRange || defaultFilters.dateRange,
+      versions: filters?.versions || defaultFilters.versions,
+      agents: filters?.agents || defaultFilters.agents,
+    }
+
+    const defaultPagination = { page: 0, pageSize: 50 }
+    const appliedPagination = pagination || defaultPagination
+
+    return { success: true, data: await getCategoryRecords([categoryName], appliedFilters, appliedPagination) }
+  } catch (error) {
+    console.error('fetchCategoryRecordsPage failed:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
-
-  const defaultFilters: CategoryFilters = {
-    dateRange: {
-      from: startOfNDaysAgoInIsrael(29),
-      to: endOfTodayInIsrael(),
-    },
-    versions: [],
-    agents: [], // All agents (no filter)
-  }
-
-  const appliedFilters: CategoryFilters = {
-    dateRange: filters?.dateRange || defaultFilters.dateRange,
-    versions: filters?.versions || defaultFilters.versions,
-    agents: filters?.agents || defaultFilters.agents,
-  }
-
-  const defaultPagination = { page: 0, pageSize: 50 }
-  const appliedPagination = pagination || defaultPagination
-
-  return getCategoryRecords([categoryName], appliedFilters, appliedPagination)
 }
 
 /**
  * Check if category exists (for validation)
  */
-export async function checkCategoryExists(categoryName: string): Promise<boolean> {
-  return categoryExists(categoryName)
+export async function checkCategoryExists(categoryName: string): Promise<ActionResult<boolean>> {
+  try {
+    return { success: true, data: await categoryExists(categoryName) }
+  } catch (error) {
+    console.error('checkCategoryExists failed:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
 }

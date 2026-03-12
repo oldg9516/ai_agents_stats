@@ -33,7 +33,7 @@ import {
 import { format } from 'date-fns'
 import { endOfTodayInIsrael, startOfNDaysAgoInIsrael } from '@/lib/utils/date-tz'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/i18n/routing'
 import { useEffect, useState } from 'react'
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 import { toast } from 'sonner'
@@ -91,7 +91,12 @@ export function CategoryDetailContent({
 					page,
 					pageSize,
 				})
-				setData(result)
+				if (!result.success) {
+					console.error('Error loading category data:', result.error)
+					toast.error(t('errors.loadFailed'))
+					return
+				}
+				setData(result.data)
 			} catch (error) {
 				console.error('Error loading category data:', error)
 				toast.error(t('errors.loadFailed'))

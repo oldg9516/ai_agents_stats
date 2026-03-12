@@ -13,6 +13,7 @@ import {
 	fetchSupportData,
 } from '@/lib/actions/support-actions'
 import { QUERY_CACHE_CONFIG, QUERY_CACHE_CONFIG_EXTENDED, REQUEST_TIMEOUT } from './query-config'
+import { supportKeys } from './query-keys'
 import type {
 	CorrelationCell,
 	ResolutionTimeData,
@@ -146,10 +147,7 @@ export function usePrefetchSupportData() {
  */
 export function useRequestCategoryStats(dateRange: { from: Date; to: Date }) {
 	const query = useQuery({
-		queryKey: ['request-category-stats', {
-			from: dateRange.from.toISOString(),
-			to: dateRange.to.toISOString(),
-		}],
+		queryKey: supportKeys.categoryStats(dateRange),
 		queryFn: async () => {
 			const result = await fetchRequestCategoryStatsAction(dateRange)
 			if (!result.success || !result.data) {
@@ -175,10 +173,7 @@ export function useRequestCategoryStats(dateRange: { from: Date; to: Date }) {
  */
 export function useAvailableCategories(dateRange: { from: Date; to: Date }) {
 	const query = useQuery({
-		queryKey: ['available-categories', {
-			from: dateRange.from.toISOString(),
-			to: dateRange.to.toISOString(),
-		}],
+		queryKey: supportKeys.availableCategories(dateRange),
 		queryFn: async () => {
 			const result = await fetchAvailableCategoriesAction(dateRange)
 			if (!result.success) {
