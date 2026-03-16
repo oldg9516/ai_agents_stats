@@ -44,7 +44,7 @@ if (typeof window !== 'undefined') {
 		try {
 			const parsed = JSON.parse(stored)
 			// Check if version exists, if not - clear old data
-			if (!parsed.version || parsed.version < 13) {
+			if (!parsed.version || parsed.version < 14) {
 				localStorage.removeItem('ai-stats-storage')
 			}
 		} catch {
@@ -69,7 +69,7 @@ export const useStore = create<StoreState>()(
 			}),
 			{
 				name: 'ai-stats-storage',
-				version: 13, // Changed from 12 to 13 to add eval slice
+				version: 14, // Changed from 12 to 13 to add eval slice
 				partialize: state => ({
 					// Persist only filter states
 					dashboardFilters: state.dashboardFilters,

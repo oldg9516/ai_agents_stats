@@ -25,13 +25,15 @@ export function AgentsStatsContent() {
 		setDateRange,
 		setVersions,
 		setCategories,
+		setAgents,
 		resetFilters,
 		openAgentChangesModal,
 	} = useAgentsStatsFilters()
 
-	const handleApplyFilters = (updates: { versions: string[]; categories: string[] }) => {
+	const handleApplyFilters = (updates: { versions: string[]; categories: string[]; agents: string[] }) => {
 		setVersions(updates.versions)
 		setCategories(updates.categories)
+		setAgents(updates.agents)
 	}
 
 	const { data: filterOptions } = useQuery({
@@ -44,7 +46,7 @@ export function AgentsStatsContent() {
 		staleTime: 5 * 60 * 1000,
 	})
 
-	const { data: agentStats, totals, isLoading, error } = useAgentStats(filters)
+	const { data: agentStats, allEmails, totals, isLoading, error } = useAgentStats(filters)
 
 	const handleAgentClick = useCallback(
 		(email: string, changeType: AgentChangeType) => {
@@ -76,6 +78,7 @@ export function AgentsStatsContent() {
 							onReset={resetFilters}
 							availableVersions={filterOptions?.versions ?? []}
 							availableCategories={filterOptions?.categories ?? []}
+							availableAgents={allEmails}
 							onClose={close}
 						/>
 					)}

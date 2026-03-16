@@ -20,6 +20,7 @@ import type {
 	AgentChangeTicket,
 	AgentChangeType,
 } from '@/lib/supabase/types'
+import { DEFAULT_AGENT_EMAILS } from '@/lib/store/slices/agents-stats-slice'
 
 // =============================================================================
 // HELPERS
@@ -134,6 +135,7 @@ function getAgentChangeTicketsQueryKey(
  */
 export function useAgentStats(filters: AgentStatsFilters): {
 	data: AgentStatsRow[]
+	allEmails: string[]
 	totals: AgentStatsRow | null
 	isLoading: boolean
 	isFetching: boolean
@@ -168,13 +170,26 @@ export function useAgentStats(filters: AgentStatsFilters): {
 		...QUERY_CACHE_CONFIG,
 	})
 
-	// Calculate totals if data is available
-	const totals = query.data && query.data.length > 0
-		? calculateAgentStatsTotals(query.data)
+	// All available agent emails (for filter dropdown)
+	const allEmails = (query.data || []).map(row => row.email).sort()
+
+	// Filter by selected agents (client-side, instant)
+	// Default to DEFAULT_AGENT_EMAILS if agents is undefined (old localStorage)
+	const selectedAgents = filters.agents ?? DEFAULT_AGENT_EMAILS
+	const filteredData = query.data
+		? selectedAgents.length > 0
+			? query.data.filter(row => selectedAgents.includes(row.email))
+			: query.data
+		: []
+
+	// Calculate totals from filtered data
+	const totals = filteredData.length > 0
+		? calculateAgentStatsTotals(filteredData)
 		: null
 
 	return {
-		data: query.data || [],
+		data: filteredData,
+		allEmails,
 		totals,
 		isLoading: query.isLoading,
 		isFetching: query.isFetching,

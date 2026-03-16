@@ -8,10 +8,11 @@ import { MultiSelectFilter } from './multi-select-filter'
 
 interface AgentsStatsFilterBarProps {
 	filters: AgentStatsFilters
-	onApplyFilters: (filters: { versions: string[]; categories: string[] }) => void
+	onApplyFilters: (filters: { versions: string[]; categories: string[]; agents: string[] }) => void
 	onReset: () => void
 	availableVersions: string[]
 	availableCategories: string[]
+	availableAgents: string[]
 	onClose?: () => void
 }
 
@@ -21,18 +22,30 @@ export function AgentsStatsFilterBar({
 	onReset,
 	availableVersions,
 	availableCategories,
+	availableAgents,
 	onClose,
 }: AgentsStatsFilterBarProps) {
 	const t = useTranslations()
 
 	const { values, setValue, handleApply, handleReset } = useLocalFilterState(
-		{ versions: filters.versions ?? [], categories: filters.categories ?? [] },
+		{
+			versions: filters.versions ?? [],
+			categories: filters.categories ?? [],
+			agents: filters.agents ?? [],
+		},
 		{ onApply: onApplyFilters, onReset, onClose }
 	)
 
 	return (
 		<FilterBarLayout.Root>
 			<FilterBarLayout.Fields>
+				<MultiSelectFilter
+					label={t('filters.agents')}
+					options={availableAgents}
+					selected={values.agents}
+					onChange={v => setValue('agents', v)}
+					placeholder={t('filters.searchAgents')}
+				/>
 				<MultiSelectFilter
 					label={t('filters.versions')}
 					options={availableVersions}

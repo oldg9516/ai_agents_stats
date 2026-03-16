@@ -21,6 +21,7 @@ export function useAgentsStatsFilters() {
 			setDateRange: state.setAgentStatsDateRange,
 			setVersions: state.setAgentStatsVersions,
 			setCategories: state.setAgentStatsCategories,
+			setAgents: state.setAgentStatsAgents,
 			resetFilters: state.resetAgentStatsFilters,
 			updateFilters: state.updateAgentStatsFilters,
 			// Modal

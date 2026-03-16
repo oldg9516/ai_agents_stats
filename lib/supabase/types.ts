@@ -1098,6 +1098,7 @@ export interface AgentStatsFilters {
 	}
 	versions: string[] // [] = all versions
 	categories: string[] // [] = all categories
+	agents: string[] // [] = all agents (filter by email, client-side)
 }
 
 /**
