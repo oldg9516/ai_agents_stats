@@ -37,6 +37,21 @@ import {
 import type { AgentStatsRow, AgentChangeType } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
 
+/**
+ * Format response time from hours to human-readable string
+ */
+function formatResponseTime(hours: number): string {
+	if (hours < 1) {
+		return `${Math.round(hours * 60)}m`
+	} else if (hours < 24) {
+		return `${hours.toFixed(1)}h`
+	} else {
+		const days = Math.floor(hours / 24)
+		const remainingHours = Math.round(hours % 24)
+		return `${days}d ${remainingHours}h`
+	}
+}
+
 interface AgentsStatsTableProps {
 	data: AgentStatsRow[]
 	totals: AgentStatsRow | null
@@ -248,6 +263,56 @@ export function AgentsStatsTable({
 					</div>
 				),
 			},
+			{
+				accessorKey: 'avgResponseTime',
+				header: () => (
+					<TooltipProvider>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<div className="flex items-center gap-1 cursor-help">
+									{t('table.avgResponseTime')}
+									<IconInfoCircle className="h-3.5 w-3.5 text-muted-foreground" />
+								</div>
+							</TooltipTrigger>
+							<TooltipContent>
+								<p>{t('tooltips.avgResponseTime')}</p>
+							</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
+				),
+				cell: ({ row }) => (
+					<div className="text-center">
+						{row.original.avgResponseTime > 0
+							? formatResponseTime(row.original.avgResponseTime)
+							: '—'}
+					</div>
+				),
+			},
+			{
+				accessorKey: 'p90ResponseTime',
+				header: () => (
+					<TooltipProvider>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<div className="flex items-center gap-1 cursor-help">
+									{t('table.p90ResponseTime')}
+									<IconInfoCircle className="h-3.5 w-3.5 text-muted-foreground" />
+								</div>
+							</TooltipTrigger>
+							<TooltipContent>
+								<p>{t('tooltips.p90ResponseTime')}</p>
+							</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
+				),
+				cell: ({ row }) => (
+					<div className="text-center">
+						{row.original.p90ResponseTime > 0
+							? formatResponseTime(row.original.p90ResponseTime)
+							: '—'}
+					</div>
+				),
+			},
 		],
 		[t]
 	)
@@ -391,6 +456,16 @@ export function AgentsStatsTable({
 												)}
 											>
 												{totals.aiEfficiency.toFixed(1)}%
+											</TableCell>
+											<TableCell className="text-center">
+												{totals.avgResponseTime > 0
+													? formatResponseTime(totals.avgResponseTime)
+													: '—'}
+											</TableCell>
+											<TableCell className="text-center">
+												{totals.p90ResponseTime > 0
+													? formatResponseTime(totals.p90ResponseTime)
+													: '—'}
 											</TableCell>
 										</TableRow>
 									)}

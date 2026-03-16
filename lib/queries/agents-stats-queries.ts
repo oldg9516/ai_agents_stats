@@ -45,6 +45,23 @@ function calculateAgentStatsTotals(rows: AgentStatsRow[]): AgentStatsRow {
 		: 0
 	const aiEfficiency = 100 - unnecessaryChangesPercent
 
+	// Calculate weighted average response times across all agents
+	const rowsWithResponseTime = rows.filter(r => r.avgResponseTime > 0)
+	const totalAvgResponseTime = rowsWithResponseTime.length > 0
+		? Math.round(
+				(rowsWithResponseTime.reduce((sum, r) => sum + r.avgResponseTime, 0) /
+					rowsWithResponseTime.length) *
+					10
+			) / 10
+		: 0
+	const totalP90ResponseTime = rowsWithResponseTime.length > 0
+		? Math.round(
+				(rowsWithResponseTime.reduce((sum, r) => sum + r.p90ResponseTime, 0) /
+					rowsWithResponseTime.length) *
+					10
+			) / 10
+		: 0
+
 	return {
 		email: 'TOTAL',
 		answeredTickets: totals.answeredTickets,
@@ -53,6 +70,8 @@ function calculateAgentStatsTotals(rows: AgentStatsRow[]): AgentStatsRow {
 		criticalErrors: totals.criticalErrors,
 		unnecessaryChangesPercent: Math.round(unnecessaryChangesPercent * 10) / 10,
 		aiEfficiency: Math.round(aiEfficiency * 10) / 10,
+		avgResponseTime: totalAvgResponseTime,
+		p90ResponseTime: totalP90ResponseTime,
 	}
 }
 

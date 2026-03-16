@@ -1349,6 +1349,8 @@
 			"criticalErrors": "Critical Errors",
 			"unnecessaryChanges": "Unnecessary Changes %",
 			"aiEfficiency": "AI Efficiency %",
+			"avgResponseTime": "Avg Response Time",
+			"p90ResponseTime": "P90 Response Time",
 			"total": "Total",
 			"noResults": "No agent data found",
 			"searchPlaceholder": "Search by email..."
@@ -1377,7 +1379,9 @@
 			"changed": "Tickets where agent modified AI response",
 			"criticalErrors": "Real AI errors that needed fixing",
 			"unnecessaryChanges": "Agent changed but AI was correct",
-			"aiEfficiency": "How efficiently agent uses AI drafts"
+			"aiEfficiency": "How efficiently agent uses AI drafts",
+			"avgResponseTime": "Average time from ticket creation to agent response",
+			"p90ResponseTime": "90th percentile response time (90% of responses are faster)"
 		}
 	},
 	"actionTypes": {

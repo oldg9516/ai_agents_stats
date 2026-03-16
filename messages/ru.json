@@ -1349,6 +1349,8 @@
 			"criticalErrors": "Критические ошибки",
 			"unnecessaryChanges": "Лишние изменения %",
 			"aiEfficiency": "Эффективность AI %",
+			"avgResponseTime": "Ср. время ответа",
+			"p90ResponseTime": "P90 время ответа",
 			"total": "Итого",
 			"noResults": "Данные по агентам не найдены",
 			"searchPlaceholder": "Поиск по email..."
@@ -1377,7 +1379,9 @@
 			"changed": "Тикеты, где агент изменил ответ AI",
 			"criticalErrors": "Реальные ошибки AI, которые нужно было исправить",
 			"unnecessaryChanges": "Агент изменил, но AI был прав",
-			"aiEfficiency": "Насколько эффективно агент использует AI драфты"
+			"aiEfficiency": "Насколько эффективно агент использует AI драфты",
+			"avgResponseTime": "Среднее время от создания тикета до ответа агента",
+			"p90ResponseTime": "90-й перцентиль времени ответа (90% ответов быстрее)"
 		}
 	},
 	"actionTypes": {

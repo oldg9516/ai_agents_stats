@@ -276,6 +276,27 @@ export interface Database {
 					context_shift: number
 				}>
 			}
+			get_agent_stats: {
+				Args: {
+					p_date_from: string
+					p_date_to: string
+					p_versions?: string[] | null
+					p_categories?: string[] | null
+					p_critical_classifications?: string[]
+					p_excluded_email?: string
+				}
+				Returns: Array<{
+					email: string
+					answered_tickets: number
+					ai_reviewed: number
+					changed: number
+					critical_errors: number
+					unnecessary_changes_pct: number
+					ai_efficiency: number
+					avg_response_time: number
+					p90_response_time: number
+				}>
+			}
 		}
 		Enums: {
 			[_ in never]: never
@@ -1063,6 +1084,8 @@ export interface AgentStatsRow {
 	criticalErrors: number // AI errors that needed fixing (AI_ERROR_CLASSIFICATIONS)
 	unnecessaryChangesPercent: number // (changed - criticalErrors) / aiReviewed * 100
 	aiEfficiency: number // 100 - unnecessaryChangesPercent
+	avgResponseTime: number // AVG(human_reply_date - created_at) in hours
+	p90ResponseTime: number // P90(human_reply_date - created_at) in hours
 }
 
 /**
