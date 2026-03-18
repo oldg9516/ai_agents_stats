@@ -1,5 +1,6 @@
 import { supabaseServer } from '../server'
 import type { BacklogReport, BacklogReportsFilters } from '../types'
+import { getN8nWebhookUrl, getN8nApiKey } from '@/lib/utils/env'
 
 /**
  * Fetch paginated list of backlog reports
@@ -80,8 +81,8 @@ export async function triggerReportGeneration(
 	periodDays: number
 ): Promise<{ success: boolean; error?: string }> {
 	try {
-		const webhookUrl = process.env.N8N_WEBHOOK_URL
-		const apiKey = process.env.N8N_X_API_KEY
+		const webhookUrl = getN8nWebhookUrl()
+		const apiKey = getN8nApiKey()
 
 		console.log('📤 [Webhook] Starting report generation request')
 		console.log('📤 [Webhook] URL:', webhookUrl ? `${webhookUrl.substring(0, 50)}...` : 'NOT SET')
@@ -89,7 +90,7 @@ export async function triggerReportGeneration(
 		console.log('📤 [Webhook] Period days:', periodDays)
 
 		if (!webhookUrl) {
-			throw new Error('N8N_WEBHOOK_URL environment variable is not set')
+			throw new Error('N8N_WEBHOOK_URL environment variable is not set (check UAT_/PROD_ prefixed vars)')
 		}
 
 		const headers: Record<string, string> = {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { getChatWebhookUrl, getN8nApiKey } from '@/lib/utils/env'
 
 // Timeout for n8n webhook (25 seconds - leave buffer before Vercel/browser timeout)
 const WEBHOOK_TIMEOUT = 25000
@@ -67,8 +68,8 @@ export async function POST(request: NextRequest) {
 	try {
 		const body = await request.json()
 
-		const webhookUrl = process.env.CHAT_WEBHOOK_URL
-		const apiKey = process.env.N8N_X_API_KEY
+		const webhookUrl = getChatWebhookUrl()
+		const apiKey = getN8nApiKey()
 
 		if (!webhookUrl) {
 			return NextResponse.json(
