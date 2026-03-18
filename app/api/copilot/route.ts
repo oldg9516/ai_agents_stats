@@ -8,11 +8,10 @@ import {
 } from '@copilotkit/runtime'
 import { HttpAgent } from '@ag-ui/client'
 
+import { getDashBackendUrl, getDashApiKey } from '@/lib/utils/env'
+
 const ALLOWED_DOMAIN =
 	process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN || 'levhaolam.com'
-const DASH_BACKEND_URL =
-	process.env.DASH_BACKEND_URL || 'http://localhost:9000'
-const DASH_API_KEY = process.env.DASH_API_KEY || ''
 
 /**
  * Verify user is authenticated and has valid email domain.
@@ -82,8 +81,8 @@ async function verifyAuth(): Promise<{
 // CopilotKit runtime with HttpAgent pointing to the Dash AG-UI adapter
 const agents = {
 	dash: new HttpAgent({
-		url: `${DASH_BACKEND_URL}/api/dash-copilot`,
-		...(DASH_API_KEY && { headers: { 'X-API-Key': DASH_API_KEY } }),
+		url: `${getDashBackendUrl()}/api/dash-copilot`,
+		...(getDashApiKey() && { headers: { 'X-API-Key': getDashApiKey() } }),
 	}),
 }
 

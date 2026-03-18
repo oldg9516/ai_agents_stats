@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { getDashBackendUrl, getDashApiKey } from '@/lib/utils/env'
 
 const ALLOWED_DOMAIN =
 	process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN || 'levhaolam.com'
-const DASH_BACKEND_URL =
-	process.env.DASH_BACKEND_URL || 'http://localhost:9000'
-const DASH_API_KEY = process.env.DASH_API_KEY || ''
 
 /**
  * Verify auth and return user email.
@@ -78,9 +76,9 @@ export async function GET() {
 	}
 
 	const headers: Record<string, string> = { 'X-User-Email': auth.email! }
-	if (DASH_API_KEY) headers['X-API-Key'] = DASH_API_KEY
+	if (getDashApiKey()) headers['X-API-Key'] = getDashApiKey()
 
-	const resp = await fetch(`${DASH_BACKEND_URL}/api/sessions`, { headers })
+	const resp = await fetch(`${getDashBackendUrl()}/api/sessions`, { headers })
 	const text = await resp.text()
 	if (!resp.ok) {
 		console.error('Dash backend error:', resp.status, text)
@@ -105,9 +103,9 @@ export async function POST(request: NextRequest) {
 		'Content-Type': 'application/json',
 		'X-User-Email': auth.email!,
 	}
-	if (DASH_API_KEY) headers['X-API-Key'] = DASH_API_KEY
+	if (getDashApiKey()) headers['X-API-Key'] = getDashApiKey()
 
-	const resp = await fetch(`${DASH_BACKEND_URL}/api/sessions`, {
+	const resp = await fetch(`${getDashBackendUrl()}/api/sessions`, {
 		method: 'POST',
 		headers,
 		body: JSON.stringify(body),

@@ -22,3 +22,13 @@ export function getChatWebhookUrl(): string | undefined {
 	const prefix = getPrefix()
 	return process.env[`${prefix}_CHAT_WEBHOOK_URL`]
 }
+
+export function getDashBackendUrl(): string {
+	const prefix = getPrefix()
+	return process.env[`${prefix}_DASH_BACKEND_URL`] || 'http://localhost:9000'
+}
+
+export function getDashApiKey(): string {
+	const prefix = getPrefix()
+	return process.env[`${prefix}_DASH_API_KEY`] || ''
+}

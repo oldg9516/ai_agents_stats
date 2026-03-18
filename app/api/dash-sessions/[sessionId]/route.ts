@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { getDashBackendUrl, getDashApiKey } from '@/lib/utils/env'
 
 const ALLOWED_DOMAIN =
 	process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN || 'levhaolam.com'
-const DASH_BACKEND_URL =
-	process.env.DASH_BACKEND_URL || 'http://localhost:9000'
-const DASH_API_KEY = process.env.DASH_API_KEY || ''
 
 async function verifyAuthWithEmail(): Promise<{
 	authorized: boolean
@@ -57,7 +55,7 @@ async function verifyAuthWithEmail(): Promise<{
 
 function dashHeaders(email: string): Record<string, string> {
 	const h: Record<string, string> = { 'X-User-Email': email }
-	if (DASH_API_KEY) h['X-API-Key'] = DASH_API_KEY
+	if (getDashApiKey()) h['X-API-Key'] = getDashApiKey()
 	return h
 }
 
@@ -77,7 +75,7 @@ export async function PATCH(
 		return NextResponse.json({ error: 'Invalid session ID' }, { status: 400 })
 	const body = await request.json()
 
-	const resp = await fetch(`${DASH_BACKEND_URL}/api/sessions/${sessionId}`, {
+	const resp = await fetch(`${getDashBackendUrl()}/api/sessions/${sessionId}`, {
 		method: 'PATCH',
 		headers: { 'Content-Type': 'application/json', ...dashHeaders(auth.email!) },
 		body: JSON.stringify(body),
@@ -110,7 +108,7 @@ export async function DELETE(
 	if (!/^[a-zA-Z0-9\-_]+$/.test(sessionId))
 		return NextResponse.json({ error: 'Invalid session ID' }, { status: 400 })
 
-	const resp = await fetch(`${DASH_BACKEND_URL}/api/sessions/${sessionId}`, {
+	const resp = await fetch(`${getDashBackendUrl()}/api/sessions/${sessionId}`, {
 		method: 'DELETE',
 		headers: dashHeaders(auth.email!),
 	})
