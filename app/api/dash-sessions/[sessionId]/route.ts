@@ -60,6 +60,37 @@ function dashHeaders(email: string): Record<string, string> {
 }
 
 /**
+ * GET /api/dash-sessions/[sessionId] → get session messages
+ */
+export async function GET(
+	_request: NextRequest,
+	{ params }: { params: Promise<{ sessionId: string }> }
+) {
+	const auth = await verifyAuthWithEmail()
+	if (!auth.authorized)
+		return NextResponse.json({ error: auth.error }, { status: 401 })
+
+	const { sessionId } = await params
+	if (!/^[a-zA-Z0-9\-_]+$/.test(sessionId))
+		return NextResponse.json({ error: 'Invalid session ID' }, { status: 400 })
+
+	const resp = await fetch(`${getDashBackendUrl()}/api/sessions/${sessionId}/messages`, {
+		headers: dashHeaders(auth.email!),
+	})
+	const text = await resp.text()
+	if (!resp.ok) {
+		console.error('Dash backend error:', resp.status, text)
+		return NextResponse.json({ error: 'Backend request failed' }, { status: resp.status })
+	}
+	try {
+		return NextResponse.json(JSON.parse(text), { status: resp.status })
+	} catch {
+		console.error('Dash backend non-JSON response for GET messages:', sessionId)
+		return NextResponse.json({ error: 'Invalid backend response' }, { status: 502 })
+	}
+}
+
+/**
  * PATCH /api/dash-sessions/[sessionId] → rename session
  */
 export async function PATCH(

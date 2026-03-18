@@ -5,7 +5,7 @@
  * With session sidebar (reuses AIChat pattern) and threadId persistence.
  */
 
-import { CopilotKit, useRenderToolCall } from '@copilotkit/react-core'
+import { CopilotKit, useRenderToolCall, useCopilotChatInternal } from '@copilotkit/react-core'
 import { CopilotChat } from '@copilotkit/react-ui'
 import '@copilotkit/react-ui/styles.css'
 import { Button } from '@/components/ui/button'
@@ -66,6 +66,16 @@ interface DashSession {
 	is_archived: boolean
 }
 
+interface DashMessage {
+	id: string
+	session_id: string
+	role: string
+	content: string
+	content_type: string
+	metadata: Record<string, unknown>
+	created_at: string
+}
+
 // --- Session API helpers ---
 
 async function fetchSessions(): Promise<DashSession[]> {
@@ -96,6 +106,12 @@ async function renameSessionApi(id: string, title: string): Promise<boolean> {
 async function deleteSessionApi(id: string): Promise<boolean> {
 	const resp = await fetch(`/api/dash-sessions/${id}`, { method: 'DELETE' })
 	return resp.ok
+}
+
+async function fetchMessages(sessionId: string): Promise<DashMessage[]> {
+	const resp = await fetch(`/api/dash-sessions/${sessionId}`)
+	if (!resp.ok) return []
+	return resp.json()
 }
 
 // --- localStorage helpers ---
@@ -231,8 +247,23 @@ function DashChart({
 
 // --- CopilotKit inner component with generative UI ---
 
-function DashChatActions({ labels, onFirstMessage }: { labels: { title: string; initial: string; placeholder: string }; onFirstMessage?: (text: string) => void }) {
+function DashChatActions({ labels, onFirstMessage, historyMessages = [] }: { labels: { title: string; initial: string; placeholder: string }; onFirstMessage?: (text: string) => void; historyMessages?: DashMessage[] }) {
 	const titleUpdatedRef = useRef(false)
+	const historyInjectedRef = useRef(false)
+	const { setMessages } = useCopilotChatInternal()
+
+	// Inject history messages into CopilotKit on mount
+	useEffect(() => {
+		if (historyMessages.length > 0 && !historyInjectedRef.current) {
+			historyInjectedRef.current = true
+			const aguiMessages = historyMessages.map(msg => ({
+				id: msg.id,
+				role: msg.role as 'user' | 'assistant',
+				content: msg.content,
+			}))
+			setMessages(aguiMessages)
+		}
+	}, [historyMessages, setMessages])
 
 	const handleSubmitMessage = useCallback((message: string) => {
 		if (!titleUpdatedRef.current && onFirstMessage && message.trim()) {
@@ -304,6 +335,8 @@ export function DashChat({ toggleSlot, className = '' }: DashChatProps) {
 
 	const [sessions, setSessions] = useState<DashSession[]>([])
 	const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
+	const [historyMessages, setHistoryMessages] = useState<DashMessage[]>([])
+	const [isLoadingMessages, setIsLoadingMessages] = useState(false)
 	const [showHistory, setShowHistory] = useState(false)
 	const [isInitializing, setIsInitializing] = useState(true)
 
@@ -322,6 +355,19 @@ export function DashChat({ toggleSlot, className = '' }: DashChatProps) {
 		placeholder: tDash('placeholder'),
 	}), [tDash])
 
+	// Load messages when session changes
+	const loadMessages = useCallback(async (sessionId: string) => {
+		setIsLoadingMessages(true)
+		try {
+			const msgs = await fetchMessages(sessionId)
+			setHistoryMessages(msgs)
+		} catch {
+			setHistoryMessages([])
+		} finally {
+			setIsLoadingMessages(false)
+		}
+	}, [])
+
 	// Initialize: load sessions and restore last session
 	useEffect(() => {
 		const init = async () => {
@@ -332,13 +378,14 @@ export function DashChat({ toggleSlot, className = '' }: DashChatProps) {
 				const savedId = getSavedSession()
 				if (savedId && dbSessions.some(s => s.id === savedId)) {
 					setCurrentSessionId(savedId)
+					loadMessages(savedId)
 				}
 			} finally {
 				setIsInitializing(false)
 			}
 		}
 		init()
-	}, [])
+	}, [loadMessages])
 
 	// Create new session
 	const handleNewChat = useCallback(async () => {
@@ -347,6 +394,7 @@ export function DashChat({ toggleSlot, className = '' }: DashChatProps) {
 			setSessions(prev => [session, ...prev])
 			setCurrentSessionId(session.id)
 			setSavedSession(session.id)
+			setHistoryMessages([])
 		}
 		setShowHistory(false)
 	}, [])
@@ -356,7 +404,8 @@ export function DashChat({ toggleSlot, className = '' }: DashChatProps) {
 		setCurrentSessionId(sessionId)
 		setSavedSession(sessionId)
 		setShowHistory(false)
-	}, [])
+		loadMessages(sessionId)
+	}, [loadMessages])
 
 	// Rename session
 	const handleStartEdit = (sessionId: string, currentTitle: string | null) => {
@@ -553,6 +602,7 @@ export function DashChat({ toggleSlot, className = '' }: DashChatProps) {
 						>
 							<DashChatActions
 								labels={labels}
+								historyMessages={historyMessages}
 								onFirstMessage={(text) => {
 									const title = text.slice(0, 50) + (text.length > 50 ? '...' : '')
 									renameSessionApi(currentSessionId, title)
