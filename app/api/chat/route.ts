@@ -1,53 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { auth } from '@/auth'
 import { getChatWebhookUrl, getN8nApiKey } from '@/lib/utils/env'
 
 // Timeout for n8n webhook (25 seconds - leave buffer before Vercel/browser timeout)
 const WEBHOOK_TIMEOUT = 25000
 
-// Allowed email domain for access
-const ALLOWED_DOMAIN = process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN || 'levhaolam.com'
-
 /**
  * Verify user is authenticated and has valid email domain
  */
-async function verifyAuth(request: NextRequest): Promise<{ authorized: boolean; error?: string }> {
+async function verifyAuth(): Promise<{ authorized: boolean; error?: string }> {
 	try {
-		const cookieStore = await cookies()
-
-		const supabase = createServerClient(
-			process.env.NEXT_PUBLIC_SUPABASE_URL!,
-			process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-			{
-				cookies: {
-					getAll() {
-						return cookieStore.getAll()
-					},
-					setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-						try {
-							cookiesToSet.forEach(({ name, value, options }) =>
-								cookieStore.set(name, value, options)
-							)
-						} catch {
-							// Ignore - cookies can only be set in Server Actions or Route Handlers
-						}
-					},
-				},
-			}
-		)
-
-		const { data: { user }, error } = await supabase.auth.getUser()
-
-		if (error || !user) {
+		const session = await auth()
+		if (!session?.user?.email) {
 			return { authorized: false, error: 'Unauthorized: Please log in' }
 		}
-
-		const userEmail = user.email || ''
-		if (!userEmail.endsWith(`@${ALLOWED_DOMAIN}`)) {
-			return { authorized: false, error: 'Unauthorized: Invalid email domain' }
-		}
-
 		return { authorized: true }
 	} catch (error) {
 		console.error('Auth verification error:', error)
@@ -57,10 +23,10 @@ async function verifyAuth(request: NextRequest): Promise<{ authorized: boolean; 
 
 export async function POST(request: NextRequest) {
 	// Verify authentication first
-	const auth = await verifyAuth(request)
-	if (!auth.authorized) {
+	const authResult = await verifyAuth()
+	if (!authResult.authorized) {
 		return NextResponse.json(
-			{ success: false, error: auth.error },
+			{ success: false, error: authResult.error },
 			{ status: 401 }
 		)
 	}

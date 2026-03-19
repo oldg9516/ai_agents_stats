@@ -29,7 +29,7 @@ pnpm lint         # Run ESLint
 - **Next.js 16** (App Router) + **React 19** + **TypeScript** (strict mode)
 - **Tailwind CSS v4** with OKLCH color space CSS variables — no `tailwind.config.ts` (v4 uses `@tailwindcss/postcss` plugin + `@theme inline` in `app/globals.css`)
 - **shadcn/ui** (new-york style) — add components via shadcn MCP server
-- **Supabase** (PostgreSQL) — `@supabase/supabase-js` + `@supabase/ssr`
+- **Auth.js v5** (next-auth@beta) — Google OAuth with JWT sessions
 - **TanStack React Query** — caching, retry, timeout
 - **TanStack React Table** — sorting, filtering, pagination
 - **Zustand** — filter state with localStorage persistence
@@ -48,9 +48,6 @@ app/[locale]/(root)/        # Public pages (landing, docs, login, unauthorized)
 app/[locale]/(analytics)/   # Protected pages (see Analytics Pages below)
 components/                 # UI (ui/, filters/, kpi/, charts/, tables/, layouts/, shared/)
 lib/
-  supabase/                 # DB clients + query functions
-    queries/                # Dashboard queries (kpi.ts, charts.ts, filters.ts, utils.ts)
-    queries-support/        # Support queries (kpi.ts, charts.ts, threads.ts, utils.ts)
   actions/                  # Server Actions (one per page module)
   queries/                  # React Query hooks + query-keys.ts + query-config.ts
   store/                    # Zustand slices + hooks + create-filter-slice.ts factory
@@ -108,28 +105,32 @@ export default function Layout({ children, modal }: {
 Client Component → Zustand filters (persisted to localStorage)
                  → React Query hook (lib/queries/)
                  → Server Action (lib/actions/)
-                 → Query function (lib/supabase/queries/)
-                 → Supabase client (service_role key, bypasses RLS)
+                 → Query function (lib/db/)
+                 → Drizzle ORM + node-postgres
                  → PostgreSQL
 ```
 
 **Key architectural decisions**:
 - Server Actions fetch data (not Client Components calling Supabase directly)
-- Service role key used server-side to bypass RLS
+- Drizzle ORM connects directly via `node-postgres` (no RLS)
 - Real-time subscriptions are **disabled** — with 5500+ records/day they caused excessive queries. Users see updates after staleTime expires or manual refresh
 - Charts use dynamic imports with `ssr: false` for code splitting
 - Ticket review updates use UPSERT pattern (rows may not exist yet) and can update two tables in one action (`ticket_reviews` + `ai_human_comparison.change_classification`)
 - Parallel fetching with `Promise.all()` for independent queries (e.g., main data + thread enrichment)
 
-### Supabase Clients
+### Authentication (Auth.js v5)
 
-Two distinct clients in `lib/supabase/`:
+Auth.js (next-auth@beta) with Google OAuth and JWT strategy:
 
-| Client | File | Purpose |
-|--------|------|---------|
-| `createServerClient()` | `server.ts` | Service role, bypasses RLS, singleton. Used for all data queries. Guarded by `'server-only'` import. |
-| `createAuthClient()` | `server.ts` | Cookie-based, respects RLS. Used for auth operations. Requires `await cookies()`. |
-| Browser client | `client.ts` | Client-side, used only for `AuthProvider` (auth state changes). |
+| File | Purpose |
+|------|---------|
+| `auth.ts` (root) | NextAuth config — providers, callbacks, domain restriction |
+| `app/api/auth/[...nextauth]/route.ts` | Auth.js route handler (GET + POST) |
+| `lib/auth/auth-provider.tsx` | Client-side `AuthProvider` wrapping `SessionProvider` + `useAuth()` hook |
+| `lib/auth/utils.ts` | Pure helper functions (`getUserInitials`, `getDisplayName`) |
+
+**Domain restriction**: `signIn` callback rejects non-`@levhaolam.com` emails.
+**Server-side auth**: Use `auth()` from `@/auth` in Server Actions and API routes.
 
 ### Server Action Pattern
 
@@ -137,10 +138,11 @@ All Server Actions follow this structure:
 ```typescript
 'use server'
 // 1. Import from page-specific query module
-// 2. Use createTimeoutPromise() for 30s timeout protection
-// 3. Promise.race([query, timeout]) for each call
-// 4. Return { success: boolean, data?, error?: string }
-// 5. Performance logging with Date.now()
+// 2. Auth check: const session = await auth(); if (!session?.user?.email) throw
+// 3. Use createTimeoutPromise() for 30s timeout protection
+// 4. Promise.race([query, timeout]) for each call
+// 5. Return { success: boolean, data?, error?: string }
+// 6. Performance logging with Date.now()
 ```
 
 ### Database Tables
@@ -234,13 +236,13 @@ Queries support two filter modes passed through the entire data flow:
 
 ### Authentication
 
-Google OAuth via Supabase with @levhaolam.com email domain restriction. Triple-layer validation: OAuth hint → server-side domain check → PostgreSQL trigger.
+Google OAuth via Auth.js v5 (next-auth@beta) with @levhaolam.com email domain restriction. Domain check in `signIn` callback (`auth.ts`).
 
 Middleware (`middleware.ts`) handles both auth and i18n. Protected routes are under `(analytics)/` route group. Components can assume user exists on protected routes.
 
-Client-side `AuthProvider` (in `lib/auth/`) uses `supabase.auth.onAuthStateChange()` and provides `{ user, session, isLoading, signOut }` via React context.
+Client-side `AuthProvider` (in `lib/auth/`) wraps `next-auth/react` `SessionProvider` and provides `{ user, session, isLoading, signOut }` via React context. The `user` object includes `user_metadata.full_name` and `user_metadata.avatar_url` for backward compatibility with existing components.
 
-**Key files**: `middleware.ts`, `lib/auth/`, `lib/supabase/server.ts`, `lib/supabase/client.ts`
+**Key files**: `auth.ts`, `middleware.ts`, `lib/auth/auth-provider.tsx`, `lib/auth/utils.ts`
 
 ### Cross-Component Refresh
 
@@ -276,11 +278,6 @@ Use `useTranslations('namespace')` in client components, `getTranslations('names
 - Use page-specific hooks (e.g., `useDetailedStats` for /detailed-stats) — don't fetch all data on every page
 - Spread `QUERY_CACHE_CONFIG` — don't hardcode cache/retry values
 - All Server Actions include 30s timeout protection via `REQUEST_TIMEOUT`
-
-### Supabase Types
-- Generated types don't include manually added tables (`ticket_reviews`, etc.)
-- Use `as any` on `.from('table_name')` but `satisfies` on data objects for type safety
-- RPC functions not in generated types — cast client `as any` before calling
 
 ### Ticket Review Updates
 - Use UPSERT (`onConflict: 'comparison_id'`) for `ticket_reviews` — rows may not exist
@@ -323,4 +320,4 @@ const Chart = dynamic(
 | Query key factories | `lib/queries/query-keys.ts` |
 | Filter slice factory | `lib/store/create-filter-slice.ts` |
 | Global styles & theme | `app/globals.css` |
-| Environment template | `.env.local.example` |
+| Auth.js config | `auth.ts` |

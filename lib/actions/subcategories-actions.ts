@@ -24,12 +24,6 @@ export async function fetchSubcategoriesData(
 	const startTime = performance.now()
 
 	try {
-		console.log('🔍 [Subcategories] Fetching data...', {
-			dateRange: filters.dateRange,
-			versions: filters.versions?.length || 0,
-			agents: filters.agents?.length || 0,
-		})
-
 		const data = await fetchSubcategoriesStats(filters)
 
 		const duration = performance.now() - startTime

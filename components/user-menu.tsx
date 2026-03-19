@@ -34,7 +34,7 @@ export function UserMenu() {
 
   const displayName = getDisplayName(user.user_metadata?.full_name, user.email)
   const initials = getUserInitials(user.user_metadata?.full_name, user.email)
-  const avatarUrl = user.user_metadata?.avatar_url
+  const avatarUrl = user.user_metadata?.avatar_url ?? undefined
 
   return (
     <DropdownMenu>

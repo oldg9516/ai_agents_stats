@@ -8,7 +8,7 @@
  */
 
 import { revalidatePath } from 'next/cache'
-import { createAuthClient } from '@/lib/supabase/server'
+import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import { ticketReviews, aiHumanComparison } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
@@ -20,12 +20,11 @@ export interface UpdateTicketReviewResult {
 }
 
 async function requireAuth(): Promise<string> {
-	const supabase = await createAuthClient()
-	const { data: { user }, error } = await supabase.auth.getUser()
-	if (error || !user?.email) {
+	const session = await auth()
+	if (!session?.user?.email) {
 		throw new Error('Unauthorized')
 	}
-	return user.email
+	return session.user.email
 }
 
 /**

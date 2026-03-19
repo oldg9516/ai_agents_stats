@@ -1,7 +1,7 @@
 'use server'
 
 import type { ChatSession, ChatMessage, MessageRole, ContentType, ChatMessageMetadata } from '@/types/chat'
-import { createAuthClient } from '@/lib/supabase/server'
+import { auth } from '@/auth'
 import { db } from '@/lib/db'
 import { dashboardChatSessions, dashboardChatMessages } from '@/lib/db/schema'
 import { and, eq, gte, asc, desc } from 'drizzle-orm'
@@ -22,12 +22,11 @@ function toMessage(data: any): ChatMessage {
 }
 
 async function requireAuth(): Promise<string> {
-	const supabase = await createAuthClient()
-	const { data: { user }, error } = await supabase.auth.getUser()
-	if (error || !user?.email) {
+	const session = await auth()
+	if (!session?.user?.email) {
 		throw new Error('Unauthorized')
 	}
-	return user.email
+	return session.user.email
 }
 
 // === Session Actions ===

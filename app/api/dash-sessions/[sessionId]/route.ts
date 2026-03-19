@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { auth } from '@/auth'
 import { getDashBackendUrl, getDashApiKey } from '@/lib/utils/env'
-
-const ALLOWED_DOMAIN =
-	process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN || 'levhaolam.com'
 
 async function verifyAuthWithEmail(): Promise<{
 	authorized: boolean
@@ -12,42 +8,11 @@ async function verifyAuthWithEmail(): Promise<{
 	error?: string
 }> {
 	try {
-		const cookieStore = await cookies()
-		const supabase = createServerClient(
-			process.env.NEXT_PUBLIC_SUPABASE_URL!,
-			process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-			{
-				cookies: {
-					getAll() {
-						return cookieStore.getAll()
-					},
-					setAll(
-						cookiesToSet: {
-							name: string
-							value: string
-							options: CookieOptions
-						}[]
-					) {
-						try {
-							cookiesToSet.forEach(({ name, value, options }) =>
-								cookieStore.set(name, value, options)
-							)
-						} catch {
-							// Ignore
-						}
-					},
-				},
-			}
-		)
-		const {
-			data: { user },
-			error,
-		} = await supabase.auth.getUser()
-		if (error || !user) return { authorized: false, error: 'Unauthorized' }
-		const userEmail = user.email || ''
-		if (!userEmail.endsWith(`@${ALLOWED_DOMAIN}`))
-			return { authorized: false, error: 'Unauthorized: Invalid email domain' }
-		return { authorized: true, email: userEmail }
+		const session = await auth()
+		if (!session?.user?.email) {
+			return { authorized: false, error: 'Unauthorized' }
+		}
+		return { authorized: true, email: session.user.email }
 	} catch {
 		return { authorized: false, error: 'Unauthorized' }
 	}
@@ -66,16 +31,16 @@ export async function GET(
 	_request: NextRequest,
 	{ params }: { params: Promise<{ sessionId: string }> }
 ) {
-	const auth = await verifyAuthWithEmail()
-	if (!auth.authorized)
-		return NextResponse.json({ error: auth.error }, { status: 401 })
+	const authResult = await verifyAuthWithEmail()
+	if (!authResult.authorized)
+		return NextResponse.json({ error: authResult.error }, { status: 401 })
 
 	const { sessionId } = await params
 	if (!/^[a-zA-Z0-9\-_]+$/.test(sessionId))
 		return NextResponse.json({ error: 'Invalid session ID' }, { status: 400 })
 
 	const resp = await fetch(`${getDashBackendUrl()}/api/sessions/${sessionId}/messages`, {
-		headers: dashHeaders(auth.email!),
+		headers: dashHeaders(authResult.email!),
 	})
 	const text = await resp.text()
 	if (!resp.ok) {
@@ -97,9 +62,9 @@ export async function PATCH(
 	request: NextRequest,
 	{ params }: { params: Promise<{ sessionId: string }> }
 ) {
-	const auth = await verifyAuthWithEmail()
-	if (!auth.authorized)
-		return NextResponse.json({ error: auth.error }, { status: 401 })
+	const authResult = await verifyAuthWithEmail()
+	if (!authResult.authorized)
+		return NextResponse.json({ error: authResult.error }, { status: 401 })
 
 	const { sessionId } = await params
 	if (!/^[a-zA-Z0-9\-_]+$/.test(sessionId))
@@ -108,7 +73,7 @@ export async function PATCH(
 
 	const resp = await fetch(`${getDashBackendUrl()}/api/sessions/${sessionId}`, {
 		method: 'PATCH',
-		headers: { 'Content-Type': 'application/json', ...dashHeaders(auth.email!) },
+		headers: { 'Content-Type': 'application/json', ...dashHeaders(authResult.email!) },
 		body: JSON.stringify(body),
 	})
 	try {
@@ -131,9 +96,9 @@ export async function DELETE(
 	_request: NextRequest,
 	{ params }: { params: Promise<{ sessionId: string }> }
 ) {
-	const auth = await verifyAuthWithEmail()
-	if (!auth.authorized)
-		return NextResponse.json({ error: auth.error }, { status: 401 })
+	const authResult = await verifyAuthWithEmail()
+	if (!authResult.authorized)
+		return NextResponse.json({ error: authResult.error }, { status: 401 })
 
 	const { sessionId } = await params
 	if (!/^[a-zA-Z0-9\-_]+$/.test(sessionId))
@@ -141,7 +106,7 @@ export async function DELETE(
 
 	const resp = await fetch(`${getDashBackendUrl()}/api/sessions/${sessionId}`, {
 		method: 'DELETE',
-		headers: dashHeaders(auth.email!),
+		headers: dashHeaders(authResult.email!),
 	})
 	try {
 		const data = await resp.json()

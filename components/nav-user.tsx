@@ -58,7 +58,7 @@ export function NavUser() {
   // Use full_name from user metadata, fallback to email prefix
   const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
   const initials = getUserInitials(user.user_metadata?.full_name, user.email)
-  const avatarUrl = user.user_metadata?.avatar_url
+  const avatarUrl = user.user_metadata?.avatar_url ?? undefined
 
   return (
     <SidebarMenu>

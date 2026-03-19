@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { auth } from '@/auth'
 import { getDashBackendUrl, getDashApiKey } from '@/lib/utils/env'
-
-const ALLOWED_DOMAIN =
-	process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN || 'levhaolam.com'
 
 /**
  * Verify auth and return user email.
@@ -15,50 +11,11 @@ async function verifyAuthWithEmail(): Promise<{
 	error?: string
 }> {
 	try {
-		const cookieStore = await cookies()
-
-		const supabase = createServerClient(
-			process.env.NEXT_PUBLIC_SUPABASE_URL!,
-			process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-			{
-				cookies: {
-					getAll() {
-						return cookieStore.getAll()
-					},
-					setAll(
-						cookiesToSet: {
-							name: string
-							value: string
-							options: CookieOptions
-						}[]
-					) {
-						try {
-							cookiesToSet.forEach(({ name, value, options }) =>
-								cookieStore.set(name, value, options)
-							)
-						} catch {
-							// Ignore
-						}
-					},
-				},
-			}
-		)
-
-		const {
-			data: { user },
-			error,
-		} = await supabase.auth.getUser()
-
-		if (error || !user) {
+		const session = await auth()
+		if (!session?.user?.email) {
 			return { authorized: false, error: 'Unauthorized: Please log in' }
 		}
-
-		const userEmail = user.email || ''
-		if (!userEmail.endsWith(`@${ALLOWED_DOMAIN}`)) {
-			return { authorized: false, error: 'Unauthorized: Invalid email domain' }
-		}
-
-		return { authorized: true, email: userEmail }
+		return { authorized: true, email: session.user.email }
 	} catch {
 		return { authorized: false, error: 'Unauthorized: Authentication failed' }
 	}
@@ -70,12 +27,12 @@ async function verifyAuthWithEmail(): Promise<{
  * POST /api/dash-sessions → POST /api/sessions
  */
 export async function GET() {
-	const auth = await verifyAuthWithEmail()
-	if (!auth.authorized) {
-		return NextResponse.json({ error: auth.error }, { status: 401 })
+	const authResult = await verifyAuthWithEmail()
+	if (!authResult.authorized) {
+		return NextResponse.json({ error: authResult.error }, { status: 401 })
 	}
 
-	const headers: Record<string, string> = { 'X-User-Email': auth.email! }
+	const headers: Record<string, string> = { 'X-User-Email': authResult.email! }
 	if (getDashApiKey()) headers['X-API-Key'] = getDashApiKey()
 
 	const resp = await fetch(`${getDashBackendUrl()}/api/sessions`, { headers })
@@ -93,15 +50,15 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-	const auth = await verifyAuthWithEmail()
-	if (!auth.authorized) {
-		return NextResponse.json({ error: auth.error }, { status: 401 })
+	const authResult = await verifyAuthWithEmail()
+	if (!authResult.authorized) {
+		return NextResponse.json({ error: authResult.error }, { status: 401 })
 	}
 
 	const body = await request.json().catch(() => ({}))
 	const headers: Record<string, string> = {
 		'Content-Type': 'application/json',
-		'X-User-Email': auth.email!,
+		'X-User-Email': authResult.email!,
 	}
 	if (getDashApiKey()) headers['X-API-Key'] = getDashApiKey()
 
