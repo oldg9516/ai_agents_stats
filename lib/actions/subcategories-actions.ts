@@ -4,11 +4,10 @@
 
 'use server'
 
-import { supabaseServer } from '@/lib/supabase/server'
 import {
 	fetchSubcategoriesStats,
 	type CategoryGroup,
-} from '@/lib/supabase/queries-subcategories'
+} from '@/lib/db/queries-subcategories'
 
 interface SubcategoriesFilters {
 	dateRange: { from: Date; to: Date }
@@ -31,7 +30,7 @@ export async function fetchSubcategoriesData(
 			agents: filters.agents?.length || 0,
 		})
 
-		const data = await fetchSubcategoriesStats(supabaseServer, filters)
+		const data = await fetchSubcategoriesStats(filters)
 
 		const duration = performance.now() - startTime
 		console.log(

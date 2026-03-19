@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { IconFilterOff } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'
-import type { CategoryFilters } from '@/lib/supabase/types'
+import type { CategoryFilters } from '@/lib/db/types'
 
 interface CategoryDetailFiltersProps {
 	filters: CategoryFilters

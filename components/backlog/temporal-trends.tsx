@@ -1,6 +1,6 @@
 'use client'
 
-import type { TemporalTrend } from '@/lib/supabase/types'
+import type { TemporalTrend } from '@/lib/db/types'
 import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { IconTrendingUp } from '@tabler/icons-react'

@@ -1,4 +1,4 @@
-import type { DashboardFilters, SupportFilters } from '@/lib/supabase/types'
+import type { DashboardFilters, SupportFilters } from '@/lib/db/types'
 
 /**
  * Get default dashboard filter values

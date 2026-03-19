@@ -10,8 +10,10 @@
  * Migration from SQL RPC: See MIGRATION-PLAN.md for details
  */
 
-import { supabaseServer } from '@/lib/supabase/server'
-import type { DashboardFilters, DateFilterMode, DetailedStatsRow } from '@/lib/supabase/types'
+import { db } from '@/lib/db'
+import { aiComparisonWithReviews, supportDialogs } from '@/lib/db/schema'
+import { and, gte, lt, inArray, ne, isNotNull, count } from 'drizzle-orm'
+import type { DashboardFilters, DateFilterMode, DetailedStatsRow } from '@/lib/db/types'
 import {
 	isAiErrorClassification,
 	isAiQualityClassification,
@@ -62,9 +64,7 @@ type PaginatedResult = {
 // CONSTANTS
 // =============================================================================
 
-const BATCH_SIZE = 1000
-const MAX_CONCURRENT_BATCHES = 3
-const DIALOG_BATCH_SIZE = 300
+// Constants kept for reference (batch logic removed — single drizzle query now)
 
 // =============================================================================
 // DIALOG PATTERNS DETECTION (Second Request + Not Responded)
@@ -89,42 +89,25 @@ async function fetchDialogPatterns(
 	const uniqueTicketIds = [...new Set(ticketIds.filter(Boolean))]
 	if (uniqueTicketIds.length === 0) return emptyResult
 
-	// Fetch dialogs in batches
-	const allDialogs: DialogRecord[] = []
-	const batches = Math.ceil(uniqueTicketIds.length / DIALOG_BATCH_SIZE)
+	// Fetch all dialogs in a single query
+	const rawDialogs = await db
+		.select({
+			ticketId: supportDialogs.ticketId,
+			direction: supportDialogs.direction,
+			date: supportDialogs.date,
+		})
+		.from(supportDialogs)
+		.where(inArray(supportDialogs.ticketId, uniqueTicketIds))
 
-	for (let i = 0; i < batches; i += MAX_CONCURRENT_BATCHES) {
-		const batchPromises: Promise<DialogRecord[]>[] = []
-
-		for (let j = i; j < Math.min(i + MAX_CONCURRENT_BATCHES, batches); j++) {
-			const startIdx = j * DIALOG_BATCH_SIZE
-			const batchTicketIds = uniqueTicketIds.slice(startIdx, startIdx + DIALOG_BATCH_SIZE)
-
-			const promise = (async () => {
-				const { data, error } = await supabaseServer
-					.from('support_dialogs')
-					.select('ticket_id, direction, date')
-					.in('ticket_id', batchTicketIds)
-
-				if (error) {
-					console.error('[DialogPatterns] Error fetching dialogs:', error)
-					return []
-				}
-
-				return (data || []) as DialogRecord[]
-			})()
-
-			batchPromises.push(promise)
-		}
-
-		const results = await Promise.all(batchPromises)
-		allDialogs.push(...results.flat())
-
-		// Small delay between batch groups
-		if (i + MAX_CONCURRENT_BATCHES < batches) {
-			await new Promise(resolve => setTimeout(resolve, 50))
-		}
-	}
+	const allDialogs: DialogRecord[] = rawDialogs
+		.filter((d): d is typeof d & { ticketId: string; direction: string; date: Date } =>
+			d.ticketId !== null && d.direction !== null && d.date !== null
+		)
+		.map(d => ({
+			ticket_id: d.ticketId,
+			direction: d.direction,
+			date: d.date.toISOString(),
+		}))
 
 	if (allDialogs.length === 0) return emptyResult
 
@@ -283,8 +266,8 @@ export async function fetchDetailedStatsWithFilter(
 
 	// If not both true, we need to filter
 	if (!(showNeedEdit && showNotNeedEdit)) {
-		const { fetchFilteredThreadIds } = await import('@/lib/supabase/helpers')
-		const result = await fetchFilteredThreadIds(supabaseServer, showNeedEdit, showNotNeedEdit)
+		const { fetchFilteredThreadIds } = await import('@/lib/db/utils')
+		const result = await fetchFilteredThreadIds(showNeedEdit, showNotNeedEdit)
 		if (result !== null) {
 			includedThreadIds = result
 		}
@@ -292,8 +275,8 @@ export async function fetchDetailedStatsWithFilter(
 
 	// Legacy support: if hideRequiresEditing is set and new filters are not used
 	if (filters.hideRequiresEditing && showNeedEdit && showNotNeedEdit) {
-		const { fetchRequiresSystemActionThreadIds } = await import('@/lib/supabase/helpers')
-		includedThreadIds = await fetchRequiresSystemActionThreadIds(supabaseServer)
+		const { fetchRequiresSystemActionThreadIds } = await import('@/lib/db/utils')
+		includedThreadIds = await fetchRequiresSystemActionThreadIds()
 	}
 
 	// Create extended filters with includedThreadIds
@@ -328,38 +311,35 @@ async function getTotalCount(
 	dateFilterMode: DateFilterMode
 ): Promise<number> {
 	const { dateRange, versions, categories, agents, includedThreadIds } = filters
-	const dateField = dateFilterMode === 'human_reply' ? 'human_reply_date' : 'created_at'
+	const dateColumn = dateFilterMode === 'human_reply' ? aiComparisonWithReviews.humanReplyDate : aiComparisonWithReviews.createdAt
 
-	// Using 'id' instead of '*' for better performance
-	let query = supabaseServer
-		.from('ai_comparison_with_reviews')
-		.select('id', { count: 'exact', head: true })
-		.gte(dateField, dateRange.from.toISOString())
-		.lt(dateField, dateRange.to.toISOString())
+	const conditions = [
+		gte(dateColumn, dateRange.from),
+		lt(dateColumn, dateRange.to),
+		ne(aiComparisonWithReviews.email, 'api@levhaolam.com'),
+		ne(aiComparisonWithReviews.email, 'samantha@levhaolam.com'),
+	]
 
 	// For human_reply mode, also filter out records with no human_reply_date
 	if (dateFilterMode === 'human_reply') {
-		query = query.not('human_reply_date', 'is', null)
+		conditions.push(isNotNull(aiComparisonWithReviews.humanReplyDate))
 	}
 
-	if (versions.length > 0) query = query.in('prompt_version', versions)
-	if (categories.length > 0) query = query.in('request_subtype', categories)
-	if (agents.length > 0) query = query.in('email', agents)
-
-	// Exclude system/API emails from statistics
-	query = query.neq('email', 'api@levhaolam.com')
-	query = query.neq('email', 'samantha@levhaolam.com')
+	if (versions.length > 0) conditions.push(inArray(aiComparisonWithReviews.promptVersion, versions))
+	if (categories.length > 0) conditions.push(inArray(aiComparisonWithReviews.requestSubtype, categories))
+	if (agents.length > 0) conditions.push(inArray(aiComparisonWithReviews.email, agents))
 
 	// INCLUDE ONLY thread_ids matching requires_system_action filter
-	// Only apply for small arrays to avoid query size limits
 	if (includedThreadIds && includedThreadIds.length > 0 && includedThreadIds.length <= 100) {
-		query = query.in('thread_id', includedThreadIds)
+		conditions.push(inArray(aiComparisonWithReviews.threadId, includedThreadIds))
 	}
 
-	const { count, error } = await query
+	const result = await db
+		.select({ value: count() })
+		.from(aiComparisonWithReviews)
+		.where(and(...conditions))
 
-	if (error) throw new Error(`Count query failed: ${error.message}`)
-	return count || 0
+	return Number(result[0]?.value ?? 0)
 }
 
 /**
@@ -371,57 +351,54 @@ async function fetchInBatches(
 	dateFilterMode: DateFilterMode
 ): Promise<RawRecord[]> {
 	const { dateRange, versions, categories, agents, includedThreadIds } = filters
-	const dateField = dateFilterMode === 'human_reply' ? 'human_reply_date' : 'created_at'
-	const batches = Math.ceil(totalRecords / BATCH_SIZE)
-	const allRecords: RawRecord[] = []
+	const dateColumn = dateFilterMode === 'human_reply' ? aiComparisonWithReviews.humanReplyDate : aiComparisonWithReviews.createdAt
 
-	// Process batches in groups of MAX_CONCURRENT_BATCHES
-	for (let i = 0; i < batches; i += MAX_CONCURRENT_BATCHES) {
-		const batchPromises = []
+	const conditions = [
+		gte(dateColumn, dateRange.from),
+		lt(dateColumn, dateRange.to),
+		ne(aiComparisonWithReviews.email, 'api@levhaolam.com'),
+		ne(aiComparisonWithReviews.email, 'samantha@levhaolam.com'),
+	]
 
-		for (let j = i; j < Math.min(i + MAX_CONCURRENT_BATCHES, batches); j++) {
-			const offset = j * BATCH_SIZE
-
-			let query = supabaseServer
-				.from('ai_comparison_with_reviews')
-				.select(
-					'thread_id, created_at, human_reply_date, request_subtype, prompt_version, change_classification, human_reply, ticket_id, ai_approved'
-				)
-				.gte(dateField, dateRange.from.toISOString())
-				.lt(dateField, dateRange.to.toISOString())
-				.range(offset, offset + BATCH_SIZE - 1)
-
-			// For human_reply mode, also filter out records with no human_reply_date
-			if (dateFilterMode === 'human_reply') {
-				query = query.not('human_reply_date', 'is', null)
-			}
-
-			if (versions.length > 0) query = query.in('prompt_version', versions)
-			if (categories.length > 0) query = query.in('request_subtype', categories)
-			if (agents.length > 0) query = query.in('email', agents)
-
-			// Exclude system/API emails from statistics
-			query = query.neq('email', 'api@levhaolam.com')
-			query = query.neq('email', 'samantha@levhaolam.com')
-
-			// INCLUDE ONLY thread_ids matching requires_system_action filter
-			// Only apply for small arrays to avoid query size limits
-			if (includedThreadIds && includedThreadIds.length > 0 && includedThreadIds.length <= 100) {
-				query = query.in('thread_id', includedThreadIds)
-			}
-
-			batchPromises.push(query)
-		}
-
-		const results = await Promise.all(batchPromises)
-
-		for (const { data, error } of results) {
-			if (error) throw new Error(`Batch fetch failed: ${error.message}`)
-			if (data) {
-				allRecords.push(...data as RawRecord[])
-			}
-		}
+	if (dateFilterMode === 'human_reply') {
+		conditions.push(isNotNull(aiComparisonWithReviews.humanReplyDate))
 	}
+
+	if (versions.length > 0) conditions.push(inArray(aiComparisonWithReviews.promptVersion, versions))
+	if (categories.length > 0) conditions.push(inArray(aiComparisonWithReviews.requestSubtype, categories))
+	if (agents.length > 0) conditions.push(inArray(aiComparisonWithReviews.email, agents))
+
+	// INCLUDE ONLY thread_ids matching requires_system_action filter
+	if (includedThreadIds && includedThreadIds.length > 0 && includedThreadIds.length <= 100) {
+		conditions.push(inArray(aiComparisonWithReviews.threadId, includedThreadIds))
+	}
+
+	const rawData = await db
+		.select({
+			threadId: aiComparisonWithReviews.threadId,
+			createdAt: aiComparisonWithReviews.createdAt,
+			humanReplyDate: aiComparisonWithReviews.humanReplyDate,
+			requestSubtype: aiComparisonWithReviews.requestSubtype,
+			promptVersion: aiComparisonWithReviews.promptVersion,
+			changeClassification: aiComparisonWithReviews.changeClassification,
+			humanReply: aiComparisonWithReviews.humanReply,
+			ticketId: aiComparisonWithReviews.ticketId,
+			aiApproved: aiComparisonWithReviews.aiApproved,
+		})
+		.from(aiComparisonWithReviews)
+		.where(and(...conditions))
+
+	const allRecords: RawRecord[] = rawData.map(r => ({
+		created_at: r.createdAt?.toISOString() ?? null,
+		human_reply_date: r.humanReplyDate?.toISOString() ?? null,
+		request_subtype: r.requestSubtype,
+		prompt_version: r.promptVersion,
+		change_classification: r.changeClassification,
+		human_reply: r.humanReply,
+		ticket_id: r.ticketId,
+		ai_approved: r.aiApproved,
+		thread_id: r.threadId,
+	}))
 
 	// For large included arrays (> 100), filter client-side
 	if (includedThreadIds && includedThreadIds.length > 100) {

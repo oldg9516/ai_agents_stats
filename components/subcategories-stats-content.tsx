@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 import { endOfTodayInIsrael, startOfNDaysAgoInIsrael } from '@/lib/utils/date-tz'
 import { fetchSubcategoriesData } from '@/lib/actions/subcategories-actions'
 import { fetchFilterOptions } from '@/lib/actions/dashboard-actions'
-import type { CategoryGroup } from '@/lib/supabase/queries-subcategories'
+import type { CategoryGroup } from '@/lib/db/queries-subcategories'
 import { useQuery } from '@tanstack/react-query'
 import {
 	Accordion,

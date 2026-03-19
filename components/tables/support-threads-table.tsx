@@ -41,7 +41,7 @@ import {
 	SelectValue,
 } from '@/components/ui/select'
 import { PAGE_SIZE_OPTIONS, type PageSize } from './detailed-stats/table-pagination'
-import type { SupportThread, SupportFilters } from '@/lib/supabase/types'
+import type { SupportThread, SupportFilters } from '@/lib/db/types'
 import { downloadSupportThreadsCSV } from '@/lib/utils/export-support'
 import { fetchAllSupportThreadsForExport } from '@/lib/actions/support-actions'
 import { getStatusLabel } from '@/constants/support-statuses'

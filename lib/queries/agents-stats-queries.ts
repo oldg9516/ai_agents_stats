@@ -19,7 +19,7 @@ import type {
 	AgentStatsRow,
 	AgentChangeTicket,
 	AgentChangeType,
-} from '@/lib/supabase/types'
+} from '@/lib/db/types'
 import { DEFAULT_AGENT_EMAILS } from '@/lib/store/slices/agents-stats-slice'
 
 // =============================================================================

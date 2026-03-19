@@ -1,6 +1,6 @@
 'use client'
 
-import type { CategoryStats } from '@/lib/supabase/types'
+import type { CategoryStats } from '@/lib/db/types'
 import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Progress } from '../ui/progress'

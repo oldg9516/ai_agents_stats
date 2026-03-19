@@ -1,14 +1,24 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
-import { ChatSession, ChatMessage } from '@/types/chat'
+import type { ChatSession, ChatMessage, MessageRole, ContentType, ChatMessageMetadata } from '@/types/chat'
 import { createAuthClient } from '@/lib/supabase/server'
+import { db } from '@/lib/db'
+import { dashboardChatSessions, dashboardChatMessages } from '@/lib/db/schema'
+import { and, eq, gte, asc, desc } from 'drizzle-orm'
 
-// Untyped admin client for chat tables (not in Database type)
-function getChatAdmin() {
-	const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-	const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-	return createClient(supabaseUrl, supabaseServiceKey)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toMessage(data: any): ChatMessage {
+	return {
+		id: data.id,
+		session_id: data.sessionId,
+		role: data.role as MessageRole,
+		content: data.content ?? '',
+		content_type: (data.contentType || 'text') as ContentType,
+		metadata: (data.metadata as ChatMessageMetadata) || {},
+		agent_name: data.agentName ?? undefined,
+		parent_message_id: data.parentMessageId ?? undefined,
+		created_at: data.createdAt instanceof Date ? data.createdAt.toISOString() : (data.createdAt ?? new Date().toISOString()),
+	}
 }
 
 async function requireAuth(): Promise<string> {
@@ -27,61 +37,57 @@ export async function createChatSession(
 	metadata?: Record<string, unknown>
 ): Promise<ChatSession | null> {
 	const email = await requireAuth()
-	const supabase = getChatAdmin()
 
-	const { data, error } = await supabase
-		.from('dashboard_chat_sessions')
-		.insert({
-			visitor_id: email,
+	const result = await db
+		.insert(dashboardChatSessions)
+		.values({
+			visitorId: email,
 			title: title ?? null,
 			metadata: metadata ?? {},
-			is_archived: false,
+			isArchived: false,
 		})
-		.select('id, visitor_id, title, created_at, updated_at, metadata, is_archived')
-		.single()
+		.returning()
 
-	if (error) {
-		console.error('Error creating chat session:', error)
+	if (!result[0]) {
+		console.error('Error creating chat session: no result returned')
 		return null
 	}
 
+	const data = result[0]
 	return {
 		id: data.id,
-		visitor_id: data.visitor_id,
+		visitor_id: data.visitorId,
 		title: data.title,
-		created_at: data.created_at,
-		updated_at: data.updated_at,
-		metadata: data.metadata || {},
-		is_archived: data.is_archived,
+		created_at: data.createdAt?.toISOString() ?? new Date().toISOString(),
+		updated_at: data.updatedAt?.toISOString() ?? new Date().toISOString(),
+		metadata: (data.metadata as Record<string, unknown>) || {},
+		is_archived: data.isArchived ?? false,
 	}
 }
 
 export async function getChatSessions(): Promise<ChatSession[]> {
 	const email = await requireAuth()
-	const supabase = getChatAdmin()
 
-	const { data, error } = await supabase
-		.from('dashboard_chat_sessions')
-		.select('id, visitor_id, title, created_at, updated_at, metadata, is_archived')
-		.eq('visitor_id', email)
-		.eq('is_archived', false)
-		.order('updated_at', { ascending: false })
+	const data = await db
+		.select()
+		.from(dashboardChatSessions)
+		.where(
+			and(
+				eq(dashboardChatSessions.visitorId, email),
+				eq(dashboardChatSessions.isArchived, false)
+			)
+		)
+		.orderBy(desc(dashboardChatSessions.updatedAt))
 		.limit(50)
 
-	if (error) {
-		console.error('Error fetching chat sessions:', error)
-		return []
-	}
-
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	return data.map((session: any) => ({
+	return data.map((session) => ({
 		id: session.id,
-		visitor_id: session.visitor_id,
+		visitor_id: session.visitorId,
 		title: session.title,
-		created_at: session.created_at,
-		updated_at: session.updated_at,
-		metadata: session.metadata || {},
-		is_archived: session.is_archived,
+		created_at: session.createdAt?.toISOString() ?? new Date().toISOString(),
+		updated_at: session.updatedAt?.toISOString() ?? new Date().toISOString(),
+		metadata: (session.metadata as Record<string, unknown>) || {},
+		is_archived: session.isArchived ?? false,
 	}))
 }
 
@@ -90,16 +96,20 @@ export async function updateSessionTitle(
 	title: string
 ): Promise<boolean> {
 	const email = await requireAuth()
-	const supabase = getChatAdmin()
 
-	const { error } = await supabase
-		.from('dashboard_chat_sessions')
-		.update({ title, updated_at: new Date().toISOString() })
-		.eq('id', sessionId)
-		.eq('visitor_id', email)
+	const result = await db
+		.update(dashboardChatSessions)
+		.set({ title, updatedAt: new Date() })
+		.where(
+			and(
+				eq(dashboardChatSessions.id, sessionId),
+				eq(dashboardChatSessions.visitorId, email)
+			)
+		)
+		.returning({ id: dashboardChatSessions.id })
 
-	if (error) {
-		console.error('Error updating session title:', error)
+	if (result.length === 0) {
+		console.error('Error updating session title: session not found or not owned by user')
 		return false
 	}
 
@@ -108,36 +118,42 @@ export async function updateSessionTitle(
 
 export async function deleteSession(sessionId: string): Promise<boolean> {
 	const email = await requireAuth()
-	const supabase = getChatAdmin()
 
 	// Verify ownership before deleting
-	const { data: session } = await supabase
-		.from('dashboard_chat_sessions')
-		.select('id')
-		.eq('id', sessionId)
-		.eq('visitor_id', email)
-		.single()
+	const session = await db
+		.select({ id: dashboardChatSessions.id })
+		.from(dashboardChatSessions)
+		.where(
+			and(
+				eq(dashboardChatSessions.id, sessionId),
+				eq(dashboardChatSessions.visitorId, email)
+			)
+		)
+		.limit(1)
 
-	if (!session) {
+	if (session.length === 0) {
 		console.error('Session not found or not owned by user')
 		return false
 	}
 
 	// Delete all messages first (cascade should handle this, but let's be safe)
-	await supabase
-		.from('dashboard_chat_messages')
-		.delete()
-		.eq('session_id', sessionId)
+	await db
+		.delete(dashboardChatMessages)
+		.where(eq(dashboardChatMessages.sessionId, sessionId))
 
 	// Delete the session
-	const { error } = await supabase
-		.from('dashboard_chat_sessions')
-		.delete()
-		.eq('id', sessionId)
-		.eq('visitor_id', email)
+	const result = await db
+		.delete(dashboardChatSessions)
+		.where(
+			and(
+				eq(dashboardChatSessions.id, sessionId),
+				eq(dashboardChatSessions.visitorId, email)
+			)
+		)
+		.returning({ id: dashboardChatSessions.id })
 
-	if (error) {
-		console.error('Error deleting session:', error)
+	if (result.length === 0) {
+		console.error('Error deleting session')
 		return false
 	}
 
@@ -148,101 +164,80 @@ export async function deleteSession(sessionId: string): Promise<boolean> {
 
 export async function getChatMessages(sessionId: string): Promise<ChatMessage[]> {
 	const email = await requireAuth()
-	const supabase = getChatAdmin()
 
 	// Verify session ownership
-	const { data: session } = await supabase
-		.from('dashboard_chat_sessions')
-		.select('id')
-		.eq('id', sessionId)
-		.eq('visitor_id', email)
-		.single()
+	const session = await db
+		.select({ id: dashboardChatSessions.id })
+		.from(dashboardChatSessions)
+		.where(
+			and(
+				eq(dashboardChatSessions.id, sessionId),
+				eq(dashboardChatSessions.visitorId, email)
+			)
+		)
+		.limit(1)
 
-	if (!session) {
+	if (session.length === 0) {
 		console.error('Session not found or not owned by user')
 		return []
 	}
 
-	const { data, error } = await supabase
-		.from('dashboard_chat_messages')
-		.select('id, session_id, role, content, content_type, metadata, agent_name, parent_message_id, created_at')
-		.eq('session_id', sessionId)
-		.order('created_at', { ascending: true })
+	const data = await db
+		.select()
+		.from(dashboardChatMessages)
+		.where(eq(dashboardChatMessages.sessionId, sessionId))
+		.orderBy(asc(dashboardChatMessages.createdAt))
 
-	if (error) {
-		console.error('Error fetching chat messages:', error)
-		return []
-	}
-
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	return data.map((msg: any) => ({
-		id: msg.id,
-		session_id: msg.session_id,
-		role: msg.role,
-		content: msg.content,
-		content_type: msg.content_type || 'text',
-		metadata: msg.metadata || {},
-		agent_name: msg.agent_name,
-		parent_message_id: msg.parent_message_id,
-		created_at: msg.created_at,
-	}))
+	return data.map(toMessage)
 }
 
 export async function saveChatMessage(
 	message: Omit<ChatMessage, 'id' | 'created_at'>
 ): Promise<ChatMessage | null> {
 	const email = await requireAuth()
-	const supabase = getChatAdmin()
 
 	// Verify session ownership
-	const { data: session } = await supabase
-		.from('dashboard_chat_sessions')
-		.select('id')
-		.eq('id', message.session_id)
-		.eq('visitor_id', email)
-		.single()
+	const session = await db
+		.select({ id: dashboardChatSessions.id })
+		.from(dashboardChatSessions)
+		.where(
+			and(
+				eq(dashboardChatSessions.id, message.session_id),
+				eq(dashboardChatSessions.visitorId, email)
+			)
+		)
+		.limit(1)
 
-	if (!session) {
+	if (session.length === 0) {
 		console.error('Session not found or not owned by user')
 		return null
 	}
 
-	const { data, error } = await supabase
-		.from('dashboard_chat_messages')
-		.insert({
-			session_id: message.session_id,
+	const result = await db
+		.insert(dashboardChatMessages)
+		.values({
+			sessionId: message.session_id,
 			role: message.role,
 			content: message.content,
-			content_type: message.content_type,
+			contentType: message.content_type,
 			metadata: message.metadata,
-			agent_name: message.agent_name,
-			parent_message_id: message.parent_message_id,
+			agentName: message.agent_name,
+			parentMessageId: message.parent_message_id,
 		})
-		.select('id, session_id, role, content, content_type, metadata, agent_name, parent_message_id, created_at')
-		.single()
+		.returning()
 
-	if (error) {
-		console.error('Error saving chat message:', error)
+	if (!result[0]) {
+		console.error('Error saving chat message: no result returned')
 		return null
 	}
 
 	// Update session updated_at
-	await supabase
-		.from('dashboard_chat_sessions')
-		.update({ updated_at: new Date().toISOString() })
-		.eq('id', message.session_id)
+	await db
+		.update(dashboardChatSessions)
+		.set({ updatedAt: new Date() })
+		.where(eq(dashboardChatSessions.id, message.session_id))
 
-	return {
-		id: data.id,
-		session_id: data.session_id,
-		role: data.role,
-		content: data.content,
-		content_type: data.content_type || 'text',
-		metadata: data.metadata || {},
-		agent_name: data.agent_name,
-		parent_message_id: data.parent_message_id,
-		created_at: data.created_at,
-	}
+	return toMessage(result[0])
 }
 
 // Polling response type
@@ -254,32 +249,32 @@ export interface PollingResponse {
 // Poll for message by message_id (for long-running requests)
 export async function pollMessageByMessageId(messageId: string): Promise<PollingResponse> {
 	const email = await requireAuth()
-	const supabase = getChatAdmin()
 
-	const { data, error } = await supabase
-		.from('dashboard_chat_messages')
-		.select('id, session_id, role, content, content_type, metadata, agent_name, parent_message_id, created_at, status')
-		.eq('message_id', messageId)
-		.single()
+	const result = await db
+		.select()
+		.from(dashboardChatMessages)
+		.where(eq(dashboardChatMessages.messageId, messageId))
+		.limit(1)
 
-	if (error) {
-		// Not found yet - still processing
-		if (error.code === 'PGRST116') {
-			return { status: 'processing', message: null }
-		}
-		console.error('Error polling message:', error)
-		return { status: 'error', message: null }
+	if (result.length === 0) {
+		return { status: 'processing', message: null }
 	}
 
-	// Verify session ownership to prevent IDOR
-	const { data: session } = await supabase
-		.from('dashboard_chat_sessions')
-		.select('id')
-		.eq('id', data.session_id)
-		.eq('visitor_id', email)
-		.single()
+	const data = result[0]
 
-	if (!session) {
+	// Verify session ownership to prevent IDOR
+	const session = await db
+		.select({ id: dashboardChatSessions.id })
+		.from(dashboardChatSessions)
+		.where(
+			and(
+				eq(dashboardChatSessions.id, data.sessionId),
+				eq(dashboardChatSessions.visitorId, email)
+			)
+		)
+		.limit(1)
+
+	if (session.length === 0) {
 		return { status: 'error', message: null }
 	}
 
@@ -287,37 +282,15 @@ export async function pollMessageByMessageId(messageId: string): Promise<Polling
 	const status = data.status as string
 
 	if (status === 'completed') {
-		return {
-			status: 'completed',
-			message: {
-				id: data.id,
-				session_id: data.session_id,
-				role: data.role,
-				content: data.content,
-				content_type: data.content_type || 'text',
-				metadata: data.metadata || {},
-				agent_name: data.agent_name,
-				parent_message_id: data.parent_message_id,
-				created_at: data.created_at,
-			}
-		}
+		return { status: 'completed', message: toMessage(data) }
 	}
 
 	if (status === 'error') {
-		return {
-			status: 'error',
-			message: {
-				id: data.id,
-				session_id: data.session_id,
-				role: data.role,
-				content: data.content || 'Произошла ошибка при обработке запроса',
-				content_type: 'text',
-				metadata: { error: data.content || 'Unknown error' },
-				agent_name: data.agent_name,
-				parent_message_id: data.parent_message_id,
-				created_at: data.created_at,
-			}
-		}
+		const msg = toMessage(data)
+		msg.content = data.content || 'Произошла ошибка при обработке запроса'
+		msg.content_type = 'text' as ContentType
+		msg.metadata = { error: data.content || 'Unknown error' }
+		return { status: 'error', message: msg }
 	}
 
 	// status === 'processing' or other
@@ -329,45 +302,50 @@ export async function deleteMessagesFromId(
 	messageId: string
 ): Promise<boolean> {
 	const email = await requireAuth()
-	const supabase = getChatAdmin()
 
 	// Verify session ownership
-	const { data: session } = await supabase
-		.from('dashboard_chat_sessions')
-		.select('id')
-		.eq('id', sessionId)
-		.eq('visitor_id', email)
-		.single()
+	const session = await db
+		.select({ id: dashboardChatSessions.id })
+		.from(dashboardChatSessions)
+		.where(
+			and(
+				eq(dashboardChatSessions.id, sessionId),
+				eq(dashboardChatSessions.visitorId, email)
+			)
+		)
+		.limit(1)
 
-	if (!session) {
+	if (session.length === 0) {
 		console.error('Session not found or not owned by user')
 		return false
 	}
 
 	// First get the message to find its created_at (scoped to session to prevent cross-session leaks)
-	const { data: targetMessage, error: fetchError } = await supabase
-		.from('dashboard_chat_messages')
-		.select('created_at')
-		.eq('id', messageId)
-		.eq('session_id', sessionId)
-		.single()
+	const targetMessage = await db
+		.select({ createdAt: dashboardChatMessages.createdAt })
+		.from(dashboardChatMessages)
+		.where(
+			and(
+				eq(dashboardChatMessages.id, messageId),
+				eq(dashboardChatMessages.sessionId, sessionId)
+			)
+		)
+		.limit(1)
 
-	if (fetchError || !targetMessage) {
-		console.error('Error fetching target message:', fetchError)
+	if (targetMessage.length === 0 || !targetMessage[0].createdAt) {
+		console.error('Error fetching target message')
 		return false
 	}
 
 	// Delete this message and all messages after it
-	const { error } = await supabase
-		.from('dashboard_chat_messages')
-		.delete()
-		.eq('session_id', sessionId)
-		.gte('created_at', targetMessage.created_at)
-
-	if (error) {
-		console.error('Error deleting messages:', error)
-		return false
-	}
+	await db
+		.delete(dashboardChatMessages)
+		.where(
+			and(
+				eq(dashboardChatMessages.sessionId, sessionId),
+				gte(dashboardChatMessages.createdAt, targetMessage[0].createdAt)
+			)
+		)
 
 	return true
 }

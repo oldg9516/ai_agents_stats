@@ -18,7 +18,7 @@ import {
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { Badge } from '@/components/ui/badge'
 import { LAUNCHED_CATEGORIES } from '@/constants/automation-rules'
-import type { CategoryAutomationOverviewStats } from '@/lib/supabase/types'
+import type { CategoryAutomationOverviewStats } from '@/lib/db/types'
 import { cn } from '@/lib/utils'
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'

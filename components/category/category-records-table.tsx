@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import type { CategoryRecord } from '@/lib/supabase/types'
+import type { CategoryRecord } from '@/lib/db/types'
 import { getClassificationColor } from '@/constants/classification-types'
 import { ZOHO_TICKET_URL } from '@/constants/zoho'
 import { useTranslations } from 'next-intl'

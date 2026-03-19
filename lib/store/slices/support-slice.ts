@@ -1,5 +1,5 @@
 import { CLIENT_BATCH_SIZE } from '@/constants/pagination'
-import type { SupportFilters } from '@/lib/supabase/types'
+import type { SupportFilters } from '@/lib/db/types'
 import { StateCreator } from 'zustand'
 import { filterSliceActions, getDefaultDateRange } from '../create-filter-slice'
 

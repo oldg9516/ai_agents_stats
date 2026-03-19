@@ -11,8 +11,8 @@ import {
 	getBacklogReportById,
 	triggerReportGeneration,
 	getLatestReportTimestamp,
-} from '@/lib/supabase/queries/backlog-reports'
-import type { BacklogReport, BacklogReportsFilters } from '@/lib/supabase/types'
+} from '@/lib/db/queries/backlog-reports'
+import type { BacklogReport, BacklogReportsFilters } from '@/lib/db/types'
 
 /**
  * Fetch paginated list of backlog reports

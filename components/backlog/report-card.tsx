@@ -1,6 +1,6 @@
 'use client'
 
-import type { BacklogReport, CategoryStats, MainPattern } from '@/lib/supabase/types'
+import type { BacklogReport, CategoryStats, MainPattern } from '@/lib/db/types'
 import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/routing'
 import { useParams } from 'next/navigation'

@@ -32,3 +32,12 @@ export function getDashApiKey(): string {
 	const prefix = getPrefix()
 	return process.env[`${prefix}_DASH_API_KEY`] || ''
 }
+
+export function getDatabaseUrl(): string {
+	const prefix = getPrefix()
+	const url = process.env[`${prefix}_DATABASE_URL`]
+	if (!url) {
+		throw new Error(`${prefix}_DATABASE_URL environment variable is not set`)
+	}
+	return url
+}

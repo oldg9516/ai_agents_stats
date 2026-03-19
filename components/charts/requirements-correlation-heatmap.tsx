@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { getRequirement } from '@/constants/requirement-types'
-import type { CorrelationCell } from '@/lib/supabase/types'
+import type { CorrelationCell } from '@/lib/db/types'
 import { ResponsiveHeatMap } from '@nivo/heatmap'
 import { useTranslations } from 'next-intl'
 

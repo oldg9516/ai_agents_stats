@@ -14,7 +14,7 @@ import {
 	type ChartConfig,
 } from '@/components/ui/chart'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
-import type { VersionComparisonData } from '@/lib/supabase/types'
+import type { VersionComparisonData } from '@/lib/db/types'
 import { useTranslations } from 'next-intl'
 import { memo, useMemo } from 'react'
 import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from 'recharts'

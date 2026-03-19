@@ -15,10 +15,9 @@ import {
 	getMinCreatedDate,
 	getQualityTrends,
 	getVersionComparison,
-} from '@/lib/supabase/queries'
+} from '@/lib/db/queries'
 import { fetchDetailedStatsTS } from './detailed-stats-actions'
-import { fetchRequiresSystemActionThreadIds } from '@/lib/supabase/helpers'
-import { supabaseServer } from '@/lib/supabase/server'
+import { fetchRequiresSystemActionThreadIds } from '@/lib/db/utils'
 import type {
 	CategoryDistributionResult,
 	DashboardFilters,
@@ -28,7 +27,7 @@ import type {
 	KPIData,
 	QualityTrendData,
 	VersionComparisonData,
-} from '@/lib/supabase/types'
+} from '@/lib/db/types'
 
 // Request timeout constant (30 seconds)
 const REQUEST_TIMEOUT = 30000
@@ -63,7 +62,7 @@ export async function fetchDashboardData(
 		// If hideRequiresEditing is enabled, fetch thread_ids where action_analysis.requires_system_action = true
 		let includedThreadIds: string[] = []
 		if (filters.hideRequiresEditing) {
-			includedThreadIds = await fetchRequiresSystemActionThreadIds(supabaseServer)
+			includedThreadIds = await fetchRequiresSystemActionThreadIds()
 		}
 
 		// Create filters with included thread_ids for queries that support it

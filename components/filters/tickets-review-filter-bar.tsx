@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import type { TicketsReviewFilters } from '@/lib/supabase/types'
+import type { TicketsReviewFilters } from '@/lib/db/types'
 import { fetchTicketsReviewFilterOptionsAction } from '@/lib/actions/tickets-review-actions'
 import { useLocalFilterState } from '@/lib/hooks/use-local-filter-state'
 import { CLASSIFICATION_TYPES } from '@/constants/classification-types'

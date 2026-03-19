@@ -9,9 +9,11 @@
 import {
 	fetchTicketsReview,
 	fetchTicketsReviewFilterOptions,
-} from '@/lib/supabase/queries-tickets-review'
-import { supabaseServer } from '@/lib/supabase/server'
-import type { TicketsReviewFilters } from '@/lib/supabase/types'
+} from '@/lib/db/queries-tickets-review'
+import { db } from '@/lib/db'
+import { aiHumanComparison } from '@/lib/db/schema'
+import { eq, asc } from 'drizzle-orm'
+import type { TicketsReviewFilters } from '@/lib/db/types'
 
 /**
  * Fetch tickets review data with pagination
@@ -25,7 +27,6 @@ export async function fetchTicketsReviewAction(
 		const startTime = Date.now()
 
 		const tickets = await fetchTicketsReview(
-			supabaseServer,
 			filters,
 			pagination
 		)
@@ -60,7 +61,6 @@ export async function fetchTicketsReviewFilterOptionsAction(dateRange: {
 }) {
 	try {
 		const options = await fetchTicketsReviewFilterOptions(
-			supabaseServer,
 			dateRange
 		)
 
@@ -90,18 +90,16 @@ export async function fetchTicketsReviewFilterOptionsAction(dateRange: {
  */
 export async function fetchTicketsReviewMinCreatedDate(): Promise<Date> {
 	try {
-		const { data, error } = await supabaseServer
-			.from('ai_human_comparison')
-			.select('created_at')
-			.eq('changed', true)
-			.order('created_at', { ascending: true })
+		const result = await db
+			.select({ createdAt: aiHumanComparison.createdAt })
+			.from(aiHumanComparison)
+			.where(eq(aiHumanComparison.changed, true))
+			.orderBy(asc(aiHumanComparison.createdAt))
 			.limit(1)
-			.single<{ created_at: string }>()
 
-		if (error) throw error
-		if (!data) throw new Error('No data returned')
+		if (!result[0]?.createdAt) throw new Error('No data returned')
 
-		return new Date(data.created_at)
+		return new Date(result[0].createdAt)
 	} catch (error) {
 		console.error('❌ [Tickets Review MinDate] Error:', error)
 		// Fallback to a safe default date

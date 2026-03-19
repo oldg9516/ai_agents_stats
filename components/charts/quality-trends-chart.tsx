@@ -21,7 +21,7 @@ import {
 	type ChartConfig,
 } from '@/components/ui/chart'
 import { getCategoryLabel } from '@/constants/category-labels'
-import type { QualityTrendData } from '@/lib/supabase/types'
+import type { QualityTrendData } from '@/lib/db/types'
 
 interface QualityTrendsChartProps {
 	data: QualityTrendData[]

@@ -30,7 +30,7 @@ import {
 	getAllRequirementKeys,
 } from '@/constants/requirement-types'
 import { getStatusLabel } from '@/constants/support-statuses'
-import type { SupportThread } from '@/lib/supabase/types'
+import type { SupportThread } from '@/lib/db/types'
 import { IconCheck, IconExternalLink, IconX } from '@tabler/icons-react'
 import { format } from 'date-fns'
 import { useTranslations } from 'next-intl'

@@ -7,10 +7,9 @@
  * for measuring accuracy of AI action determination.
  */
 
-import { supabaseServer } from '@/lib/supabase/server'
-import { fetchActionAnalysisData } from '@/lib/supabase/queries-action-analysis'
+import { fetchActionAnalysisData } from '@/lib/db/queries-action-analysis'
 import { REQUEST_TIMEOUT } from '@/lib/queries/query-config'
-import type { ActionAnalysisFilters, ActionAnalysisRecord } from '@/lib/supabase/types'
+import type { ActionAnalysisFilters, ActionAnalysisRecord } from '@/lib/db/types'
 
 function createTimeoutPromise(ms: number, operationName: string): Promise<never> {
 	return new Promise((_, reject) =>
@@ -41,7 +40,7 @@ export async function fetchActionAnalysisPageData(
 ): Promise<{ success: boolean; data?: ActionAnalysisRecord[]; error?: string }> {
 	const startTime = Date.now()
 	try {
-		const dataPromise = fetchActionAnalysisData(supabaseServer, filters)
+		const dataPromise = fetchActionAnalysisData(filters)
 
 		const data = await Promise.race([
 			dataPromise,

@@ -12,11 +12,9 @@
  */
 
 import { fetchDetailedStatsTS } from '@/lib/actions/detailed-stats-actions'
-import { supabase } from '@/lib/supabase/client'
-import type { DashboardFilters } from '@/lib/supabase/types'
+import type { DashboardFilters } from '@/lib/db/types'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
 
 /**
  * Generate query key for detailed stats
@@ -66,31 +64,6 @@ export function useDetailedStats(filters: DashboardFilters) {
 		retry: 2, // Retry failed requests twice
 		retryDelay: 1000, // Wait 1 second between retries
 	})
-
-	// Real-time subscription
-	useEffect(() => {
-		const channel = supabase
-			.channel('ai_human_comparison_changes_detailed')
-			.on(
-				'postgres_changes',
-				{
-					event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
-					schema: 'public',
-					table: 'ai_human_comparison',
-				},
-				() => {
-					// Invalidate all detailed stats queries to trigger refetch
-					queryClient.invalidateQueries({ queryKey: ['detailedStats'] })
-					// Also refresh Server Components
-					router.refresh()
-				}
-			)
-			.subscribe()
-
-		return () => {
-			supabase.removeChannel(channel)
-		}
-	}, [queryClient, router])
 
 	return {
 		data: query.data || [],

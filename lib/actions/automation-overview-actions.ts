@@ -7,10 +7,9 @@
  * for automation status determination.
  */
 
-import { supabaseServer } from '@/lib/supabase/server'
-import { fetchAutomationOverviewData } from '@/lib/supabase/queries-automation-overview'
+import { fetchAutomationOverviewData } from '@/lib/db/queries-automation-overview'
 import { REQUEST_TIMEOUT } from '@/lib/queries/query-config'
-import type { AutomationOverviewFilters, AutomationOverviewRecord } from '@/lib/supabase/types'
+import type { AutomationOverviewFilters, AutomationOverviewRecord } from '@/lib/db/types'
 
 function createTimeoutPromise(ms: number, operationName: string): Promise<never> {
 	return new Promise((_, reject) =>
@@ -38,7 +37,7 @@ export async function fetchAutomationOverviewPageData(
 ): Promise<{ success: boolean; data?: AutomationOverviewRecord[]; error?: string }> {
 	const startTime = Date.now()
 	try {
-		const dataPromise = fetchAutomationOverviewData(supabaseServer, filters)
+		const dataPromise = fetchAutomationOverviewData(filters)
 
 		const data = await Promise.race([
 			dataPromise,

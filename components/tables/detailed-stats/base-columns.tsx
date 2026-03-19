@@ -1,7 +1,7 @@
 'use client'
 
 import { getCategoryLabel } from '@/constants/category-labels'
-import type { DetailedStatsRow } from '@/lib/supabase/types'
+import type { DetailedStatsRow } from '@/lib/db/types'
 import type { ColumnDef } from '@tanstack/react-table'
 
 /**

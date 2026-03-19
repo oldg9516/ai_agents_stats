@@ -15,7 +15,7 @@ import {
 	type ChartConfig,
 } from '@/components/ui/chart'
 import { getCategoryLabel } from '@/constants/category-labels'
-import type { CategoryDistributionResult } from '@/lib/supabase/types'
+import type { CategoryDistributionResult } from '@/lib/db/types'
 import { useMemo, useState, useRef, useEffect, memo, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/routing'

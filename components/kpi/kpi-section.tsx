@@ -1,6 +1,6 @@
 'use client'
 
-import type { KPIData } from '@/lib/supabase/types'
+import type { KPIData } from '@/lib/db/types'
 import { AverageQualityCard } from './average-quality-card'
 import { BestCategoryCard } from './best-category-card'
 import { RecordsChangedCard } from './records-changed-card'

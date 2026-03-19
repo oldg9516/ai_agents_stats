@@ -1,4 +1,4 @@
-import type { CategoryDisplayMode, DashboardFilters, DateFilterMode, ScoringMode } from '@/lib/supabase/types'
+import type { CategoryDisplayMode, DashboardFilters, DateFilterMode, ScoringMode } from '@/lib/db/types'
 import type { ScoreGroup } from '@/constants/classification-types'
 import { StateCreator } from 'zustand'
 import { filterSliceActions, getDefaultDateRange } from '../create-filter-slice'

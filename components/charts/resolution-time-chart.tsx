@@ -10,7 +10,7 @@ import {
 	ChartTooltipContent,
 	type ChartConfig,
 } from '@/components/ui/chart'
-import type { ResolutionTimeData } from '@/lib/supabase/types'
+import type { ResolutionTimeData } from '@/lib/db/types'
 import { format } from 'date-fns'
 import { useTranslations } from 'next-intl'
 
@@ -129,7 +129,7 @@ export function ResolutionTimeChart({ data }: ResolutionTimeChartProps) {
 								position='top'
 								offset={8}
 								className='fill-foreground text-xs font-medium'
-								formatter={(value: number) => `${value.toFixed(1)}h`}
+								formatter={(value: number) => `${Number(value).toFixed(1)}h`}
 							/>
 						</Bar>
 					</BarChart>

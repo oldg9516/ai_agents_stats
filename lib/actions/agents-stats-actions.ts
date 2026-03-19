@@ -10,7 +10,9 @@
  * instead of multiple sequential HTTP requests
  */
 
-import { supabaseServer } from '@/lib/supabase/server'
+import { db } from '@/lib/db'
+import { aiHumanComparison } from '@/lib/db/schema'
+import { sql, and, eq, gte, lt, ne, inArray, isNotNull, desc, count } from 'drizzle-orm'
 import {
 	CRITICAL_CHANGE_CLASSIFICATIONS,
 	UNNECESSARY_CHANGE_CLASSIFICATIONS,
@@ -20,7 +22,7 @@ import type {
 	AgentStatsRow,
 	AgentChangeTicket,
 	AgentChangeType,
-} from '@/lib/supabase/types'
+} from '@/lib/db/types'
 
 // =============================================================================
 // TYPES
@@ -60,18 +62,18 @@ export async function fetchAgentStats(
 		const startTime = Date.now()
 		const { dateRange, versions, categories } = filters
 
-		const { data, error } = await (supabaseServer as any).rpc('get_agent_stats', {
-			p_date_from: dateRange.from.toISOString(),
-			p_date_to: dateRange.to.toISOString(),
-			p_versions: versions.length > 0 ? versions : null,
-			p_categories: categories.length > 0 ? categories : null,
-			p_critical_classifications: CRITICAL_CHANGE_CLASSIFICATIONS,
-			p_excluded_email: 'api@levhaolam.com',
-		})
+		const result = await db.execute(sql`SELECT * FROM get_agent_stats(
+			p_date_from := ${dateRange.from.toISOString()}::timestamptz,
+			p_date_to := ${dateRange.to.toISOString()}::timestamptz,
+			p_versions := ${versions.length > 0 ? sql`ARRAY[${sql.join(versions.map(v => sql`${v}`), sql`, `)}]::text[]` : sql`NULL::text[]`},
+			p_categories := ${categories.length > 0 ? sql`ARRAY[${sql.join(categories.map(c => sql`${c}`), sql`, `)}]::text[]` : sql`NULL::text[]`},
+			p_critical_classifications := ${sql`ARRAY[${sql.join(CRITICAL_CHANGE_CLASSIFICATIONS.map(c => sql`${c}`), sql`, `)}]::text[]`},
+			p_excluded_email := ${'api@levhaolam.com'}::text
+		)`)
 
-		if (error) throw error
+		const data = result.rows as unknown as RpcAgentStatsRow[]
 
-		const result: AgentStatsRow[] = ((data || []) as RpcAgentStatsRow[]).map(row => ({
+		const agentStats: AgentStatsRow[] = (data || []).map(row => ({
 			email: row.email,
 			answeredTickets: Number(row.answered_tickets),
 			aiReviewed: Number(row.ai_reviewed),
@@ -84,9 +86,9 @@ export async function fetchAgentStats(
 		}))
 
 		const duration = Date.now() - startTime
-		console.log(`[AgentStats] Fetched ${result.length} agents via RPC in ${duration}ms`)
+		console.log(`[AgentStats] Fetched ${agentStats.length} agents via RPC in ${duration}ms`)
 
-		return { success: true, data: result }
+		return { success: true, data: agentStats }
 	} catch (error) {
 		console.error('❌ [AgentStats] Error:', error)
 		return {
@@ -118,47 +120,64 @@ export async function fetchAgentChangeTickets(
 ): Promise<{ success: true; data: PaginatedTicketsResult } | { success: false; error: string }> {
 	try {
 		const { dateRange, versions, categories } = filters
+		const offset = page * pageSize
 
-		// Build base query
-		let query = supabaseServer
-			.from('ai_human_comparison')
-			.select('id, ticket_id, email, change_classification, created_at, request_subtype, prompt_version', { count: 'exact' })
-			.eq('email', agentEmail)
-			.eq('changed', true)
-			.not('change_classification', 'is', null)
-			.gte('created_at', dateRange.from.toISOString())
-			.lt('created_at', dateRange.to.toISOString())
-			.order('created_at', { ascending: false })
+		// Build conditions array
+		const conditions = [
+			eq(aiHumanComparison.email, agentEmail),
+			eq(aiHumanComparison.changed, true),
+			isNotNull(aiHumanComparison.changeClassification),
+			gte(aiHumanComparison.createdAt, dateRange.from),
+			lt(aiHumanComparison.createdAt, dateRange.to),
+		]
 
 		// Apply change type filter
 		if (changeType === 'critical') {
-			query = query.in('change_classification', CRITICAL_CHANGE_CLASSIFICATIONS)
+			conditions.push(inArray(aiHumanComparison.changeClassification, CRITICAL_CHANGE_CLASSIFICATIONS))
 		} else if (changeType === 'unnecessary') {
-			query = query.in('change_classification', UNNECESSARY_CHANGE_CLASSIFICATIONS)
+			conditions.push(inArray(aiHumanComparison.changeClassification, UNNECESSARY_CHANGE_CLASSIFICATIONS))
 		}
-		// 'all' - no additional filter, shows all changes
 
 		// Apply optional filters
 		if (versions.length > 0) {
-			query = query.in('prompt_version', versions)
+			conditions.push(inArray(aiHumanComparison.promptVersion, versions))
 		}
 		if (categories.length > 0) {
-			query = query.in('request_subtype', categories)
+			conditions.push(inArray(aiHumanComparison.requestSubtype, categories))
 		}
 
-		// Apply pagination
-		const offset = page * pageSize
-		query = query.range(offset, offset + pageSize - 1)
+		const whereClause = and(...conditions)
 
-		const { data, count, error } = await query
-
-		if (error) throw error
+		const [data, countResult] = await Promise.all([
+			db
+				.select({
+					id: aiHumanComparison.id,
+					ticket_id: aiHumanComparison.ticketId,
+					email: aiHumanComparison.email,
+					change_classification: aiHumanComparison.changeClassification,
+					created_at: aiHumanComparison.createdAt,
+					request_subtype: aiHumanComparison.requestSubtype,
+					prompt_version: aiHumanComparison.promptVersion,
+				})
+				.from(aiHumanComparison)
+				.where(whereClause)
+				.orderBy(desc(aiHumanComparison.createdAt))
+				.limit(pageSize)
+				.offset(offset),
+			db
+				.select({ value: count() })
+				.from(aiHumanComparison)
+				.where(whereClause),
+		])
 
 		return {
 			success: true,
 			data: {
-				data: (data || []) as AgentChangeTicket[],
-				total: count || 0,
+				data: (data || []).map(row => ({
+					...row,
+					created_at: row.created_at?.toISOString() ?? '',
+				})) as AgentChangeTicket[],
+				total: countResult[0]?.value ?? 0,
 			},
 		}
 	} catch (error) {

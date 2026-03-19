@@ -22,7 +22,7 @@ import {
 	TableRow,
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
-import type { EvalIntentRow, EvalIntentStatus } from '@/lib/supabase/queries-eval'
+import type { EvalIntentRow, EvalIntentStatus } from '@/lib/db/queries-eval'
 
 interface EvalIntentTableProps {
 	data: EvalIntentRow[]

@@ -2,7 +2,7 @@
 
 import { KPICard } from './kpi-card'
 import { IconEdit } from '@tabler/icons-react'
-import type { KPIData } from '@/lib/supabase/types'
+import type { KPIData } from '@/lib/db/types'
 import { useTranslations } from 'next-intl'
 
 interface RecordsChangedCardProps {

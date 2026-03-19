@@ -15,7 +15,7 @@ import { FilterSheet } from './filters/filter-sheet'
 import { DateRangeFilter } from './filters/date-range-filter'
 import { AnalyticsPageLayout } from './layouts/analytics-page-layout'
 import { PageErrorState } from './shared/page-error-state'
-import type { AgentChangeType } from '@/lib/supabase/types'
+import type { AgentChangeType } from '@/lib/db/types'
 
 export function AgentsStatsContent() {
 	const t = useTranslations()

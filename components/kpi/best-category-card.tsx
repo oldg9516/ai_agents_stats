@@ -5,7 +5,7 @@ import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { IconTrophy, IconArrowUp, IconArrowDown, IconMinus } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 import { getCategoryLabel } from '@/constants/category-labels'
-import type { KPIData, TrendData } from '@/lib/supabase/types'
+import type { KPIData, TrendData } from '@/lib/db/types'
 import { useTranslations } from 'next-intl'
 import { memo } from 'react'
 

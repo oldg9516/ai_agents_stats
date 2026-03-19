@@ -31,7 +31,7 @@ import { IconArrowLeft } from '@tabler/icons-react'
 import { Link } from '@/i18n/routing'
 import { useEvalFilters } from '@/lib/store/hooks/use-eval-filters'
 import { useEvalIntentDiagnostics } from '@/lib/queries/eval-queries'
-import type { DistributionEntry } from '@/lib/supabase/queries-eval'
+import type { DistributionEntry } from '@/lib/db/queries-eval'
 
 // ============================================================================
 // Shared diagnostic content

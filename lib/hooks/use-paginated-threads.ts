@@ -14,7 +14,7 @@
 import { CLIENT_BATCH_SIZE, MAX_BATCHES } from '@/constants/pagination'
 import { fetchSupportThreadsAction } from '@/lib/actions/support-actions'
 import { useStore } from '@/lib/store'
-import type { SupportThread } from '@/lib/supabase/types'
+import type { SupportThread } from '@/lib/db/types'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo } from 'react'
 

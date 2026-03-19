@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import { CategoryDetailContent } from '@/components/category-detail-content'
 import { getCategoryLabel } from '@/constants/category-labels'
-import type { CategoryDetailData } from '@/lib/supabase/types'
+import type { CategoryDetailData } from '@/lib/db/types'
 
 interface CategoryDetailModalProps {
 	categoryName: string

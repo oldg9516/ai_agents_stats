@@ -1,4 +1,4 @@
-import type { TicketsReviewFilters } from '@/lib/supabase/types'
+import type { TicketsReviewFilters } from '@/lib/db/types'
 import { StateCreator } from 'zustand'
 import { filterSliceActions, getDefaultDateRange } from '../create-filter-slice'
 

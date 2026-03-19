@@ -2,7 +2,7 @@ import type {
 	AgentStatsFilters,
 	AgentChangeType,
 	AgentChangesModalState,
-} from '@/lib/supabase/types'
+} from '@/lib/db/types'
 import { StateCreator } from 'zustand'
 import { filterSliceActions, getDefaultDateRange } from '../create-filter-slice'
 

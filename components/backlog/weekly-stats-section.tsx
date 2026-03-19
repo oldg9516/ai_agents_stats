@@ -1,6 +1,6 @@
 'use client'
 
-import type { WeeklyStats } from '@/lib/supabase/types'
+import type { WeeklyStats } from '@/lib/db/types'
 import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import {

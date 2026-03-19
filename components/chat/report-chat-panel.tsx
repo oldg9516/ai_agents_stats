@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 import { useReportChat } from '@/lib/hooks/use-report-chat'
-import { BacklogReport } from '@/lib/supabase/types'
+import { BacklogReport } from '@/lib/db/types'
 import {
 	clearReportChatContext,
 	getReportChatContext,

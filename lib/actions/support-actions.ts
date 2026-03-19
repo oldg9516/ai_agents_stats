@@ -16,9 +16,10 @@ import {
 	fetchStatusDistribution,
 	fetchSupportKPIs,
 	fetchSupportThreads,
-} from '@/lib/supabase/queries-support'
-import { supabaseServer } from '@/lib/supabase/server'
-import type { SupportFilters } from '@/lib/supabase/types'
+} from '@/lib/db/queries-support'
+import { db } from '@/lib/db'
+import { sql } from 'drizzle-orm'
+import type { SupportFilters } from '@/lib/db/types'
 
 // Request timeout constant (30 seconds)
 const REQUEST_TIMEOUT = 30000
@@ -43,18 +44,15 @@ function createTimeoutPromise(ms: number, operationName: string): Promise<never>
 export async function fetchSupportData(filters: SupportFilters) {
 	try {
 		// Fetch all data in parallel for best performance
-		// Using supabaseServer with SERVICE ROLE key to bypass RLS
-		const serverClient = supabaseServer
-
 		// KPIs and charts can process smaller datasets for better performance
 		// Threads table has pagination (limit 50 by default for faster initial load)
 		const promises = [
-			fetchSupportKPIs(serverClient, filters),
-			fetchStatusDistribution(serverClient, filters),
-			fetchResolutionTimeData(serverClient, filters),
-			fetchSankeyData(serverClient, filters),
-			fetchCorrelationMatrix(serverClient, filters),
-			fetchSupportThreads(serverClient, filters, { limit: 50, offset: 0 }),
+			fetchSupportKPIs(filters),
+			fetchStatusDistribution(filters),
+			fetchResolutionTimeData(filters),
+			fetchSankeyData(filters),
+			fetchCorrelationMatrix(filters),
+			fetchSupportThreads(filters, { limit: 50, offset: 0 }),
 		]
 
 		// Track individual query times
@@ -128,7 +126,7 @@ export async function fetchRequestCategoryStatsAction(dateRange: {
 	to: Date
 }) {
 	try {
-		const stats = await fetchRequestCategoryStats(supabaseServer, dateRange)
+		const stats = await fetchRequestCategoryStats(dateRange)
 
 		return {
 			success: true,
@@ -159,7 +157,6 @@ export async function fetchSupportThreadsAction(
 ) {
 	try {
 		const threads = await fetchSupportThreads(
-			supabaseServer,
 			filters,
 			pagination
 		)
@@ -188,7 +185,7 @@ export async function fetchSupportThreadsAction(
 export async function fetchAllSupportThreadsForExport(filters: SupportFilters) {
 	try {
 		// Fetch all threads in batches (fetchAll: true bypasses Supabase 1000 limit)
-		const threads = await fetchSupportThreads(supabaseServer, filters, {
+		const threads = await fetchSupportThreads(filters, {
 			fetchAll: true,
 		})
 
@@ -221,12 +218,12 @@ export async function fetchAllSupportThreadsForExport(filters: SupportFilters) {
  */
 export async function fetchSupportMinCreatedDate(): Promise<Date> {
 	try {
-		const { data, error } = await supabaseServer.rpc('get_support_min_created_date')
+		const result = await db.execute(sql`SELECT * FROM get_support_min_created_date()`)
+		const value = result.rows[0]?.get_support_min_created_date
 
-		if (error) throw error
-		if (!data) throw new Error('No data returned')
+		if (!value) throw new Error('No data returned')
 
-		return new Date(data)
+		return new Date(value as string)
 	} catch (error) {
 		console.error('❌ [Support MinDate] Error:', error)
 		// Fallback to a safe default date
@@ -243,7 +240,7 @@ export async function fetchAvailableCategoriesAction(dateRange: {
 	to: Date
 }) {
 	try {
-		const categories = await fetchAvailableCategories(supabaseServer, dateRange)
+		const categories = await fetchAvailableCategories(dateRange)
 
 		return {
 			success: true,

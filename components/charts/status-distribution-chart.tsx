@@ -13,7 +13,7 @@ import {
 	ChartLegendContent,
 	type ChartConfig,
 } from '@/components/ui/chart'
-import type { StatusDistribution } from '@/lib/supabase/types'
+import type { StatusDistribution } from '@/lib/db/types'
 
 interface StatusDistributionChartProps {
 	data: StatusDistribution[]

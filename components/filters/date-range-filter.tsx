@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { fetchMinCreatedDate } from '@/lib/actions/dashboard-actions'
-import type { DateFilterMode } from '@/lib/supabase/types'
+import type { DateFilterMode } from '@/lib/db/types'
 import {
 	formatDateInIsraelTZ,
 	parseDateInIsraelTZ,

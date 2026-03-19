@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
-import type { TrendData } from '@/lib/supabase/types'
+import type { TrendData } from '@/lib/db/types'
 import { cn } from '@/lib/utils'
 import { IconArrowDown, IconArrowUp, IconMinus } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'

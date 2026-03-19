@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/table'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import type { CategoryVersionStats } from '@/lib/supabase/types'
+import type { CategoryVersionStats } from '@/lib/db/types'
 import { useTranslations } from 'next-intl'
 import { IconTrendingUp, IconTrendingDown, IconMinus } from '@tabler/icons-react'
 

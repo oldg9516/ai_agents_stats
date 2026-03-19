@@ -22,7 +22,7 @@ import {
 import { getCategoryLabel } from '@/constants/category-labels'
 import { QUALIFIED_AGENTS } from '@/constants/qualified-agents'
 import { fetchCategoryDetail } from '@/lib/actions/category-actions'
-import type { CategoryDetailData, CategoryFilters } from '@/lib/supabase/types'
+import type { CategoryDetailData, CategoryFilters } from '@/lib/db/types'
 import {
 	IconArrowLeft,
 	IconExternalLink,

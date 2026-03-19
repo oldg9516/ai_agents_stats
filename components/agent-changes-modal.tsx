@@ -35,7 +35,7 @@ import {
 import { useAgentsStatsFilters } from '@/lib/store/hooks/use-agents-stats-filters'
 import { useAgentChangeTickets } from '@/lib/queries/agents-stats-queries'
 import { getClassificationColor } from '@/constants/classification-types'
-import type { AgentChangeType } from '@/lib/supabase/types'
+import type { AgentChangeType } from '@/lib/db/types'
 
 /**
  * Get tab color styling

@@ -2,7 +2,7 @@
 
 import { KPICard } from './kpi-card'
 import { IconUserCheck } from '@tabler/icons-react'
-import type { SupportKPIs } from '@/lib/supabase/types'
+import type { SupportKPIs } from '@/lib/db/types'
 import { useTranslations } from 'next-intl'
 
 interface AgentResponseRateCardProps {

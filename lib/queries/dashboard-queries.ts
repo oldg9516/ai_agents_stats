@@ -19,7 +19,7 @@ import type {
 	KPIData,
 	QualityTrendData,
 	VersionComparisonData,
-} from '@/lib/supabase/types'
+} from '@/lib/db/types'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**

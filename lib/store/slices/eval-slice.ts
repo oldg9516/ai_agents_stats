@@ -1,4 +1,4 @@
-import type { EvalFilters } from '@/lib/supabase/queries-eval'
+import type { EvalFilters } from '@/lib/db/queries-eval'
 import { StateCreator } from 'zustand'
 import { filterSliceActions, getDefaultDateRange } from '../create-filter-slice'
 

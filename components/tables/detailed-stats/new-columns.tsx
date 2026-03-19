@@ -1,6 +1,6 @@
 'use client'
 
-import type { DateFilterMode, DetailedStatsRow } from '@/lib/supabase/types'
+import type { DateFilterMode, DetailedStatsRow } from '@/lib/db/types'
 import type { ScoreGroup } from '@/constants/classification-types'
 import type { ColumnDef } from '@tanstack/react-table'
 import { calcPercentage, getCellClassName } from './types'

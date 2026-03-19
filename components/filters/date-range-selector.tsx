@@ -1,7 +1,7 @@
 'use client'
 
 import { DateRangeFilter } from './date-range-filter'
-import type { DashboardFilters, DateFilterMode } from '@/lib/supabase/types'
+import type { DashboardFilters, DateFilterMode } from '@/lib/db/types'
 
 interface DateRangeSelectorProps {
 	filters: DashboardFilters

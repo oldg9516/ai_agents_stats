@@ -5,8 +5,8 @@
  * and to prevent key collisions
  */
 
-import type { ActionAnalysisFilters, AutomationOverviewFilters, BacklogReportsFilters, DashboardFilters, SupportFilters } from '@/lib/supabase/types'
-import type { EvalFilters } from '@/lib/supabase/queries-eval'
+import type { ActionAnalysisFilters, AutomationOverviewFilters, BacklogReportsFilters, DashboardFilters, SupportFilters } from '@/lib/db/types'
+import type { EvalFilters } from '@/lib/db/queries-eval'
 
 /**
  * Dashboard query keys

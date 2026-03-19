@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchEvalIntentTableData, fetchEvalIntentDiagnosticsData } from '@/lib/actions/eval-actions'
 import { QUERY_CACHE_CONFIG } from '@/lib/queries/query-config'
 import { evalKeys } from '@/lib/queries/query-keys'
-import type { EvalFilters, EvalIntentRow, EvalIntentDiagnostics } from '@/lib/supabase/queries-eval'
+import type { EvalFilters, EvalIntentRow, EvalIntentDiagnostics } from '@/lib/db/queries-eval'
 
 /**
  * React Query hook for eval intent table (PRIMARY view)

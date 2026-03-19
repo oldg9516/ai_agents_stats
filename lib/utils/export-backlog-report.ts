@@ -18,7 +18,7 @@ import type {
 	TemporalTrend,
 	SpecificIssue,
 	WeeklyStats,
-} from '@/lib/supabase/types'
+} from '@/lib/db/types'
 import { format, parseISO } from 'date-fns'
 
 /**

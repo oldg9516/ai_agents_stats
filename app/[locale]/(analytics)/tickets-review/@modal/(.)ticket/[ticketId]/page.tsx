@@ -8,11 +8,10 @@
  * The (.) means "intercept at the same level"
  */
 
-import { supabaseServer } from '@/lib/supabase/server'
 import {
 	fetchTicketDetail,
 	fetchAdjacentTicketIds,
-} from '@/lib/supabase/queries-tickets-review'
+} from '@/lib/db/queries-tickets-review'
 import { notFound } from 'next/navigation'
 import { TicketDetailModal } from '@/components/ticket-detail-modal'
 
@@ -34,8 +33,8 @@ export default async function TicketModalPage({
 
 	try {
 		const [ticketData, adjacentData] = await Promise.all([
-			fetchTicketDetail(supabaseServer, ticketIdNum),
-			fetchAdjacentTicketIds(supabaseServer, ticketIdNum),
+			fetchTicketDetail(ticketIdNum),
+			fetchAdjacentTicketIds(ticketIdNum),
 		])
 		ticket = ticketData
 		adjacentIds = adjacentData

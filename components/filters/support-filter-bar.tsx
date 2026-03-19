@@ -5,7 +5,7 @@ import {
 	getRequestTypeLabel,
 } from '@/constants/request-types'
 import { getAllStatuses, getStatusLabel } from '@/constants/support-statuses'
-import type { SupportFilters } from '@/lib/supabase/types'
+import type { SupportFilters } from '@/lib/db/types'
 import { useLocalFilterState } from '@/lib/hooks/use-local-filter-state'
 import { useTranslations } from 'next-intl'
 import { FilterBarLayout } from './filter-bar-layout'

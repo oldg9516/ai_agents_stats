@@ -18,7 +18,7 @@ import type {
 	AutomationOverviewStats,
 	CategoryAutomationOverviewStats,
 	SubSubAutomationOverviewStats,
-} from '@/lib/supabase/types'
+} from '@/lib/db/types'
 
 /**
  * Compute automation stats from raw records

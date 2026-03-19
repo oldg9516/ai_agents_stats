@@ -7,8 +7,7 @@ import {
 	CardTitle,
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { fetchTicketDetail } from '@/lib/supabase/queries-tickets-review'
-import { supabaseServer } from '@/lib/supabase/server'
+import { fetchTicketDetail } from '@/lib/db/queries-tickets-review'
 import { IconArrowLeft, IconCheck, IconExternalLink } from '@tabler/icons-react'
 import { format } from 'date-fns'
 import { Metadata } from 'next'
@@ -63,7 +62,7 @@ export default async function TicketDetailPage({
 	// Fetch ticket details
 	let ticket
 	try {
-		ticket = await fetchTicketDetail(supabaseServer, parseInt(ticketId))
+		ticket = await fetchTicketDetail(parseInt(ticketId))
 	} catch (error) {
 		console.error('Error fetching ticket:', error)
 		notFound()

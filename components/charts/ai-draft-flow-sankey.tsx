@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { ResponsiveSankey } from '@nivo/sankey'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
-import type { SankeyData } from '@/lib/supabase/types'
+import type { SankeyData } from '@/lib/db/types'
 import { useTranslations } from 'next-intl'
 
 interface AIDraftFlowSankeyProps {

@@ -7,9 +7,11 @@
  * for a specific category, version, and optionally date range
  */
 
-import { supabaseServer } from '@/lib/supabase/server'
+import { db } from '@/lib/db'
+import { aiComparisonWithReviews, supportThreadsData, supportDialogs } from '@/lib/db/schema'
+import { and, eq, gte, lt, inArray, isNotNull, desc, count } from 'drizzle-orm'
 import type { ScoreGroup } from '@/constants/classification-types'
-import type { DateFilterMode, TicketReviewRecord } from '@/lib/supabase/types'
+import type { DateFilterMode, TicketReviewRecord } from '@/lib/db/types'
 import { parse } from 'date-fns'
 
 /**
@@ -155,82 +157,47 @@ export async function fetchTicketsByScoreGroup(
 	const offset = page * pageSize
 
 	// Determine which date field to use based on mode
-	const dateField = dateFilterMode === 'human_reply' ? 'human_reply_date' : 'created_at'
+	const dateColumn = dateFilterMode === 'human_reply' ? aiComparisonWithReviews.humanReplyDate : aiComparisonWithReviews.createdAt
 
 	// Get classifications for this score group
 	const classifications = SCORE_GROUP_CLASSIFICATIONS[scoreGroup]
 
-	// Build base query (using VIEW for review fields)
-	let query = supabaseServer
-		.from('ai_comparison_with_reviews')
-		.select(
-			`
-			id,
-			created_at,
-			status,
-			thread_id,
-			full_request,
-			subscription_info,
-			tracking_info,
-			human_reply,
-			ai_reply,
-			ai_reply_date,
-			human_reply_date,
-			comment,
-			manual_comment,
-			request_subtype,
-			email,
-			changes,
-			updated_at,
-			ticket_id,
-			human_reply_original,
-			check_count,
-			changed,
-			last_checked_at,
-			improvement_suggestions,
-			similarity_score,
-			prompt_version,
-			change_classification,
-			review_status,
-			ai_approved,
-			reviewer_name,
-			requires_editing_correct,
-			action_analysis_verification
-		`,
-			{ count: 'exact' }
-		)
-		.eq('request_subtype', category)
-		.eq('prompt_version', version)
-		.in('change_classification', classifications)
-		.order(dateField, { ascending: false })
-		.range(offset, offset + pageSize - 1)
+	// Build conditions
+	const conditions = [
+		eq(aiComparisonWithReviews.requestSubtype, category),
+		eq(aiComparisonWithReviews.promptVersion, version),
+		inArray(aiComparisonWithReviews.changeClassification, classifications),
+	]
 
 	// Apply date filter if provided
 	if (dates) {
 		const dateRange = parseWeekRange(dates)
 		if (dateRange) {
-			query = query
-				.gte(dateField, dateRange.from.toISOString())
-				.lt(dateField, dateRange.to.toISOString())
+			conditions.push(gte(dateColumn, dateRange.from))
+			conditions.push(lt(dateColumn, dateRange.to))
 		}
 	}
 
 	// For human_reply mode, also filter out records with no human_reply_date
 	if (dateFilterMode === 'human_reply') {
-		query = query.not('human_reply_date', 'is', null)
+		conditions.push(isNotNull(aiComparisonWithReviews.humanReplyDate))
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const { data: tickets, error, count } = (await query) as {
-		data: any[] | null
-		error: any
-		count: number | null
-	}
+	const whereClause = and(...conditions)
 
-	if (error) {
-		console.error('Error fetching tickets by score group:', error)
-		throw error
-	}
+	const [tickets, countResult] = await Promise.all([
+		db
+			.select()
+			.from(aiComparisonWithReviews)
+			.where(whereClause)
+			.orderBy(desc(dateColumn))
+			.limit(pageSize)
+			.offset(offset),
+		db
+			.select({ value: count() })
+			.from(aiComparisonWithReviews)
+			.where(whereClause),
+	])
 
 	if (!tickets || tickets.length === 0) {
 		return { data: [], total: 0 }
@@ -238,7 +205,7 @@ export async function fetchTicketsByScoreGroup(
 
 	// Enrich with user data from support_threads_data (async-parallel)
 	const threadIds = tickets
-		.map((t: { thread_id?: string | null }) => t.thread_id)
+		.map((t) => t.threadId)
 		.filter(Boolean) as string[]
 
 	const userMap = new Map<string, string | null>()
@@ -247,67 +214,80 @@ export async function fetchTicketsByScoreGroup(
 	if (threadIds.length > 0) {
 		// Parallel fetch: threads + dialogs (async-parallel)
 		const [threadsResult, dialogsResult] = await Promise.all([
-			supabaseServer
-				.from('support_threads_data')
-				.select('thread_id, user')
-				.in('thread_id', threadIds),
-			supabaseServer
-				.from('support_dialogs')
-				.select('thread_id, text')
-				.in('thread_id', threadIds),
+			db
+				.select({ threadId: supportThreadsData.threadId, user: supportThreadsData.user })
+				.from(supportThreadsData)
+				.where(inArray(supportThreadsData.threadId, threadIds)),
+			db
+				.select({ threadId: supportDialogs.threadId, text: supportDialogs.text })
+				.from(supportDialogs)
+				.where(inArray(supportDialogs.threadId, threadIds)),
 		])
 
-		if (threadsResult.error) {
-			console.error('Error fetching thread user data:', threadsResult.error)
-		}
-		if (dialogsResult.error) {
-			console.error('Error fetching dialogs data:', dialogsResult.error)
-		}
-
 		// Build user map (js-index-maps)
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		threadsResult.data?.forEach((thread: any) => {
-			if (thread.thread_id && thread.user) {
+		threadsResult.forEach((thread) => {
+			if (thread.threadId && thread.user) {
 				try {
 					const userData =
 						typeof thread.user === 'string'
 							? JSON.parse(thread.user)
 							: thread.user
 					const email = userData?.email ?? null
-					userMap.set(thread.thread_id, email)
+					userMap.set(thread.threadId, email)
 				} catch (e) {
 					console.error('Error parsing user JSON:', e)
-					userMap.set(thread.thread_id, null)
+					userMap.set(thread.threadId, null)
 				}
 			}
 		})
 
 		// Build customer request map (js-index-maps)
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		dialogsResult.data?.forEach((dialog: any) => {
-			if (dialog.thread_id && dialog.text) {
-				customerRequestMap.set(dialog.thread_id, dialog.text)
+		dialogsResult.forEach((dialog) => {
+			if (dialog.threadId && dialog.text) {
+				customerRequestMap.set(dialog.threadId, dialog.text)
 			}
 		})
 	}
 
-	// Enrich tickets with thread data (js-combine-iterations)
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const enrichedTickets: TicketReviewRecord[] = tickets.map((ticket: any) => ({
-		...ticket,
-		// Coerce review fields from VIEW
-		review_status: ticket.review_status ?? null,
-		ai_approved: ticket.ai_approved ?? null,
-		reviewer_name: ticket.reviewer_name ?? null,
-		manual_comment: ticket.manual_comment ?? null,
-		requires_editing_correct: ticket.requires_editing_correct ?? null,
-		action_analysis_verification: ticket.action_analysis_verification ?? null,
+	// Enrich tickets with thread data — map drizzle camelCase to snake_case for TicketReviewRecord
+	const enrichedTickets: TicketReviewRecord[] = tickets.map((ticket) => ({
+		id: ticket.id,
+		created_at: ticket.createdAt?.toISOString() ?? null,
+		status: ticket.status,
+		thread_id: ticket.threadId,
+		full_request: ticket.fullRequest,
+		subscription_info: ticket.subscriptionInfo,
+		tracking_info: ticket.trackingInfo,
+		human_reply: ticket.humanReply,
+		ai_reply: ticket.aiReply,
+		ai_reply_date: ticket.aiReplyDate?.toISOString() ?? null,
+		human_reply_date: ticket.humanReplyDate?.toISOString() ?? null,
+		comment: ticket.comment,
+		manual_comment: ticket.trManualComment ?? ticket.manualComment ?? null,
+		request_subtype: ticket.requestSubtype,
+		email: ticket.email,
+		changes: ticket.changes,
+		updated_at: ticket.updatedAt?.toISOString() ?? null,
+		ticket_id: ticket.ticketId,
+		human_reply_original: ticket.humanReplyOriginal,
+		check_count: ticket.checkCount,
+		changed: ticket.changed,
+		last_checked_at: ticket.lastCheckedAt?.toISOString() ?? null,
+		improvement_suggestions: ticket.improvementSuggestions,
+		similarity_score: ticket.similarityScore,
+		prompt_version: ticket.promptVersion,
+		change_classification: ticket.changeClassification,
+		review_status: ticket.reviewStatus ?? null,
+		ai_approved: ticket.aiApproved ?? null,
+		reviewer_name: ticket.reviewerName ?? null,
+		requires_editing_correct: ticket.requiresEditingCorrect ?? null,
+		action_analysis_verification: ticket.actionAnalysisVerification ?? null,
 		// Thread enrichment
-		user: ticket.thread_id ? userMap.get(ticket.thread_id) ?? null : null,
-		customer_request_text: ticket.thread_id
-			? customerRequestMap.get(ticket.thread_id) ?? null
+		user: ticket.threadId ? userMap.get(ticket.threadId) ?? null : null,
+		customer_request_text: ticket.threadId
+			? customerRequestMap.get(ticket.threadId) ?? null
 			: null,
-	}))
+	})) as TicketReviewRecord[]
 
-	return { data: enrichedTickets, total: count ?? 0 }
+	return { data: enrichedTickets, total: Number(countResult[0]?.value ?? 0) }
 }

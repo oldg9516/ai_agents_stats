@@ -6,13 +6,12 @@
  * Fetches eval results and computes readiness metrics per intent.
  */
 
-import { supabaseServer } from '@/lib/supabase/server'
 import {
 	fetchEvalIntentTable,
 	fetchEvalIntentDiagnostics,
-} from '@/lib/supabase/queries-eval'
+} from '@/lib/db/queries-eval'
 import { REQUEST_TIMEOUT } from '@/lib/queries/query-config'
-import type { EvalFilters, EvalIntentRow, EvalIntentDiagnostics } from '@/lib/supabase/queries-eval'
+import type { EvalFilters, EvalIntentRow, EvalIntentDiagnostics } from '@/lib/db/queries-eval'
 
 function createTimeoutPromise(ms: number, operationName: string): Promise<never> {
 	return new Promise((_, reject) =>
@@ -40,7 +39,7 @@ export async function fetchEvalIntentTableData(
 ): Promise<{ success: boolean; data?: EvalIntentRow[]; error?: string }> {
 	const startTime = Date.now()
 	try {
-		const dataPromise = fetchEvalIntentTable(supabaseServer, filters)
+		const dataPromise = fetchEvalIntentTable(filters)
 
 		const data = await Promise.race([
 			dataPromise,
@@ -70,7 +69,6 @@ export async function fetchEvalIntentDiagnosticsData(
 	const startTime = Date.now()
 	try {
 		const dataPromise = fetchEvalIntentDiagnostics(
-			supabaseServer,
 			filters,
 			requestSubtype,
 			requestSubSubtype

@@ -3,7 +3,7 @@
 import { fetchFilterOptions } from '@/lib/actions/dashboard-actions'
 import { useDashboardData } from '@/lib/hooks/use-dashboard-data'
 import { useDashboardFilters } from '@/lib/store/hooks/use-dashboard-filters'
-import type { DateFilterMode } from '@/lib/supabase/types'
+import type { DateFilterMode } from '@/lib/db/types'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'

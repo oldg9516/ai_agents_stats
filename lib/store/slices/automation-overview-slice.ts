@@ -1,4 +1,4 @@
-import type { AutomationOverviewFilters } from '@/lib/supabase/types'
+import type { AutomationOverviewFilters } from '@/lib/db/types'
 import { StateCreator } from 'zustand'
 import { filterSliceActions, getDefaultDateRange } from '../create-filter-slice'
 

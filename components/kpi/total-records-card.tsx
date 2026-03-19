@@ -2,7 +2,7 @@
 
 import { KPICard } from './kpi-card'
 import { IconDatabase } from '@tabler/icons-react'
-import type { KPIData } from '@/lib/supabase/types'
+import type { KPIData } from '@/lib/db/types'
 import { useTranslations } from 'next-intl'
 import { memo } from 'react'
 

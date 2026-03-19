@@ -34,7 +34,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from '@/components/ui/tooltip'
-import type { AgentStatsRow, AgentChangeType } from '@/lib/supabase/types'
+import type { AgentStatsRow, AgentChangeType } from '@/lib/db/types'
 import { cn } from '@/lib/utils'
 
 /**

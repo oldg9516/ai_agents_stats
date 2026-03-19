@@ -16,7 +16,7 @@ import {
 	TableRow,
 } from '@/components/ui/table'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
-import type { CategoryActionStats } from '@/lib/supabase/types'
+import type { CategoryActionStats } from '@/lib/db/types'
 import { cn } from '@/lib/utils'
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'

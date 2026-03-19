@@ -18,7 +18,7 @@ import type {
 	CategoryActionStats,
 	SubSubCategoryStats,
 	ActionTypeDistItem,
-} from '@/lib/supabase/types'
+} from '@/lib/db/types'
 
 /**
  * Compute aggregated stats from raw records (js-combine-iterations)

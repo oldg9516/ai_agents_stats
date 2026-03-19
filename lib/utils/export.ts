@@ -4,7 +4,7 @@
  * Helper functions for exporting data to CSV format
  */
 
-import type { DetailedStatsRow } from '@/lib/supabase/types'
+import type { DetailedStatsRow } from '@/lib/db/types'
 
 /**
  * Convert detailed stats data to CSV format

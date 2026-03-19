@@ -1,6 +1,6 @@
 'use client'
 
-import type { SpecificIssue } from '@/lib/supabase/types'
+import type { SpecificIssue } from '@/lib/db/types'
 import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'

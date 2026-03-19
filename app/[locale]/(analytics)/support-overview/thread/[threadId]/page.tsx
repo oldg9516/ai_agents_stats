@@ -1,8 +1,7 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { supabaseServer } from '@/lib/supabase/server'
-import { fetchThreadDetail } from '@/lib/supabase/queries-support'
+import { fetchThreadDetail } from '@/lib/db/queries-support'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -44,7 +43,7 @@ export default async function ThreadDetailPage({ params }: ThreadDetailPageProps
 	// Fetch thread details
 	let thread
 	try {
-		thread = await fetchThreadDetail(supabaseServer, threadId)
+		thread = await fetchThreadDetail(threadId)
 	} catch (error) {
 		console.error('Error fetching thread:', error)
 		notFound()

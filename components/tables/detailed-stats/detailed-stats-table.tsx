@@ -45,7 +45,7 @@ import {
 } from '@/components/ui/table'
 import { useDetailedStatsPaginated } from '@/lib/queries/dashboard-queries'
 import { useDashboardFilters, useDashboardDisplayMode, useScoreGroupModal } from '@/lib/store/hooks/use-dashboard-filters'
-import type { DetailedStatsRow } from '@/lib/supabase/types'
+import type { DetailedStatsRow } from '@/lib/db/types'
 import { exportToCSV } from '@/lib/utils/export'
 
 import { createBaseColumns, sortOrderColumn } from './base-columns'

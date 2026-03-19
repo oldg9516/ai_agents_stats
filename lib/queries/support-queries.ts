@@ -22,7 +22,7 @@ import type {
 	SupportFilters,
 	SupportKPIs,
 	SupportThread,
-} from '@/lib/supabase/types'
+} from '@/lib/db/types'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**

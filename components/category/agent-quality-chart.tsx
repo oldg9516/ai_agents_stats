@@ -9,7 +9,7 @@ import {
 	ChartTooltipContent,
 	type ChartConfig,
 } from '@/components/ui/chart'
-import type { CategoryAgentStats } from '@/lib/supabase/types'
+import type { CategoryAgentStats } from '@/lib/db/types'
 import { useTranslations } from 'next-intl'
 
 interface AgentQualityChartProps {

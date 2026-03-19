@@ -1,6 +1,6 @@
 'use client'
 
-import type { DashboardFilters } from '@/lib/supabase/types'
+import type { DashboardFilters } from '@/lib/db/types'
 import { useLocalFilterState } from '@/lib/hooks/use-local-filter-state'
 import { useTranslations } from 'next-intl'
 import { useEffect } from 'react'

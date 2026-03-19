@@ -1,6 +1,6 @@
 'use client'
 
-import type { AgentStatsFilters } from '@/lib/supabase/types'
+import type { AgentStatsFilters } from '@/lib/db/types'
 import { useLocalFilterState } from '@/lib/hooks/use-local-filter-state'
 import { useTranslations } from 'next-intl'
 import { FilterBarLayout } from './filter-bar-layout'

@@ -14,7 +14,7 @@ import {
   getCategoryAgentStats,
   getCategoryRecords,
   categoryExists,
-} from '@/lib/supabase/queries-category'
+} from '@/lib/db/queries-category'
 import type {
   CategoryDetailData,
   CategoryFilters,
@@ -23,7 +23,7 @@ import type {
   CategoryVersionStats,
   CategoryAgentStats,
   CategoryRecord,
-} from '@/lib/supabase/types'
+} from '@/lib/db/types'
 import { endOfTodayInIsrael, startOfNDaysAgoInIsrael } from '@/lib/utils/date-tz'
 
 type ActionResult<T> = { success: true; data: T } | { success: false; error: string }

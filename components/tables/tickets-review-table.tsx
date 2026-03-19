@@ -45,7 +45,7 @@ import {
 	SelectValue,
 } from '@/components/ui/select'
 import { PAGE_SIZE_OPTIONS, type PageSize } from './detailed-stats/table-pagination'
-import type { TicketReviewRecord } from '@/lib/supabase/types'
+import type { TicketReviewRecord } from '@/lib/db/types'
 import { format } from 'date-fns'
 import {
 	getClassificationColor as getClassificationColorFromConstants,

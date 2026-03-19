@@ -10,7 +10,7 @@ import {
 	generateReport,
 	fetchLatestReportTimestamp,
 } from '@/lib/actions/backlog-reports-actions'
-import type { BacklogReport, BacklogReportsFilters } from '@/lib/supabase/types'
+import type { BacklogReport, BacklogReportsFilters } from '@/lib/db/types'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_CACHE_CONFIG, QUERY_CACHE_CONFIG_EXTENDED } from './query-config'
 import { backlogReportsKeys } from './query-keys'

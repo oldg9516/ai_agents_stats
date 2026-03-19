@@ -8,8 +8,7 @@
  * The (.) means "intercept at the same level"
  */
 
-import { supabaseServer } from '@/lib/supabase/server'
-import { fetchThreadDetail } from '@/lib/supabase/queries-support'
+import { fetchThreadDetail } from '@/lib/db/queries-support'
 import { notFound } from 'next/navigation'
 import { ThreadDetailModal } from '@/components/thread-detail-modal'
 
@@ -25,7 +24,7 @@ export default async function ThreadModalPage({ params }: ThreadModalPageProps) 
 	// Fetch thread details
 	let thread
 	try {
-		thread = await fetchThreadDetail(supabaseServer, threadId)
+		thread = await fetchThreadDetail(threadId)
 	} catch (error) {
 		console.error('Error fetching thread:', error)
 		notFound()

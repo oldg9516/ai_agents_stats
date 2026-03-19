@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/chart'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { LAUNCHED_CATEGORIES } from '@/constants/automation-rules'
-import type { CategoryAutomationOverviewStats } from '@/lib/supabase/types'
+import type { CategoryAutomationOverviewStats } from '@/lib/db/types'
 import { useTranslations } from 'next-intl'
 import { memo, useMemo } from 'react'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'

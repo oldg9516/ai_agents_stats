@@ -10,7 +10,7 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchTicketsByScoreGroup } from '@/lib/actions/score-group-actions'
 import { QUERY_CACHE_CONFIG } from '@/lib/queries/query-config'
 import type { ScoreGroup } from '@/constants/classification-types'
-import type { DateFilterMode, TicketReviewRecord } from '@/lib/supabase/types'
+import type { DateFilterMode, TicketReviewRecord } from '@/lib/db/types'
 
 /**
  * Query key factory for score group tickets

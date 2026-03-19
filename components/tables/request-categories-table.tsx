@@ -18,7 +18,7 @@ import {
 	TableRow,
 } from '@/components/ui/table'
 import { useRequestCategoryStats } from '@/lib/queries/support-queries'
-import type { RequestCategoryStats } from '@/lib/supabase/types'
+import type { RequestCategoryStats } from '@/lib/db/types'
 import {
 	IconChevronLeft,
 	IconChevronRight,
