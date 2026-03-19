@@ -4,7 +4,7 @@ import { CLIENT_BATCH_SIZE, MAX_CLIENT_RECORDS } from '@/constants/pagination'
 import { useState, useCallback, useEffect } from 'react'
 import { useTicketsReviewFilters } from '../store/hooks/use-tickets-review-filters'
 import { fetchTicketsReviewAction } from '../actions/tickets-review-actions'
-import type { TicketReviewRecord } from '../supabase/types'
+import type { TicketReviewRecord } from '@/lib/db/types'
 
 // Custom event for triggering ticket data refresh from modal
 export const TICKETS_REFRESH_EVENT = 'tickets-review-refresh'

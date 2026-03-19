@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { fetchTicketsReviewAction } from '../actions/tickets-review-actions'
-import type { TicketsReviewFilters } from '../supabase/types'
+import type { TicketsReviewFilters } from '@/lib/db/types'
 
 /**
  * React Query hook for fetching tickets review data

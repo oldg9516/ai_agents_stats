@@ -4,7 +4,7 @@
  * Helper functions for calculating metrics and transforming data
  */
 
-import type { SupportThread, CorrelationCell, SankeyData } from '../supabase/types'
+import type { SupportThread, CorrelationCell, SankeyData } from '@/lib/db/types'
 import { getAllRequirementKeys } from '@/constants/requirement-types'
 
 /**

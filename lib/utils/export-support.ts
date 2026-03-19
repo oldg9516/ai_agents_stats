@@ -4,7 +4,7 @@
  * Export support threads data to CSV format
  */
 
-import type { SupportThread } from '../supabase/types'
+import type { SupportThread } from '@/lib/db/types'
 import { getStatusLabel } from '@/constants/support-statuses'
 import { getRequestTypeLabel } from '@/constants/request-types'
 import { getActiveRequirements } from '@/constants/requirement-types'
