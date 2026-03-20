@@ -249,13 +249,13 @@ function DashChart({
 
 function DashChatActions({ labels, onFirstMessage, historyMessages = [] }: { labels: { title: string; initial: string; placeholder: string }; onFirstMessage?: (text: string) => void; historyMessages?: DashMessage[] }) {
 	const titleUpdatedRef = useRef(false)
-	const historyInjectedRef = useRef(false)
+	const prevHistoryLengthRef = useRef(0)
 	const { setMessages } = useCopilotChatInternal()
 
-	// Inject history messages into CopilotKit on mount
+	// Inject history messages into CopilotKit when they arrive
 	useEffect(() => {
-		if (historyMessages.length > 0 && !historyInjectedRef.current) {
-			historyInjectedRef.current = true
+		// Only inject when we go from 0 messages to >0 (initial load)
+		if (historyMessages.length > 0 && prevHistoryLengthRef.current === 0) {
 			const aguiMessages = historyMessages.map(msg => ({
 				id: msg.id,
 				role: msg.role as 'user' | 'assistant',
@@ -263,6 +263,7 @@ function DashChatActions({ labels, onFirstMessage, historyMessages = [] }: { lab
 			}))
 			setMessages(aguiMessages)
 		}
+		prevHistoryLengthRef.current = historyMessages.length
 	}, [historyMessages, setMessages])
 
 	const handleSubmitMessage = useCallback((message: string) => {
@@ -377,8 +378,8 @@ export function DashChat({ toggleSlot, className = '' }: DashChatProps) {
 
 				const savedId = getSavedSession()
 				if (savedId && dbSessions.some(s => s.id === savedId)) {
+					await loadMessages(savedId)
 					setCurrentSessionId(savedId)
-					loadMessages(savedId)
 				}
 			} finally {
 				setIsInitializing(false)
@@ -400,11 +401,12 @@ export function DashChat({ toggleSlot, className = '' }: DashChatProps) {
 	}, [])
 
 	// Switch session
-	const handleSelectSession = useCallback((sessionId: string) => {
-		setCurrentSessionId(sessionId)
+	const handleSelectSession = useCallback(async (sessionId: string) => {
 		setSavedSession(sessionId)
 		setShowHistory(false)
-		loadMessages(sessionId)
+		setCurrentSessionId(null) // unmount CopilotKit while loading
+		await loadMessages(sessionId)
+		setCurrentSessionId(sessionId)
 	}, [loadMessages])
 
 	// Rename session
@@ -592,7 +594,7 @@ export function DashChat({ toggleSlot, className = '' }: DashChatProps) {
 
 				{/* CopilotKit Chat */}
 				<div className='dash-chat-wrapper flex-1 overflow-hidden'>
-					{currentSessionId ? (
+					{currentSessionId && !isLoadingMessages ? (
 						<CopilotKit
 							key={currentSessionId}
 							runtimeUrl='/api/copilot'
@@ -610,6 +612,10 @@ export function DashChat({ toggleSlot, className = '' }: DashChatProps) {
 								}}
 							/>
 						</CopilotKit>
+					) : isLoadingMessages ? (
+						<div className='flex justify-center items-center h-full'>
+							<Spinner className='size-8 text-indigo-500' />
+						</div>
 					) : (
 						<div className='flex flex-col items-center justify-center h-full text-center px-6'>
 							<div className='p-4 bg-indigo-100 dark:bg-indigo-950 rounded-full mb-4'>
