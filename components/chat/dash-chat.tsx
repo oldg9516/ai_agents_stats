@@ -249,22 +249,24 @@ function DashChart({
 
 function DashChatActions({ labels, onFirstMessage, historyMessages = [] }: { labels: { title: string; initial: string; placeholder: string }; onFirstMessage?: (text: string) => void; historyMessages?: DashMessage[] }) {
 	const titleUpdatedRef = useRef(false)
-	const prevHistoryLengthRef = useRef(0)
-	const { setMessages } = useCopilotChatInternal()
+	const injectedRef = useRef(false)
+	const { setMessages, isAvailable, messages: ckMessages } = useCopilotChatInternal()
 
-	// Inject history messages into CopilotKit when they arrive
+	// Inject history messages once CopilotKit agent is ready
 	useEffect(() => {
-		// Only inject when we go from 0 messages to >0 (initial load)
-		if (historyMessages.length > 0 && prevHistoryLengthRef.current === 0) {
-			const aguiMessages = historyMessages.map(msg => ({
-				id: msg.id,
-				role: msg.role as 'user' | 'assistant',
-				content: msg.content,
-			}))
-			setMessages(aguiMessages)
-		}
-		prevHistoryLengthRef.current = historyMessages.length
-	}, [historyMessages, setMessages])
+		if (injectedRef.current) return
+		if (!isAvailable) return
+		if (historyMessages.length === 0) return
+		if (ckMessages.length > 0) return // CopilotKit already has messages
+
+		injectedRef.current = true
+		const aguiMessages = historyMessages.map(msg => ({
+			id: msg.id,
+			role: msg.role as 'user' | 'assistant',
+			content: msg.content,
+		}))
+		setMessages(aguiMessages)
+	}, [historyMessages, setMessages, isAvailable, ckMessages.length])
 
 	const handleSubmitMessage = useCallback((message: string) => {
 		if (!titleUpdatedRef.current && onFirstMessage && message.trim()) {
