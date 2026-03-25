@@ -3,7 +3,6 @@
 import { useBacklogReportDetail } from '@/lib/queries/backlog-reports-queries'
 import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/routing'
-import { useParams } from 'next/navigation'
 import { Button } from './ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
@@ -63,8 +62,6 @@ function safeJsonParse<T>(data: T | string, fallback: T): T {
 export function BacklogReportDetail({ reportId }: BacklogReportDetailProps) {
 	const t = useTranslations()
 	const router = useRouter()
-	const params = useParams()
-	const locale = params.locale as string
 
 	// Chat panel state
 	const [isChatOpen, setIsChatOpen] = useState(false)
@@ -106,7 +103,7 @@ export function BacklogReportDetail({ reportId }: BacklogReportDetailProps) {
 
 	// Handle back navigation
 	const handleBack = () => {
-		router.push(`/${locale}/backlog-reports`)
+		router.push('/backlog-reports')
 	}
 
 	// Handle download
