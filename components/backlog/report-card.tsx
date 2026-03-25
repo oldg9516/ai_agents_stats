@@ -3,7 +3,6 @@
 import type { BacklogReport, CategoryStats, MainPattern } from '@/lib/db/types'
 import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/routing'
-import { useParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
@@ -45,8 +44,6 @@ function safeJsonParse<T>(data: T | string, fallback: T): T {
 export function ReportCard({ report }: ReportCardProps) {
 	const t = useTranslations()
 	const router = useRouter()
-	const params = useParams()
-	const locale = params.locale as string
 
 	// Parse JSON fields that might come as strings from the database
 	const parsedData = useMemo(() => ({
@@ -70,7 +67,7 @@ export function ReportCard({ report }: ReportCardProps) {
 
 	// Handle card click
 	const handleClick = () => {
-		router.push(`/${locale}/backlog-reports/${report.id}`)
+		router.push(`/backlog-reports/${report.id}`)
 	}
 
 	// Handle download click
