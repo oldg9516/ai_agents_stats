@@ -55,6 +55,13 @@ function calculateAgentStatsTotals(rows: AgentStatsRow[]): AgentStatsRow {
 					10
 			) / 10
 		: 0
+	const totalMedianResponseTime = rowsWithResponseTime.length > 0
+		? Math.round(
+				(rowsWithResponseTime.reduce((sum, r) => sum + r.medianResponseTime, 0) /
+					rowsWithResponseTime.length) *
+					10
+			) / 10
+		: 0
 	const totalP90ResponseTime = rowsWithResponseTime.length > 0
 		? Math.round(
 				(rowsWithResponseTime.reduce((sum, r) => sum + r.p90ResponseTime, 0) /
@@ -72,6 +79,7 @@ function calculateAgentStatsTotals(rows: AgentStatsRow[]): AgentStatsRow {
 		unnecessaryChangesPercent: Math.round(unnecessaryChangesPercent * 10) / 10,
 		aiEfficiency: Math.round(aiEfficiency * 10) / 10,
 		avgResponseTime: totalAvgResponseTime,
+		medianResponseTime: totalMedianResponseTime,
 		p90ResponseTime: totalP90ResponseTime,
 	}
 }

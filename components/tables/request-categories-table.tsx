@@ -206,6 +206,18 @@ export function RequestCategoriesTable({
 				},
 			},
 			{
+				accessorKey: 'median_response_time',
+				header: t('requestCategories.table.medianResponseTime'),
+				cell: ({ getValue }) => {
+					const value = (getValue() as number) ?? 0
+					return (
+						<div className='text-center'>
+							{value > 0 ? formatResponseTime(value) : '—'}
+						</div>
+					)
+				},
+			},
+			{
 				accessorKey: 'p90_response_time',
 				header: t('requestCategories.table.p90ResponseTime'),
 				cell: ({ getValue }) => {
@@ -238,6 +250,10 @@ export function RequestCategoriesTable({
 			(sum, row) => sum + (row.avg_response_time ?? 0) * (row.compared_count ?? 0),
 			0
 		)
+		const totalWeightedMedian = rowsWithResponseTime.reduce(
+			(sum, row) => sum + (row.median_response_time ?? 0) * (row.compared_count ?? 0),
+			0
+		)
 		const totalWeightedP90 = rowsWithResponseTime.reduce(
 			(sum, row) => sum + (row.p90_response_time ?? 0) * (row.compared_count ?? 0),
 			0
@@ -249,6 +265,8 @@ export function RequestCategoriesTable({
 
 		const avgResponseTime =
 			totalResponseCount > 0 ? totalWeightedAvg / totalResponseCount : 0
+		const medianResponseTime =
+			totalResponseCount > 0 ? totalWeightedMedian / totalResponseCount : 0
 		const p90ResponseTime =
 			totalResponseCount > 0 ? totalWeightedP90 / totalResponseCount : 0
 
@@ -257,6 +275,7 @@ export function RequestCategoriesTable({
 			totalComparedCount,
 			totalPercent,
 			avgResponseTime,
+			medianResponseTime,
 			p90ResponseTime,
 		}
 	}, [data])
@@ -307,6 +326,7 @@ export function RequestCategoriesTable({
 			'Percent',
 			'Agent Responses',
 			'Avg Response Time (h)',
+			'Median Response Time (h)',
 			'P90 Response Time (h)',
 		]
 		const rows = data.map(row => {
@@ -328,6 +348,7 @@ export function RequestCategoriesTable({
 				`${row.percent}%`,
 				row.compared_count ?? 0,
 				row.avg_response_time ?? 0,
+				row.median_response_time ?? 0,
 				row.p90_response_time ?? 0,
 			]
 		})
@@ -341,6 +362,7 @@ export function RequestCategoriesTable({
 			`${totals.totalPercent.toFixed(1)}%`,
 			totals.totalComparedCount,
 			totals.avgResponseTime > 0 ? totals.avgResponseTime.toFixed(1) : '',
+			totals.medianResponseTime > 0 ? totals.medianResponseTime.toFixed(1) : '',
 			totals.p90ResponseTime > 0 ? totals.p90ResponseTime.toFixed(1) : '',
 		]
 
@@ -503,6 +525,11 @@ export function RequestCategoriesTable({
 										<TableCell className='text-center font-bold'>
 											{totals.avgResponseTime > 0
 												? formatResponseTime(totals.avgResponseTime)
+												: '—'}
+										</TableCell>
+										<TableCell className='text-center font-bold'>
+											{totals.medianResponseTime > 0
+												? formatResponseTime(totals.medianResponseTime)
 												: '—'}
 										</TableCell>
 										<TableCell className='text-center font-bold'>

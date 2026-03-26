@@ -33,6 +33,7 @@ RETURNS TABLE (
   unnecessary_changes_pct numeric,
   ai_efficiency numeric,
   avg_response_time numeric,
+  median_response_time numeric,
   p90_response_time numeric
 )
 LANGUAGE plpgsql
@@ -113,6 +114,14 @@ BEGIN
           THEN EXTRACT(EPOCH FROM (ahc.human_reply_date - ahc.created_at)) / 3600.0
         END
       )::numeric, 1) AS avg_resp_time,
+      ROUND(percentile_cont(0.5) WITHIN GROUP (
+        ORDER BY
+          CASE
+            WHEN ahc.human_reply_date IS NOT NULL AND ahc.created_at IS NOT NULL
+                 AND ahc.human_reply_date > ahc.created_at
+            THEN EXTRACT(EPOCH FROM (ahc.human_reply_date - ahc.created_at)) / 3600.0
+          END
+      )::numeric, 1) AS median_resp_time,
       ROUND(percentile_cont(0.9) WITHIN GROUP (
         ORDER BY
           CASE
@@ -152,6 +161,7 @@ BEGIN
       ELSE 0
     END AS ai_efficiency,
     COALESCE(ai.avg_resp_time, 0) AS avg_response_time,
+    COALESCE(ai.median_resp_time, 0) AS median_response_time,
     COALESCE(ai.p90_resp_time, 0) AS p90_response_time
   FROM answered_per_agent aa
   FULL OUTER JOIN ai_stats ai ON ai.email = aa.email

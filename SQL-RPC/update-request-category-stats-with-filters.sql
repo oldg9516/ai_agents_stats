@@ -25,6 +25,7 @@ RETURNS TABLE(
   percent numeric,
   compared_count bigint,
   avg_response_time numeric,
+  median_response_time numeric,
   p90_response_time numeric
 )
 LANGUAGE plpgsql
@@ -117,6 +118,12 @@ BEGIN
         1
       ) AS avg_response_time,
       ROUND(
+        PERCENTILE_CONT(0.5) WITHIN GROUP (
+          ORDER BY EXTRACT(EPOCH FROM (ahc.human_reply_date - ahc.created_at)) / 3600
+        )::numeric,
+        1
+      ) AS median_response_time,
+      ROUND(
         PERCENTILE_CONT(0.9) WITHIN GROUP (
           ORDER BY EXTRACT(EPOCH FROM (ahc.human_reply_date - ahc.created_at)) / 3600
         )::numeric,
@@ -140,6 +147,7 @@ BEGIN
     ROUND((cs.category_count::numeric / tr.total::numeric * 100), 1) AS percent,
     COALESCE(cms.compared_count, 0) AS compared_count,
     COALESCE(rts.avg_response_time, 0) AS avg_response_time,
+    COALESCE(rts.median_response_time, 0) AS median_response_time,
     COALESCE(rts.p90_response_time, 0) AS p90_response_time
   FROM category_stats cs
   CROSS JOIN total_records tr

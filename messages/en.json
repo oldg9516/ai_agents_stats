@@ -965,6 +965,7 @@
 			"agentResponses": "Agent Responses",
 			"percent": "Percent",
 			"avgResponseTime": "Avg Response Time",
+			"medianResponseTime": "Median Response Time",
 			"p90ResponseTime": "P90 Response Time",
 			"search": "Search by type or subtype..."
 		},
@@ -1350,6 +1351,7 @@
 			"unnecessaryChanges": "Unnecessary Changes %",
 			"aiEfficiency": "AI Efficiency %",
 			"avgResponseTime": "Avg Response Time",
+			"medianResponseTime": "Median Response Time",
 			"p90ResponseTime": "P90 Response Time",
 			"total": "Total",
 			"noResults": "No agent data found",
@@ -1381,6 +1383,7 @@
 			"unnecessaryChanges": "Agent changed but AI was correct",
 			"aiEfficiency": "How efficiently agent uses AI drafts",
 			"avgResponseTime": "Average time from ticket creation to agent response",
+			"medianResponseTime": "Median response time (50% of responses are faster)",
 			"p90ResponseTime": "90th percentile response time (90% of responses are faster)"
 		}
 	},

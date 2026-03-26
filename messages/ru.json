@@ -965,6 +965,7 @@
 			"agentResponses": "Отвечено агентами",
 			"percent": "Процент",
 			"avgResponseTime": "Ср. время ответа",
+			"medianResponseTime": "Медиана времени ответа",
 			"p90ResponseTime": "P90 время ответа",
 			"search": "Поиск по типу или подтипу..."
 		},
@@ -1350,6 +1351,7 @@
 			"unnecessaryChanges": "Лишние изменения %",
 			"aiEfficiency": "Эффективность AI %",
 			"avgResponseTime": "Ср. время ответа",
+			"medianResponseTime": "Медиана времени ответа",
 			"p90ResponseTime": "P90 время ответа",
 			"total": "Итого",
 			"noResults": "Данные по агентам не найдены",
@@ -1381,6 +1383,7 @@
 			"unnecessaryChanges": "Агент изменил, но AI был прав",
 			"aiEfficiency": "Насколько эффективно агент использует AI драфты",
 			"avgResponseTime": "Среднее время от создания тикета до ответа агента",
+			"medianResponseTime": "Медианное время ответа (50% ответов быстрее)",
 			"p90ResponseTime": "90-й перцентиль времени ответа (90% ответов быстрее)"
 		}
 	},

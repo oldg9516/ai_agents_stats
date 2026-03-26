@@ -400,6 +400,7 @@ export interface RequestCategoryStats {
 	percent: number
 	compared_count: number // Count of records with status = 'compared' from ai_human_comparison
 	avg_response_time: number // Average response time in hours (from created_at to human_reply_date)
+	median_response_time: number // Median response time in hours
 	p90_response_time: number // 90th percentile response time in hours
 }
 
@@ -799,6 +800,7 @@ export interface AgentStatsRow {
 	unnecessaryChangesPercent: number // (changed - criticalErrors) / aiReviewed * 100
 	aiEfficiency: number // 100 - unnecessaryChangesPercent
 	avgResponseTime: number // AVG(human_reply_date - created_at) in hours
+	medianResponseTime: number // Median(human_reply_date - created_at) in hours
 	p90ResponseTime: number // P90(human_reply_date - created_at) in hours
 }
 

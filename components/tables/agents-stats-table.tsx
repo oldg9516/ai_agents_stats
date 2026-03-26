@@ -289,6 +289,31 @@ export function AgentsStatsTable({
 				),
 			},
 			{
+				accessorKey: 'medianResponseTime',
+				header: () => (
+					<TooltipProvider>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<div className="flex items-center gap-1 cursor-help">
+									{t('table.medianResponseTime')}
+									<IconInfoCircle className="h-3.5 w-3.5 text-muted-foreground" />
+								</div>
+							</TooltipTrigger>
+							<TooltipContent>
+								<p>{t('tooltips.medianResponseTime')}</p>
+							</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
+				),
+				cell: ({ row }) => (
+					<div className="text-center">
+						{row.original.medianResponseTime > 0
+							? formatResponseTime(row.original.medianResponseTime)
+							: '—'}
+					</div>
+				),
+			},
+			{
 				accessorKey: 'p90ResponseTime',
 				header: () => (
 					<TooltipProvider>
@@ -460,6 +485,11 @@ export function AgentsStatsTable({
 											<TableCell className="text-center">
 												{totals.avgResponseTime > 0
 													? formatResponseTime(totals.avgResponseTime)
+													: '—'}
+											</TableCell>
+											<TableCell className="text-center">
+												{totals.medianResponseTime > 0
+													? formatResponseTime(totals.medianResponseTime)
 													: '—'}
 											</TableCell>
 											<TableCell className="text-center">

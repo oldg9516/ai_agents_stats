@@ -37,6 +37,7 @@ type RpcAgentStatsRow = {
 	unnecessary_changes_pct: number
 	ai_efficiency: number
 	avg_response_time: number
+	median_response_time: number
 	p90_response_time: number
 }
 
@@ -82,6 +83,7 @@ export async function fetchAgentStats(
 			unnecessaryChangesPercent: Number(row.unnecessary_changes_pct),
 			aiEfficiency: Number(row.ai_efficiency),
 			avgResponseTime: Number(row.avg_response_time),
+			medianResponseTime: Number(row.median_response_time),
 			p90ResponseTime: Number(row.p90_response_time),
 		}))
 
