@@ -2,6 +2,9 @@
 -- Replaces 40+ sequential HTTP requests with a single database query
 --
 -- v2: Added statement_timeout override, optimized CTE structure
+-- v3: Fixed date filtering — answered_tickets uses agent reply date,
+--     ai_stats uses human_reply_date instead of thread_date.
+--     This captures agents responding to older tickets within the selected period.
 
 DROP FUNCTION IF EXISTS get_agent_stats(
   timestamp with time zone,
@@ -43,64 +46,63 @@ AS $$
 BEGIN
   RETURN QUERY
   WITH
-  -- CTE 1: Filter threads by date range, versions, categories
-  filtered_threads AS (
+  -- CTE 1: All threads with optional version/category filters (no date filter)
+  -- Used to find ticket_ids for answered_tickets calculation
+  eligible_threads AS (
     SELECT
       st.thread_id,
       st.ticket_id
     FROM support_threads_data st
-    WHERE st.thread_date >= p_date_from
-      AND st.thread_date < p_date_to
-      AND st.ticket_id IS NOT NULL
+    WHERE st.ticket_id IS NOT NULL
       AND (p_versions IS NULL OR st.prompt_version = ANY(p_versions))
       AND (p_categories IS NULL OR st.request_subtype = ANY(p_categories))
   ),
 
-  -- CTE 2: Get tickets with their earliest incoming message date
-  -- (reduced from per-thread to per-ticket since we only need to compare dates)
-  ticket_incoming AS (
-    SELECT
-      ft.ticket_id,
-      MIN(sd.date) AS first_incoming_date
-    FROM filtered_threads ft
-    INNER JOIN support_dialogs sd
-      ON sd.thread_id = ft.thread_id
-      AND sd.direction = 'in'
-    GROUP BY ft.ticket_id
+  -- CTE 2: Agent outgoing messages within the date range
+  -- This is the key change: filter by agent reply date, not thread creation date
+  agent_replies AS (
+    SELECT DISTINCT
+      sd.email,
+      sd.ticket_id
+    FROM support_dialogs sd
+    WHERE sd.direction = 'out'
+      AND sd.email IS NOT NULL
+      AND sd.email <> p_excluded_email
+      AND sd.date >= p_date_from
+      AND sd.date < p_date_to
+      AND EXISTS (
+        SELECT 1 FROM eligible_threads et WHERE et.ticket_id = sd.ticket_id
+      )
   ),
 
-  -- CTE 3: Count threads with incoming messages per ticket (for answered_tickets count)
+  -- CTE 3: Count threads per ticket that have incoming messages (for answered_tickets count)
   ticket_thread_counts AS (
     SELECT
-      ft.ticket_id,
-      ft.thread_id
-    FROM filtered_threads ft
+      et.ticket_id,
+      COUNT(DISTINCT et.thread_id) AS thread_count
+    FROM eligible_threads et
     WHERE EXISTS (
       SELECT 1 FROM support_dialogs sd
-      WHERE sd.thread_id = ft.thread_id AND sd.direction = 'in'
+      WHERE sd.thread_id = et.thread_id AND sd.direction = 'in'
     )
+    AND et.ticket_id IN (SELECT ticket_id FROM agent_replies)
+    GROUP BY et.ticket_id
   ),
 
   -- CTE 4: Count answered tickets per agent
-  -- Agent "answered" a thread if they sent an outgoing message on the same ticket
-  -- after the first incoming message
+  -- Agent "answered" if they sent an outgoing message in the date range
+  -- on a ticket that has eligible threads with incoming messages
   answered_per_agent AS (
     SELECT
-      sd.email,
-      COUNT(DISTINCT ttc.thread_id) AS answered_tickets
-    FROM ticket_incoming ti
-    INNER JOIN support_dialogs sd
-      ON sd.ticket_id = ti.ticket_id
-      AND sd.direction = 'out'
-      AND sd.email IS NOT NULL
-      AND sd.email <> p_excluded_email
-      AND sd.date > ti.first_incoming_date
-    INNER JOIN ticket_thread_counts ttc
-      ON ttc.ticket_id = ti.ticket_id
-    GROUP BY sd.email
+      ar.email,
+      SUM(ttc.thread_count)::bigint AS answered_tickets
+    FROM agent_replies ar
+    INNER JOIN ticket_thread_counts ttc ON ttc.ticket_id = ar.ticket_id
+    GROUP BY ar.email
   ),
 
-  -- CTE 5: AI comparison stats per agent (fast: direct JOIN on thread_id index)
+  -- CTE 5: AI comparison stats per agent
+  -- Filter by human_reply_date (when agent actually reviewed) instead of thread_date
   ai_stats AS (
     SELECT
       ahc.email,
@@ -131,9 +133,12 @@ BEGIN
           END
       )::numeric, 1) AS p90_resp_time
     FROM ai_human_comparison ahc
-    INNER JOIN filtered_threads ft ON ft.thread_id = ahc.thread_id
     WHERE ahc.email IS NOT NULL
       AND ahc.email <> p_excluded_email
+      AND ahc.human_reply_date >= p_date_from
+      AND ahc.human_reply_date < p_date_to
+      AND (p_versions IS NULL OR ahc.prompt_version = ANY(p_versions))
+      AND (p_categories IS NULL OR ahc.request_subtype = ANY(p_categories))
     GROUP BY ahc.email
   )
 
