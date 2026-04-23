@@ -64,6 +64,8 @@ export const LAUNCHED_CATEGORIES: string[] = [
 	'skip_or_pause_request',
 	'product_availability_and_reordering',
 	'shop_order_modification',
+	'discount_or_promo_issue',
+	'account_access_and_login_issues',
 ]
 
 /**
