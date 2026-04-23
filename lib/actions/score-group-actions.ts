@@ -187,7 +187,39 @@ export async function fetchTicketsByScoreGroup(
 
 	const [tickets, countResult] = await Promise.all([
 		db
-			.select()
+			.select({
+				id: aiComparisonWithReviews.id,
+				createdAt: aiComparisonWithReviews.createdAt,
+				status: aiComparisonWithReviews.status,
+				threadId: aiComparisonWithReviews.threadId,
+				fullRequest: aiComparisonWithReviews.fullRequest,
+				subscriptionInfo: aiComparisonWithReviews.subscriptionInfo,
+				trackingInfo: aiComparisonWithReviews.trackingInfo,
+				humanReply: aiComparisonWithReviews.humanReply,
+				aiReply: aiComparisonWithReviews.aiReply,
+				aiReplyDate: aiComparisonWithReviews.aiReplyDate,
+				humanReplyDate: aiComparisonWithReviews.humanReplyDate,
+				comment: aiComparisonWithReviews.comment,
+				manualComment: aiComparisonWithReviews.manualComment,
+				requestSubtype: aiComparisonWithReviews.requestSubtype,
+				email: aiComparisonWithReviews.email,
+				changes: aiComparisonWithReviews.changes,
+				updatedAt: aiComparisonWithReviews.updatedAt,
+				ticketId: aiComparisonWithReviews.ticketId,
+				humanReplyOriginal: aiComparisonWithReviews.humanReplyOriginal,
+				checkCount: aiComparisonWithReviews.checkCount,
+				changed: aiComparisonWithReviews.changed,
+				lastCheckedAt: aiComparisonWithReviews.lastCheckedAt,
+				improvementSuggestions: aiComparisonWithReviews.improvementSuggestions,
+				similarityScore: aiComparisonWithReviews.similarityScore,
+				promptVersion: aiComparisonWithReviews.promptVersion,
+				changeClassification: aiComparisonWithReviews.changeClassification,
+				reviewStatus: aiComparisonWithReviews.reviewStatus,
+				aiApproved: aiComparisonWithReviews.aiApproved,
+				reviewerName: aiComparisonWithReviews.reviewerName,
+				requiresEditingCorrect: aiComparisonWithReviews.requiresEditingCorrect,
+				actionAnalysisVerification: aiComparisonWithReviews.actionAnalysisVerification,
+			})
 			.from(aiComparisonWithReviews)
 			.where(whereClause)
 			.orderBy(desc(dateColumn))
@@ -263,7 +295,7 @@ export async function fetchTicketsByScoreGroup(
 		ai_reply_date: ticket.aiReplyDate?.toISOString() ?? null,
 		human_reply_date: ticket.humanReplyDate?.toISOString() ?? null,
 		comment: ticket.comment,
-		manual_comment: ticket.trManualComment ?? ticket.manualComment ?? null,
+		manual_comment: ticket.manualComment ?? null,
 		request_subtype: ticket.requestSubtype,
 		email: ticket.email,
 		changes: ticket.changes,
