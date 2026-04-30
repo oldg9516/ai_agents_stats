@@ -62,6 +62,15 @@ export function getDayStart(date: Date): string {
 }
 
 /**
+ * Get month start date (first day of month at 00:00) in ISO format
+ */
+export function getMonthStart(date: Date): string {
+	const monthStart = new Date(date.getFullYear(), date.getMonth(), 1)
+	monthStart.setHours(0, 0, 0, 0)
+	return monthStart.toISOString()
+}
+
+/**
  * Format date as DD.MM.YYYY
  */
 export function formatDate(date: Date): string {

@@ -191,13 +191,18 @@ export function useAutomationOverviewData(filters: AutomationOverviewFilters) {
 			if (!result.success) {
 				throw new Error(result.error ?? 'Failed to fetch automation overview data')
 			}
-			return computeAutomationOverviewStats(result.data ?? [])
+			const rawRecords = result.data ?? []
+			return {
+				stats: computeAutomationOverviewStats(rawRecords),
+				rawRecords,
+			}
 		},
 		...QUERY_CACHE_CONFIG,
 	})
 
 	return {
-		data: query.data ?? null,
+		data: query.data?.stats ?? null,
+		rawRecords: query.data?.rawRecords ?? [],
 		isLoading: query.isLoading,
 		error: query.error,
 		refetch: query.refetch,

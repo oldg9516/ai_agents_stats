@@ -22,7 +22,7 @@ import type { CategoryAutomationOverviewStats } from '@/lib/db/types'
 import { cn } from '@/lib/utils'
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'
-import { Fragment, memo, useState } from 'react'
+import { Fragment, memo, useMemo, useState } from 'react'
 
 interface AutomationOverviewTableProps {
 	data: CategoryAutomationOverviewStats[]
@@ -46,6 +46,26 @@ export const AutomationOverviewTable = memo(function AutomationOverviewTable({
 }: AutomationOverviewTableProps) {
 	const t = useTranslations('automationOverview')
 	const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
+
+	const totals = useMemo(() => {
+		return data.reduce(
+			(acc, cat) => ({
+				totalRecords: acc.totalRecords + cat.totalRecords,
+				autoReplyCount: acc.autoReplyCount + cat.autoReplyCount,
+				draftCount: acc.draftCount + cat.draftCount,
+				goodAiCount: acc.goodAiCount + cat.goodAiCount,
+				evaluableCount: acc.evaluableCount + cat.evaluableCount,
+			}),
+			{ totalRecords: 0, autoReplyCount: 0, draftCount: 0, goodAiCount: 0, evaluableCount: 0 },
+		)
+	}, [data])
+
+	const totalsRate = totals.totalRecords > 0
+		? (totals.autoReplyCount / totals.totalRecords) * 100
+		: 0
+	const totalsGoodAiPct = totals.evaluableCount > 0
+		? (totals.goodAiCount / totals.evaluableCount) * 100
+		: 0
 
 	const toggleCategory = (category: string) => {
 		setExpandedCategories(prev => {
@@ -87,6 +107,35 @@ export const AutomationOverviewTable = memo(function AutomationOverviewTable({
 							</TableRow>
 						</TableHeader>
 						<TableBody>
+							<TableRow className='bg-muted/60 font-semibold hover:bg-muted/60 border-b-2'>
+								<TableCell>
+									<div className='flex items-center gap-1.5 pl-4'>
+										<span>{t('totals')}</span>
+									</div>
+								</TableCell>
+								<TableCell />
+								<TableCell className='text-right'>
+									{totals.totalRecords}
+								</TableCell>
+								<TableCell className='text-right'>
+									{totals.autoReplyCount}
+								</TableCell>
+								<TableCell className='text-right'>
+									{totals.draftCount}
+								</TableCell>
+								<TableCell className={cn('text-right', getRateColor(totalsRate))}>
+									{totalsRate.toFixed(1)}%
+								</TableCell>
+								<TableCell className='text-right'>
+									{totals.evaluableCount === 0 ? (
+										<span className='text-muted-foreground'>—</span>
+									) : (
+										<span className={getRateColor(totalsGoodAiPct)}>
+											{totals.goodAiCount} ({totalsGoodAiPct.toFixed(1)}%)
+										</span>
+									)}
+								</TableCell>
+							</TableRow>
 							{data.map(cat => {
 								const isExpanded = expandedCategories.has(cat.category)
 								const hasSubCategories = cat.subSubCategoryBreakdown.length > 0

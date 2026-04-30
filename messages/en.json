@@ -188,6 +188,16 @@
 			"maxThreeCategories": "Maximum 3 subcategories can be displayed at once",
 			"combinedCategories": "Combined categories"
 		},
+		"automationTrends": {
+			"title": "Automation Trends",
+			"description": "Auto-replies vs drafts over time for the selected subcategory",
+			"tooltip": "Two lines over time for the selected subcategory: how many auto-replies and how many drafts were generated per period. Bucket size adapts to the date range — daily for short ranges, weekly for medium, monthly for long.",
+			"subcategoryLabel": "Subcategory",
+			"subcategoryPlaceholder": "Select a subcategory",
+			"autoReplies": "Auto-replies",
+			"drafts": "Drafts",
+			"noData": "No data for this subcategory in the selected period"
+		},
 		"categoryDistribution": {
 			"title": "Quality by Subcategory",
 			"description": "Distribution of records across subcategories",
@@ -1474,6 +1484,7 @@
 		"tooltipTable": "Per-category stats. Rule column shows which field determines auto-reply status",
 		"launched": "Live",
 		"allCategories": "All",
-		"tickets": "tickets"
+		"tickets": "tickets",
+		"totals": "Totals"
 	}
 }

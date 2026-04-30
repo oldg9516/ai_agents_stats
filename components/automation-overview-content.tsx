@@ -20,14 +20,14 @@ import {
 } from '@tabler/icons-react'
 import { useState } from 'react'
 
-// Dynamic import for chart
-const AutomationDistributionChart = dynamic(
-	() => import('./charts/automation-distribution-chart').then(mod => ({ default: mod.AutomationDistributionChart })),
+// Dynamic import for trends chart
+const AutomationTrendsChart = dynamic(
+	() => import('./charts/automation-trends-chart').then(mod => ({ default: mod.AutomationTrendsChart })),
 	{
 		loading: () => (
 			<Card>
 				<CardHeader><Skeleton className='h-6 w-48' /></CardHeader>
-				<CardContent><Skeleton className='h-[300px] w-full' /></CardContent>
+				<CardContent><Skeleton className='h-[350px] w-full' /></CardContent>
 			</Card>
 		),
 		ssr: false,
@@ -69,7 +69,7 @@ export function AutomationOverviewContent() {
 		resetFilters,
 	} = useAutomationOverviewFilters()
 
-	const { data, isLoading, error } = useAutomationOverviewData(filters)
+	const { data, rawRecords, isLoading, error } = useAutomationOverviewData(filters)
 
 	// Fetch filter options (cached separately)
 	const { data: filterOptions } = useQuery({
@@ -214,10 +214,14 @@ export function AutomationOverviewContent() {
 						/>
 					</div>
 
-					{/* Stacked Bar Chart — hidden, duplicates table data */}
-					{/* {data.categoryBreakdown.length > 0 && (
-						<AutomationDistributionChart data={data.categoryBreakdown} />
-					)} */}
+					{/* Trends Chart — auto-replies vs drafts over time, per subcategory */}
+					{data.categoryBreakdown.length > 0 && (
+						<AutomationTrendsChart
+							categories={data.categoryBreakdown}
+							rawRecords={rawRecords}
+							dateRange={filters.dateRange}
+						/>
+					)}
 
 					{/* Category Breakdown Table */}
 					{data.categoryBreakdown.length > 0 && (

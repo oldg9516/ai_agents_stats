@@ -702,6 +702,20 @@ export interface SubSubAutomationOverviewStats {
 	evaluableCount: number
 }
 
+/**
+ * Time-series bucket for the Automation Trends chart
+ */
+export interface AutomationTrendBucket {
+	bucketStart: string // ISO date at start of bucket (day, week, or month)
+	autoReplyCount: number
+	draftCount: number
+}
+
+/**
+ * Bucket granularity for time-series charts
+ */
+export type TrendBucketGranularity = 'day' | 'week' | 'month'
+
 // ============================================================================
 // Backlog Reports Types
 // ============================================================================
