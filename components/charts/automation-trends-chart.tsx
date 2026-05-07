@@ -18,6 +18,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import {
 	ChartContainer,
@@ -116,6 +117,7 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 	const [selectedCategory, setSelectedCategory] = useState<string>(
 		() => sortedCategories[0]?.category ?? '',
 	)
+	const [valueMode, setValueMode] = useState<'count' | 'percent'>('count')
 
 	// Reset selection if the selected category disappears (e.g., after filter change)
 	const effectiveCategory = useMemo(() => {
@@ -130,7 +132,9 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 		[dateRange.from, dateRange.to],
 	)
 
-	const chartData = useMemo<AutomationTrendBucket[]>(() => {
+	const chartData = useMemo<
+		(AutomationTrendBucket & { autoReplyPercent: number; draftPercent: number })[]
+	>(() => {
 		if (!effectiveCategory) return []
 
 		const bucketKeys = generateBucketKeys(dateRange.from, dateRange.to, granularity)
@@ -155,9 +159,18 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 			else bucket.draftCount++
 		}
 
-		return Array.from(buckets.values()).sort(
-			(a, b) => new Date(a.bucketStart).getTime() - new Date(b.bucketStart).getTime(),
-		)
+		return Array.from(buckets.values())
+			.sort(
+				(a, b) => new Date(a.bucketStart).getTime() - new Date(b.bucketStart).getTime(),
+			)
+			.map((b) => {
+				const total = b.autoReplyCount + b.draftCount
+				return {
+					...b,
+					autoReplyPercent: total > 0 ? (b.autoReplyCount / total) * 100 : 0,
+					draftPercent: total > 0 ? (b.draftCount / total) * 100 : 0,
+				}
+			})
 	}, [rawRecords, effectiveCategory, dateRange.from, dateRange.to, granularity])
 
 	const hasData = chartData.some(
@@ -168,9 +181,15 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 		() => ({
 			autoReplyCount: { label: t('autoReplies'), color: 'var(--chart-1)' },
 			draftCount: { label: t('drafts'), color: 'var(--chart-2)' },
+			autoReplyPercent: { label: t('autoReplies'), color: 'var(--chart-1)' },
+			draftPercent: { label: t('drafts'), color: 'var(--chart-2)' },
 		}),
 		[t],
 	)
+
+	const isPercent = valueMode === 'percent'
+	const autoReplyKey = isPercent ? 'autoReplyPercent' : 'autoReplyCount'
+	const draftKey = isPercent ? 'draftPercent' : 'draftCount'
 
 	return (
 		<Card>
@@ -187,6 +206,19 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 					</div>
 
 					<div className='flex flex-col gap-1.5 lg:min-w-[280px]'>
+						<ToggleGroup
+							type='single'
+							value={valueMode}
+							onValueChange={(v) => {
+								if (v === 'count' || v === 'percent') setValueMode(v)
+							}}
+							variant='outline'
+							size='sm'
+							className='self-start'
+						>
+							<ToggleGroupItem value='count'>{t('viewCount')}</ToggleGroupItem>
+							<ToggleGroupItem value='percent'>{t('viewPercent')}</ToggleGroupItem>
+						</ToggleGroup>
 						<span className='text-xs text-muted-foreground'>
 							{t('subcategoryLabel')}
 						</span>
@@ -236,6 +268,10 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 								tickLine={false}
 								tickMargin={10}
 								axisLine={false}
+								domain={isPercent ? [0, 100] : undefined}
+								tickFormatter={(value: number) =>
+									isPercent ? `${Math.round(value)}%` : String(value)
+								}
 							/>
 							<ChartTooltip
 								cursor={false}
@@ -251,13 +287,40 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 												return String(value)
 											}
 										}}
+										formatter={(value, name, item) => {
+											const numeric =
+												typeof value === 'number' ? value : Number(value)
+											const display = isPercent
+												? `${numeric.toFixed(1)}%`
+												: String(numeric)
+											const labelKey = String(name)
+											const cfg = chartConfig[labelKey]
+											const label = cfg?.label ?? labelKey
+											const color =
+												(cfg?.color as string | undefined) ??
+												(item?.color as string | undefined)
+											return (
+												<>
+													<div
+														className='shrink-0 rounded-[2px] h-2.5 w-2.5'
+														style={{ backgroundColor: color }}
+													/>
+													<div className='flex flex-1 justify-between leading-none items-center'>
+														<span className='text-muted-foreground'>{label}</span>
+														<span className='text-foreground font-mono font-medium tabular-nums'>
+															{display}
+														</span>
+													</div>
+												</>
+											)
+										}}
 									/>
 								}
 							/>
 							<Line
 								type='monotone'
-								dataKey='autoReplyCount'
-								name={t('autoReplies')}
+								dataKey={autoReplyKey}
+								name={autoReplyKey}
 								stroke='var(--color-autoReplyCount)'
 								strokeWidth={2}
 								dot={false}
@@ -265,8 +328,8 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 							/>
 							<Line
 								type='monotone'
-								dataKey='draftCount'
-								name={t('drafts')}
+								dataKey={draftKey}
+								name={draftKey}
 								stroke='var(--color-draftCount)'
 								strokeWidth={2}
 								dot={false}

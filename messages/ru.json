@@ -196,6 +196,8 @@
 			"subcategoryPlaceholder": "Выберите подкатегорию",
 			"autoReplies": "Автоответы",
 			"drafts": "Драфты",
+			"viewCount": "Количество",
+			"viewPercent": "Проценты",
 			"noData": "Нет данных по этой подкатегории за выбранный период"
 		},
 		"categoryDistribution": {

@@ -196,6 +196,8 @@
 			"subcategoryPlaceholder": "Select a subcategory",
 			"autoReplies": "Auto-replies",
 			"drafts": "Drafts",
+			"viewCount": "Count",
+			"viewPercent": "Percent",
 			"noData": "No data for this subcategory in the selected period"
 		},
 		"categoryDistribution": {
