@@ -76,6 +76,7 @@ export const LAUNCHED_CATEGORIES: string[] = [
 	'account_access_and_login_issues',
 	'refund_request',
 	'retention_neither_request',
+	'retention_repeated_request',
 ]
 
 /**
