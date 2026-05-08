@@ -35,15 +35,11 @@ export interface AutomationRule {
  */
 export const AUTOMATION_RULES: AutomationRule[] = [
 	{
-		// retention_repeated_request is intentionally not in AUTO_SEND_CONFIG
-		// in the n8n flow, so the flow always falls through to draft.
-		// Mirror that here so the dashboard matches reality.
-		categories: ['retention_repeated_request'],
-		isDraft: () => true,
-		ruleSource: 'always_draft',
-	},
-	{
-		categories: ['retention_primary_request'],
+		categories: [
+			'retention_primary_request',
+			'retention_repeated_request',
+			'retention_neither_request',
+		],
 		isDraft: r => r.is_outstanding === true,
 		ruleSource: 'is_outstanding',
 	},
