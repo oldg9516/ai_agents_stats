@@ -135,7 +135,6 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 	>(() => {
 		if (!effectiveCategory) return []
 
-		const launchedSet = new Set<string>(LAUNCHED_CATEGORIES)
 		const bucketKeys = generateBucketKeys(dateRange.from, dateRange.to, granularity)
 		const buckets = new Map<string, AutomationTrendBucket>()
 		bucketKeys.forEach((key) => {
@@ -144,9 +143,7 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 
 		for (const record of rawRecords) {
 			if (!record.created_at) continue
-			if (effectiveCategory === '__total__') {
-				if (!record.request_subtype || !launchedSet.has(record.request_subtype)) continue
-			} else {
+			if (effectiveCategory !== '__total__') {
 				if (record.request_subtype !== effectiveCategory) continue
 			}
 
@@ -177,8 +174,8 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 	}, [rawRecords, effectiveCategory, dateRange.from, dateRange.to, granularity])
 
 	const totalRecordsForTotal = useMemo(
-		() => sortedCategories.reduce((sum, c) => sum + c.totalRecords, 0),
-		[sortedCategories],
+		() => categories.reduce((sum, c) => sum + c.totalRecords, 0),
+		[categories],
 	)
 
 	const hasData = chartData.some(
