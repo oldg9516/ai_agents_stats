@@ -198,6 +198,7 @@
 			"drafts": "Drafts",
 			"viewCount": "Count",
 			"viewPercent": "Percent",
+			"totalCategory": "Total (all subcategories)",
 			"noData": "No data for this subcategory in the selected period"
 		},
 		"categoryDistribution": {

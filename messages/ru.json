@@ -198,6 +198,7 @@
 			"drafts": "Драфты",
 			"viewCount": "Количество",
 			"viewPercent": "Проценты",
+			"totalCategory": "Тотал (все подкатегории)",
 			"noData": "Нет данных по этой подкатегории за выбранный период"
 		},
 		"categoryDistribution": {

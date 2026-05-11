@@ -114,17 +114,15 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 		)
 	}, [categories])
 
-	const [selectedCategory, setSelectedCategory] = useState<string>(
-		() => sortedCategories[0]?.category ?? '',
-	)
+	const [selectedCategory, setSelectedCategory] = useState<string>('__total__')
 	const [valueMode, setValueMode] = useState<'count' | 'percent'>('count')
 
-	// Reset selection if the selected category disappears (e.g., after filter change)
 	const effectiveCategory = useMemo(() => {
+		if (selectedCategory === '__total__') return '__total__'
 		if (sortedCategories.some((c) => c.category === selectedCategory)) {
 			return selectedCategory
 		}
-		return sortedCategories[0]?.category ?? ''
+		return '__total__'
 	}, [sortedCategories, selectedCategory])
 
 	const granularity = useMemo(
@@ -137,6 +135,7 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 	>(() => {
 		if (!effectiveCategory) return []
 
+		const launchedSet = new Set<string>(LAUNCHED_CATEGORIES)
 		const bucketKeys = generateBucketKeys(dateRange.from, dateRange.to, granularity)
 		const buckets = new Map<string, AutomationTrendBucket>()
 		bucketKeys.forEach((key) => {
@@ -144,8 +143,12 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 		})
 
 		for (const record of rawRecords) {
-			if (record.request_subtype !== effectiveCategory) continue
 			if (!record.created_at) continue
+			if (effectiveCategory === '__total__') {
+				if (!record.request_subtype || !launchedSet.has(record.request_subtype)) continue
+			} else {
+				if (record.request_subtype !== effectiveCategory) continue
+			}
 
 			const key = bucketStartFor(new Date(record.created_at), granularity)
 			let bucket = buckets.get(key)
@@ -172,6 +175,11 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 				}
 			})
 	}, [rawRecords, effectiveCategory, dateRange.from, dateRange.to, granularity])
+
+	const totalRecordsForTotal = useMemo(
+		() => sortedCategories.reduce((sum, c) => sum + c.totalRecords, 0),
+		[sortedCategories],
+	)
 
 	const hasData = chartData.some(
 		(bucket) => bucket.autoReplyCount > 0 || bucket.draftCount > 0,
@@ -231,6 +239,12 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 								<SelectValue placeholder={t('subcategoryPlaceholder')} />
 							</SelectTrigger>
 							<SelectContent>
+								<SelectItem value='__total__'>
+									<span className='truncate font-medium'>{t('totalCategory')}</span>
+									<span className='ml-2 text-xs text-muted-foreground'>
+										({totalRecordsForTotal})
+									</span>
+								</SelectItem>
 								{sortedCategories.map((category) => (
 									<SelectItem key={category.category} value={category.category}>
 										<span className='truncate'>
