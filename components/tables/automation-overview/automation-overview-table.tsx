@@ -18,6 +18,11 @@ import {
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { Badge } from '@/components/ui/badge'
 import { LAUNCHED_CATEGORIES } from '@/constants/automation-rules'
+import {
+	getCategoryNorm,
+	getSubCategoryNorm,
+	isWithinNorm,
+} from '@/constants/automation-benchmarks'
 import type { CategoryAutomationOverviewStats } from '@/lib/db/types'
 import { cn } from '@/lib/utils'
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react'
@@ -103,6 +108,7 @@ export const AutomationOverviewTable = memo(function AutomationOverviewTable({
 								<TableHead className='text-right w-[100px]'>{t('autoReply')}</TableHead>
 								<TableHead className='text-right w-[80px]'>{t('draft')}</TableHead>
 								<TableHead className='text-right w-[90px]'>{t('rate')}</TableHead>
+								<TableHead className='text-center w-[110px]'>{t('norm')}</TableHead>
 								<TableHead className='text-right w-[120px]'>{t('goodAiResponse')}</TableHead>
 							</TableRow>
 						</TableHeader>
@@ -126,6 +132,7 @@ export const AutomationOverviewTable = memo(function AutomationOverviewTable({
 								<TableCell className={cn('text-right', getRateColor(totalsRate))}>
 									{totalsRate.toFixed(1)}%
 								</TableCell>
+								<TableCell />
 								<TableCell className='text-right'>
 									{totals.evaluableCount === 0 ? (
 										<span className='text-muted-foreground'>—</span>
@@ -188,6 +195,21 @@ export const AutomationOverviewTable = memo(function AutomationOverviewTable({
 											<TableCell className={cn('text-right font-medium', getRateColor(cat.autoReplyRate))}>
 												{cat.autoReplyRate.toFixed(1)}%
 											</TableCell>
+											<TableCell className='text-center'>
+												{(() => {
+													const norm = getCategoryNorm(cat.category)
+													if (!norm) return <span className='text-muted-foreground text-xs'>—</span>
+													const ok = isWithinNorm(cat.autoReplyRate, norm)
+													return (
+														<span className={cn(
+															'text-xs font-medium',
+															ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400',
+														)}>
+															{ok ? '✓' : '✗'} {norm.label}
+														</span>
+													)
+												})()}
+											</TableCell>
 											<TableCell className='text-right'>
 												{(() => {
 													if (cat.evaluableCount === 0) return <span className='text-muted-foreground'>—</span>
@@ -223,6 +245,21 @@ export const AutomationOverviewTable = memo(function AutomationOverviewTable({
 													</TableCell>
 													<TableCell className={cn('text-right text-muted-foreground', getRateColor(subRate))}>
 														{subRate.toFixed(1)}%
+													</TableCell>
+													<TableCell className='text-center'>
+														{(() => {
+															const norm = getSubCategoryNorm(cat.category, sub.subSubCategory)
+															if (!norm) return <span className='text-muted-foreground text-xs'>—</span>
+															const ok = isWithinNorm(subRate, norm)
+															return (
+																<span className={cn(
+																	'text-xs font-medium',
+																	ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400',
+																)}>
+																	{ok ? '✓' : '✗'} {norm.label}
+																</span>
+															)
+														})()}
 													</TableCell>
 													<TableCell className='text-right text-muted-foreground'>
 														{(() => {
