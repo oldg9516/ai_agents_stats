@@ -21,7 +21,6 @@ import { LAUNCHED_CATEGORIES } from '@/constants/automation-rules'
 import {
 	getCategoryNorm,
 	getSubCategoryNorm,
-	isWithinNorm,
 } from '@/constants/automation-benchmarks'
 import type { CategoryAutomationOverviewStats } from '@/lib/db/types'
 import { cn } from '@/lib/utils'
@@ -199,7 +198,7 @@ export const AutomationOverviewTable = memo(function AutomationOverviewTable({
 												{(() => {
 													const norm = getCategoryNorm(cat.category)
 													if (!norm) return <span className='text-muted-foreground text-xs'>—</span>
-													const ok = isWithinNorm(cat.autoReplyRate, norm)
+													const ok = cat.autoReplyRate >= norm.min
 													return (
 														<span className={cn(
 															'text-xs font-medium',
@@ -250,7 +249,7 @@ export const AutomationOverviewTable = memo(function AutomationOverviewTable({
 														{(() => {
 															const norm = getSubCategoryNorm(cat.category, sub.subSubCategory)
 															if (!norm) return <span className='text-muted-foreground text-xs'>—</span>
-															const ok = isWithinNorm(subRate, norm)
+															const ok = subRate >= norm.min
 															return (
 																<span className={cn(
 																	'text-xs font-medium',
