@@ -39,6 +39,7 @@ export const AUTOMATION_RULES: AutomationRule[] = [
 			'retention_primary_request',
 			'retention_repeated_request',
 			'retention_neither_request',
+			'retention_after_cancellation_request',
 		],
 		isDraft: r => r.is_outstanding === true,
 		ruleSource: 'is_outstanding',
@@ -73,6 +74,7 @@ export const LAUNCHED_CATEGORIES: string[] = [
 	'refund_request',
 	'retention_neither_request',
 	'retention_repeated_request',
+	'retention_after_cancellation_request',
 ]
 
 /**
