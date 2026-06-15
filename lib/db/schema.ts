@@ -73,13 +73,24 @@ export const supportThreadsData = pgTable('support_threads_data', {
 	requiresSubscriptionInfo: boolean('requires_subscription_info'),
 	requiresTrackingInfo: boolean('requires_tracking_info'),
 	requiresBoxContentsInfo: boolean('requires_box_contents_info'),
+	requiresShopOrderInfo: boolean('requires_shop_order_info'),
+	identification: text('identification'),
+	subscriptionInfo: text('subscription_info'),
+	trackingInfo: text('tracking_info'),
+	boxContentsInfo: text('box_contents_info'),
+	lhShopInfo: text('lh_shop_info'),
 	aiDraftReply: text('ai_draft_reply'),
+	fullRequest: text('full_request'),
 	status: text('status'),
 	promptVersion: text('prompt_version'),
-	createdAt: timestamp('created_at'),
+	createdAt: timestamp('created_at', { withTimezone: true }),
+	threadDate: timestamp('thread_date', { withTimezone: true }),
 	user: text('user'),
 	actionAnalysis: text('action_analysis'),
 	isOutstanding: boolean('is_outstanding'),
+	outstandingTrigger: text('outstanding_trigger'),
+	subtypeOverride: boolean('subtype_override'),
+	subtypeOverrideReason: text('subtype_override_reason'),
 })
 
 /**
@@ -105,8 +116,27 @@ export const supportDialogs = pgTable('support_dialogs', {
 	threadId: text('thread_id'),
 	ticketId: text('ticket_id'),
 	direction: text('direction'),
+	ticketSubject: text('ticket_subject'),
+	threadSummary: text('thread_summary'),
+	email: text('email'),
 	text: text('text'),
-	date: timestamp('date'),
+	status: text('status'),
+	data: jsonb('data'),
+	date: timestamp('date', { withTimezone: true }),
+})
+
+/**
+ * retention_ticket_comments — support-agent (Lor) notes on retention tickets,
+ * captured on the Retention Transparency page for later logic analysis.
+ */
+export const retentionTicketComments = pgTable('retention_ticket_comments', {
+	id: bigint('id', { mode: 'number' }).primaryKey().generatedByDefaultAsIdentity(),
+	ticketId: varchar('ticket_id', { length: 255 }).notNull(),
+	threadId: varchar('thread_id', { length: 255 }),
+	author: varchar('author', { length: 255 }).notNull(),
+	comment: text('comment').notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true }),
 })
 
 export const backlogReports = pgTable('backlog_reports', {

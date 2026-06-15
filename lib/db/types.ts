@@ -754,6 +754,113 @@ export interface AutoCloseStats {
 }
 
 // ============================================================================
+// Retention Transparency Types
+// ============================================================================
+
+/** Actual agent outcome derived from ai_agent_tasks. */
+export type RetentionOutcome = 'auto_reply' | 'draft' | 'auto_close' | 'unknown'
+
+/** Retention page filters. */
+export interface RetentionFilters {
+	dateRange: { from: Date; to: Date }
+	searchQuery: string
+	outcomes: RetentionOutcome[] // [] = all
+	outstanding: 'all' | 'yes' | 'no'
+	subtypes: string[] // request_subtype, [] = all
+}
+
+/** Key fields parsed from subscription_info JSON. */
+export interface RetentionSubscriptionSummary {
+	currentStatus: string | null // Active / Inactive / Pause
+	orderToken: string | null
+	customerNumber: string | null
+	frequency: string | null
+	regularBoxPrice: number | string | null
+	priceCurrency: string | null
+	paymentMethod: string | null
+	boxName: string | null
+}
+
+/** Parsed action_analysis JSON. */
+export interface RetentionActionAnalysis {
+	requiresSystemAction: boolean | null
+	actionType: string[] | null
+	actionDetails: string | null
+	confidence: string | null
+	reasoning: string | null
+}
+
+/** A single thread's full trace (one incoming message + flow decisions). */
+export interface RetentionThreadTrace {
+	threadId: string
+	createdAt: string // ISO
+	requestType: string | null
+	requestSubtype: string | null
+	requestSubSubtype: string | null
+	requiresReply: boolean | null
+	requiresIdentification: boolean | null
+	requiresEditing: boolean | null
+	requiresSubscriptionInfo: boolean | null
+	requiresTrackingInfo: boolean | null
+	requiresBoxContentsInfo: boolean | null
+	requiresShopOrderInfo: boolean | null
+	subtypeOverride: boolean | null
+	subtypeOverrideReason: string | null
+	isOutstanding: boolean | null
+	outstandingTrigger: string | null
+	subscription: RetentionSubscriptionSummary | null
+	subscriptionRaw: string | null // raw JSON for "show more"
+	trackingInfo: string | null
+	actionAnalysis: RetentionActionAnalysis | null
+	aiDraftReply: string | null // HTML
+	customerMessage: string | null
+	subject: string | null
+	email: string | null
+	/** Ground-truth outcome from ai_agent_tasks. */
+	outcome: RetentionOutcome
+	outcomeTag: string | null // close tag when auto_close
+	outcomeStatus: string | null // task status (new/responded)
+	outcomeAt: string | null // task created_at ISO
+	/** Heuristic explanation of why this outcome happened. */
+	reason: string | null
+}
+
+/** Saved support-agent comment on a retention ticket. */
+export interface RetentionComment {
+	id: number
+	ticketId: string
+	threadId: string | null
+	author: string
+	comment: string
+	createdAt: string // ISO
+}
+
+/** Full trace for one ticket (may contain several threads). */
+export interface RetentionTicketTrace {
+	ticketId: string
+	subject: string | null
+	email: string | null
+	threads: RetentionThreadTrace[]
+	comments: RetentionComment[]
+}
+
+/** A row in the retention list table. */
+export interface RetentionListItem {
+	ticketId: string
+	threadId: string
+	createdAt: string // ISO
+	requestSubtype: string | null
+	requestSubSubtype: string | null
+	isOutstanding: boolean | null
+	outstandingTrigger: string | null
+	subject: string | null
+	email: string | null
+	subscriptionStatus: string | null
+	outcome: RetentionOutcome
+	commentCount: number
+}
+
+// ============================================================================
 // Backlog Reports Types
 // ============================================================================
 

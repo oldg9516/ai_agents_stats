@@ -24,6 +24,7 @@ import {
 	IconTarget,
 	IconTicket,
 	IconUsers,
+	IconHeartHandshake,
 } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'
 import * as React from 'react'
@@ -71,6 +72,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				title: t('automationOverview'),
 				url: '/automation-overview',
 				icon: IconRobot,
+			},
+			{
+				title: t('retention'),
+				url: '/retention',
+				icon: IconHeartHandshake,
 			},
 			{
 				title: t('evalDashboard'),

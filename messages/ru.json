@@ -10,6 +10,7 @@
 		"ticketsReview": "Обзор тикетов",
 		"actionAnalysis": "Анализ действий",
 		"automationOverview": "Обзор автоматизации",
+		"retention": "Прозрачность ретеншена",
 		"backlogReports": "Отчёты бэклога",
 		"evalDashboard": "Оценка интентов",
 		"agentsStats": "Статистика агентов",
@@ -1503,5 +1504,81 @@
 		"autoCloseOrderComment": "order comment",
 		"tooltipAutoClosed": "Всего тикетов, автоматически закрытых ИИ за период. В описании — количество по Zoho-автоматизации \"order comment\"."
 
+	},
+	"retention": 	{
+		"title": "Прозрачность ретеншена",
+		"description": "Видно, что именно ИИ-флоу (Саманта) сделал с каждым retention-тикетом и почему.",
+		"ticket": "Тикет",
+		"conversation": "Переписка",
+		"thread": "Тред",
+		"yes": "Да",
+		"no": "Нет",
+		"whyDraft": "Почему драфт",
+		"reasonDisclaimer": "Реконструкция по факторам выше; точная причина может потребовать лог n8n.",
+		"outstandingReason": "Причина",
+		"filter": {
+			"all": "Все"
+		},
+		"outcome": {
+			"auto_reply": "Автоответ",
+			"draft": "Драфт",
+			"auto_close": "Автозакрытие",
+			"unknown": "Неизвестно"
+		},
+		"section": {
+			"customerMessage": "Сообщение клиента",
+			"classification": "Классификация",
+			"subcategory": "Подкатегория",
+			"subscription": "Данные подписки",
+			"outstanding": "Передано человеку (outstanding)",
+			"analysis": "Анализ действия",
+			"outcome": "Исход",
+			"aiReply": "Ответ ИИ"
+		},
+		"field": {
+			"requestType": "Тип запроса",
+			"subtype": "Подтип",
+			"subSubtype": "Под-подтип",
+			"subtypeOverride": "Переопределение подтипа",
+			"status": "Статус",
+			"orderToken": "Order token",
+			"customerNumber": "Клиент №",
+			"frequency": "Частота",
+			"price": "Цена коробки",
+			"paymentMethod": "Способ оплаты",
+			"requiresSystemAction": "Нужно системное действие",
+			"actionType": "Тип действия",
+			"confidence": "Уверенность",
+			"taskStatus": "Статус задачи"
+		},
+		"flag": {
+			"requiresReply": "Ответ",
+			"requiresIdentification": "Идентиф.",
+			"requiresEditing": "Правка",
+			"requiresSubscriptionInfo": "Подписка",
+			"requiresTrackingInfo": "Трекинг",
+			"requiresShopOrderInfo": "Заказ магазина"
+		},
+		"comment": {
+			"title": "Заметки агента поддержки",
+			"placeholder": "Добавьте заметку по тикету (ошибки, предложения по логике)...",
+			"save": "Сохранить",
+			"saving": "Сохранение...",
+			"saved": "Комментарий сохранён",
+			"saveFailed": "Не удалось сохранить",
+			"you": "Вы"
+		},
+		"table": {
+			"date": "Дата",
+			"subject": "Тема",
+			"subtype": "Подкатегория",
+			"status": "Подписка",
+			"outstanding": "Outstanding",
+			"outcome": "Исход",
+			"noResults": "Retention-тикеты не найдены",
+			"loading": "Загрузка...",
+			"loadMore": "Загрузить ещё",
+			"searchPlaceholder": "Поиск по ID тикета, email, теме..."
+		}
 	}
 }

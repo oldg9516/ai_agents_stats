@@ -133,6 +133,20 @@ export const autoCloseKeys = {
 }
 
 /**
+ * Retention Transparency query keys
+ */
+export const retentionKeys = {
+	all: ['retention'] as const,
+	trace: (ticketId: string) => [...retentionKeys.all, 'trace', ticketId] as const,
+	subtypes: (dateRange: { from: Date; to: Date }) =>
+		[
+			...retentionKeys.all,
+			'subtypes',
+			{ from: dateRange.from.toISOString(), to: dateRange.to.toISOString() },
+		] as const,
+}
+
+/**
  * Eval Dashboard query keys
  */
 export const evalKeys = {

@@ -10,6 +10,7 @@
 		"ticketsReview": "Tickets Review",
 		"actionAnalysis": "Action Analysis",
 		"automationOverview": "Automation Overview",
+		"retention": "Retention Transparency",
 		"backlogReports": "Backlog Reports",
 		"evalDashboard": "Eval Dashboard",
 		"agentsStats": "Agent Statistics",
@@ -1503,5 +1504,81 @@
 		"autoCloseOrderComment": "order comment",
 		"tooltipAutoClosed": "Total tickets auto-closed by the AI in the selected period. Description shows the count for the \"order comment\" Zoho automation."
 
+	},
+	"retention": 	{
+		"title": "Retention Transparency",
+		"description": "See exactly what the AI flow (Samantha) did with each retention ticket and why.",
+		"ticket": "Ticket",
+		"conversation": "Conversation",
+		"thread": "Thread",
+		"yes": "Yes",
+		"no": "No",
+		"whyDraft": "Why a draft",
+		"reasonDisclaimer": "Reconstructed from the factors above; the exact reason may need the n8n log.",
+		"outstandingReason": "Reason",
+		"filter": {
+			"all": "All"
+		},
+		"outcome": {
+			"auto_reply": "Auto-reply",
+			"draft": "Draft",
+			"auto_close": "Auto-closed",
+			"unknown": "Unknown"
+		},
+		"section": {
+			"customerMessage": "Customer message",
+			"classification": "Classification",
+			"subcategory": "Subcategory",
+			"subscription": "Subscription data",
+			"outstanding": "Handed to a human (outstanding)",
+			"analysis": "Action analysis",
+			"outcome": "Outcome",
+			"aiReply": "AI reply"
+		},
+		"field": {
+			"requestType": "Request type",
+			"subtype": "Subtype",
+			"subSubtype": "Sub-subtype",
+			"subtypeOverride": "Subtype override",
+			"status": "Status",
+			"orderToken": "Order token",
+			"customerNumber": "Customer #",
+			"frequency": "Frequency",
+			"price": "Box price",
+			"paymentMethod": "Payment method",
+			"requiresSystemAction": "Requires system action",
+			"actionType": "Action type",
+			"confidence": "Confidence",
+			"taskStatus": "Task status"
+		},
+		"flag": {
+			"requiresReply": "Reply",
+			"requiresIdentification": "ID",
+			"requiresEditing": "Editing",
+			"requiresSubscriptionInfo": "Subscription",
+			"requiresTrackingInfo": "Tracking",
+			"requiresShopOrderInfo": "Shop order"
+		},
+		"comment": {
+			"title": "Support agent notes",
+			"placeholder": "Add a note about this ticket (errors, logic suggestions)...",
+			"save": "Save",
+			"saving": "Saving...",
+			"saved": "Comment saved",
+			"saveFailed": "Failed to save",
+			"you": "You"
+		},
+		"table": {
+			"date": "Date",
+			"subject": "Subject",
+			"subtype": "Subcategory",
+			"status": "Subscription",
+			"outstanding": "Outstanding",
+			"outcome": "Outcome",
+			"noResults": "No retention tickets found",
+			"loading": "Loading...",
+			"loadMore": "Load more",
+			"searchPlaceholder": "Search by ticket ID, email, subject..."
+		}
 	}
 }
