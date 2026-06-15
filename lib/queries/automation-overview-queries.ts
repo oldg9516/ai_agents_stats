@@ -72,7 +72,10 @@ export function computeAutomationOverviewStats(
 	}>()
 
 	for (const record of records) {
-		const { status } = resolveAutomationStatus(record)
+		// Ground truth from ai_agent_tasks when available; otherwise fall back
+		// to rule-based reconstruction (legacy records without a task match).
+		const status =
+			record.actual_outcome ?? resolveAutomationStatus(record).status
 		const isLaunched = record.request_subtype != null && launchedSet.has(record.request_subtype)
 
 		if (status === 'auto_reply') {

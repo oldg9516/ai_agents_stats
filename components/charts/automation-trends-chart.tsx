@@ -30,6 +30,7 @@ import { getCategoryLabel } from '@/constants/category-labels'
 import { LAUNCHED_CATEGORIES, resolveAutomationStatus } from '@/constants/automation-rules'
 import { getDayStart, getMonthStart, getWeekStart } from '@/lib/db/queries/utils'
 import type {
+	AutoCloseRecord,
 	AutomationOverviewRecord,
 	AutomationTrendBucket,
 	CategoryAutomationOverviewStats,
@@ -40,6 +41,8 @@ interface AutomationTrendsChartProps {
 	categories: CategoryAutomationOverviewStats[]
 	rawRecords: AutomationOverviewRecord[]
 	dateRange: { from: Date; to: Date }
+	/** Auto-closed ticket records (no subtype) — only plotted for the Total view. */
+	autoCloseRecords?: AutoCloseRecord[]
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -104,6 +107,7 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 	categories,
 	rawRecords,
 	dateRange,
+	autoCloseRecords = [],
 }: AutomationTrendsChartProps) {
 	const t = useTranslations('charts.automationTrends')
 
@@ -130,16 +134,29 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 		[dateRange.from, dateRange.to],
 	)
 
+	// Auto-closes have no subtype — only shown in the Total view.
+	const showAutoClose = effectiveCategory === '__total__' && autoCloseRecords.length > 0
+
 	const chartData = useMemo<
-		(AutomationTrendBucket & { autoReplyPercent: number; draftPercent: number })[]
+		(AutomationTrendBucket & {
+			autoCloseCount: number
+			autoReplyPercent: number
+			draftPercent: number
+			autoClosePercent: number
+		})[]
 	>(() => {
 		if (!effectiveCategory) return []
 
+		type Bucket = AutomationTrendBucket & { autoCloseCount: number }
 		const bucketKeys = generateBucketKeys(dateRange.from, dateRange.to, granularity)
-		const buckets = new Map<string, AutomationTrendBucket>()
-		bucketKeys.forEach((key) => {
-			buckets.set(key, { bucketStart: key, autoReplyCount: 0, draftCount: 0 })
+		const buckets = new Map<string, Bucket>()
+		const makeBucket = (key: string): Bucket => ({
+			bucketStart: key,
+			autoReplyCount: 0,
+			draftCount: 0,
+			autoCloseCount: 0,
 		})
+		bucketKeys.forEach((key) => buckets.set(key, makeBucket(key)))
 
 		for (const record of rawRecords) {
 			if (!record.created_at) continue
@@ -150,13 +167,26 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 			const key = bucketStartFor(new Date(record.created_at), granularity)
 			let bucket = buckets.get(key)
 			if (!bucket) {
-				bucket = { bucketStart: key, autoReplyCount: 0, draftCount: 0 }
+				bucket = makeBucket(key)
 				buckets.set(key, bucket)
 			}
 
-			const { status } = resolveAutomationStatus(record)
+			const status = record.actual_outcome ?? resolveAutomationStatus(record).status
 			if (status === 'auto_reply') bucket.autoReplyCount++
 			else bucket.draftCount++
+		}
+
+		if (showAutoClose) {
+			for (const record of autoCloseRecords) {
+				if (!record.created_at) continue
+				const key = bucketStartFor(new Date(record.created_at), granularity)
+				let bucket = buckets.get(key)
+				if (!bucket) {
+					bucket = makeBucket(key)
+					buckets.set(key, bucket)
+				}
+				bucket.autoCloseCount++
+			}
 		}
 
 		return Array.from(buckets.values())
@@ -164,14 +194,15 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 				(a, b) => new Date(a.bucketStart).getTime() - new Date(b.bucketStart).getTime(),
 			)
 			.map((b) => {
-				const total = b.autoReplyCount + b.draftCount
+				const total = b.autoReplyCount + b.draftCount + b.autoCloseCount
 				return {
 					...b,
 					autoReplyPercent: total > 0 ? (b.autoReplyCount / total) * 100 : 0,
 					draftPercent: total > 0 ? (b.draftCount / total) * 100 : 0,
+					autoClosePercent: total > 0 ? (b.autoCloseCount / total) * 100 : 0,
 				}
 			})
-	}, [rawRecords, effectiveCategory, dateRange.from, dateRange.to, granularity])
+	}, [rawRecords, autoCloseRecords, showAutoClose, effectiveCategory, dateRange.from, dateRange.to, granularity])
 
 	const totalRecordsForTotal = useMemo(
 		() => categories.reduce((sum, c) => sum + c.totalRecords, 0),
@@ -186,8 +217,10 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 		() => ({
 			autoReplyCount: { label: t('autoReplies'), color: 'var(--chart-1)' },
 			draftCount: { label: t('drafts'), color: 'var(--chart-2)' },
+			autoCloseCount: { label: t('autoClosed'), color: 'var(--chart-3)' },
 			autoReplyPercent: { label: t('autoReplies'), color: 'var(--chart-1)' },
 			draftPercent: { label: t('drafts'), color: 'var(--chart-2)' },
+			autoClosePercent: { label: t('autoClosed'), color: 'var(--chart-3)' },
 		}),
 		[t],
 	)
@@ -195,6 +228,7 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 	const isPercent = valueMode === 'percent'
 	const autoReplyKey = isPercent ? 'autoReplyPercent' : 'autoReplyCount'
 	const draftKey = isPercent ? 'draftPercent' : 'draftCount'
+	const autoCloseKey = isPercent ? 'autoClosePercent' : 'autoCloseCount'
 
 	return (
 		<Card>
@@ -346,6 +380,17 @@ export const AutomationTrendsChart = memo(function AutomationTrendsChart({
 								dot={false}
 								activeDot={{ r: 4 }}
 							/>
+							{showAutoClose && (
+								<Line
+									type='monotone'
+									dataKey={autoCloseKey}
+									name={autoCloseKey}
+									stroke='var(--color-autoCloseCount)'
+									strokeWidth={2}
+									dot={false}
+									activeDot={{ r: 4 }}
+								/>
+							)}
 						</LineChart>
 					</ChartContainer>
 				)}

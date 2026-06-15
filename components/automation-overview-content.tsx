@@ -209,11 +209,11 @@ export function AutomationOverviewContent() {
 				<>
 					<div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
 						<KPICard
-							title={`${t('totalTickets')} (${data.launchedUniqueTicketCount} ${t('tickets')})`}
-							value={data.launchedTotalRecords}
+							title={t('grandTotal')}
+							value={data.totalRecords + (autoCloseData?.totalTickets ?? 0)}
 							icon={<IconChecks />}
-							description={`${t('allCategories')}: ${data.totalRecords} (${data.uniqueTicketCount} ${t('tickets')})`}
-							tooltipContent={t('tooltipTotalTickets')}
+							description={`${t('autoReply')} + ${t('draft')}: ${data.totalRecords} · ${t('autoClosed')}: ${autoCloseData?.totalTickets ?? 0}`}
+							tooltipContent={t('tooltipGrandTotal')}
 						/>
 						<KPICard
 							title={t('autoReply')}
@@ -246,6 +246,7 @@ export function AutomationOverviewContent() {
 							categories={data.categoryBreakdown}
 							rawRecords={rawRecords}
 							dateRange={filters.dateRange}
+							autoCloseRecords={autoCloseData?.records ?? []}
 						/>
 					)}
 

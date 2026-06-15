@@ -20,7 +20,7 @@ export function useAutoCloseData(dateRange: { from: Date; to: Date }) {
 			if (!result.success) {
 				throw new Error(result.error ?? 'Failed to fetch auto-close data')
 			}
-			return result.data ?? { totalTasks: 0, totalTickets: 0, tags: [] }
+			return result.data ?? { totalTasks: 0, totalTickets: 0, tags: [], records: [] }
 		},
 		...QUERY_CACHE_CONFIG,
 	})

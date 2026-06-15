@@ -13,7 +13,7 @@
  */
 
 import { db } from './index'
-import { and, gte, lt, eq, inArray, isNotNull } from 'drizzle-orm'
+import { and, gte, lt, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import { supportThreadsData, aiHumanComparison } from './schema'
 import type {
 	ActionAnalysis,
@@ -92,22 +92,82 @@ export async function fetchAutomationOverviewData(
 			action_analysis: actionAnalysis,
 			is_outstanding: record.isOutstanding ?? null,
 			changed: null,
+			actual_outcome: null,
 		})
 	}
 
-	// Fetch quality data (changed field) from ai_human_comparison by thread_id
 	const threadIds = enriched.map((r) => r.thread_id)
-	const changedMap = await fetchChangedByThreadIds(threadIds)
 
-	// Merge quality data into records
+	// Fetch quality data (changed field) + actual outcome (auto_reply/draft) in parallel
+	const [changedMap, outcomeMap] = await Promise.all([
+		fetchChangedByThreadIds(threadIds),
+		fetchActualOutcomeByThreadIds(threadIds),
+	])
+
+	// Merge quality + ground-truth outcome into records
 	for (const record of enriched) {
 		const changed = changedMap.get(record.thread_id)
 		if (changed !== undefined) {
 			record.changed = changed
 		}
+		record.actual_outcome = outcomeMap.get(record.thread_id) ?? null
 	}
 
 	return enriched
+}
+
+/**
+ * Fetch the actual outcome (auto_reply / draft) from ai_agent_tasks per thread.
+ *
+ * Ground truth: the `request` payload of the latest send_prepared_answer task
+ * for the thread. send_reply → auto_reply, send_draft → draft. Anything else
+ * (e.g. pure close_ticket) returns null so the caller can fall back.
+ *
+ * One row per thread via DISTINCT ON ... ORDER BY created_at DESC (reruns → latest).
+ */
+async function fetchActualOutcomeByThreadIds(
+	threadIds: string[]
+): Promise<Map<string, 'auto_reply' | 'draft'>> {
+	const result = new Map<string, 'auto_reply' | 'draft'>()
+	if (threadIds.length === 0) return result
+
+	const uniqueIds = [...new Set(threadIds)]
+
+	// Pass thread ids as a SINGLE text[] parameter (a PG array literal), not an
+	// expanded list. Drizzle would otherwise expand a JS array into
+	// `ANY(($1, $2, ...))` — a ROW expression capped at 1664 entries that also
+	// ignores the thread_id index. ANY(text[]) is one param and uses the index.
+	const arrayLiteral =
+		'{' +
+		uniqueIds
+			.map((id) => `"${id.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`)
+			.join(',') +
+		'}'
+
+	const rows = await db.execute(sql`
+		SELECT DISTINCT ON (thread_id)
+			thread_id,
+			CASE
+				WHEN request LIKE '%"send_reply"%' THEN 'auto_reply'
+				WHEN request LIKE '%"send_draft"%' THEN 'draft'
+				ELSE NULL
+			END AS outcome
+		FROM ai_agent_tasks
+		WHERE type = 'send_prepared_answer'
+			AND thread_id = ANY(${arrayLiteral}::text[])
+		ORDER BY thread_id, created_at DESC
+	`)
+
+	for (const row of (rows.rows ?? []) as {
+		thread_id: string
+		outcome: 'auto_reply' | 'draft' | null
+	}[]) {
+		if (row.thread_id && row.outcome) {
+			result.set(row.thread_id, row.outcome)
+		}
+	}
+
+	return result
 }
 
 /**

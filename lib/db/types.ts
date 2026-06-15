@@ -652,6 +652,12 @@ export interface AutomationOverviewRecord {
 	action_analysis: ActionAnalysis
 	is_outstanding: boolean | null
 	changed: boolean | null // from ai_human_comparison (null = no match)
+	/**
+	 * Ground-truth outcome from ai_agent_tasks (what the agent actually did).
+	 * 'auto_reply' = send_reply, 'draft' = send_draft.
+	 * null = no matching task found → fall back to rule-based reconstruction.
+	 */
+	actual_outcome: 'auto_reply' | 'draft' | null
 }
 
 /**
@@ -727,12 +733,24 @@ export interface AutoCloseTagStat {
 }
 
 /**
+ * A single auto-closed ticket record (latest close task per thread).
+ * Used to plot auto-closes over time in the trends chart.
+ */
+export interface AutoCloseRecord {
+	thread_id: string
+	ticket_id: number | null
+	created_at: string // ISO
+	tag: string
+}
+
+/**
  * Aggregated auto-close stats for the Automation Overview page.
  */
 export interface AutoCloseStats {
 	totalTasks: number
 	totalTickets: number
 	tags: AutoCloseTagStat[]
+	records: AutoCloseRecord[]
 }
 
 // ============================================================================
