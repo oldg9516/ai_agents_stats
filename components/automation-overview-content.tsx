@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useQuery } from '@tanstack/react-query'
 import { useAutomationOverviewFilters } from '@/lib/store/hooks/use-automation-overview-filters'
 import { useAutomationOverviewData } from '@/lib/queries/automation-overview-queries'
+import { useAutoCloseData } from '@/lib/queries/auto-close-queries'
 import { fetchFilterOptions } from '@/lib/actions/dashboard-actions'
 import { KPICard } from '@/components/kpi/kpi-card'
 import { DateRangeFilter } from '@/components/filters/date-range-filter'
@@ -17,6 +18,7 @@ import {
 	IconChecks,
 	IconMailForward,
 	IconFileText,
+	IconCircleX,
 } from '@tabler/icons-react'
 import { useState } from 'react'
 
@@ -48,6 +50,20 @@ const AutomationOverviewTable = dynamic(
 	}
 )
 
+// Dynamic import for auto-close breakdown table
+const AutoCloseTable = dynamic(
+	() => import('./tables/automation-overview/auto-close-table').then(mod => ({ default: mod.AutoCloseTable })),
+	{
+		loading: () => (
+			<Card>
+				<CardHeader><Skeleton className='h-6 w-48' /></CardHeader>
+				<CardContent><Skeleton className='h-[200px] w-full' /></CardContent>
+			</Card>
+		),
+		ssr: false,
+	}
+)
+
 /**
  * Automation Overview Content — main client component
  *
@@ -70,6 +86,7 @@ export function AutomationOverviewContent() {
 	} = useAutomationOverviewFilters()
 
 	const { data, rawRecords, isLoading, error } = useAutomationOverviewData(filters)
+	const { data: autoCloseData } = useAutoCloseData(filters.dateRange)
 
 	// Fetch filter options (cached separately)
 	const { data: filterOptions } = useQuery({
@@ -190,7 +207,7 @@ export function AutomationOverviewContent() {
 				</Card>
 			) : (
 				<>
-					<div className='grid gap-4 md:grid-cols-3'>
+					<div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
 						<KPICard
 							title={`${t('totalTickets')} (${data.launchedUniqueTicketCount} ${t('tickets')})`}
 							value={data.launchedTotalRecords}
@@ -212,6 +229,15 @@ export function AutomationOverviewContent() {
 							description={`${data.launchedTotalRecords > 0 ? ((data.launchedDraftCount / data.launchedTotalRecords) * 100).toFixed(1) : 0}% · ${t('allCategories')}: ${data.draftCount}`}
 							tooltipContent={t('tooltipDraft')}
 						/>
+						<KPICard
+							title={t('autoClosed')}
+							value={`${autoCloseData?.totalTickets ?? 0} ${t('tickets')}`}
+							icon={<IconCircleX />}
+							description={`${t('autoCloseOrderComment')}: ${
+								autoCloseData?.tags.find(tag => tag.tag === 'order comment')?.ticketCount ?? 0
+							}`}
+							tooltipContent={t('tooltipAutoClosed')}
+						/>
 					</div>
 
 					{/* Trends Chart — auto-replies vs drafts over time, per subcategory */}
@@ -226,6 +252,11 @@ export function AutomationOverviewContent() {
 					{/* Category Breakdown Table */}
 					{data.categoryBreakdown.length > 0 && (
 						<AutomationOverviewTable data={data.categoryBreakdown} />
+					)}
+
+					{/* Auto-closed Breakdown Table (by tag) */}
+					{autoCloseData && autoCloseData.tags.length > 0 && (
+						<AutoCloseTable data={autoCloseData} />
 					)}
 				</>
 			)}

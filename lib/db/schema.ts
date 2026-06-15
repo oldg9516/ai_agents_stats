@@ -1,4 +1,5 @@
 import {
+	bigint,
 	boolean,
 	integer,
 	jsonb,
@@ -9,6 +10,7 @@ import {
 	text,
 	timestamp,
 	uuid,
+	varchar,
 } from 'drizzle-orm/pg-core'
 
 // ---------------------------------------------------------------------------
@@ -78,6 +80,24 @@ export const supportThreadsData = pgTable('support_threads_data', {
 	user: text('user'),
 	actionAnalysis: text('action_analysis'),
 	isOutstanding: boolean('is_outstanding'),
+})
+
+/**
+ * ai_agent_tasks — ground-truth record of what the AI agent actually did
+ * per ticket (send_reply / send_draft / close_ticket + add_tag).
+ * Used for the Auto-closed breakdown (tickets closed automatically, e.g.
+ * "order comment", spam, auto-notification, internal-alert).
+ */
+export const aiAgentTasks = pgTable('ai_agent_tasks', {
+	id: bigint('id', { mode: 'number' }).primaryKey(),
+	type: varchar('type', { length: 255 }).notNull(),
+	request: text('request'),
+	response: text('response'),
+	status: varchar('status', { length: 255 }).notNull(),
+	ticketId: varchar('ticket_id', { length: 255 }).notNull(),
+	threadId: varchar('thread_id', { length: 255 }),
+	createdAt: timestamp('created_at'),
+	updatedAt: timestamp('updated_at'),
 })
 
 export const supportDialogs = pgTable('support_dialogs', {

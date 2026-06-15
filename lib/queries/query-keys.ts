@@ -118,6 +118,21 @@ export const automationOverviewKeys = {
 }
 
 /**
+ * Auto-close query keys (depends only on date range)
+ */
+export const autoCloseKeys = {
+	all: ['auto-close'] as const,
+	data: (dateRange: { from: Date; to: Date }) =>
+		[
+			...autoCloseKeys.all,
+			{
+				from: dateRange.from.toISOString(),
+				to: dateRange.to.toISOString(),
+			},
+		] as const,
+}
+
+/**
  * Eval Dashboard query keys
  */
 export const evalKeys = {

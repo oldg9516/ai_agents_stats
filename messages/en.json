@@ -1489,6 +1489,16 @@
 		"launched": "Live",
 		"allCategories": "All",
 		"tickets": "tickets",
-		"totals": "Totals"
+		"totals": "Totals",
+		"autoClosed": "Auto-closed",
+		"autoCloseTitle": "Auto-closed Tickets",
+		"autoCloseDescription": "Tickets closed automatically by the AI agent, grouped by close reason (tag). Source: ai_agent_tasks.",
+		"autoCloseTooltip": "Tickets the AI closed without a reply or draft (e.g. order comment, spam, auto-notification, internal alert). Counted directly from the agent task log, independent of the category breakdown above.",
+		"autoCloseTag": "Close reason (tag)",
+		"autoCloseTickets": "Tickets",
+		"autoCloseTasks": "Tasks",
+		"autoCloseOrderComment": "order comment",
+		"tooltipAutoClosed": "Total tickets auto-closed by the AI in the selected period. Description shows the count for the \"order comment\" Zoho automation."
+
 	}
 }

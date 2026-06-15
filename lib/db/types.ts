@@ -716,6 +716,25 @@ export interface AutomationTrendBucket {
  */
 export type TrendBucketGranularity = 'day' | 'week' | 'month'
 
+/**
+ * Per-tag stats for auto-closed tickets (close_ticket + add_tag tasks).
+ * Source: ai_agent_tasks (ground truth of what the agent did).
+ */
+export interface AutoCloseTagStat {
+	tag: string // e.g. "order comment", "spam", "auto-notification", "internal-alert"
+	taskCount: number // total close_ticket tasks with this tag
+	ticketCount: number // distinct tickets
+}
+
+/**
+ * Aggregated auto-close stats for the Automation Overview page.
+ */
+export interface AutoCloseStats {
+	totalTasks: number
+	totalTickets: number
+	tags: AutoCloseTagStat[]
+}
+
 // ============================================================================
 // Backlog Reports Types
 // ============================================================================

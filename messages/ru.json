@@ -1489,6 +1489,16 @@
 		"launched": "Запущено",
 		"allCategories": "Все",
 		"tickets": "тикетов",
-		"totals": "Итого"
+		"totals": "Итого",
+		"autoClosed": "Автозакрытые",
+		"autoCloseTitle": "Автоматически закрытые тикеты",
+		"autoCloseDescription": "Тикеты, закрытые ИИ автоматически, сгруппированы по причине закрытия (тегу). Источник: ai_agent_tasks.",
+		"autoCloseTooltip": "Тикеты, которые ИИ закрыл без ответа или драфта (например order comment, spam, auto-notification, internal alert). Считаются напрямую из лога задач агента, независимо от разбивки по категориям выше.",
+		"autoCloseTag": "Причина закрытия (тег)",
+		"autoCloseTickets": "Тикеты",
+		"autoCloseTasks": "Задачи",
+		"autoCloseOrderComment": "order comment",
+		"tooltipAutoClosed": "Всего тикетов, автоматически закрытых ИИ за период. В описании — количество по Zoho-автоматизации \"order comment\"."
+
 	}
 }
