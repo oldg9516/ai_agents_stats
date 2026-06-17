@@ -26,7 +26,20 @@ import type {
 	RetentionTicketTrace,
 } from './types'
 
-const RETENTION_TYPE_MATCH = '%retention%'
+/**
+ * Which support direction a board covers, by request_type:
+ *  - 'retention'    → request_type contains "retention"
+ *  - 'subscription' → subscription support (request_type contains "subscription"
+ *                     but NOT "retention"): shipping, payment, address change, etc.
+ */
+export type TransparencyDirection = 'retention' | 'subscription'
+
+function directionCondition(direction: TransparencyDirection) {
+	if (direction === 'subscription') {
+		return sql`std.request_type ILIKE '%subscription%' AND std.request_type NOT ILIKE '%retention%'`
+	}
+	return sql`std.request_type ILIKE '%retention%'`
+}
 
 // ---------------------------------------------------------------------------
 // Parse helpers (defensive — fields may be 'not_found' or invalid JSON)
@@ -138,11 +151,12 @@ function reconstructReason(
 export async function fetchRetentionList(
 	filters: RetentionFilters,
 	pagination: { limit: number; offset: number },
+	direction: TransparencyDirection = 'retention',
 ): Promise<RetentionListItem[]> {
 	const { dateRange, searchQuery, outcomes, outstanding, subtypes } = filters
 
 	const conds = [
-		sql`std.request_type ILIKE ${RETENTION_TYPE_MATCH}`,
+		directionCondition(direction),
 		sql`std.created_at >= ${dateRange.from}`,
 		sql`std.created_at < ${dateRange.to}`,
 	]
@@ -437,16 +451,16 @@ function toPgArray(ids: string[]): string {
 }
 
 /** Distinct request_subtype values for retention (for the filter dropdown). */
-export async function fetchRetentionSubtypes(dateRange: {
-	from: Date
-	to: Date
-}): Promise<string[]> {
+export async function fetchRetentionSubtypes(
+	dateRange: { from: Date; to: Date },
+	direction: TransparencyDirection = 'retention',
+): Promise<string[]> {
 	const result = await db.execute(sql`
-		SELECT DISTINCT request_subtype FROM support_threads_data
-		WHERE request_type ILIKE ${RETENTION_TYPE_MATCH}
-			AND request_subtype IS NOT NULL
-			AND created_at >= ${dateRange.from} AND created_at < ${dateRange.to}
-		ORDER BY request_subtype
+		SELECT DISTINCT std.request_subtype FROM support_threads_data std
+		WHERE ${directionCondition(direction)}
+			AND std.request_subtype IS NOT NULL
+			AND std.created_at >= ${dateRange.from} AND std.created_at < ${dateRange.to}
+		ORDER BY std.request_subtype
 	`)
 	return (result.rows ?? [])
 		.map((r) => (r as { request_subtype: string }).request_subtype)

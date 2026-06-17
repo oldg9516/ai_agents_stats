@@ -35,6 +35,7 @@ import {
 } from '@tabler/icons-react'
 import { addRetentionCommentAction } from '@/lib/actions/retention-actions'
 import { triggerRetentionRefresh } from '@/lib/hooks/use-paginated-retention'
+import { triggerSubscriptionRefresh } from '@/lib/hooks/use-paginated-subscription'
 import { cn } from '@/lib/utils'
 import type {
 	RetentionThreadTrace,
@@ -282,6 +283,7 @@ export function RetentionTraceModal({ trace }: RetentionTraceModalProps) {
 			])
 			setComment('')
 			triggerRetentionRefresh()
+			triggerSubscriptionRefresh()
 		} else {
 			toast.error(res.error || t('comment.saveFailed'))
 		}

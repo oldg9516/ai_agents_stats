@@ -14,6 +14,7 @@ import {
 	fetchRetentionSubtypes,
 	fetchRetentionTrace,
 	insertRetentionComment,
+	type TransparencyDirection,
 } from '@/lib/db/queries-retention'
 import { REQUEST_TIMEOUT } from '@/lib/queries/query-config'
 import type {
@@ -36,10 +37,11 @@ function getErrorMessage(error: unknown): string {
 export async function fetchRetentionListAction(
 	filters: RetentionFilters,
 	pagination: { limit: number; offset: number },
+	direction: TransparencyDirection = 'retention',
 ): Promise<{ success: boolean; data?: RetentionListItem[]; error?: string }> {
 	try {
 		const data = await Promise.race([
-			fetchRetentionList(filters, pagination),
+			fetchRetentionList(filters, pagination, direction),
 			createTimeoutPromise(REQUEST_TIMEOUT, 'Retention list fetch'),
 		])
 		return { success: true, data }
@@ -64,12 +66,12 @@ export async function fetchRetentionTraceAction(
 	}
 }
 
-export async function fetchRetentionSubtypesAction(dateRange: {
-	from: Date
-	to: Date
-}): Promise<{ success: boolean; data?: string[]; error?: string }> {
+export async function fetchRetentionSubtypesAction(
+	dateRange: { from: Date; to: Date },
+	direction: TransparencyDirection = 'retention',
+): Promise<{ success: boolean; data?: string[]; error?: string }> {
 	try {
-		const data = await fetchRetentionSubtypes(dateRange)
+		const data = await fetchRetentionSubtypes(dateRange, direction)
 		return { success: true, data }
 	} catch (error) {
 		return { success: false, error: getErrorMessage(error) }

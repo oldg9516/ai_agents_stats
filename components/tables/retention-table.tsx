@@ -21,6 +21,8 @@ interface RetentionTableProps {
 	hasMore: boolean
 	isFetchingMore: boolean
 	onLoadMore: () => void
+	/** Route base for the detail modal link (default '/retention'). */
+	basePath?: string
 }
 
 function outcomeClass(outcome: RetentionOutcome): string {
@@ -41,6 +43,7 @@ export function RetentionTable({
 	hasMore,
 	isFetchingMore,
 	onLoadMore,
+	basePath = '/retention',
 }: RetentionTableProps) {
 	const t = useTranslations('retention')
 
@@ -76,7 +79,7 @@ export function RetentionTable({
 									</TableCell>
 									<TableCell>
 										<Link
-											href={`/retention/ticket/${item.ticketId}`}
+											href={`${basePath}/ticket/${item.ticketId}`}
 											className='font-medium hover:underline line-clamp-1'
 										>
 											{item.subject || item.ticketId}

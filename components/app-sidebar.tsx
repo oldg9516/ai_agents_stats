@@ -25,6 +25,7 @@ import {
 	IconTicket,
 	IconUsers,
 	IconHeartHandshake,
+	IconBox,
 } from '@tabler/icons-react'
 import { useTranslations } from 'next-intl'
 import * as React from 'react'
@@ -77,6 +78,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				title: t('retention'),
 				url: '/retention',
 				icon: IconHeartHandshake,
+			},
+			{
+				title: t('subscription'),
+				url: '/subscription',
+				icon: IconBox,
 			},
 			{
 				title: t('evalDashboard'),

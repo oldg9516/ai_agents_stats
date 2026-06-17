@@ -11,6 +11,7 @@
 		"actionAnalysis": "Action Analysis",
 		"automationOverview": "Automation Overview",
 		"retention": "Retention Transparency",
+		"subscription": "Subscription Transparency",
 		"backlogReports": "Backlog Reports",
 		"evalDashboard": "Eval Dashboard",
 		"agentsStats": "Agent Statistics",
@@ -1580,5 +1581,9 @@
 			"loadMore": "Load more",
 			"searchPlaceholder": "Search by ticket ID, email, subject..."
 		}
+	},
+	"subscription": 	{
+		"title": "Subscription Transparency",
+		"description": "See exactly what the AI flow (Samantha) did with each subscription support ticket and why."
 	}
 }
