@@ -7,14 +7,14 @@
  *    info, action analysis, outstanding)
  *  - ai_agent_tasks: GROUND TRUTH outcome (send_reply / send_draft / close)
  *  - support_dialogs: incoming customer message, subject, email
- *  - retention_ticket_comments: support-agent notes
+ *  - ticket_transparency_comments: support-agent notes
  *
  * All JSON columns are TEXT and may be 'not_found' / invalid — parse defensively.
  */
 
 import { sql, eq, desc, and, inArray } from 'drizzle-orm'
 import { db } from './index'
-import { retentionTicketComments, supportDialogs } from './schema'
+import { ticketTransparencyComments, supportDialogs } from './schema'
 import type {
 	RetentionActionAnalysis,
 	RetentionComment,
@@ -224,7 +224,7 @@ export async function fetchRetentionList(
 				WHERE sd.thread_id = std.thread_id ORDER BY sd.date ASC LIMIT 1
 			) d ON true
 			LEFT JOIN LATERAL (
-				SELECT COUNT(*)::int AS cnt FROM retention_ticket_comments rc
+				SELECT COUNT(*)::int AS cnt FROM ticket_transparency_comments rc
 				WHERE rc.ticket_id = std.ticket_id
 			) c ON true
 			WHERE ${whereClause}
@@ -407,9 +407,9 @@ export async function fetchRetentionComments(
 ): Promise<RetentionComment[]> {
 	const rows = await db
 		.select()
-		.from(retentionTicketComments)
-		.where(eq(retentionTicketComments.ticketId, ticketId))
-		.orderBy(desc(retentionTicketComments.createdAt))
+		.from(ticketTransparencyComments)
+		.where(eq(ticketTransparencyComments.ticketId, ticketId))
+		.orderBy(desc(ticketTransparencyComments.createdAt))
 
 	return rows.map((r) => ({
 		id: r.id,
@@ -427,7 +427,7 @@ export async function insertRetentionComment(input: {
 	author: string
 	comment: string
 }): Promise<void> {
-	await db.insert(retentionTicketComments).values({
+	await db.insert(ticketTransparencyComments).values({
 		ticketId: input.ticketId,
 		threadId: input.threadId,
 		author: input.author,

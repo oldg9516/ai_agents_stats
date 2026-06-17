@@ -126,10 +126,10 @@ export const supportDialogs = pgTable('support_dialogs', {
 })
 
 /**
- * retention_ticket_comments — support-agent (Lor) notes on retention tickets,
- * captured on the Retention Transparency page for later logic analysis.
+ * ticket_transparency_comments — support-agent notes on transparency boards
+ * (Retention + Subscription), captured for later logic analysis.
  */
-export const retentionTicketComments = pgTable('retention_ticket_comments', {
+export const ticketTransparencyComments = pgTable('ticket_transparency_comments', {
 	id: bigint('id', { mode: 'number' }).primaryKey().generatedByDefaultAsIdentity(),
 	ticketId: varchar('ticket_id', { length: 255 }).notNull(),
 	threadId: varchar('thread_id', { length: 255 }),
