@@ -12,6 +12,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'
 import { IconSearch } from '@tabler/icons-react'
+import { normalizeTicketSearch } from '@/lib/utils/extract-ticket-id'
 import type { RetentionOutcome } from '@/lib/db/types'
 
 const OUTCOMES: RetentionOutcome[] = ['auto_reply', 'draft', 'auto_close']
@@ -24,7 +25,11 @@ export function RetentionContent() {
 
 	const [searchInput, setSearchInput] = useState(filters.searchQuery)
 
-	const applySearch = () => updateFilters({ searchQuery: searchInput.trim() })
+	const applySearch = () => {
+		const normalized = normalizeTicketSearch(searchInput)
+		setSearchInput(normalized)
+		updateFilters({ searchQuery: normalized })
+	}
 
 	const toggleOutcome = (value: RetentionOutcome) => {
 		const next = filters.outcomes.includes(value)

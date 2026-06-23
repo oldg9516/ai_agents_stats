@@ -155,11 +155,16 @@ export async function fetchRetentionList(
 ): Promise<RetentionListItem[]> {
 	const { dateRange, searchQuery, outcomes, outstanding, subtypes } = filters
 
-	const conds = [
-		directionCondition(direction),
-		sql`std.created_at >= ${dateRange.from}`,
-		sql`std.created_at < ${dateRange.to}`,
-	]
+	const hasSearch = searchQuery.trim().length > 0
+
+	const conds = [directionCondition(direction)]
+
+	// A search by ticket id / email / subject should find the ticket regardless
+	// of the selected period — only constrain by date when not searching.
+	if (!hasSearch) {
+		conds.push(sql`std.created_at >= ${dateRange.from}`)
+		conds.push(sql`std.created_at < ${dateRange.to}`)
+	}
 
 	if (outstanding === 'yes') conds.push(sql`std.is_outstanding IS TRUE`)
 	else if (outstanding === 'no') conds.push(sql`std.is_outstanding IS NOT TRUE`)
@@ -173,11 +178,19 @@ export async function fetchRetentionList(
 		)
 	}
 
-	if (searchQuery.trim()) {
-		const q = `%${searchQuery.trim()}%`
-		conds.push(
-			sql`(std.ticket_id ILIKE ${q} OR std.thread_id ILIKE ${q} OR d.email ILIKE ${q} OR d.ticket_subject ILIKE ${q})`,
-		)
+	if (hasSearch) {
+		const term = searchQuery.trim()
+		if (/^\d+$/.test(term)) {
+			// Pure numeric → ticket/thread id: exact match (no full-time ILIKE scan)
+			conds.push(
+				sql`(std.ticket_id = ${term} OR std.thread_id = ${term})`,
+			)
+		} else {
+			const q = `%${term}%`
+			conds.push(
+				sql`(std.ticket_id ILIKE ${q} OR std.thread_id ILIKE ${q} OR d.email ILIKE ${q} OR d.ticket_subject ILIKE ${q})`,
+			)
+		}
 	}
 
 	if (outcomes.length > 0) {
