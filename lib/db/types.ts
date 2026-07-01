@@ -1004,3 +1004,40 @@ export interface AgentChangesModalState {
 	agentEmail: string | null
 	changeType: AgentChangeType
 }
+
+// ---------------------------------------------------------------------------
+// Support Agents (Off-Shift Unassign automation roster)
+// ---------------------------------------------------------------------------
+
+/** A single working day: start/end in "HH:MM" 24h, or null for a day off. */
+export type DaySchedule = { start: string; end: string } | null
+
+export type Weekday = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'
+
+/** Weekly schedule keyed by lowercase weekday. Missing key === day off. */
+export type AgentSchedule = Partial<Record<Weekday, DaySchedule>>
+
+export interface SupportAgent {
+	id: number
+	name: string
+	email: string
+	zohoAgentId: string
+	schedule: AgentSchedule
+	enabled: boolean
+	timezone: string
+	createdAt: Date | string
+	updatedAt: Date | string
+}
+
+/** Payload for creating a new agent. */
+export interface CreateSupportAgentInput {
+	name: string
+	email: string
+	zohoAgentId: string
+	schedule: AgentSchedule
+	enabled: boolean
+	timezone?: string
+}
+
+/** Payload for updating an agent (all fields except id optional). */
+export type UpdateSupportAgentInput = Partial<Omit<CreateSupportAgentInput, never>>

@@ -195,6 +195,14 @@ export const backlogReportsKeys = {
 }
 
 /**
+ * Support Agents query keys
+ */
+export const supportAgentsKeys = {
+	all: ['support-agents'] as const,
+	list: () => [...supportAgentsKeys.all, 'list'] as const,
+}
+
+/**
  * Combined query keys object for easy access
  */
 export const queryKeys = {

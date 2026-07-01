@@ -5,6 +5,7 @@ import {
 	IconCamera,
 	IconCategory,
 	IconChartTreemap,
+	IconClockHour4,
 	IconDashboard,
 	IconDatabase,
 	IconFileAi,
@@ -113,6 +114,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				title: t('agentsStats'),
 				url: '/agents-stats',
 				icon: IconUsers,
+			},
+			{
+				title: t('supportAgents'),
+				url: '/support-agents',
+				icon: IconClockHour4,
 			},
 			{
 				title: t('aiChat'),
