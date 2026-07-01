@@ -12,6 +12,7 @@ import {
 	uuid,
 	varchar,
 } from 'drizzle-orm/pg-core'
+import type { AgentSchedule } from './types'
 
 // ---------------------------------------------------------------------------
 // Tables
@@ -91,6 +92,23 @@ export const supportThreadsData = pgTable('support_threads_data', {
 	outstandingTrigger: text('outstanding_trigger'),
 	subtypeOverride: boolean('subtype_override'),
 	subtypeOverrideReason: text('subtype_override_reason'),
+})
+
+/**
+ * support_agents — roster + weekly schedule for the Off-Shift Unassign
+ * automation. The n8n flow reads this table live every 15 minutes. Already
+ * created + seeded in prod; defined here only for type-safe queries.
+ */
+export const supportAgents = pgTable('support_agents', {
+	id: serial('id').primaryKey(),
+	name: text('name').notNull(),
+	email: text('email').notNull(),
+	zohoAgentId: text('zoho_agent_id').notNull().unique(),
+	schedule: jsonb('schedule').$type<AgentSchedule>().notNull().default({}),
+	enabled: boolean('enabled').notNull().default(true),
+	timezone: text('timezone').notNull().default('Asia/Jerusalem'),
+	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
 /**
