@@ -15,6 +15,7 @@
 		"backlogReports": "Backlog Reports",
 		"evalDashboard": "Eval Dashboard",
 		"agentsStats": "Agent Statistics",
+		"supportAgents": "Support Agents",
 		"aiChat": "AI Chat",
 		"documentation": "Documentation",
 		"settings": "Settings",
@@ -1585,5 +1586,43 @@
 	"subscription": 	{
 		"title": "Subscription Transparency",
 		"description": "See exactly what the AI flow (Samantha) did with each subscription support ticket and why."
+	},
+	"supportAgents": {
+		"title": "Support Agents & Schedule",
+		"subtitle": "Weekly working hours that drive the off-shift ticket unassign automation.",
+		"addAgent": "Add agent",
+		"name": "Name",
+		"email": "Email",
+		"zohoAgentId": "Zoho agent id",
+		"zohoHint": "Numeric Zoho Desk agent id (matches ticket assigneeId). If unknown, save with the agent disabled and fill it in later.",
+		"schedule": "Weekly schedule",
+		"enabled": "Enabled",
+		"actions": "Actions",
+		"edit": "Edit",
+		"delete": "Delete",
+		"deleting": "Deleting…",
+		"save": "Save",
+		"saving": "Saving…",
+		"cancel": "Cancel",
+		"off": "Off",
+		"empty": "No support agents yet.",
+		"addTitle": "Add support agent",
+		"editTitle": "Edit support agent",
+		"deleteTitle": "Delete agent",
+		"deleteConfirm": "Delete {name}? This removes them from the automation roster.",
+		"overnightHint": "Overnight shifts: enter an end time earlier than or equal to the start (e.g. 20:00–04:00). Times are in Asia/Jerusalem.",
+		"toastCreated": "Agent created",
+		"toastUpdated": "Agent updated",
+		"toastDeleted": "Agent deleted",
+		"toastError": "Something went wrong",
+		"weekdays": {
+			"sun": "Sun",
+			"mon": "Mon",
+			"tue": "Tue",
+			"wed": "Wed",
+			"thu": "Thu",
+			"fri": "Fri",
+			"sat": "Sat"
+		}
 	}
 }
