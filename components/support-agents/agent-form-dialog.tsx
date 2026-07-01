@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import {
@@ -74,9 +74,12 @@ export function AgentFormDialog({
 	const [enabled, setEnabled] = useState(true)
 	const [schedule, setSchedule] = useState<FormSchedule>(emptyForm())
 
-	// Reset the form whenever the dialog opens.
-	useEffect(() => {
-		if (!open) return
+	// Reset the form whenever the dialog opens (sync agent prop -> local form state).
+	// Adjusting state during render on an open->transition avoids the cascading
+	// re-renders that a setState-in-effect would cause.
+	const [wasOpen, setWasOpen] = useState(false)
+	if (open && !wasOpen) {
+		setWasOpen(true)
 		if (mode === 'edit' && agent) {
 			setName(agent.name)
 			setEmail(agent.email)
@@ -90,7 +93,9 @@ export function AgentFormDialog({
 			setEnabled(true)
 			setSchedule(emptyForm())
 		}
-	}, [open, mode, agent])
+	} else if (!open && wasOpen) {
+		setWasOpen(false)
+	}
 
 	const isPending = createMutation.isPending || updateMutation.isPending
 
