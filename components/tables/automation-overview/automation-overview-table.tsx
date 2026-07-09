@@ -170,11 +170,14 @@ export const AutomationOverviewTable = memo(function AutomationOverviewTable({
 														<span className='w-4' />
 													)}
 													<span className='truncate'>{cat.category}</span>
+													{/* Все подкатегории запущены — бейдж "Live" временно скрыт.
+													    Раскомментировать, чтобы вернуть.
 													{isLaunched && (
 														<Badge className='ml-1 bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 text-[10px] px-1.5 py-0'>
 															{t('launched')}
 														</Badge>
 													)}
+													*/}
 												</div>
 											</TableCell>
 											<TableCell>
