@@ -14,6 +14,7 @@ import {
 import {
 	createAgentsStatsSlice,
 	AgentsStatsSlice,
+	AI_AUTO_REPLY_EMAIL,
 } from './slices/agents-stats-slice'
 import {
 	createActionAnalysisSlice,
@@ -79,7 +80,7 @@ export const useStore = create<StoreState>()(
 			}),
 			{
 				name: 'ai-stats-storage',
-				version: 16, // 16: add subscription slice
+				version: 17, // 17: AI auto-reply account added to the default agent filter
 				partialize: state => ({
 					// Persist only filter states
 					dashboardFilters: state.dashboardFilters,
@@ -98,8 +99,8 @@ export const useStore = create<StoreState>()(
 				}),
 				// Migration function for version changes
 				migrate: (persistedState: any, version: number) => {
-					// Force reset on version change
-					if (version !== 15) {
+					// Only the two previous versions migrate forward; anything older resets
+					if (version !== 15 && version !== 16) {
 						return null
 					}
 
@@ -123,6 +124,15 @@ export const useStore = create<StoreState>()(
 								return null
 							}
 						}
+					}
+
+					// v17: show the AI auto-reply account without discarding other filters
+					const agents = persistedState?.agentStatsFilters?.agents
+					if (Array.isArray(agents) && !agents.includes(AI_AUTO_REPLY_EMAIL)) {
+						persistedState.agentStatsFilters.agents = [
+							...agents,
+							AI_AUTO_REPLY_EMAIL,
+						]
 					}
 
 					return persistedState

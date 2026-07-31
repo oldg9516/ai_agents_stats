@@ -957,9 +957,17 @@ export interface AgentStatsRow {
 	criticalErrors: number // AI errors that needed fixing (AI_ERROR_CLASSIFICATIONS)
 	unnecessaryChangesPercent: number // (changed - criticalErrors) / aiReviewed * 100
 	aiEfficiency: number // 100 - unnecessaryChangesPercent
+	// Time from AI draft creation to the agent's reply — kept for upcoming metrics,
+	// not what the UI shows as FRT (see the frt* fields below)
 	avgResponseTime: number // AVG(human_reply_date - created_at) in hours
 	medianResponseTime: number // Median(human_reply_date - created_at) in hours
 	p90ResponseTime: number // P90(human_reply_date - created_at) in hours
+	// First Response Time: customer's first message → first agent reply on the ticket,
+	// credited to the agent who replied first. One value per ticket.
+	frtCount: number // Tickets the agent answered first within the period
+	avgFrt: number // AVG first response time in hours
+	medianFrt: number // Median first response time in hours
+	p90Frt: number // P90 first response time in hours
 }
 
 /**

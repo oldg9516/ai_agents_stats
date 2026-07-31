@@ -39,6 +39,21 @@ type RpcAgentStatsRow = {
 	avg_response_time: number
 	median_response_time: number
 	p90_response_time: number
+	frt_count: number
+	avg_frt: number
+	median_frt: number
+	p90_frt: number
+}
+
+/**
+ * The RPC returns per-agent rows plus one aggregate row under this email.
+ * Totals must come from the database: a median of per-agent medians is not a median.
+ */
+const TOTALS_ROW_EMAIL = 'TOTAL'
+
+export type AgentStatsResult = {
+	agents: AgentStatsRow[]
+	totals: AgentStatsRow | null
 }
 
 type PaginatedTicketsResult = {
@@ -55,13 +70,17 @@ type PaginatedTicketsResult = {
  *
  * Replaces 40+ sequential HTTP requests with one PostgreSQL function call.
  * The RPC handles all JOINs, aggregation, and percentile calculations server-side.
+ *
+ * `filters.agents` scopes the totals row only — per-agent rows are always returned in
+ * full so the page's agent filter keeps seeing every agent.
  */
 export async function fetchAgentStats(
 	filters: AgentStatsFilters
-): Promise<{ success: true; data: AgentStatsRow[] } | { success: false; error: string }> {
+): Promise<{ success: true; data: AgentStatsResult } | { success: false; error: string }> {
 	try {
 		const startTime = Date.now()
-		const { dateRange, versions, categories } = filters
+		const { dateRange, versions, categories, agents } = filters
+		const selectedAgents = agents ?? []
 
 		const result = await db.execute(sql`SELECT * FROM get_agent_stats(
 			p_date_from := ${dateRange.from.toISOString()}::timestamptz,
@@ -69,12 +88,13 @@ export async function fetchAgentStats(
 			p_versions := ${versions.length > 0 ? sql`ARRAY[${sql.join(versions.map(v => sql`${v}`), sql`, `)}]::text[]` : sql`NULL::text[]`},
 			p_categories := ${categories.length > 0 ? sql`ARRAY[${sql.join(categories.map(c => sql`${c}`), sql`, `)}]::text[]` : sql`NULL::text[]`},
 			p_critical_classifications := ${sql`ARRAY[${sql.join(CRITICAL_CHANGE_CLASSIFICATIONS.map(c => sql`${c}`), sql`, `)}]::text[]`},
-			p_excluded_email := ${'api@levhaolam.com'}::text
+			p_excluded_email := ${'api@levhaolam.com'}::text,
+			p_agents := ${selectedAgents.length > 0 ? sql`ARRAY[${sql.join(selectedAgents.map(a => sql`${a}`), sql`, `)}]::text[]` : sql`NULL::text[]`}
 		)`)
 
 		const data = result.rows as unknown as RpcAgentStatsRow[]
 
-		const agentStats: AgentStatsRow[] = (data || []).map(row => ({
+		const mapRow = (row: RpcAgentStatsRow): AgentStatsRow => ({
 			email: row.email,
 			answeredTickets: Number(row.answered_tickets),
 			aiReviewed: Number(row.ai_reviewed),
@@ -85,12 +105,27 @@ export async function fetchAgentStats(
 			avgResponseTime: Number(row.avg_response_time),
 			medianResponseTime: Number(row.median_response_time),
 			p90ResponseTime: Number(row.p90_response_time),
-		}))
+			frtCount: Number(row.frt_count),
+			avgFrt: Number(row.avg_frt),
+			medianFrt: Number(row.median_frt),
+			p90Frt: Number(row.p90_frt),
+		})
+
+		const totalsRow = (data || []).find(row => row.email === TOTALS_ROW_EMAIL)
+		const agentStats: AgentStatsRow[] = (data || [])
+			.filter(row => row.email !== TOTALS_ROW_EMAIL)
+			.map(mapRow)
 
 		const duration = Date.now() - startTime
 		console.log(`[AgentStats] Fetched ${agentStats.length} agents via RPC in ${duration}ms`)
 
-		return { success: true, data: agentStats }
+		return {
+			success: true,
+			data: {
+				agents: agentStats,
+				totals: totalsRow ? mapRow(totalsRow) : null,
+			},
+		}
 	} catch (error) {
 		console.error('❌ [AgentStats] Error:', error)
 		return {

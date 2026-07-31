@@ -23,73 +23,14 @@ import type {
 import { DEFAULT_AGENT_EMAILS } from '@/lib/store/slices/agents-stats-slice'
 
 // =============================================================================
-// HELPERS
-// =============================================================================
-
-/**
- * Calculate totals row for all agents (pure function, not a server action)
- */
-function calculateAgentStatsTotals(rows: AgentStatsRow[]): AgentStatsRow {
-	const totals = rows.reduce(
-		(acc, row) => ({
-			answeredTickets: acc.answeredTickets + row.answeredTickets,
-			aiReviewed: acc.aiReviewed + row.aiReviewed,
-			changed: acc.changed + row.changed,
-			criticalErrors: acc.criticalErrors + row.criticalErrors,
-		}),
-		{ answeredTickets: 0, aiReviewed: 0, changed: 0, criticalErrors: 0 }
-	)
-
-	const unnecessaryChanges = Math.max(0, totals.changed - totals.criticalErrors)
-	const unnecessaryChangesPercent = totals.aiReviewed > 0
-		? (unnecessaryChanges / totals.aiReviewed) * 100
-		: 0
-	const aiEfficiency = 100 - unnecessaryChangesPercent
-
-	// Calculate weighted average response times across all agents
-	const rowsWithResponseTime = rows.filter(r => r.avgResponseTime > 0)
-	const totalAvgResponseTime = rowsWithResponseTime.length > 0
-		? Math.round(
-				(rowsWithResponseTime.reduce((sum, r) => sum + r.avgResponseTime, 0) /
-					rowsWithResponseTime.length) *
-					10
-			) / 10
-		: 0
-	const totalMedianResponseTime = rowsWithResponseTime.length > 0
-		? Math.round(
-				(rowsWithResponseTime.reduce((sum, r) => sum + r.medianResponseTime, 0) /
-					rowsWithResponseTime.length) *
-					10
-			) / 10
-		: 0
-	const totalP90ResponseTime = rowsWithResponseTime.length > 0
-		? Math.round(
-				(rowsWithResponseTime.reduce((sum, r) => sum + r.p90ResponseTime, 0) /
-					rowsWithResponseTime.length) *
-					10
-			) / 10
-		: 0
-
-	return {
-		email: 'TOTAL',
-		answeredTickets: totals.answeredTickets,
-		aiReviewed: totals.aiReviewed,
-		changed: totals.changed,
-		criticalErrors: totals.criticalErrors,
-		unnecessaryChangesPercent: Math.round(unnecessaryChangesPercent * 10) / 10,
-		aiEfficiency: Math.round(aiEfficiency * 10) / 10,
-		avgResponseTime: totalAvgResponseTime,
-		medianResponseTime: totalMedianResponseTime,
-		p90ResponseTime: totalP90ResponseTime,
-	}
-}
-
-// =============================================================================
 // QUERY KEYS
 // =============================================================================
 
 /**
  * Generate query key for agent stats
+ *
+ * Includes the selected agents: the totals row is aggregated over their raw tickets
+ * server-side, so it cannot be recomputed on the client when the selection changes.
  */
 function getAgentStatsQueryKey(filters: AgentStatsFilters) {
 	return [
@@ -99,6 +40,7 @@ function getAgentStatsQueryKey(filters: AgentStatsFilters) {
 			to: filters.dateRange.to.toISOString(),
 			versions: filters.versions.sort(),
 			categories: filters.categories.sort(),
+			agents: [...(filters.agents ?? DEFAULT_AGENT_EMAILS)].sort(),
 		},
 	] as const
 }
@@ -150,14 +92,19 @@ export function useAgentStats(filters: AgentStatsFilters): {
 	error: Error | null
 	refetch: () => void
 } {
+	// Default to DEFAULT_AGENT_EMAILS if agents is undefined (old localStorage), so the
+	// server's totals row covers exactly the agents the table renders
+	const selectedAgents = filters.agents ?? DEFAULT_AGENT_EMAILS
+	const resolvedFilters: AgentStatsFilters = { ...filters, agents: selectedAgents }
+
 	const query = useQuery({
-		queryKey: getAgentStatsQueryKey(filters),
+		queryKey: getAgentStatsQueryKey(resolvedFilters),
 		queryFn: async () => {
 			const controller = new AbortController()
 			const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
 
 			try {
-				const result = await fetchAgentStats(filters)
+				const result = await fetchAgentStats(resolvedFilters)
 				clearTimeout(timeoutId)
 
 				if (!result.success) {
@@ -179,21 +126,16 @@ export function useAgentStats(filters: AgentStatsFilters): {
 	})
 
 	// All available agent emails (for filter dropdown)
-	const allEmails = (query.data || []).map(row => row.email).sort()
+	const allEmails = (query.data?.agents || []).map(row => row.email).sort()
 
-	// Filter by selected agents (client-side, instant)
-	// Default to DEFAULT_AGENT_EMAILS if agents is undefined (old localStorage)
-	const selectedAgents = filters.agents ?? DEFAULT_AGENT_EMAILS
-	const filteredData = query.data
-		? selectedAgents.length > 0
-			? query.data.filter(row => selectedAgents.includes(row.email))
-			: query.data
-		: []
+	// Filter rows by selected agents (client-side, instant — the server returns everyone)
+	const agentRows = query.data?.agents ?? []
+	const filteredData = selectedAgents.length > 0
+		? agentRows.filter(row => selectedAgents.includes(row.email))
+		: agentRows
 
-	// Calculate totals from filtered data
-	const totals = filteredData.length > 0
-		? calculateAgentStatsTotals(filteredData)
-		: null
+	// Totals come from the RPC: percentiles cannot be aggregated from per-agent results
+	const totals = filteredData.length > 0 ? (query.data?.totals ?? null) : null
 
 	return {
 		data: filteredData,
