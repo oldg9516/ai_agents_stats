@@ -52,6 +52,13 @@ function formatResponseTime(hours: number): string {
 	}
 }
 
+/**
+ * Render a first response time, or a dash when the agent answered nothing first
+ */
+function renderFrt(hours: number, frtCount: number): string {
+	return frtCount > 0 && hours > 0 ? formatResponseTime(hours) : '—'
+}
+
 interface AgentsStatsTableProps {
 	data: AgentStatsRow[]
 	totals: AgentStatsRow | null
@@ -59,40 +66,13 @@ interface AgentsStatsTableProps {
 }
 
 /**
- * Get color classes based on efficiency percentage
- */
-function getEfficiencyColor(efficiency: number): string {
-	if (efficiency >= 90) {
-		return 'text-green-600 dark:text-green-400 font-semibold'
-	}
-	if (efficiency >= 70) {
-		return 'text-yellow-600 dark:text-yellow-400 font-semibold'
-	}
-	return 'text-red-600 dark:text-red-400 font-semibold'
-}
-
-/**
- * Get color classes for unnecessary changes (lower is better)
- */
-function getUnnecessaryColor(percent: number): string {
-	if (percent <= 10) {
-		return 'text-green-600 dark:text-green-400'
-	}
-	if (percent <= 30) {
-		return 'text-yellow-600 dark:text-yellow-400'
-	}
-	return 'text-red-600 dark:text-red-400'
-}
-
-/**
- * Agents Stats Table
+ * Agent SLA Stats Table
  *
  * Features:
- * - Sorting
+ * - Sorting (slowest first response first by default)
  * - Search by email
  * - Click row to open modal with agent's changes
- * - Color coding for efficiency metrics
- * - Total row at bottom
+ * - Total row at bottom, aggregated server-side over raw tickets
  */
 export function AgentsStatsTable({
 	data,
@@ -100,8 +80,9 @@ export function AgentsStatsTable({
 	onAgentClick,
 }: AgentsStatsTableProps) {
 	const t = useTranslations('agentsStats')
+	// Slowest first response on top — that is what the SLA table is read for
 	const [sorting, setSorting] = useState<SortingState>([
-		{ id: 'aiEfficiency', desc: true },
+		{ id: 'avgFrt', desc: true },
 	])
 	const [globalFilter, setGlobalFilter] = useState('')
 
@@ -143,178 +124,53 @@ export function AgentsStatsTable({
 				),
 			},
 			{
-				accessorKey: 'aiReviewed',
+				accessorKey: 'avgFrt',
 				header: () => (
 					<TooltipProvider>
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<div className="flex items-center gap-1 cursor-help">
-									{t('table.aiReviewed')}
+									{t('table.avgFrt')}
 									<IconInfoCircle className="h-3.5 w-3.5 text-muted-foreground" />
 								</div>
 							</TooltipTrigger>
-							<TooltipContent>
-								<p>{t('tooltips.aiReviewed')}</p>
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
-				),
-				cell: ({ row }) => (
-					<div className="text-center">{row.original.aiReviewed}</div>
-				),
-			},
-			{
-				accessorKey: 'changed',
-				header: () => (
-					<TooltipProvider>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<div className="flex items-center gap-1 cursor-help">
-									{t('table.changed')}
-									<IconInfoCircle className="h-3.5 w-3.5 text-muted-foreground" />
-								</div>
-							</TooltipTrigger>
-							<TooltipContent>
-								<p>{t('tooltips.changed')}</p>
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
-				),
-				cell: ({ row }) => (
-					<div className="text-center">{row.original.changed}</div>
-				),
-			},
-			{
-				accessorKey: 'criticalErrors',
-				header: () => (
-					<TooltipProvider>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<div className="flex items-center gap-1 cursor-help">
-									{t('table.criticalErrors')}
-									<IconInfoCircle className="h-3.5 w-3.5 text-muted-foreground" />
-								</div>
-							</TooltipTrigger>
-							<TooltipContent>
-								<p>{t('tooltips.criticalErrors')}</p>
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
-				),
-				cell: ({ row }) => (
-					<div className="text-center text-red-600 dark:text-red-400">
-						{row.original.criticalErrors}
-					</div>
-				),
-			},
-			{
-				accessorKey: 'unnecessaryChangesPercent',
-				header: () => (
-					<TooltipProvider>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<div className="flex items-center gap-1 cursor-help">
-									{t('table.unnecessaryChanges')}
-									<IconInfoCircle className="h-3.5 w-3.5 text-muted-foreground" />
-								</div>
-							</TooltipTrigger>
-							<TooltipContent>
-								<p>{t('tooltips.unnecessaryChanges')}</p>
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
-				),
-				cell: ({ row }) => (
-					<div
-						className={cn(
-							'text-center',
-							getUnnecessaryColor(row.original.unnecessaryChangesPercent)
-						)}
-					>
-						{row.original.unnecessaryChangesPercent.toFixed(1)}%
-					</div>
-				),
-			},
-			{
-				accessorKey: 'aiEfficiency',
-				header: () => (
-					<TooltipProvider>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<div className="flex items-center gap-1 cursor-help">
-									{t('table.aiEfficiency')}
-									<IconInfoCircle className="h-3.5 w-3.5 text-muted-foreground" />
-								</div>
-							</TooltipTrigger>
-							<TooltipContent>
-								<p>{t('tooltips.aiEfficiency')}</p>
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
-				),
-				cell: ({ row }) => (
-					<div
-						className={cn(
-							'text-center',
-							getEfficiencyColor(row.original.aiEfficiency)
-						)}
-					>
-						{row.original.aiEfficiency.toFixed(1)}%
-					</div>
-				),
-			},
-			{
-				accessorKey: 'avgResponseTime',
-				header: () => (
-					<TooltipProvider>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<div className="flex items-center gap-1 cursor-help">
-									{t('table.avgResponseTime')}
-									<IconInfoCircle className="h-3.5 w-3.5 text-muted-foreground" />
-								</div>
-							</TooltipTrigger>
-							<TooltipContent>
-								<p>{t('tooltips.avgResponseTime')}</p>
+							<TooltipContent className="max-w-xs">
+								<p>{t('tooltips.avgFrt')}</p>
 							</TooltipContent>
 						</Tooltip>
 					</TooltipProvider>
 				),
 				cell: ({ row }) => (
 					<div className="text-center">
-						{row.original.avgResponseTime > 0
-							? formatResponseTime(row.original.avgResponseTime)
-							: '—'}
+						{renderFrt(row.original.avgFrt, row.original.frtCount)}
 					</div>
 				),
 			},
 			{
-				accessorKey: 'medianResponseTime',
+				accessorKey: 'medianFrt',
 				header: () => (
 					<TooltipProvider>
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<div className="flex items-center gap-1 cursor-help">
-									{t('table.medianResponseTime')}
+									{t('table.medianFrt')}
 									<IconInfoCircle className="h-3.5 w-3.5 text-muted-foreground" />
 								</div>
 							</TooltipTrigger>
-							<TooltipContent>
-								<p>{t('tooltips.medianResponseTime')}</p>
+							<TooltipContent className="max-w-xs">
+								<p>{t('tooltips.medianFrt')}</p>
 							</TooltipContent>
 						</Tooltip>
 					</TooltipProvider>
 				),
 				cell: ({ row }) => (
 					<div className="text-center">
-						{row.original.medianResponseTime > 0
-							? formatResponseTime(row.original.medianResponseTime)
-							: '—'}
+						{renderFrt(row.original.medianFrt, row.original.frtCount)}
 					</div>
 				),
 			},
 			{
-				accessorKey: 'p90ResponseTime',
+				accessorKey: 'p90Frt',
 				header: () => (
 					<TooltipProvider>
 						<Tooltip>
@@ -324,7 +180,7 @@ export function AgentsStatsTable({
 									<IconInfoCircle className="h-3.5 w-3.5 text-muted-foreground" />
 								</div>
 							</TooltipTrigger>
-							<TooltipContent>
+							<TooltipContent className="max-w-xs">
 								<p>{t('tooltips.p90ResponseTime')}</p>
 							</TooltipContent>
 						</Tooltip>
@@ -332,9 +188,7 @@ export function AgentsStatsTable({
 				),
 				cell: ({ row }) => (
 					<div className="text-center">
-						{row.original.p90ResponseTime > 0
-							? formatResponseTime(row.original.p90ResponseTime)
-							: '—'}
+						{renderFrt(row.original.p90Frt, row.original.frtCount)}
 					</div>
 				),
 			},
@@ -397,7 +251,7 @@ export function AgentsStatsTable({
 
 			<CardContent>
 				<div className="rounded-md border overflow-x-auto">
-					<Table className="min-w-[800px]">
+					<Table className="min-w-[560px]">
 						<TableHeader>
 							{table.getHeaderGroups().map(headerGroup => (
 								<TableRow key={headerGroup.id}>
@@ -458,44 +312,13 @@ export function AgentsStatsTable({
 												{totals.answeredTickets}
 											</TableCell>
 											<TableCell className="text-center">
-												{totals.aiReviewed}
+												{renderFrt(totals.avgFrt, totals.frtCount)}
 											</TableCell>
 											<TableCell className="text-center">
-												{totals.changed}
-											</TableCell>
-											<TableCell className="text-center text-red-600 dark:text-red-400">
-												{totals.criticalErrors}
-											</TableCell>
-											<TableCell
-												className={cn(
-													'text-center',
-													getUnnecessaryColor(totals.unnecessaryChangesPercent)
-												)}
-											>
-												{totals.unnecessaryChangesPercent.toFixed(1)}%
-											</TableCell>
-											<TableCell
-												className={cn(
-													'text-center',
-													getEfficiencyColor(totals.aiEfficiency)
-												)}
-											>
-												{totals.aiEfficiency.toFixed(1)}%
+												{renderFrt(totals.medianFrt, totals.frtCount)}
 											</TableCell>
 											<TableCell className="text-center">
-												{totals.avgResponseTime > 0
-													? formatResponseTime(totals.avgResponseTime)
-													: '—'}
-											</TableCell>
-											<TableCell className="text-center">
-												{totals.medianResponseTime > 0
-													? formatResponseTime(totals.medianResponseTime)
-													: '—'}
-											</TableCell>
-											<TableCell className="text-center">
-												{totals.p90ResponseTime > 0
-													? formatResponseTime(totals.p90ResponseTime)
-													: '—'}
+												{renderFrt(totals.p90Frt, totals.frtCount)}
 											</TableCell>
 										</TableRow>
 									)}

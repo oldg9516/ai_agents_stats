@@ -4,14 +4,14 @@ import { Metadata } from 'next'
 import { Suspense } from 'react'
 
 export const metadata: Metadata = {
-	title: 'Agent Statistics | AI Agent Stats',
-	description: 'Analyze how efficiently agents use AI drafts',
+	title: 'Agent SLA stats | AI Agent Stats',
+	description: 'First response time per agent',
 }
 
 /**
- * Agents Stats Page - Server Component
+ * Agent SLA Stats Page - Server Component
  *
- * Displays agent statistics showing how efficiently agents use AI drafts
+ * Displays per-agent first response time (customer request → first agent reply)
  */
 export default function AgentsStatsPage() {
 	return (

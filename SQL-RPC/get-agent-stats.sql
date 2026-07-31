@@ -5,7 +5,18 @@
 -- v3: Fixed date filtering — answered_tickets uses agent reply date,
 --     ai_stats uses human_reply_date instead of thread_date.
 --     This captures agents responding to older tickets within the selected period.
+-- v4: Added true First Response Time (frt_count/avg_frt/median_frt/p90_frt) measured
+--     on support_dialogs: customer's first incoming message → first agent reply on the
+--     ticket, credited to the agent who replied first. The pre-existing
+--     avg/median/p90_response_time columns measure something else — the gap between
+--     AI draft creation (ai_human_comparison.created_at) and the agent's reply, and
+--     only for tickets that have an AI comparison record — so they stay for the
+--     upcoming metrics but are no longer what the UI shows as FRT.
+--     Also added p_agents (scopes the TOTAL row only) and an email='TOTAL' row, since
+--     medians and percentiles cannot be aggregated from per-agent results client-side.
 
+-- Drop both signatures: v4 adds p_agents, and leaving the 6-argument version in place
+-- would create an overload with a stale return shape that calls could resolve to.
 DROP FUNCTION IF EXISTS get_agent_stats(
   timestamp with time zone,
   timestamp with time zone,
@@ -13,6 +24,16 @@ DROP FUNCTION IF EXISTS get_agent_stats(
   text[],
   text[],
   text
+);
+
+DROP FUNCTION IF EXISTS get_agent_stats(
+  timestamp with time zone,
+  timestamp with time zone,
+  text[],
+  text[],
+  text[],
+  text,
+  text[]
 );
 
 CREATE OR REPLACE FUNCTION get_agent_stats(
@@ -25,7 +46,10 @@ CREATE OR REPLACE FUNCTION get_agent_stats(
     'CRITICAL_FACT_ERROR', 'MAJOR_FUNCTIONAL_OMISSION',
     'MINOR_INFO_GAP', 'CONFUSING_VERBOSITY', 'TONAL_MISALIGNMENT'
   ],
-  p_excluded_email text DEFAULT 'api@levhaolam.com'
+  p_excluded_email text DEFAULT 'api@levhaolam.com',
+  -- Scopes the TOTAL row only. Per-agent rows are always returned in full so the
+  -- UI's agent dropdown still sees every agent.
+  p_agents text[] DEFAULT NULL
 )
 RETURNS TABLE (
   email text,
@@ -37,7 +61,11 @@ RETURNS TABLE (
   ai_efficiency numeric,
   avg_response_time numeric,
   median_response_time numeric,
-  p90_response_time numeric
+  p90_response_time numeric,
+  frt_count bigint,
+  avg_frt numeric,
+  median_frt numeric,
+  p90_frt numeric
 )
 LANGUAGE plpgsql
 SET search_path = public
@@ -140,12 +168,177 @@ BEGIN
       AND (p_versions IS NULL OR ahc.prompt_version = ANY(p_versions))
       AND (p_categories IS NULL OR ahc.request_subtype = ANY(p_categories))
     GROUP BY ahc.email
-  )
+  ),
 
-  -- Final: FULL JOIN and calculate efficiency
+  -- CTE 6: Customer's first incoming message per ticket.
+  -- No date filter: a ticket answered inside the window may have arrived long before it.
+  ticket_first_in AS (
+    SELECT
+      sd.ticket_id,
+      MIN(sd.date) AS first_in_date
+    FROM support_dialogs sd
+    WHERE sd.direction = 'in'
+    GROUP BY sd.ticket_id
+  ),
+
+  -- CTE 7: The ticket's first agent reply after that message — one row per ticket,
+  -- credited to whoever replied first.
+  -- The date window is deliberately NOT applied here: narrowing to the window first and
+  -- then taking the earliest reply would report "first reply inside the window" rather
+  -- than the ticket's actual first response.
+  ticket_first_response AS (
+    SELECT DISTINCT ON (sd.ticket_id)
+      sd.ticket_id,
+      sd.email,
+      sd.date AS first_out_date,
+      tfi.first_in_date
+    FROM support_dialogs sd
+    INNER JOIN ticket_first_in tfi ON tfi.ticket_id = sd.ticket_id
+    WHERE sd.direction = 'out'
+      AND sd.email IS NOT NULL
+      AND sd.email <> p_excluded_email
+      AND sd.date > tfi.first_in_date
+      AND EXISTS (
+        SELECT 1 FROM eligible_threads et WHERE et.ticket_id = sd.ticket_id
+      )
+    ORDER BY sd.ticket_id, sd.date
+  ),
+
+  -- CTE 8: First response times (hours) for replies that land inside the window
+  frt_in_window AS (
+    SELECT
+      tfr.email,
+      EXTRACT(EPOCH FROM (tfr.first_out_date - tfr.first_in_date)) / 3600.0 AS frt_hours
+    FROM ticket_first_response tfr
+    WHERE tfr.first_out_date >= p_date_from
+      AND tfr.first_out_date < p_date_to
+  ),
+
+  -- CTE 9: FRT aggregates per agent
+  frt_per_agent AS (
+    SELECT
+      fiw.email,
+      COUNT(*)::bigint AS frt_count,
+      ROUND(AVG(fiw.frt_hours)::numeric, 1) AS avg_frt,
+      ROUND(
+        (percentile_cont(0.5) WITHIN GROUP (ORDER BY fiw.frt_hours))::numeric, 1
+      ) AS median_frt,
+      ROUND(
+        (percentile_cont(0.9) WITHIN GROUP (ORDER BY fiw.frt_hours))::numeric, 1
+      ) AS p90_frt
+    FROM frt_in_window fiw
+    GROUP BY fiw.email
+  ),
+
+  -- CTE 10: Every agent present in any of the three aggregates
+  all_agents AS (
+    SELECT apa.email FROM answered_per_agent apa
+    UNION
+    SELECT ais.email FROM ai_stats ais
+    UNION
+    SELECT fpa.email FROM frt_per_agent fpa
+  ),
+
+  -- CTE 11: Raw AI draft → reply durations for the agents the TOTAL row covers.
+  -- The TOTAL row needs raw rows: a median of per-agent medians is not a median.
+  selected_ahc_durations AS (
+    SELECT
+      EXTRACT(EPOCH FROM (ahc.human_reply_date - ahc.created_at)) / 3600.0 AS hours
+    FROM ai_human_comparison ahc
+    WHERE ahc.email IS NOT NULL
+      AND ahc.email <> p_excluded_email
+      AND ahc.human_reply_date >= p_date_from
+      AND ahc.human_reply_date < p_date_to
+      AND ahc.created_at IS NOT NULL
+      AND ahc.human_reply_date > ahc.created_at
+      AND (p_versions IS NULL OR ahc.prompt_version = ANY(p_versions))
+      AND (p_categories IS NULL OR ahc.request_subtype = ANY(p_categories))
+      AND (p_agents IS NULL OR ahc.email = ANY(p_agents))
+  ),
+
+  -- CTE 12: Raw first response times for the agents the TOTAL row covers
+  selected_frt AS (
+    SELECT fiw.frt_hours
+    FROM frt_in_window fiw
+    WHERE p_agents IS NULL OR fiw.email = ANY(p_agents)
+  ),
+
+  -- CTE 13: Counting columns of the TOTAL row
+  selected_counts AS (
+    SELECT
+      COALESCE((
+        SELECT SUM(apa.answered_tickets) FROM answered_per_agent apa
+        WHERE p_agents IS NULL OR apa.email = ANY(p_agents)
+      ), 0)::bigint AS answered_tickets,
+      COALESCE((
+        SELECT SUM(ais.ai_reviewed) FROM ai_stats ais
+        WHERE p_agents IS NULL OR ais.email = ANY(p_agents)
+      ), 0)::bigint AS ai_reviewed,
+      COALESCE((
+        SELECT SUM(ais.changed) FROM ai_stats ais
+        WHERE p_agents IS NULL OR ais.email = ANY(p_agents)
+      ), 0)::bigint AS changed,
+      COALESCE((
+        SELECT SUM(ais.critical_errors) FROM ai_stats ais
+        WHERE p_agents IS NULL OR ais.email = ANY(p_agents)
+      ), 0)::bigint AS critical_errors
+  ),
+
+  -- CTE 14: TOTAL row — aggregated over raw rows, not over per-agent results
+  total_row AS (
+    SELECT
+      'TOTAL'::text AS email,
+      sc.answered_tickets AS answered_tickets,
+      sc.ai_reviewed AS ai_reviewed,
+      sc.changed AS changed,
+      sc.critical_errors AS critical_errors,
+      CASE
+        WHEN sc.ai_reviewed > 0
+        THEN ROUND(
+          GREATEST(0, (sc.changed - sc.critical_errors)::numeric)
+          / sc.ai_reviewed * 100, 1
+        )
+        ELSE 0
+      END AS unnecessary_changes_pct,
+      CASE
+        WHEN sc.ai_reviewed > 0
+        THEN ROUND(
+          100 - GREATEST(0, (sc.changed - sc.critical_errors)::numeric)
+          / sc.ai_reviewed * 100, 1
+        )
+        ELSE 0
+      END AS ai_efficiency,
+      COALESCE(ROUND((
+        SELECT AVG(sad.hours) FROM selected_ahc_durations sad
+      )::numeric, 1), 0) AS avg_response_time,
+      COALESCE(ROUND((
+        SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY sad.hours)
+        FROM selected_ahc_durations sad
+      )::numeric, 1), 0) AS median_response_time,
+      COALESCE(ROUND((
+        SELECT percentile_cont(0.9) WITHIN GROUP (ORDER BY sad.hours)
+        FROM selected_ahc_durations sad
+      )::numeric, 1), 0) AS p90_response_time,
+      (SELECT COUNT(*) FROM selected_frt)::bigint AS frt_count,
+      COALESCE(ROUND((
+        SELECT AVG(sf.frt_hours) FROM selected_frt sf
+      )::numeric, 1), 0) AS avg_frt,
+      COALESCE(ROUND((
+        SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY sf.frt_hours)
+        FROM selected_frt sf
+      )::numeric, 1), 0) AS median_frt,
+      COALESCE(ROUND((
+        SELECT percentile_cont(0.9) WITHIN GROUP (ORDER BY sf.frt_hours)
+        FROM selected_frt sf
+      )::numeric, 1), 0) AS p90_frt
+    FROM selected_counts sc
+  ),
+
+  -- CTE 15: Per-agent rows (always every agent, so the UI's agent filter stays populated)
+  agent_rows AS (
   SELECT
-    COALESCE(aa.email, ai.email)::text AS email,
-    COALESCE(aa.answered_tickets, 0) AS answered_tickets,
+    aa.email::text AS email,
+    COALESCE(apa.answered_tickets, 0) AS answered_tickets,
     COALESCE(ai.ai_reviewed, 0) AS ai_reviewed,
     COALESCE(ai.changed, 0) AS changed,
     COALESCE(ai.critical_errors, 0) AS critical_errors,
@@ -167,16 +360,27 @@ BEGIN
     END AS ai_efficiency,
     COALESCE(ai.avg_resp_time, 0) AS avg_response_time,
     COALESCE(ai.median_resp_time, 0) AS median_response_time,
-    COALESCE(ai.p90_resp_time, 0) AS p90_response_time
-  FROM answered_per_agent aa
-  FULL OUTER JOIN ai_stats ai ON ai.email = aa.email
-  WHERE COALESCE(aa.answered_tickets, 0) > 0 OR COALESCE(ai.ai_reviewed, 0) > 0
-  ORDER BY
-    CASE
-      WHEN COALESCE(ai.ai_reviewed, 0) > 0
-      THEN 100 - GREATEST(0, (COALESCE(ai.changed, 0) - COALESCE(ai.critical_errors, 0))::numeric)
-        / ai.ai_reviewed * 100
-      ELSE 0
-    END DESC;
+    COALESCE(ai.p90_resp_time, 0) AS p90_response_time,
+    COALESCE(frt.frt_count, 0)::bigint AS frt_count,
+    COALESCE(frt.avg_frt, 0) AS avg_frt,
+    COALESCE(frt.median_frt, 0) AS median_frt,
+    COALESCE(frt.p90_frt, 0) AS p90_frt
+  FROM all_agents aa
+  LEFT JOIN answered_per_agent apa ON apa.email = aa.email
+  LEFT JOIN ai_stats ai ON ai.email = aa.email
+  LEFT JOIN frt_per_agent frt ON frt.email = aa.email
+  WHERE COALESCE(apa.answered_tickets, 0) > 0
+     OR COALESCE(ai.ai_reviewed, 0) > 0
+     OR COALESCE(frt.frt_count, 0) > 0
+  )
+
+  -- Final: per-agent rows plus the TOTAL row, slowest first response on top
+  SELECT combined.*
+  FROM (
+    SELECT * FROM agent_rows
+    UNION ALL
+    SELECT * FROM total_row
+  ) combined
+  ORDER BY (combined.email = 'TOTAL'), combined.avg_frt DESC;
 END;
 $$;

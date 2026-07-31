@@ -14,7 +14,7 @@
 		"subscription": "Subscription Transparency",
 		"backlogReports": "Backlog Reports",
 		"evalDashboard": "Eval Dashboard",
-		"agentsStats": "Agent Statistics",
+		"agentsStats": "Agent SLA stats",
 		"supportAgents": "Support Agents",
 		"aiChat": "AI Chat",
 		"documentation": "Documentation",
@@ -1353,8 +1353,8 @@
 		}
 	},
 	"agentsStats": {
-		"title": "Agent Statistics",
-		"description": "How efficiently agents use AI drafts",
+		"title": "Agent SLA stats",
+		"description": "First response time by agent",
 		"filters": {
 			"title": "Filter Options",
 			"description": "Filter agent statistics by version and category"
@@ -1362,13 +1362,8 @@
 		"table": {
 			"email": "Email",
 			"answeredTickets": "Answered Tickets",
-			"aiReviewed": "AI Reviewed",
-			"changed": "Changed",
-			"criticalErrors": "Critical Errors",
-			"unnecessaryChanges": "Unnecessary Changes %",
-			"aiEfficiency": "AI Efficiency %",
-			"avgResponseTime": "Avg Response Time",
-			"medianResponseTime": "Median Response Time",
+			"avgFrt": "Avg FRT",
+			"medianFrt": "Median FRT",
 			"p90ResponseTime": "P90 Response Time",
 			"total": "Total",
 			"noResults": "No agent data found",
@@ -1394,14 +1389,9 @@
 		},
 		"tooltips": {
 			"answeredTickets": "Total tickets where agent provided a response",
-			"aiReviewed": "Tickets with AI classification (reviewed)",
-			"changed": "Tickets where agent modified AI response",
-			"criticalErrors": "Real AI errors that needed fixing",
-			"unnecessaryChanges": "Agent changed but AI was correct",
-			"aiEfficiency": "How efficiently agent uses AI drafts",
-			"avgResponseTime": "Average time from ticket creation to agent response",
-			"medianResponseTime": "Median response time (50% of responses are faster)",
-			"p90ResponseTime": "90th percentile response time (90% of responses are faster)"
+			"avgFrt": "First Response Time — average time from the customer's request arriving to the first agent reply. Counted once per ticket and credited to the agent who replied first.",
+			"medianFrt": "Median First Response Time: half of the tickets get their first reply faster than this",
+			"p90ResponseTime": "90th percentile First Response Time: 90% of tickets get their first reply faster than this"
 		}
 	},
 	"actionTypes": {

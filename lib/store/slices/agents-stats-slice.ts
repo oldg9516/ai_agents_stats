@@ -7,7 +7,13 @@ import { StateCreator } from 'zustand'
 import { filterSliceActions, getDefaultDateRange } from '../create-filter-slice'
 
 /**
- * Default agents shown on the agents-stats page
+ * AI auto-reply account. It answers customers directly, so it competes with humans for
+ * a ticket's first response and is shown by default to make its SLA visible.
+ */
+export const AI_AUTO_REPLY_EMAIL = 'samantha@levhaolam.com'
+
+/**
+ * Default agents shown on the agent SLA stats page
  */
 export const DEFAULT_AGENT_EMAILS = [
 	'yakov@levhaolam.com',
@@ -17,6 +23,7 @@ export const DEFAULT_AGENT_EMAILS = [
 	'daniilm@levhaolam.com',
 	'yevgeniya@levhaolam.com',
 	'max.z@levhaolam.com',
+	AI_AUTO_REPLY_EMAIL,
 ]
 
 function getDefaultAgentChangesModalState(): AgentChangesModalState {
