@@ -962,9 +962,9 @@ export interface AgentStatsRow {
 	avgResponseTime: number // AVG(human_reply_date - created_at) in hours
 	medianResponseTime: number // Median(human_reply_date - created_at) in hours
 	p90ResponseTime: number // P90(human_reply_date - created_at) in hours
-	// First Response Time: customer's first message → first agent reply on the ticket,
-	// credited to the agent who replied first. One value per ticket.
-	frtCount: number // Tickets the agent answered first within the period
+	// First Response Time: customer's request → first agent reply to it, credited to the
+	// agent who replied. One value per request, so several per ticket.
+	frtCount: number // Customer requests the agent answered within the period
 	avgFrt: number // AVG first response time in hours
 	medianFrt: number // Median first response time in hours
 	p90Frt: number // P90 first response time in hours
