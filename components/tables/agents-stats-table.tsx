@@ -124,6 +124,27 @@ export function AgentsStatsTable({
 				),
 			},
 			{
+				accessorKey: 'frtCount',
+				header: () => (
+					<TooltipProvider>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<div className="flex items-center gap-1 cursor-help">
+									{t('table.answeredRequests')}
+									<IconInfoCircle className="h-3.5 w-3.5 text-muted-foreground" />
+								</div>
+							</TooltipTrigger>
+							<TooltipContent className="max-w-xs">
+								<p>{t('tooltips.answeredRequests')}</p>
+							</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
+				),
+				cell: ({ row }) => (
+					<div className="text-center">{row.original.frtCount}</div>
+				),
+			},
+			{
 				accessorKey: 'avgFrt',
 				header: () => (
 					<TooltipProvider>
@@ -251,7 +272,7 @@ export function AgentsStatsTable({
 
 			<CardContent>
 				<div className="rounded-md border overflow-x-auto">
-					<Table className="min-w-[560px]">
+					<Table className="min-w-[680px]">
 						<TableHeader>
 							{table.getHeaderGroups().map(headerGroup => (
 								<TableRow key={headerGroup.id}>
@@ -310,6 +331,9 @@ export function AgentsStatsTable({
 											</TableCell>
 											<TableCell className="text-center">
 												{totals.answeredTickets}
+											</TableCell>
+											<TableCell className="text-center">
+												{totals.frtCount}
 											</TableCell>
 											<TableCell className="text-center">
 												{renderFrt(totals.avgFrt, totals.frtCount)}
