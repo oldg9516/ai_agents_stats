@@ -6,14 +6,17 @@
 --     ai_stats uses human_reply_date instead of thread_date.
 --     This captures agents responding to older tickets within the selected period.
 -- v4: Added true First Response Time (frt_count/avg_frt/median_frt/p90_frt) measured
---     on support_dialogs: customer's first incoming message → first agent reply on the
---     ticket, credited to the agent who replied first. The pre-existing
+--     on support_dialogs: customer's request → first agent reply to it, credited to the
+--     agent who replied. The pre-existing
 --     avg/median/p90_response_time columns measure something else — the gap between
 --     AI draft creation (ai_human_comparison.created_at) and the agent's reply, and
 --     only for tickets that have an AI comparison record — so they stay for the
 --     upcoming metrics but are no longer what the UI shows as FRT.
 --     Also added p_agents (scopes the TOTAL row only) and an email='TOTAL' row, since
 --     medians and percentiles cannot be aggregated from per-agent results client-side.
+-- v5: FRT is measured per customer request instead of once per ticket — a single ticket
+--     carries several requests, and measuring from the ticket's first message inflated
+--     the numbers for long-lived tickets.
 
 -- Drop both signatures: v4 adds p_agents, and leaving the 6-argument version in place
 -- would create an overload with a stale return shape that calls could resolve to.
@@ -170,48 +173,53 @@ BEGIN
     GROUP BY ahc.email
   ),
 
-  -- CTE 6: Customer's first incoming message per ticket.
-  -- No date filter: a ticket answered inside the window may have arrived long before it.
-  ticket_first_in AS (
+  -- CTE 6: Agent replies with the previous reply on the same ticket, which bounds the
+  -- request each reply answers. One ticket holds several customer requests, so FRT is
+  -- measured per request rather than once per ticket.
+  agent_out AS (
     SELECT
       sd.ticket_id,
-      MIN(sd.date) AS first_in_date
-    FROM support_dialogs sd
-    WHERE sd.direction = 'in'
-    GROUP BY sd.ticket_id
-  ),
-
-  -- CTE 7: The ticket's first agent reply after that message — one row per ticket,
-  -- credited to whoever replied first.
-  -- The date window is deliberately NOT applied here: narrowing to the window first and
-  -- then taking the earliest reply would report "first reply inside the window" rather
-  -- than the ticket's actual first response.
-  ticket_first_response AS (
-    SELECT DISTINCT ON (sd.ticket_id)
-      sd.ticket_id,
       sd.email,
-      sd.date AS first_out_date,
-      tfi.first_in_date
+      sd.date AS out_date,
+      LAG(sd.date) OVER (PARTITION BY sd.ticket_id ORDER BY sd.date) AS prev_out_date
     FROM support_dialogs sd
-    INNER JOIN ticket_first_in tfi ON tfi.ticket_id = sd.ticket_id
     WHERE sd.direction = 'out'
       AND sd.email IS NOT NULL
       AND sd.email <> p_excluded_email
-      AND sd.date > tfi.first_in_date
       AND EXISTS (
         SELECT 1 FROM eligible_threads et WHERE et.ticket_id = sd.ticket_id
       )
-    ORDER BY sd.ticket_id, sd.date
+  ),
+
+  -- CTE 7: When the answered request started — the earliest customer message that arrived
+  -- after the previous reply and before this one. Consecutive customer messages count as
+  -- one request, so a burst is measured from the moment the customer first wrote.
+  -- request_date IS NULL means the agent wrote without a new customer message
+  -- (a follow-up), which is not a response and is dropped below.
+  request_response AS (
+    SELECT
+      ao.email,
+      ao.out_date,
+      (
+        SELECT MIN(sd.date)
+        FROM support_dialogs sd
+        WHERE sd.ticket_id = ao.ticket_id
+          AND sd.direction = 'in'
+          AND sd.date < ao.out_date
+          AND (ao.prev_out_date IS NULL OR sd.date > ao.prev_out_date)
+      ) AS request_date
+    FROM agent_out ao
   ),
 
   -- CTE 8: First response times (hours) for replies that land inside the window
   frt_in_window AS (
     SELECT
-      tfr.email,
-      EXTRACT(EPOCH FROM (tfr.first_out_date - tfr.first_in_date)) / 3600.0 AS frt_hours
-    FROM ticket_first_response tfr
-    WHERE tfr.first_out_date >= p_date_from
-      AND tfr.first_out_date < p_date_to
+      rr.email,
+      EXTRACT(EPOCH FROM (rr.out_date - rr.request_date)) / 3600.0 AS frt_hours
+    FROM request_response rr
+    WHERE rr.request_date IS NOT NULL
+      AND rr.out_date >= p_date_from
+      AND rr.out_date < p_date_to
   ),
 
   -- CTE 9: FRT aggregates per agent

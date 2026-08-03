@@ -22,24 +22,26 @@ Decision: implement the metric Irina actually named, rather than relabel the exi
 
 ## FRT definition (agreed)
 
-Per **ticket**: time from the customer's first incoming message to the **first** outgoing agent reply after it, credited to the agent who sent that reply.
+Per **customer request**: time from a customer's request arriving to the first agent reply to it, credited to the agent who replied.
 
-- Unit: one number per ticket, so an agent's FRT count is lower than their Answered Tickets count (which counts threads/обращения).
+Revised after Irina reviewed the first implementation: it measured once per ticket, and she pointed out that one ticket carries several requests. Measuring from the ticket's first message also inflated long-lived tickets — Daniel Ioffe's August row showed a 27-day median off a single measurement.
+
+- A request starts at the earliest customer message that arrived after the previous agent reply on that ticket. Consecutive customer messages count as one request, so a burst is measured from the moment the customer first wrote.
+- Replies with no new customer message before them (agent follow-ups) are not responses and are excluded.
 - Date window applies to the **reply** date, consistent with how Answered Tickets already filters.
-- The window is applied *after* choosing the ticket's first reply — never "first reply inside the window".
 - `api@levhaolam.com` stays excluded, as everywhere else on the page.
 - `samantha@levhaolam.com` (AI auto-reply account, median ≈18 min, no AI comparisons, absent from `support_agents`) counts as a normal responder and gets her own row: if the bot answered the customer in 18 minutes, the ticket's honest FRT is 18 minutes. She is added to the default agent filter so her SLA is visible.
 - Version/category filters keep working: FRT tickets are restricted to the same `eligible_threads` universe as the rest of the table (verified: 3774 of 3781 tickets in a 30-day window are in `support_threads_data`).
 
-Rejected alternatives: per-incoming-message reply time (a different metric — good candidate for Irina's upcoming 4 metrics, but it is not *first* response time); ignoring the bot's reply so the human's later reply counts as "first" (inflates numbers — the customer had an answer already).
+Rejected alternative: ignoring the bot's reply so a human's later reply counts as "first" (inflates numbers — the customer already had an answer).
 
 ## Changes
 
 ### Database — `SQL-RPC/get-agent-stats.sql` (v4)
 
-- New CTE `ticket_first_in`: `MIN(date)` of `direction='in'` per ticket, full history (no date filter).
-- New CTE `ticket_first_response`: `DISTINCT ON (ticket_id)` first `direction='out'` row after `first_in_date`, excluding `p_excluded_email`, restricted to `eligible_threads`.
-- New CTE `frt_per_agent`: window filter on the reply date, then per email `frt_count`, `avg_frt`, `median_frt`, `p90_frt` (hours, 1 decimal).
+- New CTE `agent_out`: outgoing non-`api@` replies on eligible tickets, with `LAG(date)` giving the previous reply on the same ticket.
+- New CTE `request_response`: for each reply, the earliest incoming message after the previous reply and before this one. `NULL` means an agent follow-up, dropped downstream.
+- New CTEs `frt_in_window` / `frt_per_agent`: window filter on the reply date, then per email `frt_count`, `avg_frt`, `median_frt`, `p90_frt` (hours, 1 decimal).
 - New parameter `p_agents text[] DEFAULT NULL` — affects **only** the TOTAL row, so the agent dropdown still receives every agent.
 - New returned columns `frt_count`, `avg_frt`, `median_frt`, `p90_frt`.
 - New `email = 'TOTAL'` row with exact aggregates over the raw ticket set of the selected agents (percentiles cannot be derived client-side from per-agent aggregates). The old columns in that row are aggregated correctly too, so no returned number is misleading.
@@ -69,9 +71,9 @@ Rejected alternatives: per-incoming-message reply time (a different metric — g
 | Types | `./node_modules/.bin/tsc --noEmit` clean (5 pre-existing errors are the baseline; `rtk tsc` gives false positives) |
 | Lint | `pnpm lint` |
 | UAT | Deploy RPC, call it, compare against hand-written SQL |
-| PROD | Deploy only after Gleb's explicit OK; then verify sofia = 25.6 / 11.3 / 56.8 over 440 tickets for a 30-day window |
-| UI | Local dev points at UAT, whose data ends 2026-03-17 — check with a date range in the past |
+| PROD | Deploy, then verify sofia = 42.7 / 11.7 / 72.1 over 659 requests for a 30-day window, and that the TOTAL row matches a hand-written aggregate for the same agent scope |
+| UI | Local dev reads PROD — `.env` sets `VERCEL_ENV=production` |
 
 ## Expected impact
 
-Displayed numbers drop for every agent (roughly 20–45% on avg/median) and the FRT base is smaller than Answered Tickets. Irina needs a short written explanation of the new formula once the numbers are confirmed.
+Displayed numbers change for every agent, and the FRT base stays below Answered Tickets because agent follow-ups without a new customer message are not responses. Irina needs a short written explanation of the formula.
