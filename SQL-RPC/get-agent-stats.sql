@@ -17,6 +17,10 @@
 -- v5: FRT is measured per customer request instead of once per ticket — a single ticket
 --     carries several requests, and measuring from the ticket's first message inflated
 --     the numbers for long-lived tickets.
+-- v6: answered_tickets counts tickets. It previously summed every incoming thread of the
+--     answered tickets, including threads the agent never replied to, so it matched
+--     neither tickets nor requests (sofia over 30 days: 948 shown, 594 tickets, 659
+--     requests). frt_count is the request count and is now surfaced in the UI.
 
 -- Drop both signatures: v4 adds p_agents, and leaving the 6-argument version in place
 -- would create an overload with a stale return shape that calls could resolve to.
@@ -106,29 +110,29 @@ BEGIN
       )
   ),
 
-  -- CTE 3: Count threads per ticket that have incoming messages (for answered_tickets count)
-  ticket_thread_counts AS (
-    SELECT
-      et.ticket_id,
-      COUNT(DISTINCT et.thread_id) AS thread_count
+  -- CTE 3: Tickets that actually contain a customer message
+  answerable_tickets AS (
+    SELECT DISTINCT et.ticket_id
     FROM eligible_threads et
     WHERE EXISTS (
       SELECT 1 FROM support_dialogs sd
       WHERE sd.thread_id = et.thread_id AND sd.direction = 'in'
     )
     AND et.ticket_id IN (SELECT ticket_id FROM agent_replies)
-    GROUP BY et.ticket_id
   ),
 
-  -- CTE 4: Count answered tickets per agent
-  -- Agent "answered" if they sent an outgoing message in the date range
-  -- on a ticket that has eligible threads with incoming messages
+  -- CTE 4: Tickets answered per agent
+  -- Agent "answered" if they sent an outgoing message in the date range on a ticket
+  -- that has eligible threads with incoming messages.
+  -- v6: counts the tickets themselves. It used to sum every incoming thread of those
+  -- tickets, including threads the agent never replied to, which inflated the number
+  -- well past both the ticket count and the request count.
   answered_per_agent AS (
     SELECT
       ar.email,
-      SUM(ttc.thread_count)::bigint AS answered_tickets
+      COUNT(DISTINCT ar.ticket_id)::bigint AS answered_tickets
     FROM agent_replies ar
-    INNER JOIN ticket_thread_counts ttc ON ttc.ticket_id = ar.ticket_id
+    INNER JOIN answerable_tickets att ON att.ticket_id = ar.ticket_id
     GROUP BY ar.email
   ),
 
@@ -274,9 +278,13 @@ BEGIN
   -- CTE 13: Counting columns of the TOTAL row
   selected_counts AS (
     SELECT
+      -- Distinct tickets, not a sum of per-agent counts: one ticket answered by two
+      -- agents is still one ticket
       COALESCE((
-        SELECT SUM(apa.answered_tickets) FROM answered_per_agent apa
-        WHERE p_agents IS NULL OR apa.email = ANY(p_agents)
+        SELECT COUNT(DISTINCT ar.ticket_id)
+        FROM agent_replies ar
+        INNER JOIN answerable_tickets att ON att.ticket_id = ar.ticket_id
+        WHERE p_agents IS NULL OR ar.email = ANY(p_agents)
       ), 0)::bigint AS answered_tickets,
       COALESCE((
         SELECT SUM(ais.ai_reviewed) FROM ai_stats ais
