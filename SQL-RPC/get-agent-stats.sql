@@ -21,6 +21,11 @@
 --     answered tickets, including threads the agent never replied to, so it matched
 --     neither tickets nor requests (sofia over 30 days: 948 shown, 594 tickets, 659
 --     requests). frt_count is the request count and is now surfaced in the UI.
+-- v7: Added Resolution Time (resolution_count/median_resolution) from the Zoho ticket
+--     snapshot in support_dialogs.data->payload: closedTime − createdTime for tickets
+--     closed inside the window, credited to the agent who sent the last reply before the
+--     close. Ticket-level, not per episode — our database has no status history, so
+--     reopen cycles, hold periods and the identity of the closing agent are unavailable.
 
 -- Drop both signatures: v4 adds p_agents, and leaving the 6-argument version in place
 -- would create an overload with a stale return shape that calls could resolve to.
@@ -42,6 +47,7 @@ DROP FUNCTION IF EXISTS get_agent_stats(
   text,
   text[]
 );
+-- v7 keeps the same signature but changes the return shape, which also requires a drop.
 
 CREATE OR REPLACE FUNCTION get_agent_stats(
   p_date_from timestamp with time zone,
@@ -72,7 +78,9 @@ RETURNS TABLE (
   frt_count bigint,
   avg_frt numeric,
   median_frt numeric,
-  p90_frt numeric
+  p90_frt numeric,
+  resolution_count bigint,
+  median_resolution numeric
 )
 LANGUAGE plpgsql
 SET search_path = public
@@ -226,6 +234,69 @@ BEGIN
       AND rr.out_date < p_date_to
   ),
 
+  -- CTE 8a: Latest Zoho ticket snapshot. n8n stores the ticket payload on every dialog
+  -- row and refreshes it afterwards, so the newest row carries the freshest status.
+  -- This is a snapshot, not a status history: reopen cycles, hold periods and the
+  -- identity of the agent who pressed Closed are not recoverable from it.
+  -- The close-date filter runs before the grouping on purpose: narrowing to tickets
+  -- closed inside the window first keeps this at ~4s, while grouping every dialog row and
+  -- filtering afterwards pushed the function past its 30s timeout.
+  ticket_snapshot AS (
+    SELECT DISTINCT ON (sd.ticket_id)
+      sd.ticket_id,
+      (sd.data -> 'payload' ->> 'createdTime')::timestamptz AS ticket_created_ts,
+      (sd.data -> 'payload' ->> 'closedTime')::timestamptz AS ticket_closed_ts
+    FROM support_dialogs sd
+    WHERE sd.data -> 'payload' ->> 'closedTime' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T'
+      AND sd.data -> 'payload' ->> 'createdTime' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T'
+      AND (sd.data -> 'payload' ->> 'closedTime')::timestamptz >= p_date_from
+      AND (sd.data -> 'payload' ->> 'closedTime')::timestamptz < p_date_to
+    ORDER BY sd.ticket_id, sd.date DESC
+  ),
+
+  -- CTE 8b: Resolution time per ticket closed inside the window, credited to the agent
+  -- who sent the last reply before the close. Zoho's closing agent is not stored in our
+  -- database; this rule covers 89% of closed tickets versus 67% for the ticket assignee
+  -- and agrees with the assignee in 97% of the cases where both are known.
+  -- Note the window applies to the close date here, while the FRT columns filter on the
+  -- reply date.
+  resolution_per_ticket AS (
+    SELECT
+      ts.ticket_id,
+      last_reply.email,
+      EXTRACT(EPOCH FROM (ts.ticket_closed_ts - ts.ticket_created_ts)) / 3600.0
+        AS resolution_hours
+    FROM ticket_snapshot ts
+    INNER JOIN (
+      SELECT DISTINCT et.ticket_id FROM eligible_threads et
+    ) elig ON elig.ticket_id = ts.ticket_id
+    LEFT JOIN LATERAL (
+      SELECT sd.email
+      FROM support_dialogs sd
+      WHERE sd.ticket_id = ts.ticket_id
+        AND sd.direction = 'out'
+        AND sd.email IS NOT NULL
+        AND sd.email <> p_excluded_email
+        AND sd.date <= ts.ticket_closed_ts
+      ORDER BY sd.date DESC
+      LIMIT 1
+    ) last_reply ON true
+    WHERE ts.ticket_closed_ts > ts.ticket_created_ts
+  ),
+
+  -- CTE 8c: Resolution aggregates per agent
+  resolution_per_agent AS (
+    SELECT
+      rpt.email,
+      COUNT(*)::bigint AS resolution_count,
+      ROUND(
+        (percentile_cont(0.5) WITHIN GROUP (ORDER BY rpt.resolution_hours))::numeric, 1
+      ) AS median_resolution
+    FROM resolution_per_ticket rpt
+    WHERE rpt.email IS NOT NULL
+    GROUP BY rpt.email
+  ),
+
   -- CTE 9: FRT aggregates per agent
   frt_per_agent AS (
     SELECT
@@ -249,6 +320,8 @@ BEGIN
     SELECT ais.email FROM ai_stats ais
     UNION
     SELECT fpa.email FROM frt_per_agent fpa
+    UNION
+    SELECT rpa.email FROM resolution_per_agent rpa
   ),
 
   -- CTE 11: Raw AI draft → reply durations for the agents the TOTAL row covers.
@@ -273,6 +346,14 @@ BEGIN
     SELECT fiw.frt_hours
     FROM frt_in_window fiw
     WHERE p_agents IS NULL OR fiw.email = ANY(p_agents)
+  ),
+
+  -- CTE 12a: Raw resolution times for the agents the TOTAL row covers
+  selected_resolution AS (
+    SELECT rpt.resolution_hours
+    FROM resolution_per_ticket rpt
+    WHERE rpt.email IS NOT NULL
+      AND (p_agents IS NULL OR rpt.email = ANY(p_agents))
   ),
 
   -- CTE 13: Counting columns of the TOTAL row
@@ -346,7 +427,12 @@ BEGIN
       COALESCE(ROUND((
         SELECT percentile_cont(0.9) WITHIN GROUP (ORDER BY sf.frt_hours)
         FROM selected_frt sf
-      )::numeric, 1), 0) AS p90_frt
+      )::numeric, 1), 0) AS p90_frt,
+      (SELECT COUNT(*) FROM selected_resolution)::bigint AS resolution_count,
+      COALESCE(ROUND((
+        SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY sr.resolution_hours)
+        FROM selected_resolution sr
+      )::numeric, 1), 0) AS median_resolution
     FROM selected_counts sc
   ),
 
@@ -380,14 +466,18 @@ BEGIN
     COALESCE(frt.frt_count, 0)::bigint AS frt_count,
     COALESCE(frt.avg_frt, 0) AS avg_frt,
     COALESCE(frt.median_frt, 0) AS median_frt,
-    COALESCE(frt.p90_frt, 0) AS p90_frt
+    COALESCE(frt.p90_frt, 0) AS p90_frt,
+    COALESCE(res.resolution_count, 0)::bigint AS resolution_count,
+    COALESCE(res.median_resolution, 0) AS median_resolution
   FROM all_agents aa
   LEFT JOIN answered_per_agent apa ON apa.email = aa.email
   LEFT JOIN ai_stats ai ON ai.email = aa.email
   LEFT JOIN frt_per_agent frt ON frt.email = aa.email
+  LEFT JOIN resolution_per_agent res ON res.email = aa.email
   WHERE COALESCE(apa.answered_tickets, 0) > 0
      OR COALESCE(ai.ai_reviewed, 0) > 0
      OR COALESCE(frt.frt_count, 0) > 0
+     OR COALESCE(res.resolution_count, 0) > 0
   )
 
   -- Final: per-agent rows plus the TOTAL row, slowest first response on top

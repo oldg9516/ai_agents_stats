@@ -968,6 +968,11 @@ export interface AgentStatsRow {
 	avgFrt: number // AVG first response time in hours
 	medianFrt: number // Median first response time in hours
 	p90Frt: number // P90 first response time in hours
+	// Resolution time from the Zoho ticket snapshot: closedTime − createdTime for tickets
+	// closed inside the period, credited to the agent who replied last before the close.
+	// Ticket-level, not per episode — we store no ticket status history.
+	resolutionCount: number // Tickets closed inside the period, credited to the agent
+	medianResolution: number // Median resolution time in hours
 }
 
 /**

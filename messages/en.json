@@ -1366,6 +1366,8 @@
 			"avgFrt": "Avg FRT",
 			"medianFrt": "Median FRT",
 			"p90ResponseTime": "P90 Response Time",
+			"frtFulfillment": "FRT KPI %",
+			"medianResolution": "Median Resolution",
 			"total": "Total",
 			"noResults": "No agent data found",
 			"searchPlaceholder": "Search by email..."
@@ -1393,7 +1395,9 @@
 			"answeredRequests": "Customer requests the agent replied to — the base the FRT columns are calculated on. One ticket can hold several requests; agent follow-ups with no new customer message are not counted.",
 			"avgFrt": "First Response Time — average time from a customer's request arriving to the first agent reply to it. Measured per request, so one ticket can hold several, and credited to the agent who replied.",
 			"medianFrt": "Median First Response Time: half of the requests get their first reply faster than this",
-			"p90ResponseTime": "90th percentile First Response Time: 90% of requests get their first reply faster than this"
+			"p90ResponseTime": "90th percentile First Response Time: 90% of requests get their first reply faster than this",
+			"frtFulfillment": "Share of the 24-hour FRT target achieved: MIN(100%, 24h / median FRT). Capped at 100% — replying faster than the target earns no extra credit.",
+			"medianResolution": "Median time from ticket creation to its close, for tickets closed during the period, credited to the agent who replied last before the close. Approximate: our database stores no ticket status history, so this is per ticket rather than per request, and reopen cycles are not separated. No target is set yet."
 		}
 	},
 	"actionTypes": {
