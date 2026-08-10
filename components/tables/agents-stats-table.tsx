@@ -35,6 +35,7 @@ import {
 	TooltipTrigger,
 } from '@/components/ui/tooltip'
 import type { AgentStatsRow, AgentChangeType } from '@/lib/db/types'
+import { FRT_TARGET_HOURS, fulfillmentPercent } from '@/constants/sla-targets'
 import { cn } from '@/lib/utils'
 
 /**
@@ -53,10 +54,23 @@ function formatResponseTime(hours: number): string {
 }
 
 /**
- * Render a first response time, or a dash when the agent answered nothing first
+ * Render a duration, or a dash when there is nothing to measure
  */
 function renderFrt(hours: number, frtCount: number): string {
 	return frtCount > 0 && hours > 0 ? formatResponseTime(hours) : '—'
+}
+
+/**
+ * Color the KPI share: on target, partway there, or far off
+ */
+function getFulfillmentColor(percent: number): string {
+	if (percent >= 100) {
+		return 'text-green-600 dark:text-green-400 font-semibold'
+	}
+	if (percent >= 50) {
+		return 'text-yellow-600 dark:text-yellow-400 font-semibold'
+	}
+	return 'text-red-600 dark:text-red-400 font-semibold'
 }
 
 interface AgentsStatsTableProps {
@@ -213,6 +227,69 @@ export function AgentsStatsTable({
 					</div>
 				),
 			},
+			{
+				id: 'frtFulfillment',
+				accessorFn: row =>
+					fulfillmentPercent(FRT_TARGET_HOURS, row.medianFrt, row.frtCount) ?? -1,
+				header: () => (
+					<TooltipProvider>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<div className="flex items-center gap-1 cursor-help">
+									{t('table.frtFulfillment')}
+									<IconInfoCircle className="h-3.5 w-3.5 text-muted-foreground" />
+								</div>
+							</TooltipTrigger>
+							<TooltipContent className="max-w-xs">
+								<p>{t('tooltips.frtFulfillment')}</p>
+							</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
+				),
+				cell: ({ row }) => {
+					const percent = fulfillmentPercent(
+						FRT_TARGET_HOURS,
+						row.original.medianFrt,
+						row.original.frtCount
+					)
+					return (
+						<div
+							className={cn(
+								'text-center',
+								percent !== null && getFulfillmentColor(percent)
+							)}
+						>
+							{percent !== null ? `${percent.toFixed(0)}%` : '—'}
+						</div>
+					)
+				},
+			},
+			{
+				accessorKey: 'medianResolution',
+				header: () => (
+					<TooltipProvider>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<div className="flex items-center gap-1 cursor-help">
+									{t('table.medianResolution')}
+									<IconInfoCircle className="h-3.5 w-3.5 text-muted-foreground" />
+								</div>
+							</TooltipTrigger>
+							<TooltipContent className="max-w-xs">
+								<p>{t('tooltips.medianResolution')}</p>
+							</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
+				),
+				cell: ({ row }) => (
+					<div className="text-center">
+						{renderFrt(
+							row.original.medianResolution,
+							row.original.resolutionCount
+						)}
+					</div>
+				),
+			},
 		],
 		[t]
 	)
@@ -272,7 +349,7 @@ export function AgentsStatsTable({
 
 			<CardContent>
 				<div className="rounded-md border overflow-x-auto">
-					<Table className="min-w-[680px]">
+					<Table className="min-w-[900px]">
 						<TableHeader>
 							{table.getHeaderGroups().map(headerGroup => (
 								<TableRow key={headerGroup.id}>
@@ -343,6 +420,31 @@ export function AgentsStatsTable({
 											</TableCell>
 											<TableCell className="text-center">
 												{renderFrt(totals.p90Frt, totals.frtCount)}
+											</TableCell>
+											{(() => {
+												const percent = fulfillmentPercent(
+													FRT_TARGET_HOURS,
+													totals.medianFrt,
+													totals.frtCount
+												)
+												return (
+													<TableCell
+														className={cn(
+															'text-center',
+															percent !== null && getFulfillmentColor(percent)
+														)}
+													>
+														{percent !== null
+															? `${percent.toFixed(0)}%`
+															: '—'}
+													</TableCell>
+												)
+											})()}
+											<TableCell className="text-center">
+												{renderFrt(
+													totals.medianResolution,
+													totals.resolutionCount
+												)}
 											</TableCell>
 										</TableRow>
 									)}
