@@ -973,6 +973,9 @@ export interface AgentStatsRow {
 	// Ticket-level, not per episode — we store no ticket status history.
 	resolutionCount: number // Tickets closed inside the period, credited to the agent
 	medianResolution: number // Median resolution time in hours
+	// Of those closed tickets, the ones the customer reopened within 7 days. Undercounts
+	// tickets closed and reopened repeatedly — the snapshot keeps only the last close.
+	reopenedCount: number
 }
 
 /**

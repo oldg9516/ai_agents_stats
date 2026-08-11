@@ -1367,7 +1367,10 @@
 			"medianFrt": "Median FRT",
 			"p90ResponseTime": "P90 Response Time",
 			"frtFulfillment": "FRT KPI %",
+			"closedTickets": "Closed Tickets",
 			"medianResolution": "Median Resolution",
+			"reopenRate": "Reopen Rate",
+			"reopenFulfillment": "Reopen KPI %",
 			"total": "Total",
 			"noResults": "No agent data found",
 			"searchPlaceholder": "Search by email..."
@@ -1397,7 +1400,10 @@
 			"medianFrt": "Median First Response Time: half of the requests get their first reply faster than this",
 			"p90ResponseTime": "90th percentile First Response Time: 90% of requests get their first reply faster than this",
 			"frtFulfillment": "Share of the 24-hour FRT target achieved: MIN(100%, 24h / median FRT). Capped at 100% — replying faster than the target earns no extra credit.",
-			"medianResolution": "Median time from ticket creation to its close, for tickets closed during the period, credited to the agent who replied last before the close. Approximate: our database stores no ticket status history, so this is per ticket rather than per request, and reopen cycles are not separated. No target is set yet."
+			"closedTickets": "Tickets closed during the period, credited to the agent who replied last before the close — the base for Median Resolution and Reopen Rate",
+			"medianResolution": "Median time from ticket creation to its close, for tickets closed during the period, credited to the agent who replied last before the close. Calendar time 24/7, including any time on hold. Approximate: our database stores no ticket status history, so this is per ticket rather than per request, and reopen cycles are not separated. No target is set yet.",
+			"reopenRate": "Share of the agent's closed tickets where the customer wrote again within 7 days of the close; the count of such tickets is in brackets. Approximate: only the latest close of a ticket is visible to us, so tickets closed and reopened several times are undercounted.",
+			"reopenFulfillment": "Share of the 5% Reopen Rate target achieved: 100% when nothing reopened, otherwise MIN(100%, 5% / reopen rate). Tickets closed in the last few days have not lived through the full 7-day window yet."
 		}
 	},
 	"actionTypes": {

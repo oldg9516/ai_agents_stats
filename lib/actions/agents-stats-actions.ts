@@ -45,6 +45,7 @@ type RpcAgentStatsRow = {
 	p90_frt: number
 	resolution_count: number
 	median_resolution: number
+	reopened_count: number
 }
 
 /**
@@ -113,6 +114,7 @@ export async function fetchAgentStats(
 			p90Frt: Number(row.p90_frt),
 			resolutionCount: Number(row.resolution_count),
 			medianResolution: Number(row.median_resolution),
+			reopenedCount: Number(row.reopened_count),
 		})
 
 		const totalsRow = (data || []).find(row => row.email === TOTALS_ROW_EMAIL)
