@@ -12,7 +12,7 @@ ticket, where a new episode starts on every `Closed → Open` transition.
 | FRT | 24h | agent who replied first | **Shipped** |
 | Resolution Time | calibrate from actuals | agent who closed | **Shipped, approximate** |
 | On Hold Duration | 72h per hold period | hold owner | **Not possible** |
-| Reopen Rate | ≤5% within 7 days | agent who closed the previous episode | **Not per agent** |
+| Reopen Rate | ≤5% within 7 days | agent who closed the previous episode | **Shipped, approximate** |
 
 ## What the database holds
 
@@ -42,9 +42,15 @@ actuals the spec (§3) wants the business to calibrate `Required_RT` from.
 and 45 ever showed a hold status, and it is one timestamp rather than periods. The spec
 needs every hold period separately with its owner at the time.
 
-**Reopen Rate** — reopens are visible (418 incoming messages arrived at Closed tickets over
-60 days, ≈2%) but cannot be credited: `prev_closing_agent_id` requires a history of closes.
-A team-level rate is feasible; a per-agent KPI is not.
+**Reopen Rate** — shipped with the same attribution as Resolution (last replier before the
+close stands in for `prev_closing_agent_id`). A reopen counts when the customer writes back
+within 7 days of the close **and an agent has to answer again**. That second condition is
+what makes the metric mean anything: over 30 days 486 closed tickets received a customer
+message inside the window, but only 33 needed another reply — the rest arrive a median of
+2.7h after the close and are "thanks, that worked". Counting every message would report a
+12.6% team reopen rate against a 5% target; the work-requiring definition gives 0.9%
+(per agent 0–2.7%). Still undercounts tickets closed and reopened repeatedly, because the
+snapshot keeps only the latest close.
 
 ## Open question: what counts as an episode
 
