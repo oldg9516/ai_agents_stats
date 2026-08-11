@@ -40,21 +40,21 @@ export function AgentsStatsSkeleton() {
 						<div className='space-y-3'>
 							{/* Table header */}
 							<div className='flex gap-4'>
-								{[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+								{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(i => (
 									<Skeleton key={i} className='h-10 flex-1' />
 								))}
 							</div>
 							{/* Table rows */}
 							{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
 								<div key={i} className='flex gap-4'>
-									{[1, 2, 3, 4, 5, 6, 7, 8].map(j => (
+									{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(j => (
 										<Skeleton key={j} className='h-12 flex-1' />
 									))}
 								</div>
 							))}
 							{/* Total row */}
 							<div className='flex gap-4 border-t pt-3'>
-								{[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+								{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(i => (
 									<Skeleton key={i} className='h-12 flex-1 bg-muted' />
 								))}
 							</div>

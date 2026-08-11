@@ -26,6 +26,9 @@
 --     closed inside the window, credited to the agent who sent the last reply before the
 --     close. Ticket-level, not per episode — our database has no status history, so
 --     reopen cycles, hold periods and the identity of the closing agent are unavailable.
+-- v8: Added reopened_count — closed tickets where the customer wrote again within the
+--     spec's 7-day control window, credited to the same agent as the close. Undercounts
+--     tickets closed and reopened repeatedly, since the snapshot keeps only the last close.
 
 -- Drop both signatures: v4 adds p_agents, and leaving the 6-argument version in place
 -- would create an overload with a stale return shape that calls could resolve to.
@@ -80,7 +83,8 @@ RETURNS TABLE (
   median_frt numeric,
   p90_frt numeric,
   resolution_count bigint,
-  median_resolution numeric
+  median_resolution numeric,
+  reopened_count bigint
 )
 LANGUAGE plpgsql
 SET search_path = public
@@ -265,7 +269,31 @@ BEGIN
       ts.ticket_id,
       last_reply.email,
       EXTRACT(EPOCH FROM (ts.ticket_closed_ts - ts.ticket_created_ts)) / 3600.0
-        AS resolution_hours
+        AS resolution_hours,
+      -- Reopen: the customer came back inside the spec's 7-day control window AND an
+      -- agent had to answer again. The follow-up reply is what separates a failed close
+      -- from a plain acknowledgement: over 30 days 486 closed tickets got a customer
+      -- message within the window, but only 33 needed another reply — the rest arrive a
+      -- median of 2.7h after the close and are "thanks, that worked".
+      -- Undercounts tickets closed and reopened several times, because the snapshot keeps
+      -- only the latest close.
+      EXISTS (
+        SELECT 1
+        FROM support_dialogs reopen_msg
+        WHERE reopen_msg.ticket_id = ts.ticket_id
+          AND reopen_msg.direction = 'in'
+          AND reopen_msg.date > ts.ticket_closed_ts
+          AND reopen_msg.date <= ts.ticket_closed_ts + interval '7 days'
+          AND EXISTS (
+            SELECT 1
+            FROM support_dialogs follow_up
+            WHERE follow_up.ticket_id = ts.ticket_id
+              AND follow_up.direction = 'out'
+              AND follow_up.email IS NOT NULL
+              AND follow_up.email <> p_excluded_email
+              AND follow_up.date > reopen_msg.date
+          )
+      ) AS reopened
     FROM ticket_snapshot ts
     INNER JOIN (
       SELECT DISTINCT et.ticket_id FROM eligible_threads et
@@ -291,7 +319,8 @@ BEGIN
       COUNT(*)::bigint AS resolution_count,
       ROUND(
         (percentile_cont(0.5) WITHIN GROUP (ORDER BY rpt.resolution_hours))::numeric, 1
-      ) AS median_resolution
+      ) AS median_resolution,
+      COUNT(*) FILTER (WHERE rpt.reopened)::bigint AS reopened_count
     FROM resolution_per_ticket rpt
     WHERE rpt.email IS NOT NULL
     GROUP BY rpt.email
@@ -350,7 +379,7 @@ BEGIN
 
   -- CTE 12a: Raw resolution times for the agents the TOTAL row covers
   selected_resolution AS (
-    SELECT rpt.resolution_hours
+    SELECT rpt.resolution_hours, rpt.reopened
     FROM resolution_per_ticket rpt
     WHERE rpt.email IS NOT NULL
       AND (p_agents IS NULL OR rpt.email = ANY(p_agents))
@@ -432,7 +461,10 @@ BEGIN
       COALESCE(ROUND((
         SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY sr.resolution_hours)
         FROM selected_resolution sr
-      )::numeric, 1), 0) AS median_resolution
+      )::numeric, 1), 0) AS median_resolution,
+      (
+        SELECT COUNT(*) FROM selected_resolution sr WHERE sr.reopened
+      )::bigint AS reopened_count
     FROM selected_counts sc
   ),
 
@@ -468,7 +500,8 @@ BEGIN
     COALESCE(frt.median_frt, 0) AS median_frt,
     COALESCE(frt.p90_frt, 0) AS p90_frt,
     COALESCE(res.resolution_count, 0)::bigint AS resolution_count,
-    COALESCE(res.median_resolution, 0) AS median_resolution
+    COALESCE(res.median_resolution, 0) AS median_resolution,
+    COALESCE(res.reopened_count, 0)::bigint AS reopened_count
   FROM all_agents aa
   LEFT JOIN answered_per_agent apa ON apa.email = aa.email
   LEFT JOIN ai_stats ai ON ai.email = aa.email

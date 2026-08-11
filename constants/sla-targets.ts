@@ -14,11 +14,11 @@ export const FRT_TARGET_HOURS = 24
  */
 export const ON_HOLD_TARGET_HOURS = 72
 
-/**
- * Reopen Rate target — at most 5% of closed requests reopening within 7 days.
- * Not in use yet: crediting a reopen needs the agent who closed the previous episode.
- */
+/** Reopen Rate target — at most 5% of closed tickets reopening within 7 days */
 export const REOPEN_TARGET_PERCENT = 5
+
+/** Control window for a reopen, in days */
+export const REOPEN_WINDOW_DAYS = 7
 
 /**
  * Resolution Time has no target yet — the spec calibrates it from actual medians once
@@ -38,4 +38,33 @@ export function fulfillmentPercent(
 		return null
 	}
 	return Math.min(100, (targetHours / receivedHours) * 100)
+}
+
+/** Share of closed tickets the customer reopened within the control window */
+export function reopenRatePercent(
+	reopenedCount: number,
+	closedCount: number
+): number | null {
+	if (closedCount <= 0) {
+		return null
+	}
+	return (reopenedCount / closedCount) * 100
+}
+
+/**
+ * Reopen KPI: IF(received = 0, 100%, MIN(100%, target / received)).
+ * A clean period scores 100% rather than dividing by zero.
+ */
+export function reopenFulfillmentPercent(
+	reopenedCount: number,
+	closedCount: number
+): number | null {
+	const rate = reopenRatePercent(reopenedCount, closedCount)
+	if (rate === null) {
+		return null
+	}
+	if (rate === 0) {
+		return 100
+	}
+	return Math.min(100, (REOPEN_TARGET_PERCENT / rate) * 100)
 }

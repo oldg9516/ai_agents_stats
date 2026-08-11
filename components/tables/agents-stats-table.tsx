@@ -35,7 +35,12 @@ import {
 	TooltipTrigger,
 } from '@/components/ui/tooltip'
 import type { AgentStatsRow, AgentChangeType } from '@/lib/db/types'
-import { FRT_TARGET_HOURS, fulfillmentPercent } from '@/constants/sla-targets'
+import {
+	FRT_TARGET_HOURS,
+	fulfillmentPercent,
+	reopenFulfillmentPercent,
+	reopenRatePercent,
+} from '@/constants/sla-targets'
 import { cn } from '@/lib/utils'
 
 /**
@@ -265,6 +270,27 @@ export function AgentsStatsTable({
 				},
 			},
 			{
+				accessorKey: 'resolutionCount',
+				header: () => (
+					<TooltipProvider>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<div className="flex items-center gap-1 cursor-help">
+									{t('table.closedTickets')}
+									<IconInfoCircle className="h-3.5 w-3.5 text-muted-foreground" />
+								</div>
+							</TooltipTrigger>
+							<TooltipContent className="max-w-xs">
+								<p>{t('tooltips.closedTickets')}</p>
+							</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
+				),
+				cell: ({ row }) => (
+					<div className="text-center">{row.original.resolutionCount}</div>
+				),
+			},
+			{
 				accessorKey: 'medianResolution',
 				header: () => (
 					<TooltipProvider>
@@ -289,6 +315,75 @@ export function AgentsStatsTable({
 						)}
 					</div>
 				),
+			},
+			{
+				id: 'reopenRate',
+				accessorFn: row =>
+					reopenRatePercent(row.reopenedCount, row.resolutionCount) ?? -1,
+				header: () => (
+					<TooltipProvider>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<div className="flex items-center gap-1 cursor-help">
+									{t('table.reopenRate')}
+									<IconInfoCircle className="h-3.5 w-3.5 text-muted-foreground" />
+								</div>
+							</TooltipTrigger>
+							<TooltipContent className="max-w-xs">
+								<p>{t('tooltips.reopenRate')}</p>
+							</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
+				),
+				cell: ({ row }) => {
+					const rate = reopenRatePercent(
+						row.original.reopenedCount,
+						row.original.resolutionCount
+					)
+					return (
+						<div className="text-center">
+							{rate !== null
+								? `${rate.toFixed(1)}% (${row.original.reopenedCount})`
+								: '—'}
+						</div>
+					)
+				},
+			},
+			{
+				id: 'reopenFulfillment',
+				accessorFn: row =>
+					reopenFulfillmentPercent(row.reopenedCount, row.resolutionCount) ?? -1,
+				header: () => (
+					<TooltipProvider>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<div className="flex items-center gap-1 cursor-help">
+									{t('table.reopenFulfillment')}
+									<IconInfoCircle className="h-3.5 w-3.5 text-muted-foreground" />
+								</div>
+							</TooltipTrigger>
+							<TooltipContent className="max-w-xs">
+								<p>{t('tooltips.reopenFulfillment')}</p>
+							</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
+				),
+				cell: ({ row }) => {
+					const percent = reopenFulfillmentPercent(
+						row.original.reopenedCount,
+						row.original.resolutionCount
+					)
+					return (
+						<div
+							className={cn(
+								'text-center',
+								percent !== null && getFulfillmentColor(percent)
+							)}
+						>
+							{percent !== null ? `${percent.toFixed(0)}%` : '—'}
+						</div>
+					)
+				},
 			},
 		],
 		[t]
@@ -349,7 +444,7 @@ export function AgentsStatsTable({
 
 			<CardContent>
 				<div className="rounded-md border overflow-x-auto">
-					<Table className="min-w-[900px]">
+					<Table className="min-w-[1240px]">
 						<TableHeader>
 							{table.getHeaderGroups().map(headerGroup => (
 								<TableRow key={headerGroup.id}>
@@ -441,11 +536,44 @@ export function AgentsStatsTable({
 												)
 											})()}
 											<TableCell className="text-center">
+												{totals.resolutionCount}
+											</TableCell>
+											<TableCell className="text-center">
 												{renderFrt(
 													totals.medianResolution,
 													totals.resolutionCount
 												)}
 											</TableCell>
+											{(() => {
+												const rate = reopenRatePercent(
+													totals.reopenedCount,
+													totals.resolutionCount
+												)
+												const percent = reopenFulfillmentPercent(
+													totals.reopenedCount,
+													totals.resolutionCount
+												)
+												return (
+													<>
+														<TableCell className="text-center">
+															{rate !== null
+																? `${rate.toFixed(1)}% (${totals.reopenedCount})`
+																: '—'}
+														</TableCell>
+														<TableCell
+															className={cn(
+																'text-center',
+																percent !== null &&
+																	getFulfillmentColor(percent)
+															)}
+														>
+															{percent !== null
+																? `${percent.toFixed(0)}%`
+																: '—'}
+														</TableCell>
+													</>
+												)
+											})()}
 										</TableRow>
 									)}
 								</>
