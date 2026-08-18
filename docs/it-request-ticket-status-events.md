@@ -5,6 +5,19 @@
 **Unlocks**: On Hold Duration, per-agent Reopen Rate, per-episode Resolution Time
 (`TZ_SLA_Metrics_IT.pdf` §1.1, §4, §5)
 
+## Which dashboard each item feeds
+
+The two asks below land on two different pages, and they are bundled into one request only
+because the same pipeline and the same team deliver both.
+
+| Ask | Page | What it changes there |
+|---|---|---|
+| Ticket status + owner events | **Agent SLA stats** (`/agents-stats`) | Adds On Hold Duration and its 72h KPI column; upgrades Reopen Rate from the current last-replier approximation to the spec's `prev_closing_agent_id`; moves Resolution Time from ticket level to per episode |
+| `First subscription date` on every ticket | **AI Sentiment** (`/sentiment`) | Fills the Tenure × Sentiment heatmap, where "no subscription date" is currently the largest bucket |
+
+Nothing about the status events touches the sentiment page, and nothing about the
+subscription date touches the SLA page — if IT prefers, the two can be filed separately.
+
 ## Why the current data is not enough
 
 Our database receives a *snapshot* of the Zoho ticket on every message
