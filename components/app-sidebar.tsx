@@ -1,6 +1,7 @@
 'use client'
 
 import {
+	IconMoodSmile,
 	IconBook,
 	IconCamera,
 	IconCategory,
@@ -114,6 +115,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				title: t('agentsStats'),
 				url: '/agents-stats',
 				icon: IconUsers,
+			},
+			{
+				title: t('sentiment'),
+				url: '/sentiment',
+				icon: IconMoodSmile,
 			},
 			{
 				title: t('supportAgents'),
