@@ -1057,3 +1057,69 @@ export interface CreateSupportAgentInput {
 
 /** Payload for updating an agent (all fields except id optional). */
 export type UpdateSupportAgentInput = Partial<Omit<CreateSupportAgentInput, never>>
+
+// =============================================================================
+// SENTIMENT ANALYTICS
+// =============================================================================
+
+/** Episode counts per sentiment category, keyed by the category value from the DB */
+export type SentimentDistribution = Record<string, number>
+
+/**
+ * One bucket of the sentiment time series.
+ * Episode-level fields count customer requests; ticket-level fields count tickets whose
+ * first request falls in the bucket (spec §3.3).
+ */
+export interface SentimentTimeseriesBucket {
+	periodStart: string
+	episodeCount: number
+	ticketCount: number
+	sentimentIndex: number
+	distribution: SentimentDistribution
+	improvedCount: number
+	worsenedCount: number
+	resolutionRate: number
+	worsenedRate: number
+}
+
+/** One row of a sentiment breakdown: a subcategory, a tenure bucket or a weekday */
+export interface SentimentBreakdownRow {
+	bucketKey: string
+	bucketOrder: number
+	episodeCount: number
+	distribution: SentimentDistribution
+	severityCount: number
+	severityShare: number
+}
+
+/** Average sentiment index by request position inside a ticket (spec §6.1) */
+export interface SentimentTrajectoryPoint {
+	positionBucket: number
+	episodeCount: number
+	sentimentIndex: number
+}
+
+/** Distribution of ticket sentiment path shapes (spec §6.2) */
+export interface SentimentPatternRow {
+	pattern: string
+	ticketCount: number
+	share: number
+}
+
+/** Episode-delta attribution per agent (spec §3.5) */
+export interface SentimentAgentQualityRow {
+	email: string
+	transitions: number
+	improved: number
+	worsened: number
+	unchanged: number
+	improvedShare: number
+}
+
+export interface SentimentFilters {
+	dateRange: {
+		from: Date
+		to: Date
+	}
+	granularity: 'day' | 'week' | 'month' | 'year'
+}

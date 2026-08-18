@@ -37,6 +37,10 @@ import {
 	SubscriptionSlice,
 } from './slices/subscription-slice'
 import {
+	createSentimentSlice,
+	SentimentSlice,
+} from './slices/sentiment-slice'
+import {
 	validateAndFixDateRange,
 	isDateRangeValid,
 } from '@/lib/utils/validate-date-range'
@@ -44,7 +48,7 @@ import {
 /**
  * Global store combining all slices
  */
-type StoreState = DashboardSlice & SupportSlice & TicketsReviewSlice & BacklogReportsSlice & AgentsStatsSlice & ActionAnalysisSlice & AutomationOverviewSlice & EvalSlice & RetentionSlice & SubscriptionSlice
+type StoreState = DashboardSlice & SupportSlice & TicketsReviewSlice & BacklogReportsSlice & AgentsStatsSlice & ActionAnalysisSlice & AutomationOverviewSlice & EvalSlice & RetentionSlice & SubscriptionSlice & SentimentSlice
 
 // Clean up invalid localStorage data on startup
 if (typeof window !== 'undefined') {
@@ -77,10 +81,11 @@ export const useStore = create<StoreState>()(
 				...createEvalSlice(...a),
 				...createRetentionSlice(...a),
 				...createSubscriptionSlice(...a),
+				...createSentimentSlice(...a),
 			}),
 			{
 				name: 'ai-stats-storage',
-				version: 17, // 17: AI auto-reply account added to the default agent filter
+				version: 18, // 18: add sentiment slice
 				partialize: state => ({
 					// Persist only filter states
 					dashboardFilters: state.dashboardFilters,
@@ -94,13 +99,14 @@ export const useStore = create<StoreState>()(
 					evalFilters: state.evalFilters,
 					retentionFilters: { ...state.retentionFilters, searchQuery: '' },
 					subscriptionFilters: { ...state.subscriptionFilters, searchQuery: '' },
+					sentimentFilters: state.sentimentFilters,
 					isGeneratingReport: state.isGeneratingReport,
 					generationStartedAt: state.generationStartedAt,
 				}),
 				// Migration function for version changes
 				migrate: (persistedState: any, version: number) => {
 					// Only the two previous versions migrate forward; anything older resets
-					if (version !== 15 && version !== 16) {
+					if (version !== 16 && version !== 17) {
 						return null
 					}
 
@@ -116,6 +122,7 @@ export const useStore = create<StoreState>()(
 						'evalFilters',
 						'retentionFilters',
 						'subscriptionFilters',
+						'sentimentFilters',
 					]
 
 					for (const key of filterKeys) {
@@ -159,6 +166,7 @@ export const useStore = create<StoreState>()(
 						{ key: 'evalFilters', defaultDays: 30 },
 						{ key: 'retentionFilters', defaultDays: 30 },
 						{ key: 'subscriptionFilters', defaultDays: 30 },
+						{ key: 'sentimentFilters', defaultDays: 56 },
 					]
 
 					for (const { key, defaultDays } of sliceConfigs) {

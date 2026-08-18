@@ -15,6 +15,7 @@ const PAGE_TITLE_KEYS: Record<string, string> = {
 	'/tickets-review': 'common.ticketsReview',
 	'/backlog-reports': 'common.backlogReports',
 	'/agents-stats': 'common.agentsStats',
+	'/sentiment': 'common.sentiment',
 	'/ai-chat': 'common.aiChat',
 	'/docs': 'common.documentation',
 	'/settings': 'common.settings',

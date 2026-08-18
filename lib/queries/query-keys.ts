@@ -203,6 +203,23 @@ export const supportAgentsKeys = {
 }
 
 /**
+ * Sentiment analytics query keys
+ */
+export const sentimentKeys = {
+	all: ['sentiment'] as const,
+	timeseries: (from: string, to: string, granularity: string) =>
+		[...sentimentKeys.all, 'timeseries', { from, to, granularity }] as const,
+	breakdown: (from: string, to: string, dimension: string) =>
+		[...sentimentKeys.all, 'breakdown', dimension, { from, to }] as const,
+	trajectory: (from: string, to: string) =>
+		[...sentimentKeys.all, 'trajectory', { from, to }] as const,
+	patterns: (from: string, to: string) =>
+		[...sentimentKeys.all, 'patterns', { from, to }] as const,
+	agentQuality: (from: string, to: string) =>
+		[...sentimentKeys.all, 'agent-quality', { from, to }] as const,
+}
+
+/**
  * Combined query keys object for easy access
  */
 export const queryKeys = {
@@ -212,4 +229,5 @@ export const queryKeys = {
 	automationOverview: automationOverviewKeys,
 	eval: evalKeys,
 	backlogReports: backlogReportsKeys,
+	sentiment: sentimentKeys,
 } as const

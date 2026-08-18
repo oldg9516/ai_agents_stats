@@ -36,7 +36,8 @@
 		"refresh": "Refresh",
 		"previous": "Previous",
 		"next": "Next",
-		"pageOf": "Page {current} of {total}"
+		"pageOf": "Page {current} of {total}",
+		"sentiment": "AI Sentiment"
 	},
 	"header": {
 		"title": "Lev Haolam AI"
@@ -1201,7 +1202,7 @@
 			"edit": "Edit",
 			"resend": "Resend",
 			"retry": "Retry",
-		"refresh": "Refresh",
+			"refresh": "Refresh",
 			"analyzing": "Analyzing...",
 			"showMore": "Show more",
 			"showLess": "Show less"
@@ -1507,9 +1508,8 @@
 		"autoCloseTasks": "Tasks",
 		"autoCloseOrderComment": "order comment",
 		"tooltipAutoClosed": "Total tickets auto-closed by the AI in the selected period. Description shows the count for the \"order comment\" Zoho automation."
-
 	},
-	"retention": 	{
+	"retention": {
 		"title": "Retention Transparency",
 		"description": "See exactly what the AI flow (Samantha) did with each retention ticket and why.",
 		"ticket": "Ticket",
@@ -1585,7 +1585,7 @@
 			"searchPlaceholder": "Search by ticket ID, email, subject..."
 		}
 	},
-	"subscription": 	{
+	"subscription": {
 		"title": "Subscription Transparency",
 		"description": "See exactly what the AI flow (Samantha) did with each subscription support ticket and why."
 	},
@@ -1625,6 +1625,126 @@
 			"thu": "Thu",
 			"fri": "Fri",
 			"sat": "Sat"
+		}
+	},
+	"sentiment": {
+		"title": "AI Sentiment Analytics",
+		"description": "Customer mood per request, from the AI sentiment classification",
+		"dataAvailableFrom": "Sentiment data available from {date} — earlier periods are empty because classification had not started, not because customers were neutral",
+		"empty": "No data for the selected period",
+		"unknownBucket": "Not classified",
+		"granularity": {
+			"day": "Day",
+			"week": "Week",
+			"month": "Month",
+			"year": "Year"
+		},
+		"categories": {
+			"Critical": "Critical",
+			"Angry": "Angry",
+			"Frustrated": "Frustrated",
+			"Neutral": "Neutral",
+			"Positive": "Positive"
+		},
+		"patterns": {
+			"improved": "Improved",
+			"worsened": "Worsened",
+			"volatile": "Volatile",
+			"unchanged": "Unchanged"
+		},
+		"weekdays": {
+			"1": "Monday",
+			"2": "Tuesday",
+			"3": "Wednesday",
+			"4": "Thursday",
+			"5": "Friday",
+			"6": "Saturday",
+			"7": "Sunday"
+		},
+		"heatmap": {
+			"bucket": "Group",
+			"episodes": "Requests",
+			"severity": "Critical+Angry",
+			"legend": "Colour scale:",
+			"scaleNote": "Cell colour follows the same five steps; Critical and Angry are scaled up so a few percent already reads as hot, while Neutral and Positive carry no alarm colour."
+		},
+		"kpi": {
+			"index": {
+				"title": "Sentiment Index",
+				"description": "{count} requests in the latest period",
+				"tooltip": "Weighted average across all requests: Critical −2, Angry −1, Frustrated −0.5, Neutral 0, Positive +1. Counted per request, so bursts of emotion inside a long ticket are not lost."
+			},
+			"severity": {
+				"title": "Critical + Angry",
+				"description": "Share of request volume",
+				"tooltip": "Share of requests classified Critical or Angry. Always a share, never a count — a busier week would otherwise look like an angrier week."
+			},
+			"resolution": {
+				"title": "Sentiment Resolution Rate",
+				"description": "{count} tickets in the latest period",
+				"tooltip": "Share of tickets whose last request carries a better sentiment than the first. Tickets with a single request count as unchanged and stay in the denominator."
+			},
+			"worsened": {
+				"title": "Worsened by close",
+				"description": "Share of tickets",
+				"tooltip": "Share of tickets whose last request is worse than the first. Read together with the volatile pattern below: a ticket can end well and still have dipped along the way."
+			}
+		},
+		"charts": {
+			"trend": {
+				"title": "Overall customer mood",
+				"description": "Sentiment Index per period with request volume behind it",
+				"tooltip": "The bars are request volume, the line is the index. A moving index off a small volume is noise, so read them together."
+			},
+			"mixDonut": {
+				"title": "Sentiment Mix",
+				"description": "Latest period",
+				"tooltip": "Share of each category in the most recent period of the selected range."
+			},
+			"mixStacked": {
+				"title": "Sentiment Mix by period",
+				"description": "Share of each category, %",
+				"tooltip": "Shows shifts inside the mix that the overall index can hide — for example Neutral turning into Frustrated while the index barely moves."
+			},
+			"subcategory": {
+				"title": "Request subcategory × severity",
+				"description": "Subcategories with at least 10 requests, worst first",
+				"tooltip": "Grouped by the AI subcategory of each request, not of the ticket. Cell colour follows the Critical+Angry share, so the topics that irritate customers most come out on top."
+			},
+			"tenure": {
+				"title": "Customer month (tenure) × sentiment",
+				"description": "Tenure measured at the moment of each request",
+				"tooltip": "Tenure comes from the customer's first subscription date, which reaches us on roughly a third of requests — the rest sit in \"no data\". Buckets 2–3, 4–6 and 7–11 months are the cancellation risk zone.",
+				"bucket": "{bucket} months",
+				"riskBucket": "{bucket} months · risk zone",
+				"unknown": "No subscription date"
+			},
+			"weekday": {
+				"title": "Weekday × sentiment",
+				"description": "By the date of each request",
+				"tooltip": "Requests are grouped by their own weekday, so a ticket spanning several days lands in several rows. Watch the volume column: a share off a quiet Saturday is noisy."
+			},
+			"trajectory": {
+				"title": "Mood inside a ticket",
+				"description": "Average index by request position, tickets with 2+ requests",
+				"tooltip": "A dip at the second request means the first reply routinely fails to settle the question. Single-request tickets are excluded — they say nothing about movement.",
+				"position": "Request {n}",
+				"positionLast": "4th and later"
+			},
+			"patterns": {
+				"title": "Sentiment path per ticket",
+				"description": "Shape of the whole sequence, not just first vs last",
+				"tooltip": "Improved and worsened mean the path moved one way throughout. Volatile means it reversed at least once — the customer was let down somewhere in the middle even if the ticket ended well.",
+				"total": "{count} tickets with two or more requests"
+			},
+			"agents": {
+				"title": "Agent reply quality",
+				"description": "How the customer's mood moved after each agent's reply",
+				"tooltip": "Each transition between two customer requests is credited to the agent who answered the earlier one — the next message is a reaction to that reply. Fairer than crediting a whole ticket to whoever closed it. Agents with fewer than 5 transitions are hidden.",
+				"agent": "Agent",
+				"transitions": "Transitions",
+				"improvedShare": "Improved %"
+			}
 		}
 	}
 }
