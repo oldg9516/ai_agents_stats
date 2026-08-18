@@ -20,14 +20,58 @@ export interface SentimentCategory {
 	severity: boolean
 	/** CSS variable used for charts and heatmap chips */
 	colorVar: string
+	/**
+	 * Scales this category's share onto the shared heatmap colour scale. Critical sits at
+	 * a few percent while Frustrated runs at 40%, so without a multiplier every Critical
+	 * cell would read as calm and every Frustrated cell as on fire.
+	 * Categories without a multiplier get a flat calm tint instead of a heat colour.
+	 */
+	heatMultiplier?: number
+	/** Flat tint for categories that carry no alarm (Neutral, Positive) */
+	calmClassName?: string
 }
 
 export const SENTIMENT_CATEGORIES: SentimentCategory[] = [
-	{ key: 'Critical', rank: 1, weight: -2, severity: true, colorVar: '--chart-5' },
-	{ key: 'Angry', rank: 2, weight: -1, severity: true, colorVar: '--chart-9' },
-	{ key: 'Frustrated', rank: 3, weight: -0.5, severity: false, colorVar: '--chart-4' },
-	{ key: 'Neutral', rank: 4, weight: 0, severity: false, colorVar: '--chart-3' },
-	{ key: 'Positive', rank: 5, weight: 1, severity: false, colorVar: '--chart-2' },
+	{
+		key: 'Critical',
+		rank: 1,
+		weight: -2,
+		severity: true,
+		colorVar: '--chart-5',
+		heatMultiplier: 2.2,
+	},
+	{
+		key: 'Angry',
+		rank: 2,
+		weight: -1,
+		severity: true,
+		colorVar: '--chart-9',
+		heatMultiplier: 1.3,
+	},
+	{
+		key: 'Frustrated',
+		rank: 3,
+		weight: -0.5,
+		severity: false,
+		colorVar: '--chart-4',
+		heatMultiplier: 0.8,
+	},
+	{
+		key: 'Neutral',
+		rank: 4,
+		weight: 0,
+		severity: false,
+		colorVar: '--chart-3',
+		calmClassName: 'bg-muted/60 text-muted-foreground',
+	},
+	{
+		key: 'Positive',
+		rank: 5,
+		weight: 1,
+		severity: false,
+		colorVar: '--chart-2',
+		calmClassName: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+	},
 ]
 
 export const SENTIMENT_KEYS = SENTIMENT_CATEGORIES.map(c => c.key)
@@ -65,6 +109,21 @@ export function getSeverityClassName(sharePercent: number): string {
 		SEVERITY_THRESHOLDS.find(step => sharePercent < step.upTo)?.className ??
 		SEVERITY_THRESHOLDS[SEVERITY_THRESHOLDS.length - 1].className
 	)
+}
+
+/**
+ * Cell colour for one category's share inside a heatmap row: the same five steps as the
+ * severity scale, with the category's share scaled onto it first. Categories that carry no
+ * alarm keep their flat tint.
+ */
+export function getHeatClassName(
+	sharePercent: number,
+	category: SentimentCategory
+): string {
+	if (category.heatMultiplier === undefined) {
+		return category.calmClassName ?? ''
+	}
+	return getSeverityClassName(sharePercent * category.heatMultiplier)
 }
 
 /** Tenure buckets (spec §5.2) — non-overlapping whole-month ranges */

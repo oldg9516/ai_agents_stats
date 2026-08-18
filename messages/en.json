@@ -1665,7 +1665,8 @@
 			"bucket": "Group",
 			"episodes": "Requests",
 			"severity": "Critical+Angry",
-			"legend": "Critical+Angry share:"
+			"legend": "Colour scale:",
+			"scaleNote": "Cell colour follows the same five steps; Critical and Angry are scaled up so a few percent already reads as hot, while Neutral and Positive carry no alarm colour."
 		},
 		"kpi": {
 			"index": {

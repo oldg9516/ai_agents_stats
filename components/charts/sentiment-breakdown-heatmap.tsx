@@ -16,6 +16,7 @@ import { ChartCardWithTooltip } from './chart-card-with-tooltip'
 import {
 	SENTIMENT_CATEGORIES,
 	SEVERITY_THRESHOLDS,
+	getHeatClassName,
 	getSeverityClassName,
 } from '@/constants/sentiment-categories'
 import type { SentimentBreakdownRow } from '@/lib/db/types'
@@ -97,17 +98,22 @@ export const SentimentBreakdownHeatmap = memo(function SentimentBreakdownHeatmap
 									const count = row.distribution[category.key] ?? 0
 									const share = row.episodeCount > 0 ? (count / row.episodeCount) * 100 : 0
 									return (
-										<td key={category.key} className='text-center py-2 px-2'>
-											<span className={share > 0 ? '' : 'text-muted-foreground/50'}>
+										<td key={category.key} className='py-1 px-1'>
+											<span
+												className={cn(
+													'block rounded px-2 py-1.5 text-center font-medium tabular-nums',
+													getHeatClassName(share, category)
+												)}
+											>
 												{share.toFixed(1)}%
 											</span>
 										</td>
 									)
 								})}
-								<td className='text-center py-2 pl-2'>
+								<td className='py-1 pl-1'>
 									<span
 										className={cn(
-											'inline-block rounded px-2 py-0.5 font-semibold tabular-nums',
+											'block rounded px-2 py-1.5 text-center font-bold tabular-nums',
 											getSeverityClassName(row.severityShare)
 										)}
 									>
@@ -135,6 +141,7 @@ export const SentimentBreakdownHeatmap = memo(function SentimentBreakdownHeatmap
 					)
 				})}
 			</div>
+			<p className='text-xs text-muted-foreground mt-2'>{t('heatmap.scaleNote')}</p>
 		</ChartCardWithTooltip>
 	)
 })

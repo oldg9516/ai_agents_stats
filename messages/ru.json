@@ -1665,7 +1665,8 @@
 			"bucket": "Группа",
 			"episodes": "Обращений",
 			"severity": "Critical+Angry",
-			"legend": "Доля Critical+Angry:"
+			"legend": "Цветовая шкала:",
+			"scaleNote": "Цвет ячейки идёт по той же шкале из пяти ступеней; Critical и Angry масштабированы, поэтому несколько процентов там уже читаются как тревожные, а Neutral и Positive цветом не подсвечиваются."
 		},
 		"kpi": {
 			"index": {
