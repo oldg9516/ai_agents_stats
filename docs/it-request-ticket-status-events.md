@@ -1,78 +1,98 @@
 # IT request — On Hold measurement
 
-**Status**: draft for Irina to file
-**Date**: 2026-08-19 (revised)
-**Unlocks**: On Hold Duration, exact Reopen Rate attribution
-(`TZ_SLA_Metrics_IT.pdf` §4, §5) on the **Agent SLA stats** page (`/agents-stats`)
+**Status**: draft for Irina / Ilya
+**Date**: 2026-08-19 (second revision)
+**Page it feeds**: **Agent SLA stats** (`/agents-stats`) — On Hold Duration, exact Reopen
+attribution (`TZ_SLA_Metrics_IT.pdf` §4, §5)
 
-Two options are described. **Option A is the ask** — it adds fields to the payload we
-already receive and needs no new table, no webhook and no change to the n8n flow.
-Option B is only needed if the business requires per-hold-period attribution.
+## Correction to the previous revision
 
-## Why the data we already receive is not enough
+The earlier draft claimed the stored payload is refreshed after the last message on 94.6% of
+closed tickets, and proposed that Zoho simply persist a few fields for us to read from it.
+**That was a measurement error.** The comparison was against the ticket's *last* message,
+and tickets are usually closed within minutes of the final reply, so the closure fell inside
+the same capture.
 
-n8n stores a Zoho ticket snapshot on every message (`support_dialogs.data->payload`), and
-the snapshot does carry `status`, `statusType` and `onholdTime`. The blockers are:
+Measured properly: the payload's own `modifiedTime` sits a median of **0.1 minutes** after
+the message date (p90 5.4 minutes), and only 1% of rows are more than 24h apart. The payload
+is captured once, while the message is processed, and never refreshed — which matches what
+Ilya says: the record is only updated when the AI changes the department.
 
-1. **`onholdTime` is cleared on exit.** Measured over 90 days: all 150 tickets currently in
-   an On Hold status carry it, and zero of the 22 591 tickets sitting in Open or Closed do.
-   The payload records "is on hold now", never "was on hold".
-2. **We only observe a ticket when a message arrives.** Over 90 days a snapshot caught a
-   ticket mid-hold on 506 of 22 741 tickets (2.2%). Tickets average 1.99 snapshots, 44% have
-   exactly one, and the median gap between snapshots is 5.7h with a p90 of 81h — a hold
-   usually starts and ends between two messages.
+Consequence: **no field Zoho persists can reach us through the existing payload** if the
+change happens after the last message. A hold that starts after the final reply is invisible
+to us for ever.
 
-## What works in our favour
+## Why On Hold cannot be derived from what we store today
 
-The stored payload is refreshed *after* the last message on **94.6%** of closed tickets
-(6863 of 7256 over 60 days) and 91.7% of open ones. So any value Zoho **persists on the
-ticket** will be picked up by the delivery we already have, with no new pipeline.
+1. `onholdTime` is cleared on exit — all 150 tickets currently in a hold status carry it,
+   zero of the 22 591 Open/Closed tickets do.
+2. A snapshot catches a ticket mid-hold on 2.2% of tickets (506 of 22 741 over 90 days),
+   because we only look when a message arrives.
+3. A duration needs two timestamps. Overwriting "the current status" somewhere gives one.
 
-## Option A (the ask) — persist a few fields and send them in the existing payload
+## The hold statuses in play
 
-| Field | Meaning |
-|---|---|
-| `onHoldTotalMinutes` | Cumulative time the ticket spent in `statusType = On Hold`, calendar 24/7, not business hours |
-| `onHoldPeriodsCount` | How many separate hold periods the ticket had |
-| `lastOnHoldStart` / `lastOnHoldEnd` | Timestamps of the most recent hold period, UTC ISO 8601 |
-| `lastOnHoldOwnerAgentId` | Agent who owned the ticket during that last hold period |
-| `lastClosedByAgentId` | Agent who set the last `Closed` — makes Reopen Rate attribution exact |
-| `reopenCount` | Number of `Closed → Open` cycles (Zoho already computes this internally) |
+Irina's list has 12 names. Nine have reached our database at least once, three never have:
 
-The fields must **persist** after the ticket leaves hold — that is the whole point, and it is
-what `onholdTime` fails to do.
+| Status | Tickets seen | statusType |
+|---|---|---|
+| Awaiting INTERNAL | 369 | On Hold |
+| Duplicate Account/subscription | 137 | On Hold |
+| Customer dispute/Chargeback | 114 | On Hold |
+| Awaiting CUSTOMER | 107 | On Hold |
+| On Hold GENERAL | 37 | On Hold |
+| Address Verification | 22 | On Hold |
+| Pending | 3 | On Hold |
+| On Hold - Rivki | 2 | On Hold |
+| On hold - Payment error | 1 | On Hold |
+| (NSD) Wait | never seen | — |
+| On hold - PAST Box Availability? | never seen | — |
+| Delay my Shipment | never seen | — |
 
-Precedent for feasibility: Zoho already runs the custom function `Save prev status//ES`,
-which writes the previous status into a field on status change. This is an extension of that
-pattern rather than a new integration.
+Those counts come only from the 2.2% of tickets we happen to catch mid-hold, so real hold
+volume is higher — that gap is the whole point of this request.
 
-### What Option A cannot give
+Ask for Zoho's `statusType` alongside the status name rather than a hardcoded list of names:
+three names on the list have never appeared, and names like `On Hold - Rivki` show the list
+grows ad hoc. With `statusType` a new hold status works on day one.
 
-The spec (§4) asks for every hold period separately, credited to its owner at the time. With
-cumulative fields we get the total per ticket plus the last period exactly; the breakdown for
-tickets held more than once is lost. Tickets *currently* on hold may also be undercounted
-until the next message, since only 37.5% of on-hold snapshots are refreshed after the last
-message — harmless for a KPI computed over finished periods.
+## Two workable shapes — Ilya picks whichever is cheaper for them
 
-## Option B (fallback) — status event stream
+### Shape 1 — they keep a current mirror, we keep the history
 
-Only if per-period attribution is mandatory: one appended row per status change and per owner
-change (`ticket_id`, `event_ts` UTC, `from_status`/`to_status`,
-`from_status_type`/`to_status_type`, owner transition, `actor_agent_id`, `actor_type`,
-`source`), plus a 2–3 month backfill from Zoho's ticket History endpoint, which returns
-exactly these fields — verified against live tickets. This needs a new table and a delivery
-path, which is the expensive part.
+One row per ticket in our database, upserted whenever the Zoho status changes:
+`ticket_id`, `status`, `status_type`, `assignee_agent_id`, `changed_at` (UTC).
 
-## Do not send Zoho's computed metrics
+No event logic, no history, no calculations on their side — a single upsert. We snapshot that
+mirror on a schedule (a Vercel cron hitting our own API route, writing to our own table) and
+build hold periods from the snapshots ourselves. Resolution: ~15 minutes, which is ample
+against a 72-hour target. Owner attribution works as long as `assignee_agent_id` is included.
 
-`firstResponseTime`, `resolutionTime` and the per-status times from Zoho's metrics endpoint
-are measured in business hours and exclude time spent Closed: on ticket
+### Shape 2 — they append one row per change, we do nothing
+
+Append-only, one row per status change and per owner change: `ticket_id`, `event_ts` (UTC),
+`from_status`, `to_status`, `from_status_type`, `to_status_type`, `actor_agent_id`,
+`actor_type`, `source` (`IncomingResponse` marks a customer-driven reopen). Plus a 2–3 month
+backfill from Zoho's ticket History endpoint, which returns exactly these fields — verified
+against live tickets.
+
+Better data: exact periods to the second, per-period owner, and reopen attribution for free.
+More work for them than shape 1.
+
+## What must not happen
+
+**Do not overwrite the payload inside `support_dialogs`.** Today that payload documents the
+ticket's state at the moment of a message, and metrics already computed on it (First Response
+Time, Resolution Time, the sentiment dashboard) read it with that meaning. Turning it into
+"latest known state" would silently change historical numbers. A separate ticket-level record
+or event table keeps both intact.
+
+Also not useful: Zoho's computed metrics (`firstResponseTime`, `resolutionTime`, per-status
+times). They are business-hours based and exclude time spent Closed — on ticket
 `550547000425594253` Zoho reports 117 hours where the calendar gap is 364. The spec requires
-24/7 calendar time, so those fields would contradict it.
+24/7 calendar time.
 
 ## Separate ask, different page
 
-`First subscription date` reaches us on ~32% of requests (1441 of 4521 over 30 days). It
-drives the Tenure × Sentiment heatmap on the **AI Sentiment** page (`/sentiment`), where "no
-subscription date" is currently the largest bucket. Unrelated to On Hold — can be filed
-separately.
+`First subscription date` reaches us on ~32% of requests. It drives the Tenure × Sentiment
+heatmap on the **AI Sentiment** page (`/sentiment`). Unrelated to On Hold — file separately.
