@@ -70,14 +70,37 @@ against a 72-hour target. Owner attribution works as long as `assignee_agent_id`
 
 ### Shape 2 — they append one row per change, we do nothing
 
-Append-only, one row per status change and per owner change: `ticket_id`, `event_ts` (UTC),
-`from_status`, `to_status`, `from_status_type`, `to_status_type`, `actor_agent_id`,
-`actor_type`, `source` (`IncomingResponse` marks a customer-driven reopen). Plus a 2–3 month
-backfill from Zoho's ticket History endpoint, which returns exactly these fields — verified
-against live tickets.
+A new table, append-only, nothing else touched. Fields split so the minimum can be priced on
+its own:
 
-Better data: exact periods to the second, per-period owner, and reopen attribution for free.
-More work for them than shape 1.
+**Required** — without these the metric cannot be computed:
+
+| Field | Why |
+|---|---|
+| `ticket_id` | joins to everything we already have |
+| `event_ts` | UTC, ISO 8601. The timer runs 24/7, so no business-hours adjustment |
+| `to_status` + `to_status_type` | `status_type` tells us a hold from an ordinary status without us tracking 12 names |
+| `assignee_agent_id` | owner at that moment — this is who the hold period is credited to |
+
+**Events must cover every status change, not only entries into hold.** A hold period ends
+when the ticket moves to any other status, so the exit timestamp is simply the next event.
+Sending hold entries alone gives a start with no end and nothing is measurable.
+
+**Nice to have** — improves attribution, not required for a first version:
+`from_status`, `actor_agent_id` and `actor_type` (who made the change), `source`
+(`IncomingResponse` marks a customer-driven reopen), `ticket_number`, and separate
+owner-change events.
+
+**Volume**: ~7.6k tickets a month (22 741 over 90 days) with a few status changes each — on
+the order of 20–30k rows a month. Negligible for the database.
+
+**Backfill is a separate question.** Zoho's ticket History endpoint returns these events for
+past tickets — verified on live tickets — but pricing it together with the live feed tends to
+stall the whole thing. Get the live feed running first; the backfill only matters for
+calibrating the Resolution Time target.
+
+Better data than shape 1: exact periods to the second, per-period owner, reopen attribution
+for free.
 
 ## What must not happen
 
